@@ -195,7 +195,7 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-700 text-slate-100">
+          <DialogContent className="w-[95vw] sm:w-full max-w-lg max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-700 text-slate-100">
             <DialogHeader><DialogTitle className="text-2xl font-bold flex items-center gap-2"><User className="w-6 h-6 text-indigo-400" /> Müşteri Profili</DialogTitle></DialogHeader>
             {loading ? <div className="flex justify-center py-12"><Loader2 className="w-10 h-10 animate-spin text-indigo-500" /></div> : (
               <div className="space-y-6">
@@ -263,7 +263,7 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
                                     </div>
                                     <div className="flex gap-3 items-start">
                                         <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${f.feedback_type === 'complaint' ? 'bg-red-500' : f.feedback_type === 'suggestion' ? 'bg-blue-500' : 'bg-yellow-500'}`} />
-                                        <div className="flex-1">
+                                        <div className="flex-1 min-w-0">
                                             <p className="text-sm text-slate-300 line-clamp-2">{f.message || <span className="italic text-slate-600">Mesaj yok</span>}</p>
                                             <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-700/30">
                                                 <div className="flex items-center gap-2">
