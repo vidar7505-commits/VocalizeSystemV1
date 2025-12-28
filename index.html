@@ -1,78 +1,13 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    
-    <!-- ========== FAVICON (Multiple Formats) ========== -->
-    <!-- Primary Favicon - Teal Logo (Browser Tab) -->
-    <link rel="icon" type="image/png" href="/vocalize_logo_main_png.png" sizes="192x192" />
-    <link rel="shortcut icon" href="/vocalize_logo_main_png.png" type="image/png" />
-    
-    <!-- Apple Touch Icon (iOS) -->
-    <link rel="apple-touch-icon" href="/vocalize_logo_main_png.png" />
-    
-    <!-- ========== VIEWPORT & BASIC META ========== -->
+    <link rel="icon" type="image/png" href="/beyaz_vocalize_logo_png.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#004d5c" />
-    <meta name="description" content="Vocalize - Müşteri geri bildirim sistemi. QR kod ile anında geri bildirim toplayın, analiz edin ve işletmenizi geliştirin." />
-    <meta name="keywords" content="geri bildirim, müşteri memnuniyeti, QR kod, işletme yönetimi, Vocalize" />
-    <meta name="author" content="Phinest Global" />
-    <meta name="robots" content="index, follow" />
-    <meta name="language" content="Turkish" />
-    
-    <!-- ========== SOCIAL MEDIA & OG TAGS (SEO) ========== -->
-    <!-- Open Graph (Facebook, WhatsApp, Discord) -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://vocalize.app" />
-    <meta property="og:title" content="Vocalize - Müşteri Geri Bildirim Sistemi" />
-    <meta property="og:description" content="QR kod ile anında müşteri geri bildirimi toplayın. Şikayetleri yönetin, önerileri değerlendirin, işletmenizi geliştirin." />
-    <meta property="og:image" content="https://vocalize.app/vocalize_logo_main_png.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="1200" />
-    <meta property="og:site_name" content="Vocalize" />
-    <meta property="og:locale" content="tr_TR" />
-    
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Vocalize - Müşteri Geri Bildirim Sistemi" />
-    <meta name="twitter:description" content="QR kod ile anında müşteri geri bildirimi toplayın." />
-    <meta name="twitter:image" content="https://vocalize.app/vocalize_logo_main_png.png" />
-    
-    <!-- ========== PWA (PROGRESSIVE WEB APP) ========== -->
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Vocalize" />
-    
-    <!-- ========== CANONICAL & ALTERNATE ========== -->
-    <link rel="canonical" href="https://vocalize.app/" />
-    <link rel="alternate" hreflang="tr" href="https://vocalize.app/" />
-    <link rel="alternate" hreflang="en" href="https://vocalize.app/en" />
-    
-    <!-- ========== STYLES & FONTS ========== -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    
-    <!-- ========== PAGE TITLE & BRANDING ========== -->
-    <title>Vocalize - Müşteri Geri Bildirim Sistemi</title>
+    <title>Vocalize</title>
   </head>
   <body>
-    <!-- ========== MAIN APP ========== -->
     <div id="root"></div>
-    
-    <!-- ========== REACT APP SCRIPT ========== -->
     <script type="module" src="/src/main.jsx"></script>
-    
-    <!-- ========== PWA SERVICE WORKER (Optional) ========== -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {
-            // Service worker yüklenmedi, normal çalışmaya devam et
-          });
-        });
-      }
-    </script>
   </body>
 </html>
