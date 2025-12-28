@@ -1,0 +1,325 @@
+
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { 
+  LayoutDashboard, MessageSquare, BarChart3, Settings, 
+  Menu, X, LogOut, Send, Loader2, Image as ImageIcon, Upload
+} from 'lucide-react';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAdminContext } from '@/contexts/AdminContext';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { AnimatePresence, motion } from 'framer-motion';
+import { supabase } from '@/lib/customSupabaseClient';
+import { useToast } from "@/components/ui/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+
+const AdminSidebar = () => {
+  const { pathname } = useLocation();
+  const { signOut, user } = useAuth();
+  const { businessName } = useAdminContext();
+  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Modal State
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackImages, setFeedbackImages] = useState([]);
+
+  // Close sidebar on route change
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  // Feedback Modal Logic
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    const remainingSlots = 3 - feedbackImages.length;
+    
+    if (files.length > remainingSlots) {
+      toast({
+        title: "Uyarı",
+        description: "En fazla 3 görsel ekleyebilirsiniz.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setFeedbackImages(prev => [...prev, ...files.slice(0, remainingSlots)]);
+  };
+
+  const removeImage = (index) => {
+    setFeedbackImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImages = async () => {
+    const uploadedUrls = [];
+    
+    for (const file of feedbackImages) {
+      const fileName = `manager-feedback/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${file.name.replace(/[^a-zA-Z0-9]/g, '')}`;
+      
+      const { data, error } = await supabase.storage
+        .from('feedback-images')
+        .upload(fileName, file);
+        
+      if (error) {
+        console.error('Error uploading file:', error);
+        continue;
+      }
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('feedback-images')
+        .getPublicUrl(fileName);
+        
+      uploadedUrls.push(publicUrl);
+    }
+    
+    return uploadedUrls;
+  };
+
+  const handleFeedbackSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) {
+      toast({ variant: "destructive", title: "Hata", description: "Oturum açmanız gerekiyor." });
+      return;
+    }
+    if (!feedbackMessage.trim()) {
+      toast({ variant: "destructive", title: "Hata", description: "Lütfen mesajınızı yazın." });
+      return;
+    }
+
+    setFeedbackLoading(true);
+    try {
+      let imageUrls = [];
+      if (feedbackImages.length > 0) {
+        imageUrls = await uploadImages();
+      }
+
+      const { error } = await supabase.from('vocalize_manager_feedbacks').insert({
+        manager_id: user.id,
+        message: feedbackMessage,
+        images: imageUrls
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Geri Bildirim Alındı",
+        description: "Geri bildiriminiz için teşekkür ederiz.",
+        className: "bg-teal-600 text-white border-none"
+      });
+      setFeedbackMessage('');
+      setFeedbackImages([]);
+      setFeedbackModalOpen(false);
+    } catch (error) {
+      console.error('Feedback submit error:', error);
+      toast({ variant: "destructive", title: "Hata", description: "Geri bildirim gönderilemedi." });
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
+
+  const navItems = [
+    { icon: LayoutDashboard, label: 'Ana Panel', path: '/admin-panel' },
+    { icon: MessageSquare, label: 'Geri Bildirimler', path: '/admin-panel/feedbacks' },
+    { icon: BarChart3, label: 'Detaylı Analiz', path: '/admin-panel/analytics' },
+    { icon: Settings, label: 'Ayarlar', path: '/admin-panel/settings' },
+  ];
+
+  const isActive = (path) => {
+    if (path === '/admin-panel' && pathname === '/admin-panel') return true;
+    if (path !== '/admin-panel' && pathname.startsWith(path)) return true;
+    return false;
+  };
+
+  return (
+    <>
+      {/* Mobile Trigger */}
+      <div className="fixed top-3 left-4 z-50 md:hidden">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setIsOpen(true)}
+          className="text-white hover:bg-slate-800 rounded-full bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 shadow-sm"
+        >
+          <Menu className="w-5 h-5" />
+        </Button>
+      </div>
+
+      {/* Sidebar Content (Desktop & Mobile) */}
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-50 w-64 bg-[#111827] border-r border-slate-800 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 md:static",
+        isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+      )}>
+        {/* Logo Area */}
+        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800 bg-[#111827]">
+          <div className="flex items-center gap-3">
+             <img 
+                src="https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/a394cb1bd41831c36846246fa8755c18.png" 
+                alt="Vocalize Logo" 
+                className="h-10 w-10 object-contain shrink-0"
+                style={{ filter: 'brightness(0) saturate(100%) invert(64%) sepia(88%) saturate(402%) hue-rotate(132deg) brightness(95%) contrast(91%)' }}
+             />
+             <span className="text-2xl font-bold text-teal-500">Vocalize</span>
+          </div>
+          {/* Mobile Close Button */}
+          <button 
+            onClick={() => setIsOpen(false)} 
+            className="md:hidden ml-auto text-slate-400 hover:text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
+                isActive(item.path)
+                  ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
+                  : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
+              )}
+            >
+              <item.icon className={cn("w-5 h-5", isActive(item.path) ? "text-teal-400" : "text-slate-500")} />
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        {/* User / Footer */}
+        <div className="p-4 border-t border-slate-800 bg-[#0f172a]/50 flex flex-col gap-3">
+          {/* Contact Button - Style Updated as requested */}
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-teal-400 hover:text-teal-300 hover:bg-teal-900/20 group border border-dashed border-slate-700 hover:border-teal-500/30"
+            onClick={() => setFeedbackModalOpen(true)}
+          >
+            <Send className="w-4 h-4 mr-2 group-hover:text-teal-300 transition-colors" />
+            <span className="font-medium transition-colors">Bizimle İletişime Geçin</span>
+          </Button>
+
+          <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-slate-800/30">
+            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
+              {businessName ? businessName.substring(0, 2).toUpperCase() : 'AD'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">{businessName || 'Admin Panel'}</p>
+              <p className="text-xs text-slate-500 truncate">Yönetici</p>
+            </div>
+          </div>
+
+          <Button 
+            onClick={handleLogout} 
+            variant="outline" 
+            className="w-full border-slate-700 bg-slate-800/50 text-slate-300 hover:text-white hover:bg-red-900/20 hover:border-red-800/50 group h-9"
+          >
+            <LogOut className="w-4 h-4 mr-2 group-hover:text-red-400 transition-colors" />
+            <span className="group-hover:text-red-300 transition-colors text-xs">Çıkış Yap</span>
+          </Button>
+        </div>
+      </aside>
+
+      {/* Mobile Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 bg-black/80 z-40 md:hidden backdrop-blur-sm"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Feedback Modal */}
+      <Dialog open={feedbackModalOpen} onOpenChange={setFeedbackModalOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-800 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white">Vocalize Ekibiyle İletişim</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Görüşlerinizi, önerilerinizi veya yaşadığınız sorunları bizimle paylaşın.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleFeedbackSubmit} className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="feedback-message" className="text-sm font-medium text-slate-200">Mesajınız *</label>
+              <textarea
+                id="feedback-message"
+                rows="4"
+                placeholder="Mesajınızı buraya yazın..."
+                value={feedbackMessage}
+                onChange={(e) => setFeedbackMessage(e.target.value)}
+                className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                required
+              />
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-slate-200 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4" />
+                  Görseller (Opsiyonel)
+                </label>
+                <span className="text-xs text-slate-500">{feedbackImages.length}/3</span>
+              </div>
+              
+              <div className="flex flex-wrap gap-3">
+                {feedbackImages.map((file, idx) => (
+                  <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-700 group">
+                    <img 
+                      src={URL.createObjectURL(file)} 
+                      alt="preview" 
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full p-1 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                
+                {feedbackImages.length < 3 && (
+                  <label className="w-20 h-20 flex flex-col items-center justify-center border border-dashed border-slate-700 rounded-lg cursor-pointer hover:bg-slate-800/50 hover:border-blue-500/50 transition-colors">
+                    <Upload className="w-5 h-5 text-slate-400 mb-1" />
+                    <span className="text-[10px] text-slate-500">Yükle</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      multiple 
+                      className="hidden" 
+                      onChange={handleImageChange}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            <DialogFooter className="mt-2">
+              <Button type="submit" disabled={feedbackLoading} className="bg-blue-600 hover:bg-blue-700 text-white w-full">
+                {feedbackLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Gönder
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+export default AdminSidebar;
