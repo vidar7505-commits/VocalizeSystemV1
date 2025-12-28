@@ -380,12 +380,12 @@ const AdminPanel = () => {
           </div>
 
           <TabsContent value="stars" className="mt-0">
-            <div className="w-full h-[300px]">
+            <div className="w-full h-[250px] sm:h-[300px]">
               {loading ? (<div className="h-full w-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-slate-500 animate-spin" /></div>) : !hasData ? (
                 <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><Star className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz değerlendirme almadınız</h3></div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={ratingDistribution} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <BarChart layout="vertical" data={ratingDistribution} margin={{ top: 5, right: 30, left: 20, bottom: 5 }} barSize={24}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
                     <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} domain={[0, 'auto']} />
                     <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={70} />
@@ -398,12 +398,12 @@ const AdminPanel = () => {
           </TabsContent>
 
           <TabsContent value="types" className="mt-0">
-            <div className="w-full h-[300px]">
+            <div className="w-full h-[250px] sm:h-[300px]">
               {loading ? (<div className="h-full w-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-slate-500 animate-spin" /></div>) : !hasData ? (
                 <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><MessageSquare className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz geri bildirim almadınız</h3></div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={feedbackTypeDistribution} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <BarChart layout="vertical" data={feedbackTypeDistribution} margin={{ top: 5, right: 30, left: 20, bottom: 5 }} barSize={24}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
                     <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                     <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={100} />

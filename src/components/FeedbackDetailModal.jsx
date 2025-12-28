@@ -231,7 +231,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
                 </div>
                 <div className="bg-[#111827] p-4 rounded-lg border border-slate-700/50 flex flex-col gap-2 min-w-[250px]">
                   <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><Hash className="w-3 h-3" /> Teknik Bilgiler</h3>
-                  <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded px-3 py-2"><div className="flex flex-col overflow-hidden flex-1"><span className="text-[10px] text-slate-500">Referans ID</span><code className="text-xs text-indigo-300 font-mono truncate" title={feedback?.id}>{feedback?.id}</code></div><Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400" onClick={() => { navigator.clipboard.writeText(feedback.id); toast({ description: "Kopyalandı" }); }}><Copy className="w-4 h-4" /></Button></div>
+                  <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded px-3 py-2"><div className="flex flex-col overflow-hidden flex-1"><span className="text-[10px] text-slate-500">Referans ID</span><code className="text-[10px] sm:text-xs text-indigo-300 font-mono break-all select-all" title={feedback?.id}>{feedback?.id}</code></div><Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400" onClick={() => { navigator.clipboard.writeText(feedback.id); toast({ description: "Kopyalandı" }); }}><Copy className="w-4 h-4" /></Button></div>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm border-t border-slate-700/50 pt-3 mt-2">

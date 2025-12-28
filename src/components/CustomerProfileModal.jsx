@@ -232,7 +232,7 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
                 <div>
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                         <h3 className="text-lg font-bold text-white">Geri Bildirim Geçmişi ({filteredList.length})</h3>
-                        <div className="flex flex-wrap gap-2 items-center">
+                        <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:w-auto sm:items-center">
                             <Select value={filterType} onValueChange={setFilterType}>
                                 <SelectTrigger className="w-[120px] h-8 text-xs bg-slate-800 border-slate-700"><span className="truncate">{filterType === 'all' ? 'Tüm Tipler' : filterType === 'complaint' ? 'Şikayet' : filterType === 'suggestion' ? 'Öneri' : 'Değerlendirme'}</span></SelectTrigger>
                                 <SelectContent className="bg-slate-800 border-slate-700"><SelectItem value="all">Tümü</SelectItem><SelectItem value="complaint">Şikayet</SelectItem><SelectItem value="suggestion">Öneri</SelectItem><SelectItem value="evaluation">Değerlendirme</SelectItem></SelectContent>

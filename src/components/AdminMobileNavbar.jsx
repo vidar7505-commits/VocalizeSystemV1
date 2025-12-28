@@ -129,9 +129,8 @@ const AdminMobileNavbar = () => {
 
     // İlgili sayfaya git (Örn: Geri bildirim detayına)
     if (notification.related_id) {
-        // Eğer bildirim bir geri bildirim ise, feedback sayfasına git
-        // (Burada senin rotan neyse onu kullanıyoruz, genelde '/admin-panel/feedbacks')
-        navigate('/admin-panel/feedbacks');
+        // ID bilgisini 'state' olarak sayfaya gönderiyoruz
+        navigate('/admin-panel/feedbacks', { state: { openFeedbackId: notification.related_id } });
     }
   };
 

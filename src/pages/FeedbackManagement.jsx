@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAdminContext } from '@/contexts/AdminContext';
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import { cn, formatCustomerName, getCustomerData } from "@/lib/utils";
 const FeedbackManagement = () => {
   const { businessId, selectedBranchId } = useAdminContext();
   const { toast } = useToast();
+  const location = useLocation();
 
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +42,18 @@ const FeedbackManagement = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
   useEffect(() => { if (businessId) fetchFeedbacks(); }, [businessId, selectedBranchId]);
+
+  useEffect(() => {
+    if (location.state?.openFeedbackId && feedbacks.length > 0) {
+      const targetFeedback = feedbacks.find(f => f.id === location.state.openFeedbackId);
+      if (targetFeedback) {
+        setSelectedFeedback(targetFeedback);
+        setIsDetailModalOpen(true);
+        // State'i temizle ki sürekli açılmasın
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, feedbacks]);
 
   const fetchFeedbacks = async () => {
     if (!businessId) return;
