@@ -44,28 +44,28 @@ const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass,
   }
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900 p-5 shadow-sm transition-all hover:border-slate-700 h-[160px] flex flex-col justify-between group">
-      <div className="flex justify-between items-start relative z-20">
-        <div>
-          <p className="text-sm font-medium text-slate-400">{title}</p>
+    <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900 p-3 sm:p-5 shadow-sm transition-all hover:border-slate-700 h-[160px] flex flex-col justify-between group">
+      <div className="flex justify-between items-start relative z-20 gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm font-medium text-slate-400 truncate">{title}</p>
           {loading ? (
-            <div className="h-8 w-24 bg-slate-800 rounded animate-pulse mt-1"></div>
+            <div className="h-8 w-20 bg-slate-800 rounded animate-pulse mt-1"></div>
           ) : (
-            <h3 className="text-3xl font-bold text-white mt-1 tracking-tight">{value}</h3>
+            <h3 className="text-2xl sm:text-3xl font-bold text-white mt-1 tracking-tight truncate">{value}</h3>
           )}
         </div>
-        <div className={`p-2 rounded-lg ${colorClass} bg-opacity-10 border border-white/5`}>
-          <Icon className={`w-5 h-5 ${colorClass.replace('bg-', 'text-')}`} />
+        <div className={`p-2 rounded-lg ${colorClass} bg-opacity-10 border border-white/5 shrink-0`}>
+          <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${colorClass.replace('bg-', 'text-')}`} />
         </div>
       </div>
-      <div className="relative z-20 flex items-center gap-2 mt-1">
+      <div className="relative z-20 flex items-center gap-2 mt-1 flex-wrap">
         {!loading && (
-          <div className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${sentimentColor}`}>
-            <TrendIcon className="w-3 h-3" />
-            <span>{delta}</span>
+          <div className={`flex items-center gap-1 text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full border ${sentimentColor}`}>
+            <TrendIcon className="w-3 h-3 shrink-0" />
+            <span className="truncate">{delta}</span>
           </div>
         )}
-        <span className="text-xs text-slate-500">geçen döneme göre</span>
+        <span className="text-[10px] sm:text-xs text-slate-500 hidden sm:inline">geçen döneme göre</span>
       </div>
       <div className="absolute bottom-0 left-0 right-0 h-24 opacity-20 pointer-events-none z-10 group-hover:opacity-30 transition-opacity">
         {!loading && sparkData && (
@@ -200,121 +200,63 @@ const AdminPanel = () => {
         rating: { value: ratingCurr.toFixed(1), delta: ratingDelta.val, type: ratingDelta.type }
       });
 
-      const bucketCount = dateRange === 'Bugün' ? 24 : (dateRange === 'Son 7 Gün' ? 7 : 15);
-      
-      const generateSparkline = (filterFn) => {
-          const daysMap = new Map();
-          const startT = currentStart.getTime();
-          const endT = new Date().getTime(); 
-          const step = (endT - startT) / (bucketCount || 10);
-          for (let i = 0; i < bucketCount; i++) daysMap.set(i, { count: 0, sum: 0 });
-          
-          currentData.filter(filterFn).forEach(f => {
-              const t = new Date(f.created_at).getTime();
-              const idx = Math.min(Math.floor((t - startT) / step), bucketCount - 1);
-              if (idx >= 0) {
-                 const item = daysMap.get(idx);
-                 item.count += 1;
-                 item.sum += (f.rating || f.overall_rating || 0);
-              }
-          });
-          return Array.from(daysMap.values()).map(v => ({ value: v.count }));
-      };
-      
-      const generateRatingSparkline = () => {
-        const startT = currentStart.getTime();
-        const endT = new Date().getTime();
-        const step = (endT - startT) / (bucketCount || 10);
-        const daysMap = new Map();
-        for (let i = 0; i < bucketCount; i++) daysMap.set(i, { count: 0, sum: 0 });
-        currentData.filter(f => f.rating || f.overall_rating).forEach(f => {
-          const t = new Date(f.created_at).getTime();
-          const idx = Math.min(Math.floor((t - startT) / step), bucketCount - 1);
-          if (idx >= 0) {
-            const item = daysMap.get(idx);
-            item.count++;
-            item.sum += (f.rating || f.overall_rating);
+      const sparkDataMap = new Map();
+      rawData.forEach(f => {
+          const day = new Date(f.created_at).toISOString().split('T')[0];
+          if (!sparkDataMap.has(day)) {
+              sparkDataMap.set(day, { date: day, total: 0, complaints: 0, resolved: 0, rating: 0, ratingCount: 0 });
           }
-        });
-        return Array.from(daysMap.values()).map(v => ({ value: v.count > 0 ? Number((v.sum / v.count).toFixed(1)) : 0 }));
-      };
+          const entry = sparkDataMap.get(day);
+          entry.total += 1;
+          if (f.feedback_type === 'complaint' && isPending(f.status)) entry.complaints += 1;
+          if (f.status === 'resolved') entry.resolved += 1;
+          if (f.rating || f.overall_rating) { entry.rating += f.rating || f.overall_rating; entry.ratingCount += 1; }
+      });
+      const sparkList = Array.from(sparkDataMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
+      sparkList.forEach(e => { if (e.ratingCount > 0) e.rating = e.rating / e.ratingCount; else e.rating = 0; });
 
       setSparklineData({
-          total: generateSparkline(() => true),
-          complaints: generateSparkline(f => f.feedback_type === 'complaint' && isPending(f.status)),
-          resolved: generateSparkline(f => f.status === 'resolved'),
-          rating: generateRatingSparkline()
+        total: sparkList.map(e => ({ value: e.total })),
+        complaints: sparkList.map(e => ({ value: e.complaints })),
+        resolved: sparkList.map(e => ({ value: e.resolved })),
+        rating: sparkList.map(e => ({ value: e.rating }))
       });
 
-      const starCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+      const ratingCount = {};
       currentData.forEach(f => {
           const r = f.rating || f.overall_rating;
-          if (r && starCounts[r] !== undefined) starCounts[r]++;
+          if (r > 0) ratingCount[r] = (ratingCount[r] || 0) + 1;
       });
+      const dist = [
+          { name: '5 Yıldız', count: ratingCount[5] || 0, fill: '#10b981' },
+          { name: '4 Yıldız', count: ratingCount[4] || 0, fill: '#14b8a6' },
+          { name: '3 Yıldız', count: ratingCount[3] || 0, fill: '#f59e0b' },
+          { name: '2 Yıldız', count: ratingCount[2] || 0, fill: '#f97316' },
+          { name: '1 Yıldız', count: ratingCount[1] || 0, fill: '#ef4444' }
+      ];
+      setRatingDistribution(dist);
 
-      setRatingDistribution([
-          { name: '5 Yıldız', count: starCounts[5], fill: '#22c55e' }, 
-          { name: '4 Yıldız', count: starCounts[4], fill: '#4ade80' }, 
-          { name: '3 Yıldız', count: starCounts[3], fill: '#facc15' }, 
-          { name: '2 Yıldız', count: starCounts[2], fill: '#f87171' }, 
-          { name: '1 Yıldız', count: starCounts[1], fill: '#ef4444' }, 
-      ]);
+      const typeDist = {};
+      currentData.forEach(f => {
+          const type = f.feedback_type === 'evaluation' || f.feedback_type === 'review' || f.feedback_type === 'rating' ? 'evaluation' : f.feedback_type;
+          typeDist[type] = (typeDist[type] || 0) + 1;
+      });
+      const typeNames = { complaint: 'Şikayet', suggestion: 'Öneri', evaluation: 'Değerlendirme' };
+      const typeColors = { complaint: '#ef4444', suggestion: '#3b82f6', evaluation: '#f59e0b' };
+      setFeedbackTypeDistribution(Object.entries(typeDist).map(([k, v]) => ({ name: typeNames[k] || k, count: v, fill: typeColors[k] })));
 
-      const typeCounts = {
-        complaint: currentData.filter(f => f.feedback_type === 'complaint').length,
-        suggestion: currentData.filter(f => f.feedback_type === 'suggestion').length,
-        evaluation: currentData.filter(f => ['evaluation', 'rating', 'review'].includes(f.feedback_type)).length
-      };
-
-      setFeedbackTypeDistribution([
-        { name: 'Şikayet', count: typeCounts.complaint, fill: '#ef4444' },
-        { name: 'Öneri', count: typeCounts.suggestion, fill: '#3b82f6' },
-        { name: 'Değerlendirme', count: typeCounts.evaluation, fill: '#eab308' }
-      ]);
-
-      let recentQuery = supabase.from('feedbacks').select(`
-            id, created_at, status, feedback_type, message, rating, overall_rating, 
-            customer_name, customer_email, customer_phone, customer_profile_id,
-            manager_note, flag_vip_customer, flag_sensitive_customer,
-            feedback_images, image_urls, receipt_images, receipt_url, product_image_url,
-            general_eval_rating, general_eval_comment, manager_note_updated_at, manager_note_updated_by,
-            business_id, branch_id, resolved_at, updated_at,
-            branches (id, branch_name_tr),
-            customer_profiles (
-              id, name, email, phone, customer_number, created_at, updated_at, 
-              flag_vip_customer, flag_sensitive_customer, admin_note, 
-              user:user_id(first_name, last_name)
-            ),
-            manager_note_updater:manager_note_updated_by (first_name, last_name)
-        `).eq('business_id', businessId).order('created_at', { ascending: false }).limit(10);
-
-      if (selectedBranchId !== 'all') recentQuery = recentQuery.eq('branch_id', selectedBranchId);
-      const { data: recentData } = await recentQuery;
-      setRecentFeedbacks(recentData || []);
-
-    } catch (error) {
-      console.error("Dashboard data fetch error:", error);
-      toast({ variant: "destructive", title: "Hata", description: "Veriler yüklenemedi." });
-    } finally {
-      setLoading(false);
+      const recentFeedbackList = await (async () => {
+          let q = supabase.from('feedbacks').select('*, branches(id, branch_name_tr), customer_profiles(id, admin_note, flag_vip_customer, flag_sensitive_customer)').eq('business_id', businessId);
+          if (selectedBranchId !== 'all') q = q.eq('branch_id', selectedBranchId);
+          const { data } = await q.order('created_at', { ascending: false }).limit(5);
+          return data || [];
+      })();
+      setRecentFeedbacks(recentFeedbackList);
       setLoadingFeedbacks(false);
-    }
-  }, [businessId, selectedBranchId, dateRange, getDateIntervals, toast]);
+    } catch (e) { console.error("Error:", e); setLoadingFeedbacks(false); } finally { setLoading(false); }
+  }, [businessId, selectedBranchId, getDateIntervals]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  useEffect(() => {
-    if (!businessId) return;
-    const channel = supabase.channel('admin-dashboard-realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks', filter: `business_id=eq.${businessId}` }, () => fetchData())
-        .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [businessId, fetchData]);
-
-  const handleStatusChange = (id, newStatus) => {
-      setRecentFeedbacks(prev => prev.map(f => f.id === id ? { ...f, status: newStatus } : f));
-      fetchData(); 
-  };
 
   const handleFeedbackClick = (feedback) => {
     setSelectedFeedback(feedback);
@@ -323,156 +265,162 @@ const AdminPanel = () => {
 
   const handleOpenCustomerProfile = (e, feedback) => {
     e.stopPropagation();
-    setSelectedCustomer({ id: feedback.customer_profile_id, email: getCustomerData(feedback, 'email') });
+    setSelectedCustomer({ id: feedback.customer_profile_id, email: feedback.customer_email });
     setCustomerModalOpen(true);
   };
 
-  const handleFlagsUpdate = (customerId, newFlags) => {
-      setRecentFeedbacks(prev => prev.map(f => {
-          if (f.customer_profile_id === customerId) {
-               return { 
-                 ...f, 
-                 customer_profiles: { 
-                   ...f.customer_profiles, 
-                   flag_vip_customer: newFlags.vip, 
-                   flag_sensitive_customer: newFlags.sensitive,
-                   admin_note: newFlags.admin_note 
-                 }, 
-                 flag_vip_customer: newFlags.vip,
-                 flag_sensitive_customer: newFlags.sensitive 
-               };
-          }
-          return f;
-      }));
+  const handleStatusChange = (feedbackId, newStatus) => {
+    setRecentFeedbacks(prev => prev.map(f => f.id === feedbackId ? { ...f, status: newStatus } : f));
+  };
+
+  const handleFlagsUpdate = (customerId, flags, email) => {
+    setRecentFeedbacks(prev => prev.map(f => 
+      f.customer_profile_id === customerId 
+        ? { ...f, customer_profiles: { ...f.customer_profiles, ...flags } }
+        : f
+    ));
   };
 
   return (
-    <div className="mx-auto max-w-7xl pb-10 px-4 pt-20 md:px-6 md:pt-0 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white overflow-x-hidden">
       <AdminMobileNavbar />
-      <div className="mt-4 flex flex-col justify-between gap-6 md:mt-0 md:flex-row md:items-start mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">{displayTitle}</h1>
-          <p className="text-slate-400 text-sm">İşletmenizin performansını ve müşteri geri bildirimlerini anında takip edin</p>
-        </div>
-        <div className="w-full md:w-48 shrink-0">
+      <div className="max-w-full px-3 sm:px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white">{displayTitle}</h1>
+            <p className="text-sm text-slate-400 mt-1">Geri bildirim analitikleri ve aktiviteler</p>
+          </div>
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="bg-slate-800 border-slate-700 text-white h-10"><div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-slate-400" /><span>{dateOptions[dateRange]}</span></div></SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700 text-white">{Object.entries(dateOptions).map(([key, value]) => (<SelectItem key={key} value={key}>{value}</SelectItem>))}</SelectContent>
+            <SelectTrigger className="w-full sm:w-48 bg-slate-800 border-slate-700 text-slate-200">
+              <span className="text-sm">{dateRange}</span>
+            </SelectTrigger>
+            <SelectContent className="bg-slate-800 border-slate-700">
+              {Object.values(dateOptions).map(opt => <SelectItem key={opt} value={opt} className="text-slate-200">{opt}</SelectItem>)}
+            </SelectContent>
           </Select>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <SparklineCard title="Toplam Bildirim" value={`${metrics.total.value}`} delta={metrics.total.delta} deltaType={metrics.total.type} icon={MessageSquare} colorClass="bg-blue-500" sparkData={sparklineData.total} loading={loading}/>
-        <SparklineCard title="Bekleyen Şikayet" value={`${metrics.complaints.value}`} delta={metrics.complaints.delta} deltaType={metrics.complaints.type} icon={AlertTriangle} colorClass="bg-red-500" sparkData={sparklineData.complaints} loading={loading} isInverseMetric={true}/>
-        <SparklineCard title="Çözülenler" value={`${metrics.resolved.value}`} delta={metrics.resolved.delta} deltaType={metrics.resolved.type} icon={CheckCircle2} colorClass="bg-green-500" sparkData={sparklineData.resolved} loading={loading}/>
-        <SparklineCard title="Ort. Puan" value={metrics.rating.value} delta={metrics.rating.delta} deltaType={metrics.rating.type} icon={Star} colorClass="bg-yellow-500" sparkData={sparklineData.rating} loading={loading}/>
-      </div>
-
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8">
-        <Tabs defaultValue="stars" className="w-full">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div><h2 className="text-white font-bold text-xl mb-1">Analiz Grafikleri</h2><p className="text-slate-400 text-sm">Müşteri geri bildirimlerinin detaylı dağılımı</p></div>
-            <TabsList className="bg-slate-800 border-slate-700">
-              <TabsTrigger value="stars" className="data-[state=active]:bg-slate-700"><Star className="w-4 h-4 mr-2" />Yıldız Dağılımı</TabsTrigger>
-              <TabsTrigger value="types" className="data-[state=active]:bg-slate-700"><MessageSquare className="w-4 h-4 mr-2" />Geri Bildirim Tipleri</TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="stars" className="mt-0">
-            <div className="w-full h-[300px]">
-              {loading ? (<div className="h-full w-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-slate-500 animate-spin" /></div>) : !hasData ? (
-                <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><Star className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz değerlendirme almadınız</h3></div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={ratingDistribution} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
-                    <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} domain={[0, 'auto']} />
-                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={70} />
-                    <Tooltip formatter={(value) => [value, 'Adet']} labelFormatter={() => ''} contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} cursor={{ fill: '#ffffff10' }} />
-                    <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={32}>{ratingDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}<LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={12} /></Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="types" className="mt-0">
-            <div className="w-full h-[300px]">
-              {loading ? (<div className="h-full w-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-slate-500 animate-spin" /></div>) : !hasData ? (
-                <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><MessageSquare className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz geri bildirim almadınız</h3></div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={feedbackTypeDistribution} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
-                    <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={100} />
-                    <Tooltip formatter={(value) => [value, 'Adet']} labelFormatter={() => ''} contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} cursor={{ fill: '#ffffff10' }} />
-                    <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={40}>{feedbackTypeDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}<LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={12} /></Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-white">Son Aktiviteler</h2>
-          <Button variant="ghost" className="text-slate-400 hover:text-white" onClick={() => navigate('/admin-panel/feedbacks')}>Tümünü Gör <ChevronRight className="w-4 h-4 ml-1" /></Button>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+          <SparklineCard title="Toplam" value={metrics.total.value} delta={metrics.total.delta} deltaType={metrics.total.type} icon={MessageSquare} colorClass="bg-blue-600" sparkData={sparklineData.total} loading={loading} />
+          <SparklineCard title="Şikayetler" value={metrics.complaints.value} delta={metrics.complaints.delta} deltaType={metrics.complaints.type} icon={AlertTriangle} colorClass="bg-red-600" sparkData={sparklineData.complaints} loading={loading} isInverseMetric={true} />
+          <SparklineCard title="Çözüldü" value={metrics.resolved.value} delta={metrics.resolved.delta} deltaType={metrics.resolved.type} icon={CheckCircle2} colorClass="bg-emerald-600" sparkData={sparklineData.resolved} loading={loading} />
+          <SparklineCard title="Puanlama" value={metrics.rating.value} delta={metrics.rating.delta} deltaType={metrics.rating.type} icon={Star} colorClass="bg-yellow-600" sparkData={sparklineData.rating} loading={loading} />
         </div>
 
-        {loadingFeedbacks ? (<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>) : recentFeedbacks.length === 0 ? (<div className="text-center py-8 text-slate-500">Henüz aktivite yok.</div>) : (
-            <div className="space-y-3">
-                {recentFeedbacks.map((f) => {
-                   const customerName = getCustomerData(f, 'name');
-                   const smartName = formatCustomerName(customerName);
-                   const isVip = f.flag_vip_customer || f.customer_profiles?.flag_vip_customer;
-                   const isSensitive = f.flag_sensitive_customer || f.customer_profiles?.flag_sensitive_customer;
-                   const rating = f.rating || f.overall_rating;
-                   const hasImgs = hasImages(f);
-                   const isEscalated = f.status === 'escalated';
-                   const hasManagerNote = !!f.manager_note;
-                   const hasCustomerProfileNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
+        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold text-white mb-4">Analitikler</h2>
+          <Tabs defaultValue="ratings" className="w-full">
+            <TabsList className="w-full overflow-x-auto bg-slate-800 border-b border-slate-700 rounded-none">
+              <TabsTrigger value="ratings" className="min-w-max">Puanlamalar</TabsTrigger>
+              <TabsTrigger value="types" className="min-w-max">Geri Bildirim Türleri</TabsTrigger>
+            </TabsList>
 
-                   return (
-                    <div key={f.id} onClick={() => handleFeedbackClick(f)} className={cn("group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
-                      <div className="flex flex-col md:flex-row gap-4 items-start">
-                        <div className="flex-1 w-full min-w-0 pr-0 md:pr-4"> 
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            {getTypeBadge(f.feedback_type)}
-                            {getStatusBadge(f.status)}
-                            <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0"><Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                            <Badge variant="outline" className="text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[200px]">{f.branches?.branch_name_tr || "Şube Bilinmiyor"}</Badge>
-                          </div>
-                          <div className="flex gap-3 mt-1">
-                            <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${f.feedback_type === 'complaint' ? 'bg-red-500' : f.feedback_type === 'suggestion' ? 'bg-blue-500' : 'bg-yellow-500'}`} />
-                            <div className="flex-1"><p className="text-slate-200 text-sm line-clamp-2 leading-relaxed">{f.message || <span className="text-slate-600 italic">Mesaj içeriği yok</span>}</p>{rating > 0 && (<div className="flex items-center gap-0.5 mt-1.5">{[...Array(5)].map((_, i) => (<Star key={i} className={`w-3 h-3 ${i < rating ? 'fill-yellow-500 text-yellow-500' : 'fill-none text-slate-700'}`} />))}</div>)}</div>
+            <TabsContent value="ratings" className="mt-4">
+              <div className="w-full h-[250px] sm:h-[300px]">
+                {loading ? (<div className="h-full w-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-slate-500 animate-spin" /></div>) : !hasData ? (
+                  <div className="h-full w-full flex flex-col items-center justify-center text-center p-4 sm:p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><Star className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz değerlendirme almadınız</h3></div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart layout="vertical" data={ratingDistribution} margin={{ top: 5, right: 20, left: 50, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
+                      <XAxis type="number" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} domain={[0, 'auto']} />
+                      <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} width={45} />
+                      <Tooltip formatter={(value) => [value, 'Adet']} labelFormatter={() => ''} contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#ffffff', fontSize: '12px' }} itemStyle={{ color: '#ffffff' }} cursor={{ fill: '#ffffff10' }} />
+                      <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={28}>{ratingDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}<LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={11} /></Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="types" className="mt-4">
+              <div className="w-full h-[250px] sm:h-[300px]">
+                {loading ? (<div className="h-full w-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-slate-500 animate-spin" /></div>) : !hasData ? (
+                  <div className="h-full w-full flex flex-col items-center justify-center text-center p-4 sm:p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><MessageSquare className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz geri bildirim almadınız</h3></div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart layout="vertical" data={feedbackTypeDistribution} margin={{ top: 5, right: 20, left: 80, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
+                      <XAxis type="number" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                      <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} width={75} />
+                      <Tooltip formatter={(value) => [value, 'Adet']} labelFormatter={() => ''} contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#ffffff', fontSize: '12px' }} itemStyle={{ color: '#ffffff' }} cursor={{ fill: '#ffffff10' }} />
+                      <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={36}>{feedbackTypeDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}<LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={11} /></Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 md:mb-6">
+            <h2 className="text-lg md:text-xl font-bold text-white">Son Aktiviteler</h2>
+            <Button variant="ghost" className="text-slate-400 hover:text-white text-sm" onClick={() => navigate('/admin-panel/feedbacks')}>Tümünü Gör <ChevronRight className="w-4 h-4 ml-1" /></Button>
+          </div>
+
+          {loadingFeedbacks ? (<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>) : recentFeedbacks.length === 0 ? (<div className="text-center py-8 text-slate-500 text-sm">Henüz aktivite yok.</div>) : (
+            <div className="space-y-3">
+              {recentFeedbacks.map((f) => {
+                const customerName = getCustomerData(f, 'name');
+                const smartName = formatCustomerName(customerName);
+                const isVip = f.flag_vip_customer || f.customer_profiles?.flag_vip_customer;
+                const isSensitive = f.flag_sensitive_customer || f.customer_profiles?.flag_sensitive_customer;
+                const rating = f.rating || f.overall_rating;
+                const hasImgs = hasImages(f);
+                const isEscalated = f.status === 'escalated';
+                const hasManagerNote = !!f.manager_note;
+                const hasCustomerProfileNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
+
+                return (
+                  <div key={f.id} onClick={() => handleFeedbackClick(f)} className={cn("group rounded-xl p-3 sm:p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
+                    <div className="flex flex-col md:flex-row gap-3 sm:gap-4 items-start">
+                      <div className="flex-1 w-full min-w-0 pr-0 md:pr-4">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          {getTypeBadge(f.feedback_type)}
+                          {getStatusBadge(f.status)}
+                          <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0 shrink-0"><Calendar className="w-3 h-3 shrink-0" />{new Date(f.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                          <Badge variant="outline" className="text-[10px] sm:text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[140px] md:max-w-[200px]">{f.branches?.branch_name_tr || "Şube Bilinmiyor"}</Badge>
+                        </div>
+                        <div className="flex gap-2 sm:gap-3 mt-1">
+                          <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${f.feedback_type === 'complaint' ? 'bg-red-500' : f.feedback_type === 'suggestion' ? 'bg-blue-500' : 'bg-yellow-500'}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-slate-200 text-xs sm:text-sm line-clamp-2 leading-relaxed break-words">{f.message || <span className="text-slate-600 italic">Mesaj içeriği yok</span>}</p>
+                            {rating > 0 && (
+                              <div className="flex items-center gap-0.5 mt-1.5">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star key={i} className={`w-3 h-3 ${i < rating ? 'fill-yellow-500 text-yellow-500' : 'fill-none text-slate-700'}`} />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="w-full md:w-auto md:min-w-[200px] flex md:flex-col justify-between md:items-end gap-2 pl-0 md:pl-4 md:border-l border-slate-800/50 mt-4 md:mt-0">
-                           <div className="flex items-center gap-2 group/customer hover:bg-slate-800 p-1.5 rounded-lg -ml-1.5 md:ml-0 transition-colors mr-auto md:mr-0 cursor-pointer" onClick={(e) => handleOpenCustomerProfile(e, f)}>
-                             <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 group-hover/customer:border-indigo-500/50 transition-colors"><User className="w-4 h-4 text-slate-400 group-hover/customer:text-indigo-400" /></div>
-                             <div className="flex flex-col items-start md:items-end">
-                                <span className={cn("text-sm font-medium transition-colors truncate max-w-[140px] flex items-center gap-1", hasCustomerProfileNote ? "text-blue-400 font-bold" : "text-slate-300 group-hover/customer:text-indigo-300")} title={hasCustomerProfileNote ? "Müşteri Notu Mevcut" : customerName}>
-                                  {smartName}
-                                </span>
-                             </div>
-                           </div>
-                           <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
-                              {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
-                              {hasManagerNote && (<div className="flex items-center justify-center w-6 h-6 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30"><StickyNote className="w-3.5 h-3.5 fill-current" /></div>)}
-                              {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}
-                              {isSensitive && (<div className="flex items-center gap-1 px-3 py-1 bg-orange-900/30 rounded text-xs text-orange-300 border border-orange-500/30 font-medium"><AlertTriangle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Hassas</span></div>)}
-                           </div>
+                      </div>
+                      <div className="w-full md:w-auto md:min-w-[180px] flex md:flex-col justify-between md:items-end gap-2 pl-0 md:pl-4 md:border-l border-slate-800/50 mt-3 md:mt-0">
+                        <div className="flex items-center gap-2 group/customer hover:bg-slate-800 p-1 rounded-lg -ml-1 transition-colors mr-auto md:mr-0 cursor-pointer" onClick={(e) => handleOpenCustomerProfile(e, f)}>
+                          <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 group-hover/customer:border-indigo-500/50 transition-colors">
+                            <User className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400 group-hover/customer:text-indigo-400" />
+                          </div>
+                          <div className="flex flex-col items-start md:items-end min-w-0">
+                            <span className={cn("text-xs sm:text-sm font-medium transition-colors truncate flex items-center gap-1", hasCustomerProfileNote ? "text-blue-400 font-bold" : "text-slate-300 group-hover/customer:text-indigo-300")} title={hasCustomerProfileNote ? "Müşteri Notu Mevcut" : customerName}>
+                              {smartName}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-auto flex-wrap justify-end">
+                          {hasImgs && (<div className="flex items-center gap-0.5 px-1.5 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700 shrink-0"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline text-xs">Görsel</span></div>)}
+                          {hasManagerNote && (<div className="flex items-center justify-center w-6 h-6 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0"><StickyNote className="w-3.5 h-3.5 fill-current" /></div>)}
+                          {isVip && (<div className="flex items-center gap-0.5 px-2 py-1 bg-purple-900/30 rounded text-[10px] text-purple-300 border border-purple-500/30 font-medium shrink-0"><Crown className="w-3 h-3" /> <span className="hidden sm:inline text-xs">VIP</span></div>)}
+                          {isSensitive && (<div className="flex items-center gap-0.5 px-2 py-1 bg-orange-900/30 rounded text-[10px] text-orange-300 border border-orange-500/30 font-medium shrink-0"><AlertTriangle className="w-3 h-3" /> <span className="hidden sm:inline text-xs">Hassas</span></div>)}
                         </div>
                       </div>
                     </div>
-                   );
-                })}
+                  </div>
+                );
+              })}
             </div>
-        )}
+          )}
+        </div>
       </div>
       {selectedFeedback && <FeedbackDetailModal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} feedback={selectedFeedback} onStatusChange={handleStatusChange} />}
       {customerModalOpen && <CustomerProfileModal isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} customerProfileId={selectedCustomer?.id} customerEmail={selectedCustomer?.email} businessId={businessId} onFlagsUpdate={handleFlagsUpdate} />}
