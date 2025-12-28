@@ -11,7 +11,7 @@ import {
   Settings, MessageSquare, MapPin, Mail, Phone, Lock, LogOut, Trash2, X, Star, ChevronDown,
   AlertTriangle, Lightbulb, Home, List, TrendingUp, Menu, QrCode, Info, AlertCircle, Filter,
   MessageCircle, Loader2, Image as ImageIcon, Upload, PieChart, BarChart, Activity, UserPlus, LogIn,
-  Building2, CheckCircle2, ChevronRight, Edit2, Maximize2, KeyRound, Shield, HelpCircle
+  Building2, CheckCircle2, ChevronRight, Edit2, Maximize2, KeyRound, Shield, HelpCircle, ArrowRight
 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -101,6 +101,8 @@ export default function CustomerPanel() {
   const [hasScannedQR, setHasScannedQR] = useState(false);
   const [qrInfo, setQrInfo] = useState(null);
   const [userProfile, setUserProfile] = useState({});
+  const [selectedBusinessForBranches, setSelectedBusinessForBranches] = useState(null);
+  const [showBranchSelector, setShowBranchSelector] = useState(false);
 
   const [stats, setStats] = useState({ 
     total: 0, avgRating: 0, topBranch: '', topBranchCount: 0, 
@@ -282,7 +284,13 @@ export default function CustomerPanel() {
         suggest: 'Öner',
         successMsg: 'Öneriniz başarıyla gönderildi!',
         errorMsg: 'Lütfen tüm alanları doldurunuz.'
-      }
+      },
+      visitedBusinesses: 'Ziyaret Edilen İşletmeler',
+      noVisitedBusiness: 'Henüz bir işletme ziyaret etmediniz',
+      startWithQR: 'QR kod okutarak başlayın ve geri bildirim gönderin',
+      selectBranchForFeedback: 'Geri bildirim göndermek için şube seçin',
+      loading: 'Yükleniyor...',
+      branchSelection: 'Şube Seçimi'
     },
     en: {
       welcome: 'Welcome',
@@ -422,7 +430,13 @@ export default function CustomerPanel() {
         suggest: 'Suggest',
         successMsg: 'Your suggestion has been sent!',
         errorMsg: 'Please fill in all fields.'
-      }
+      },
+      visitedBusinesses: 'Visited Businesses',
+      noVisitedBusiness: 'No visited businesses yet',
+      startWithQR: 'Scan a QR code to get started and send feedback',
+      selectBranchForFeedback: 'Select a branch to send feedback',
+      loading: 'Loading...',
+      branchSelection: 'Branch Selection'
     }
   };
 
@@ -510,13 +524,30 @@ export default function CustomerPanel() {
     init();
   }, [businessParam, branchParam, qrParam, guestParam, authUser, authLoading]);
 
+  // ========== REFACTORED: localStorage FILTER ==========
   const fetchBusinesses = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from('businesses').select('id, business_name');
+      // Get visited businesses from localStorage
+      const visitedBusinessesJson = localStorage.getItem('vocalize_visited_businesses');
+      const visitedIds = visitedBusinessesJson ? JSON.parse(visitedBusinessesJson) : [];
+      
+      // If no visited businesses, return empty state
+      if (!visitedIds || visitedIds.length === 0) {
+        setBusinesses([]);
+        return;
+      }
+      
+      // Fetch only visited businesses from Supabase
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('id, business_name')
+        .in('id', visitedIds);
+        
       if (error) throw error;
       setBusinesses(data || []);
     } catch (error) {
       console.error('Error fetching businesses:', error);
+      setBusinesses([]);
     }
   }, []);
 
@@ -648,6 +679,56 @@ export default function CustomerPanel() {
     if (brId) newParams.set('branch', brId); else newParams.delete('branch');
     navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
     if (isGuest) localStorage.setItem('vocalize_guest_branch_id', brId);
+  };
+
+  // ========== REFACTORED: BUSINESS CARD CLICK HANDLER (Guest Navigation Fix) ==========
+  const handleBusinessCardClick = async (businessId) => {
+    try {
+      // Fetch branches for this business
+      const { data: branchesData, error } = await supabase
+        .from('branches')
+        .select('id, branch_name_tr')
+        .eq('business_id', businessId)
+        .eq('is_active', true);
+
+      if (error) throw error;
+
+      if (!branchesData || branchesData.length === 0) {
+        toast({ 
+          title: language === 'tr' ? 'Uyarı' : 'Warning', 
+          description: language === 'tr' ? 'Bu işletme için şube bulunamadı' : 'No branches found for this business',
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Set branches and show branch selector
+      setBranches(branchesData);
+      setSelectedBusinessForBranches(businessId);
+      setShowBranchSelector(true);
+
+    } catch (err) {
+      console.error('Error loading branches:', err);
+      toast({ 
+        title: language === 'tr' ? 'Hata' : 'Error', 
+        description: language === 'tr' ? 'Şubeler yüklenirken hata oluştu' : 'Error loading branches',
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handle branch selection from modal
+  const handleBranchSelectForFeedback = (branchId) => {
+    setShowBranchSelector(false);
+    
+    // Navigate to feedback form with selected business and branch
+    const params = new URLSearchParams();
+    params.set('business', selectedBusinessForBranches);
+    params.set('branch', branchId);
+    params.set('lang', language);
+    if (isGuest) params.set('guest', 'true');
+    
+    navigate(`/feedback?${params.toString()}`);
   };
 
   const proceedToFeedback = (type) => {
@@ -847,7 +928,6 @@ export default function CustomerPanel() {
   };
 
   const handleSoftDeleteAccount = async () => {
-    // Checkbox kontrolü
     if (!deleteAccountConfirmed) {
       toast({ 
         title: language === 'tr' ? 'Hata' : 'Error', 
@@ -861,7 +941,6 @@ export default function CustomerPanel() {
     
     setIsDeletingAccount(true);
     try {
-      // RPC Fonksiyonunu Çağır (Hem profili anonimleştirir hem auth hesabını siler)
       const { error } = await supabase.rpc('delete_user_account');
       
       if (error) throw error;
@@ -874,10 +953,8 @@ export default function CustomerPanel() {
       
       setShowSettingsModal(false);
       
-      // Token'ı temizle ve çıkış yap
       await signOut();
       
-      // Ana sayfaya yönlendir
       navigate('/', { replace: true });
       
     } catch (err) {
@@ -917,6 +994,22 @@ export default function CustomerPanel() {
       <h3 className="text-xl md:text-2xl font-bold text-white mb-3 break-words">{title}</h3>
       <p className="text-slate-400 mb-8 max-w-lg mx-auto break-words leading-relaxed">{t.guestCTA.subtext}</p>
       <Button onClick={handleRegisterClick} className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-6 rounded-xl font-bold text-lg hover:scale-105"><UserPlus className="mr-2 h-5 w-5" /> {t.guestCTA.button}</Button>
+    </div>
+  );
+
+  // ========== REFACTORED: EMPTY STATE COMPONENT ==========
+  const EmptyStateVisitedBusinesses = () => (
+    <div className="bg-slate-900/50 border border-dashed border-slate-700 rounded-xl p-12 md:p-16 text-center animate-in fade-in zoom-in-95 duration-500">
+      <div className="bg-slate-800/80 p-8 rounded-full inline-flex mb-6 shadow-lg">
+        <QrCode className="h-12 w-12 text-teal-500 animate-pulse" />
+      </div>
+      <h3 className="text-2xl md:text-3xl font-bold text-white mb-4 break-words">{t.noVisitedBusiness}</h3>
+      <p className="text-slate-400 mb-2 max-w-lg mx-auto break-words leading-relaxed text-base">
+        {t.startWithQR}
+      </p>
+      <p className="text-slate-500 text-sm max-w-lg mx-auto break-words leading-relaxed">
+        {language === 'tr' ? 'İşletmelerin QR kodlarını okutarak başlayabilirsiniz.' : 'You can get started by scanning QR codes from businesses.'}
+      </p>
     </div>
   );
 
@@ -978,41 +1071,69 @@ export default function CustomerPanel() {
               ) : (
                 <>
                   <div className="bg-slate-800/30 border border-slate-700/20 rounded-lg p-4 mb-6"><div className="text-slate-400 text-sm leading-relaxed text-center space-y-1"><p>{t.qrAutoDetect1}</p><p>{t.qrAutoDetect2}</p><p className="text-slate-500 text-xs opacity-70">{t.qrAutoDetect3}</p></div></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 bg-slate-900/50 p-6 rounded-xl border border-slate-800">
-                    <div>
-                      <label className="text-sm text-slate-400 mb-2 block font-semibold">{t.selectBusiness}</label>
-                      <div className="relative">
-                        <select value={selectedBusiness} onChange={handleBusinessChange} className="bg-slate-800 border border-slate-700 text-white rounded-lg p-3 w-full focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition appearance-none pr-10">
-                          <option value="">{t.selectPlaceholder}</option>
-                          {businesses.map(biz => <option key={biz.id} value={biz.id}>{biz.business_name}</option>)}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+                  
+                  {/* REFACTORED: Visited Businesses Section */}
+                  <div className="mb-8">
+                    <h2 className="text-2xl font-bold text-white mb-6">{t.visitedBusinesses}</h2>
+                    {businesses.length === 0 ? (
+                      <EmptyStateVisitedBusinesses />
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {businesses.map((biz) => (
+                          <button
+                            key={biz.id}
+                            onClick={() => handleBusinessCardClick(biz.id)}
+                            className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-xl p-6 hover:border-teal-500/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-teal-500/10 group text-left"
+                          >
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="bg-teal-600/20 p-3 rounded-lg group-hover:bg-teal-600/30 transition">
+                                <Building2 className="h-6 w-6 text-teal-400" />
+                              </div>
+                              <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-teal-400 transition-all group-hover:translate-x-1" />
+                            </div>
+                            <h3 className="text-lg font-bold text-white mb-2 group-hover:text-teal-300 transition-colors break-words line-clamp-2">
+                              {biz.business_name}
+                            </h3>
+                            <p className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
+                              {t.selectBranchForFeedback}
+                            </p>
+                          </button>
+                        ))}
                       </div>
-                    </div>
-                    <div className={`transition-opacity duration-300 ${selectedBusiness ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
-                      <label className="text-sm text-slate-400 mb-2 block font-semibold">{t.selectBranch}</label>
-                      <div className="relative">
-                        <select value={selectedBranch} onChange={handleBranchChange} disabled={!selectedBusiness} className="bg-slate-800 border border-slate-700 text-white rounded-lg p-3 w-full focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition appearance-none disabled:opacity-50 disabled:cursor-not-allowed pr-10">
-                          <option value="">{t.selectPlaceholder}</option>
-                          {branches.map(br => <option key={br.id} value={br.id}>{br.branch_name_tr}</option>)}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
-                      </div>
-                    </div>
+                    )}
                   </div>
+
+                  {businesses.length > 0 && (
+                    <>
+                      <div className="bg-slate-800/30 border border-slate-700/20 rounded-lg p-4 my-8">
+                        <div className="text-slate-400 text-sm leading-relaxed text-center">
+                          <p>{t.infoBox}</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
 
-              {warningMessage && <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-4 mb-6 flex items-start gap-3"><AlertCircle className="h-5 w-5 text-orange-400 flex-shrink-0 mt-0.5" /><p className="text-orange-200 text-sm break-words">{warningMessage}</p></div>}
+              {isGuest && businesses.length > 0 && (
+                <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl p-6 mt-8">
+                  <div className="flex items-start gap-4">
+                    <Info className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="text-white font-semibold mb-2">{t.guestTracking}</h3>
+                      <p className="text-slate-300 text-sm mb-4 break-words">{t.guestTrackingDesc}</p>
+                      <button onClick={handleRegisterClick} className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">{t.register}</button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <button onClick={() => handleFeedback('complaint')} className="group bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 rounded-2xl p-8 text-left transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"><div className="flex items-center justify-between mb-4"><div className="bg-white/20 p-4 rounded-full group-hover:bg-white/30 transition"><AlertTriangle className="h-8 w-8 text-white" /></div></div><h3 className="text-2xl font-bold text-white mb-2 break-words">{t.complaint}</h3><p className="text-red-100 text-sm break-words">{t.complaintDesc}</p></button>
-                <button onClick={() => handleFeedback('suggestion')} className="group bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-2xl p-8 text-left transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"><div className="flex items-center justify-between mb-4"><div className="bg-white/20 p-4 rounded-full group-hover:bg-white/30 transition"><Lightbulb className="h-8 w-8 text-white" /></div></div><h3 className="text-2xl font-bold text-white mb-2 break-words">{t.suggestion}</h3><p className="text-blue-100 text-sm break-words">{t.suggestionDesc}</p></button>
-                <button onClick={() => handleFeedback('review')} className="group bg-gradient-to-br from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 rounded-2xl p-8 text-left transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"><div className="flex items-center justify-between mb-4"><div className="bg-white/20 p-4 rounded-full group-hover:bg-white/30 transition"><Star className="h-8 w-8 text-white" /></div></div><h3 className="text-2xl font-bold text-white mb-2 break-words">{t.review}</h3><p className="text-orange-100 text-sm break-words">{t.reviewDesc}</p></button>
-              </div>
-
-              {isGuest && <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl p-6"><div className="flex items-start gap-4"><Info className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1" /><div><h3 className="text-white font-semibold mb-2">{t.guestTracking}</h3><p className="text-slate-300 text-sm mb-4 break-words">{t.guestTrackingDesc}</p><button onClick={handleRegisterClick} className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">{t.register}</button></div></div></div>}
-              <div className="mt-8 bg-red-500/20 border-l-4 border-red-500 p-4 rounded-r-lg flex items-start gap-3"><AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" /><p className="text-sm text-red-300 break-words leading-relaxed">{t.warningText}</p></div>
+              {businesses.length > 0 && (
+                <div className="mt-8 bg-red-500/20 border-l-4 border-red-500 p-4 rounded-r-lg flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-300 break-words leading-relaxed">{t.warningText}</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -1243,6 +1364,43 @@ export default function CustomerPanel() {
       </nav>
 
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} defaultTab={authDefaultTab} defaultRole="customer" />
+      
+      {/* BRANCH SELECTOR MODAL FOR CARD CLICK */}
+      <Dialog open={showBranchSelector} onOpenChange={setShowBranchSelector}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
+              <Building2 className="h-6 w-6 text-teal-500" />
+              {t.branchSelection}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            {branches.map((branch) => (
+              <button
+                key={branch.id}
+                onClick={() => handleBranchSelectForFeedback(branch.id)}
+                className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-teal-500 text-white p-4 rounded-lg transition-all text-left group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium group-hover:text-teal-300 transition-colors">
+                    {branch.branch_name_tr}
+                  </span>
+                  <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-teal-400 transition-all group-hover:translate-x-1" />
+                </div>
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={() => setShowBranchSelector(false)}
+              variant="outline"
+              className="border-slate-700 hover:bg-slate-800 text-white w-full"
+            >
+              {t.cancel}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       <Dialog open={!!selectedFeedback} onOpenChange={() => {
         setSelectedFeedback(null);
