@@ -111,6 +111,30 @@ const AdminMobileNavbar = () => {
     navigate('/admin-panel/notifications');
   };
 
+  const handleNotificationClick = async (notification) => {
+    setShowNotifications(false);
+    
+    // Okundu olarak işaretle
+    if (!notification.is_read) {
+        const { error } = await supabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('id', notification.id);
+            
+        if (!error) {
+            setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+    }
+
+    // İlgili sayfaya git (Örn: Geri bildirim detayına)
+    if (notification.related_id) {
+        // Eğer bildirim bir geri bildirim ise, feedback sayfasına git
+        // (Burada senin rotan neyse onu kullanıyoruz, genelde '/admin-panel/feedbacks')
+        navigate('/admin-panel/feedbacks');
+    }
+  };
+
   const handleMarkAllRead = async () => {
      const { error } = await supabase
         .from('notifications')
@@ -135,9 +159,9 @@ const AdminMobileNavbar = () => {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-40 h-16 bg-slate-900 border-b border-slate-800 px-2 py-3 md:hidden shadow-lg">
-      <div className="flex items-center justify-between h-full pl-16"> {/* Increased padding for sidebar button */}
+      <div className="flex items-center justify-between h-full pl-16">
         
-        {/* LEFT: QR Counter (Compact) */}
+        {/* LEFT: QR Counter */}
         <div className="flex items-center gap-1.5 bg-teal-900/20 border border-teal-500/30 rounded-lg px-2 py-1 shrink-0 max-w-[100px]">
           <QrCode className="w-3.5 h-3.5 text-teal-400" />
           <span className="text-teal-400 font-medium text-xs truncate">
@@ -205,7 +229,11 @@ const AdminMobileNavbar = () => {
                 <div className="max-h-[300px] overflow-y-auto">
                     {notifications.length > 0 ? (
                         notifications.map(n => (
-                            <div key={n.id} className={`p-3 border-b border-slate-700/50 flex gap-3 ${!n.is_read ? 'bg-slate-700/20' : ''}`}>
+                            <div 
+                                key={n.id} 
+                                onClick={() => handleNotificationClick(n)}
+                                className={`p-3 border-b border-slate-700/50 flex gap-3 cursor-pointer hover:bg-slate-800 transition-colors ${!n.is_read ? 'bg-slate-700/20' : ''}`}
+                            >
                                 <div className={`w-2 h-2 mt-1.5 rounded-full shrink-0 ${n.is_read ? 'bg-slate-600' : 'bg-blue-500'}`}></div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs text-white truncate font-medium">{n.branch_name}</p>

@@ -1,5 +1,3 @@
-import useIsMobile from '@/hooks/useIsMobile';
-import MobileAdminDashboard from '@/pages/MobileAdminDashboard';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -44,21 +42,6 @@ const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass,
         ? "bg-emerald-950/30 text-emerald-400 border-emerald-500/20" 
         : "bg-rose-950/30 text-rose-400 border-rose-500/20"; 
   }
-
-  const AdminPanel = () => {
-  // 1. Mobil kontrolü
-  const isMobile = useIsMobile();
-
-  // ... diğer hookların (useAdminContext vb.) ...
-
-  // 2. Eğer mobilse, direkt yeni dosyayı render et ve aşağıyı çalıştırma
-  if (isMobile) {
-    return <MobileAdminDashboard />;
-  }
-
-  // ... Kalan eski masaüstü kodları aynen devam etsin ...
-  // return ( ... )
-};
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900 p-5 shadow-sm transition-all hover:border-slate-700 h-[160px] flex flex-col justify-between group">
@@ -355,7 +338,7 @@ const AdminPanel = () => {
                    flag_sensitive_customer: newFlags.sensitive,
                    admin_note: newFlags.admin_note 
                  }, 
-                 flag_vip_customer: newFlags.vip,
+                 flag_vip_customer: newFlags.vip, 
                  flag_sensitive_customer: newFlags.sensitive 
                };
           }

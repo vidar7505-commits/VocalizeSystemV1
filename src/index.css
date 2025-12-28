@@ -1,12 +1,54 @@
-/*
-  TEMPLATE STYLES: These styles are used as a base template.
-  AI is allowed to modify these styles as needed.
-*/
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* 1. GENEL GÖVDE AYARLARI */
 body {
     @apply bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 bg-slate-900 text-white;
     font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden; /* Sadece yatay taşmayı engeller, dikeye dokunmaz */
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* 2. RECHARTS / GRAFİK DÜZELTMESİ (Görünmezlik Sorunu Çözümü) */
+/* Tehlikeli 'overflow' ve 'height' kurallarını kaldırdık. 
+   Sadece flex yapısında sıkışmasını engellemek için min-width veriyoruz. */
+.recharts-responsive-container {
+    min-width: 0;
+}
+
+/* 3. MODALLAR (Mobil İçin Ortalama) */
+@media (max-width: 640px) {
+  [role="dialog"] {
+    max-width: 95vw !important;
+    margin: 0 auto;
+    max-height: 90vh; /* important kaldırdık, esneklik sağladık */
+    overflow-y: auto; 
+    border-radius: 0.75rem;
+  }
+}
+
+/* 4. iOS INPUT ZOOM ENGELLEME */
+/* iPhone'larda forma tıklayınca ekranın yakınlaşmasını engeller */
+@media screen and (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* 5. SCROLLBAR DÜZENLEMESİ (Opsiyonel - Daha şık görünüm için) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a; 
+}
+::-webkit-scrollbar-thumb {
+  background: #334155; 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569; 
 }

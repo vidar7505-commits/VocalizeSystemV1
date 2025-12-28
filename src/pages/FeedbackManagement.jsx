@@ -205,7 +205,7 @@ const FeedbackManagement = () => {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
+     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0 pt-20 md:pt-0">
         <div><h1 className="text-3xl font-bold text-white tracking-tight">Geri Bildirim Yönetimi</h1><p className="text-slate-400 mt-1">Müşteri geri bildirimlerini inceleyin, filtreleyin ve yönetin.</p></div>
         <Button onClick={fetchFeedbacks} variant="outline" className="gap-2 border-slate-700 hover:bg-slate-800 text-slate-300"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />Yenile</Button>
       </div>
