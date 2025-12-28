@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
-import { useAdminContext } from '@/contexts/AdminContext'; // Mevcut context'i kullanıyoruz
+import React from 'react';
+import { useAdminContext } from '@/contexts/AdminContext';
 import { 
-  MessageSquare, Star, AlertTriangle, CheckCircle2, Menu, Calendar, ChevronRight, User 
+  MessageSquare, Star, AlertTriangle, CheckCircle2, Calendar, ChevronRight, User 
 } from 'lucide-react';
+// Card importunu kaldırdık, çünkü sende yok.
+// import { Card... } from "@/components/ui/card";  <-- BU SATIR HATALIYDI
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
-// Basit Mobil Kart Bileşeni
+// Card yerine bu basit HTML yapısını kullanıyoruz
 const MobileStatCard = ({ title, value, icon: Icon, color }) => (
   <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between shadow-sm">
     <div>
@@ -30,11 +32,12 @@ export default function MobileAdminDashboard() {
     setSelectedBranchId, 
     dateRange, 
     setDateRange,
-    stats,         // AdminContext'ten gelen veriler (Eğer stats yoksa burayı kendi yapına göre düzelt)
-    recentFeedbacks // AdminContext'ten gelen son bildirimler
+    // Context'ten gelen verileri güvenli şekilde alıyoruz
+    stats = { total: 0, complaints: 0, resolved: 0, rating: 0 },
+    recentFeedbacks = []
   } = useAdminContext();
 
-  // Eğer Context'ten veri gelmiyorsa güvenli mod (Hata vermemesi için)
+  // Veri yoksa güvenli varsayılanlar
   const safeStats = stats || { total: 0, complaints: 0, resolved: 0, rating: 0 };
   const safeFeedbacks = recentFeedbacks || [];
 
@@ -45,9 +48,9 @@ export default function MobileAdminDashboard() {
         <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
           Vocalize Panel
         </h1>
-        {/* Şube Seçimi Mobilde Header'da */}
+        {/* Şube Seçimi */}
         <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
-          <SelectTrigger className="w-[140px] h-8 text-xs bg-slate-800 border-slate-700">
+          <SelectTrigger className="w-[140px] h-8 text-xs bg-slate-800 border-slate-700 text-white">
             <SelectValue placeholder="Şube Seç" />
           </SelectTrigger>
           <SelectContent className="bg-slate-800 border-slate-700 text-white">
@@ -65,11 +68,11 @@ export default function MobileAdminDashboard() {
         {/* Tarih Filtresi */}
         <div className="flex justify-end">
            <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-full sm:w-[150px] bg-slate-900 border-slate-800">
+            <SelectTrigger className="w-full sm:w-[150px] bg-slate-900 border-slate-800 text-white">
               <Calendar className="w-4 h-4 mr-2 text-slate-400" />
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-slate-900 border-slate-800">
+            <SelectContent className="bg-slate-900 border-slate-800 text-white">
               <SelectItem value="Bugün">Bugün</SelectItem>
               <SelectItem value="Son 7 Gün">Son 7 Gün</SelectItem>
               <SelectItem value="Bu Ay">Bu Ay</SelectItem>
@@ -77,7 +80,7 @@ export default function MobileAdminDashboard() {
           </Select>
         </div>
 
-        {/* İstatistik Kartları (Grid yerine Flex column mobilde daha güvenli olabilir ama Grid 2 col iyidir) */}
+        {/* İstatistik Kartları */}
         <div className="grid grid-cols-2 gap-3">
           <MobileStatCard title="Toplam" value={safeStats.total || 0} icon={MessageSquare} color="text-blue-500 bg-blue-500" />
           <MobileStatCard title="Şikayet" value={safeStats.complaints || 0} icon={AlertTriangle} color="text-red-500 bg-red-500" />
@@ -87,9 +90,9 @@ export default function MobileAdminDashboard() {
 
         {/* Son Aktiviteler Listesi */}
         <div className="space-y-4">
-          <h2 className="text-lg font-bold flex items-center gap-2">
+          <h2 className="text-lg font-bold flex items-center gap-2 text-white">
             Son Bildirimler
-            <Badge variant="outline" className="ml-auto text-xs font-normal border-slate-700">{safeFeedbacks.length} Yeni</Badge>
+            <Badge variant="outline" className="ml-auto text-xs font-normal border-slate-700 text-slate-400">{safeFeedbacks.length} Yeni</Badge>
           </h2>
 
           <div className="space-y-3">
@@ -111,7 +114,7 @@ export default function MobileAdminDashboard() {
                     </span>
                   </div>
                   
-                  <p className="text-sm text-slate-300 line-clamp-2 mb-3">
+                  <p className="text-sm text-slate-300 line-clamp-2 mb-3 break-words">
                     {item.message || "Mesaj içeriği yok..."}
                   </p>
 
@@ -120,9 +123,10 @@ export default function MobileAdminDashboard() {
                       <User className="w-3 h-3" />
                       <span className="truncate max-w-[100px]">{item.customer_name || 'Anonim'}</span>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-6 text-xs text-indigo-400 hover:text-indigo-300 p-0">
+                    {/* Detay butonu şu an pasif, ileride bağlayabiliriz */}
+                    <div className="h-6 text-xs text-indigo-400 flex items-center">
                       Detay <ChevronRight className="w-3 h-3 ml-1" />
-                    </Button>
+                    </div>
                   </div>
                 </div>
               ))
