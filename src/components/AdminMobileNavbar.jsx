@@ -171,7 +171,7 @@ const AdminMobileNavbar = () => {
         {/* MIDDLE: Branch Selector */}
         <div className="flex-1 flex justify-center px-1 min-w-0">
            {branches.length > 1 && (
-             <div className="w-full max-w-[130px]">
+             <div className="w-full max-w-[100px]">
                <Select 
                  value={selectedBranchId} 
                  onValueChange={setSelectedBranchId}

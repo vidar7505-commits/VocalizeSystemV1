@@ -157,9 +157,9 @@ const AdminPanel = () => {
       const { currentStart, prevStart } = getDateIntervals();
       
       let query = supabase.from('feedbacks')
-        .select('id, created_at, status, feedback_type, rating, overall_rating, resolved_at')
+        .select('id, created_at, status, feedback_type, rating, general_eval_rating, resolved_at')
         .eq('business_id', businessId)
-        .gte('created_at', prevStart.toISOString()); 
+        .gte('created_at', prevStart.toISOString());
       
       if (selectedBranchId !== 'all') query = query.eq('branch_id', selectedBranchId);
 
@@ -181,7 +181,7 @@ const AdminPanel = () => {
       const resolvedPrev = prevData.filter(f => f.status === 'resolved').length;
       
       const getAvg = (ds) => {
-          const rated = ds.filter(f => f.rating || f.overall_rating).map(f => f.rating || f.overall_rating);
+          const rated = ds.filter(f => f.rating || f.general_eval_rating).map(f => f.rating || f.general_eval_rating);
           if (rated.length === 0) return 0;
           return rated.reduce((a, b) => a + b, 0) / rated.length;
       };
@@ -215,7 +215,7 @@ const AdminPanel = () => {
               if (idx >= 0) {
                  const item = daysMap.get(idx);
                  item.count += 1;
-                 item.sum += (f.rating || f.overall_rating || 0);
+                 item.sum += (f.rating || f.general_eval_rating || 0);
               }
           });
           return Array.from(daysMap.values()).map(v => ({ value: v.count }));
@@ -227,13 +227,13 @@ const AdminPanel = () => {
         const step = (endT - startT) / (bucketCount || 10);
         const daysMap = new Map();
         for (let i = 0; i < bucketCount; i++) daysMap.set(i, { count: 0, sum: 0 });
-        currentData.filter(f => f.rating || f.overall_rating).forEach(f => {
+        currentData.filter(f => f.rating || f.general_eval_rating).forEach(f => {
           const t = new Date(f.created_at).getTime();
           const idx = Math.min(Math.floor((t - startT) / step), bucketCount - 1);
           if (idx >= 0) {
             const item = daysMap.get(idx);
             item.count++;
-            item.sum += (f.rating || f.overall_rating);
+            item.sum += (f.rating || f.general_eval_rating);
           }
         });
         return Array.from(daysMap.values()).map(v => ({ value: v.count > 0 ? Number((v.sum / v.count).toFixed(1)) : 0 }));
@@ -248,7 +248,7 @@ const AdminPanel = () => {
 
       const starCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
       currentData.forEach(f => {
-          const r = f.rating || f.overall_rating;
+          const r = f.rating || f.general_eval_rating;
           if (r && starCounts[r] !== undefined) starCounts[r]++;
       });
 
@@ -273,7 +273,7 @@ const AdminPanel = () => {
       ]);
 
       let recentQuery = supabase.from('feedbacks').select(`
-            id, created_at, status, feedback_type, message, rating, overall_rating, 
+            id, created_at, status, feedback_type, message, rating,
             customer_name, customer_email, customer_phone, customer_profile_id,
             manager_note, flag_vip_customer, flag_sensitive_customer,
             feedback_images, image_urls, receipt_images, receipt_url, product_image_url,
@@ -388,7 +388,7 @@ const AdminPanel = () => {
                   <BarChart layout="vertical" data={ratingDistribution} margin={{ top: 5, right: 30, left: 0, bottom: 5 }} barSize={24}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
                     <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} domain={[0, 'auto']} />
-                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={70} />
+                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={50} />
                     <Tooltip formatter={(value) => [value, 'Adet']} labelFormatter={() => ''} contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} cursor={{ fill: '#ffffff10' }} />
                     <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={32}>{ratingDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}<LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={12} /></Bar>
                   </BarChart>
@@ -406,7 +406,7 @@ const AdminPanel = () => {
                   <BarChart layout="vertical" data={feedbackTypeDistribution} margin={{ top: 5, right: 30, left: 0, bottom: 5 }} barSize={24}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
                     <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={100} />
+                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={60} />
                     <Tooltip formatter={(value) => [value, 'Adet']} labelFormatter={() => ''} contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} cursor={{ fill: '#ffffff10' }} />
                     <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={40}>{feedbackTypeDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}<LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={12} /></Bar>
                   </BarChart>
@@ -430,7 +430,7 @@ const AdminPanel = () => {
                    const smartName = formatCustomerName(customerName);
                    const isVip = f.flag_vip_customer || f.customer_profiles?.flag_vip_customer;
                    const isSensitive = f.flag_sensitive_customer || f.customer_profiles?.flag_sensitive_customer;
-                   const rating = f.rating || f.overall_rating;
+                   const rating = f.rating || f.general_eval_rating;
                    const hasImgs = hasImages(f);
                    const isEscalated = f.status === 'escalated';
                    const hasManagerNote = !!f.manager_note;

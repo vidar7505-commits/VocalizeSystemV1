@@ -49,11 +49,11 @@ const FeedbackManagement = () => {
       if (targetFeedback) {
         setSelectedFeedback(targetFeedback);
         setIsDetailModalOpen(true);
-        // State'i temizle ki sürekli açılmasın
-        window.history.replaceState({}, document.title);
       }
+      // State'i temizle ki sürekli açılmasın
+      window.history.replaceState({}, document.title);
     }
-  }, [location.state, feedbacks]);
+  }, [location.state?.openFeedbackId, feedbacks]);
 
   const fetchFeedbacks = async () => {
     if (!businessId) return;

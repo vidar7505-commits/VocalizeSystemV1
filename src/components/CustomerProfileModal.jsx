@@ -195,7 +195,7 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogContent className="w-[95vw] sm:w-full max-w-lg max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-700 text-slate-100">
+          <DialogContent className="w-[92vw] sm:w-full max-w-sm max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-700 text-slate-100">
             <DialogHeader><DialogTitle className="text-2xl font-bold flex items-center gap-2"><User className="w-6 h-6 text-indigo-400" /> Müşteri Profili</DialogTitle></DialogHeader>
             {loading ? <div className="flex justify-center py-12"><Loader2 className="w-10 h-10 animate-spin text-indigo-500" /></div> : (
               <div className="space-y-6">
