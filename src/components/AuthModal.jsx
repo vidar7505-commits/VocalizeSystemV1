@@ -28,7 +28,8 @@ export default function AuthModal({
   onClose, 
   defaultTab = "login", 
   defaultRole = "customer", 
-  showGuestOption = false
+  showGuestOption = false,
+  onGuestContinue
 }) {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [viewMode, setViewMode] = useState('auth');
@@ -83,9 +84,30 @@ export default function AuthModal({
   const handleGuestLogin = () => {
     loginAsGuest();
     localStorage.setItem('vocalize_guest_mode', 'true');
-    toast({ title: "Misafir Girişi Başarılı", description: "Müşteri paneline yönlendiriliyorsunuz." });
+    
+    // Eğer LandingPage'den gelen onGuestContinue varsa onu çalıştır
+    if (onGuestContinue && typeof onGuestContinue === 'function') {
+      onGuestContinue();
+      onClose();
+      return;
+    }
+    
+    // Yoksa, localStorage'dan business bilgisini kontrol et
+    const lastBusiness = localStorage.getItem('vocalize_last_business');
+    const lastBranch = localStorage.getItem('vocalize_last_branch');
+    
+    toast({ 
+      title: "Misafir Girişi Başarılı", 
+      description: lastBusiness ? "QR ile doğrulanan şubeye yönlendiriliyorsunuz." : "Müşteri paneline yönlendiriliyorsunuz." 
+    });
+    
     onClose();
-    navigate('/customer-panel?guest=true', { replace: true });
+    
+    if (lastBusiness && lastBranch) {
+      navigate(`/customer-panel?guest=true&business=${lastBusiness}&branch=${lastBranch}&from_qr=true`, { replace: true });
+    } else {
+      navigate('/customer-panel?guest=true', { replace: true });
+    }
   };
 
   const handleForgotPassword = async (e) => {

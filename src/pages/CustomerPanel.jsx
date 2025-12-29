@@ -1050,27 +1050,56 @@ export default function CustomerPanel() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-                    <button onClick={() => handleFeedback('complaint')} className="bg-red-500/20 border border-red-500/50 p-4 rounded-xl hover:bg-red-500/30 transition-all flex items-center gap-3">
-                        <AlertTriangle className="h-6 w-6 text-red-400" />
-                        <div className="text-left">
-                            <h3 className="font-bold text-red-200">{t.complaint}</h3>
-                            <p className="text-xs text-red-300/80">{t.complaintDesc}</p>
+                  <div className="grid grid-cols-1 gap-4 mt-6">
+                    {/* Şikayet Kartı */}
+                    <button 
+                      onClick={() => handleFeedback('complaint')} 
+                      className="bg-slate-800/50 border-2 border-slate-700 p-5 rounded-xl hover:border-red-500/70 hover:bg-slate-800/80 hover:scale-[1.02] transition-all duration-300 flex items-center justify-between gap-4 group"
+                    >
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="bg-red-500/20 p-4 rounded-lg shrink-0 group-hover:bg-red-500/30 transition-colors">
+                          <AlertTriangle className="h-8 w-8 text-red-400" />
                         </div>
+                        <div className="text-left flex-1 min-w-0">
+                          <h3 className="font-bold text-white text-lg mb-1 break-words">{t.complaint}</h3>
+                          <p className="text-sm text-slate-400 break-words">{t.complaintDesc}</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-6 w-6 text-slate-500 group-hover:text-red-400 group-hover:translate-x-1 transition-all shrink-0" />
                     </button>
-                    <button onClick={() => handleFeedback('suggestion')} className="bg-blue-500/20 border border-blue-500/50 p-4 rounded-xl hover:bg-blue-500/30 transition-all flex items-center gap-3">
-                        <Lightbulb className="h-6 w-6 text-blue-400" />
-                        <div className="text-left">
-                            <h3 className="font-bold text-blue-200">{t.suggestion}</h3>
-                            <p className="text-xs text-blue-300/80">{t.suggestionDesc}</p>
+
+                    {/* Öneri Kartı */}
+                    <button 
+                      onClick={() => handleFeedback('suggestion')} 
+                      className="bg-slate-800/50 border-2 border-slate-700 p-5 rounded-xl hover:border-blue-500/70 hover:bg-slate-800/80 hover:scale-[1.02] transition-all duration-300 flex items-center justify-between gap-4 group"
+                    >
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="bg-blue-500/20 p-4 rounded-lg shrink-0 group-hover:bg-blue-500/30 transition-colors">
+                          <Lightbulb className="h-8 w-8 text-blue-400" />
                         </div>
+                        <div className="text-left flex-1 min-w-0">
+                          <h3 className="font-bold text-white text-lg mb-1 break-words">{t.suggestion}</h3>
+                          <p className="text-sm text-slate-400 break-words">{t.suggestionDesc}</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-6 w-6 text-slate-500 group-hover:text-blue-400 group-hover:translate-x-1 transition-all shrink-0" />
                     </button>
-                    <button onClick={() => handleFeedback('review')} className="bg-yellow-500/20 border border-yellow-500/50 p-4 rounded-xl hover:bg-yellow-500/30 transition-all flex items-center gap-3">
-                        <Star className="h-6 w-6 text-yellow-400" />
-                        <div className="text-left">
-                            <h3 className="font-bold text-yellow-200">{t.review}</h3>
-                            <p className="text-xs text-yellow-300/80">{t.reviewDesc}</p>
+
+                    {/* Değerlendirme Kartı */}
+                    <button 
+                      onClick={() => handleFeedback('review')} 
+                      className="bg-slate-800/50 border-2 border-slate-700 p-5 rounded-xl hover:border-yellow-500/70 hover:bg-slate-800/80 hover:scale-[1.02] transition-all duration-300 flex items-center justify-between gap-4 group"
+                    >
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="bg-yellow-500/20 p-4 rounded-lg shrink-0 group-hover:bg-yellow-500/30 transition-colors">
+                          <Star className="h-8 w-8 text-yellow-400" />
                         </div>
+                        <div className="text-left flex-1 min-w-0">
+                          <h3 className="font-bold text-white text-lg mb-1 break-words">{t.review}</h3>
+                          <p className="text-sm text-slate-400 break-words">{t.reviewDesc}</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-6 w-6 text-slate-500 group-hover:text-yellow-400 group-hover:translate-x-1 transition-all shrink-0" />
                     </button>
                   </div>
                 </div>
@@ -1110,9 +1139,12 @@ export default function CustomerPanel() {
 
                   {businesses.length > 0 && (
                     <>
-                      <div className="bg-slate-800/30 border border-slate-700/20 rounded-lg p-4 my-8">
-                        <div className="text-slate-400 text-sm leading-relaxed text-center">
-                          <p>{t.infoBox}</p>
+                      <div className="bg-teal-500/10 border-l-4 border-teal-500 rounded-lg p-5 my-8">
+                        <div className="flex items-start gap-3">
+                          <Info className="h-5 w-5 text-teal-400 shrink-0 mt-0.5" />
+                          <div className="text-teal-300 text-sm leading-relaxed">
+                            <p>{t.infoBox}</p>
+                          </div>
                         </div>
                       </div>
                     </>

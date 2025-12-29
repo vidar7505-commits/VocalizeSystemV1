@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link as ScrollLink, animateScroll as scroll, scroller } from 'react-scroll';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
 import { Menu, X, Zap, CheckCircle2, Timer, Send, Lightbulb, Heart, QrCode, Loader2, ArrowRight, TrendingUp, Target, RefreshCw, Cpu, BrainCircuit, Activity, Sparkles, MessageSquare as MessageSquareText, Info, AlertTriangle, Layers, Zap as ZapIcon, Network } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -214,6 +214,7 @@ const LandingPage = () => {
     toast
   } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const progressRef = useRef(null);
   const progressInView = useInView(progressRef, {
     once: true
@@ -230,6 +231,18 @@ const LandingPage = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // QR Redirector'dan gelen state'i kontrol et ve AuthModal'ı aç
+  useEffect(() => {
+    if (location.state?.openAuthModal) {
+      setIsAuthModalOpen(true);
+      if (location.state.defaultTab) {
+        setAuthDefaultTab(location.state.defaultTab);
+      }
+      // Tarayıcı geçmişini temizle ki sayfa yenilenince modal tekrar açılmasın
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
   const scrollToTop = () => {
     scroll.scrollToTop();
   };
@@ -264,12 +277,22 @@ const LandingPage = () => {
 
   const handleGuestContinue = () => {
     setIsAuthModalOpen(false);
+    
+    // LocalStorage'dan QR verilerini kontrol et
+    const lastBusiness = localStorage.getItem('vocalize_last_business');
+    const lastBranch = localStorage.getItem('vocalize_last_branch');
+    
     toast({
       title: "Misafir Modu",
-      description: "Geri bildirim göndermek için işletme seçin."
+      description: lastBusiness ? "QR ile doğrulanan şubeye yönlendiriliyorsunuz." : "Geri bildirim göndermek için işletme seçin."
     });
+    
     setTimeout(() => {
-      navigate('/customer-panel?guest=true');
+      if (lastBusiness && lastBranch) {
+        navigate(`/customer-panel?guest=true&business=${lastBusiness}&branch=${lastBranch}&from_qr=true`);
+      } else {
+        navigate('/customer-panel?guest=true');
+      }
     }, 500);
   };
 

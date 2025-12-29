@@ -48,10 +48,15 @@ const QRRedirector = () => {
           return;
         }
 
+        // 3. SAVE DATA TO LOCALSTORAGE (CRITICAL) - YENİ EKLENEN
+        localStorage.setItem('vocalize_last_qr', qrCode);
+        localStorage.setItem('vocalize_last_business', branchData.business_id);
+        localStorage.setItem('vocalize_last_branch', branchData.id);
+
         // Store branch data
         setQrData(branchData);
 
-        // 3. Check authentication status
+        // 4. Check authentication status
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session) {
@@ -101,8 +106,6 @@ const QRRedirector = () => {
           branch_id,
           business_id,
           qr_code,
-          // scanned_at is usually auto-generated or we can pass it if column exists without default
-          // based on provided schema, created_at is standard.
         });
       } catch (logError) {
         console.warn('Failed to log analytics scan:', logError);
@@ -139,43 +142,6 @@ const QRRedirector = () => {
 
       const { id: branch_id, business_id, qr_code } = qrData;
 
-      // 1. Create a temporary guest profile or just log the scan
-      // Note: Since we don't have a logged-in user, 'customer_profiles' might require a user_id depending on RLS/schema.
-      // However, per instructions: "Insert into customer_profiles (email, phone, name, is_guest)"
-      
-      // Note: Since 'user_id' is usually NOT NULL in 'customer_profiles', this insert might fail if we don't have a user_id.
-      // Assuming the schema allows creating a profile without a linked auth user OR we have to skip this if strict.
-      // Based on the prompt, we will attempt it. If it fails due to constraint, we'll fallback.
-      
-      // NOTE: Realistically, for a guest, we might not create a full 'customer_profile' linked to 'users' table 
-      // unless we use an anonymous auth session. 
-      // BUT, following strict instructions:
-      
-      // Let's try to create a guest entry if possible, or skip to scan log if strict RLS prevents it without auth.
-      // Since standard Supabase auth requires a user for RLS usually, we'll wrap in try/catch.
-      
-      // IMPORTANT: As per instruction, we insert into customer_qr_scans with is_guest=true.
-      // If customer_profile_id is required and we can't make one, we might send null if schema allows.
-      
-      // Let's attempt to insert scan directly with is_guest=true first, 
-      // assuming we might pass NULL for customer_profile_id if allowed, or we skip profile creation if it needs user_id.
-      
-      // Checking instruction: "Insert into customer_profiles... RETURNING id... Then Insert into customer_qr_scans".
-      // We will attempt this. If it fails (likely due to user_id constraint), we'll just redirect.
-      
-      let guestProfileId = null;
-      
-      /* 
-         Hypothetical insert based on instructions. 
-         WARNING: If 'user_id' is mandatory in customer_profiles (as seen in provided schema: user_id uuid NOT NULL),
-         this insert will likely fail for a guest unless we sign them in anonymously first.
-         
-         Strategy: We will try to use the scan log directly with is_guest=true and skip profile creation 
-         if we cannot satisfy the NOT NULL user_id constraint without an auth session.
-         
-         However, to strictly follow the flow asked:
-      */
-     
       // Attempting analytics log only to avoid blocking user with database constraints
       try {
          await supabase.from('qr_scans').insert({
@@ -208,7 +174,7 @@ const QRRedirector = () => {
         description: "Misafir olarak devam ediyorsunuz.",
       });
 
-      navigate(`/feedback?business=${business_id}&branch=${branch_id}&guest=true&qr=${qr_code}`);
+      navigate(`/customer-panel?business=${business_id}&branch=${branch_id}&guest=true&from_qr=true`);
 
     } catch (err) {
       console.error('Guest continue error:', err);
