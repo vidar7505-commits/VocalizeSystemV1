@@ -755,7 +755,11 @@ export default function CustomerPanel() {
     }
   };
 
-  const handleRegisterClick = () => { setAuthDefaultTab('register'); setShowAuthModal(true); };
+  const handleRegisterClick = () => { 
+    setAuthDefaultTab('register'); 
+    setAuthDefaultRole('customer');
+    setShowAuthModal(true); 
+  };
   const handleGuestWarningContinue = () => { if (dontShowGuestWarning) localStorage.setItem('vocalize_guest_warning_dismissed', 'true'); setShowGuestWarningModal(false); if (pendingFeedbackType) proceedToFeedback(pendingFeedbackType); };
   const handleGuestWarningLogin = () => { setShowGuestWarningModal(false); setAuthDefaultTab('login'); setShowAuthModal(true); };
   
@@ -1152,23 +1156,23 @@ export default function CustomerPanel() {
                 </>
               )}
 
-              {isGuest && businesses.length > 0 && (
-                <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl p-6 mt-8">
+              {/* Misafir Kayıt CTA - İşletme Seçili Olsa Bile Göster */}
+              {isGuest && (selectedBusiness || businesses.length > 0) && (
+                <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl p-6 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex items-start gap-4">
                     <Info className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1" />
-                    <div>
+                    <div className="flex-1">
                       <h3 className="text-white font-semibold mb-2">{t.guestTracking}</h3>
                       <p className="text-slate-300 text-sm mb-4 break-words">{t.guestTrackingDesc}</p>
-                      <button onClick={handleRegisterClick} className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">{t.register}</button>
+                      <Button 
+                        onClick={handleRegisterClick} 
+                        className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition-colors hover:scale-105 active:scale-95"
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        {t.register}
+                      </Button>
                     </div>
                   </div>
-                </div>
-              )}
-
-              {businesses.length > 0 && (
-                <div className="mt-8 bg-red-500/20 border-l-4 border-red-500 p-4 rounded-r-lg flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-300 break-words leading-relaxed">{t.warningText}</p>
                 </div>
               )}
             </div>
