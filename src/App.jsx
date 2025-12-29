@@ -14,6 +14,8 @@ import { Toaster } from '@/components/ui/toaster';
 import AdminLayout from '@/layouts/AdminLayout';
 import NotificationHistory from '@/pages/NotificationHistory';
 import CustomerDetail from '@/pages/CustomerDetail';
+// 👇 YENİ EKLENEN IMPORT
+import UpdatePassword from '@/pages/UpdatePassword';
 
 function App() {
   return (
@@ -25,6 +27,9 @@ function App() {
           <Route path="/scan" element={<QRRedirector />} />
           
           <Route path="/feedback" element={<FeedbackForm />} />
+
+          {/* 👇 YENİ EKLENEN ROTA: Şifre Sıfırlama Sayfası */}
+          <Route path="/update-password" element={<UpdatePassword />} />
           
           <Route element={<ProtectedRoute allowedRole="customer" />}>
             <Route path="/customer-panel" element={<CustomerPanel />} />
