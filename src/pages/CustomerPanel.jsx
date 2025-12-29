@@ -12,10 +12,10 @@ import {
   AlertTriangle, Lightbulb, Home, List, TrendingUp, Menu, QrCode, Info, AlertCircle, Filter,
   MessageCircle, Loader2, Image as ImageIcon, Upload, PieChart, BarChart, Activity, UserPlus, LogIn,
   Building2, CheckCircle2, ChevronRight, Edit2, Maximize2, KeyRound, Shield, HelpCircle, ArrowRight,
-  Send, AlertOctagon // AlertOctagon eklendi
+  Send, AlertOctagon, ThumbsUp
 } from 'lucide-react';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription // DialogDescription eklendi
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -75,7 +75,6 @@ export default function CustomerPanel() {
   const [dontShowGuestWarning, setDontShowGuestWarning] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
   
-  // YENİ STATE: Hesap Silme Onay Modalı için
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
 
   const [selectedFeedback, setSelectedFeedback] = useState(null);
@@ -1201,6 +1200,13 @@ export default function CustomerPanel() {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border ${feedback.feedback_type === 'complaint' ? 'bg-red-500/10 text-red-400 border-red-500/20' : feedback.feedback_type === 'suggestion' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'}`}>{feedback.feedback_type === 'complaint' ? `🔴 ${t.complaintBadge}` : feedback.feedback_type === 'suggestion' ? `💡 ${t.suggestionBadge}` : `⭐ ${t.reviewBadge}`}</span>
                                 <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border ${getStatusBadge(feedback, t).color === 'blue' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : getStatusBadge(feedback, t).color === 'orange' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-green-500/10 text-green-400 border-green-500/20'}`}>{getStatusBadge(feedback, t).icon} {getStatusBadge(feedback, t).label}</span>
+                                
+                                {/* --- YENİ EKLENEN KISIM: GENEL DEĞERLENDİRME ETİKETİ (FLAG) --- */}
+                                {(feedback.general_eval_rating || feedback.general_eval_comment) && (
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border bg-purple-500/10 text-purple-400 border-purple-500/20 flex items-center gap-1">
+                                        <ThumbsUp className="h-3 w-3" /> {t.generalEval || 'Genel Değ.'}
+                                    </span>
+                                )}
                               </div>
                               <div className="flex items-center gap-2 flex-shrink-0">
                                 {feedback.feedback_images?.length > 0 && (
@@ -1475,6 +1481,28 @@ export default function CustomerPanel() {
                             {selectedFeedback.message}
                         </div>
                     </div>
+
+                    {/* --- YENİ EKLENEN KISIM: GENEL DEĞERLENDİRME --- */}
+                    {(selectedFeedback.general_eval_rating || selectedFeedback.general_eval_comment) && (
+                        <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800">
+                            <h4 className="text-xs font-bold text-teal-500 uppercase mb-2 flex items-center gap-2">
+                                <ThumbsUp className="w-3 h-3" /> {t.generalEval}
+                            </h4>
+                            {selectedFeedback.general_eval_rating && (
+                                <div className="flex items-center gap-1 mb-2">
+                                    {[...Array(5)].map((_, i) => (
+                                        <Star key={i} className={`h-4 w-4 ${i < selectedFeedback.general_eval_rating ? 'text-yellow-500 fill-yellow-500' : 'text-slate-700'}`} />
+                                    ))}
+                                    <span className="text-sm text-slate-400 ml-2 font-medium">({selectedFeedback.general_eval_rating}/5)</span>
+                                </div>
+                            )}
+                            {selectedFeedback.general_eval_comment && (
+                                <p className="text-sm text-slate-300 italic border-l-2 border-slate-700 pl-3 py-1">
+                                    "{selectedFeedback.general_eval_comment}"
+                                </p>
+                            )}
+                        </div>
+                    )}
 
                     {selectedFeedback.feedback_images?.length > 0 && (
                         <div>

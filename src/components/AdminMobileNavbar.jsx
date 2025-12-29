@@ -91,18 +91,18 @@ const AdminMobileNavbar = () => {
     };
   }, [user]);
 
-  // Click Outside (Dışarı tıklayınca kapatma)
+  // --- KRİTİK DÜZELTME: touchstart KALDIRILDI ---
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setShowNotifications(false);
       }
     };
+    // Mobilde 'touchstart' çakışma yarattığı için sadece mousedown kullanıyoruz.
+    // Modern mobil tarayıcılar mousedown'u da tetikler, bu yeterlidir.
     document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside); // Mobilde daha iyi tepki için
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, []);
 
@@ -116,25 +116,25 @@ const AdminMobileNavbar = () => {
     navigate('/admin-panel/notifications');
   };
 
-  // --- GÜNCELLENEN KISIM: HEMEN YÖNLENDİRME ---
   const handleNotificationClick = (notification, e) => {
-    if (e) e.stopPropagation();
-    setShowNotifications(false); // Menüyü hemen kapat
+    // Event propagation'ı durdurarak panelin hemen kapanmasını önle (önlem olarak)
+    if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
+    
+    setShowNotifications(false); 
 
-    // 1. Önce sayfaya yönlendir (Bekletme yok)
     if (notification.related_id) {
         navigate('/admin-panel/feedbacks', { 
             state: { openFeedbackId: notification.related_id } 
         });
     }
 
-    // 2. Okundu işaretlemesini arka planda yap (Optimistic Update)
     if (!notification.is_read) {
-        // UI'ı hemen güncelle
         setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
         setUnreadCount(prev => Math.max(0, prev - 1));
 
-        // DB işlemini arkada yap
         supabase
             .from('notifications')
             .update({ is_read: true })
@@ -148,12 +148,10 @@ const AdminMobileNavbar = () => {
   const handleMarkAllRead = async (e) => {
      if(e) e.stopPropagation();
      
-     // UI Optimistic Update
      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
      setUnreadCount(0);
      toast({ title: "Tüm bildirimler okundu" });
 
-     // DB Update
      await supabase
         .from('notifications')
         .update({ is_read: true })
@@ -223,6 +221,8 @@ const AdminMobileNavbar = () => {
                 initial={{ opacity: 0, scale: 0.95, y: 10 }} 
                 animate={{ opacity: 1, scale: 1, y: 0 }} 
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                // onClick eventini durdurarak panel içi tıklamaların dışarı taşmasını engelliyoruz
+                onClick={(e) => e.stopPropagation()} 
                 className="absolute top-full right-0 mt-2 w-[280px] sm:w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden"
               >
                 <div className="flex items-center justify-between px-3 py-2 bg-slate-750 border-b border-slate-700">
