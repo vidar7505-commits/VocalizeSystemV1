@@ -4,16 +4,16 @@
 
 /* 1. GENEL GÖVDE AYARLARI */
 body {
-    @apply bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 bg-slate-900 text-white;
+    /* DEĞİŞİKLİK BURADA: Mor gradient kaldırıldı, düz koyu renk (slate-950) yapıldı */
+    @apply bg-[#0f172a] text-white; 
+    
     font-family: 'DM Sans', sans-serif;
-    overflow-x: hidden; /* Sadece yatay taşmayı engeller, dikeye dokunmaz */
+    overflow-x: hidden; /* Sadece yatay taşmayı engeller */
     width: 100%;
     min-height: 100vh;
 }
 
 /* 2. RECHARTS / GRAFİK DÜZELTMESİ (Görünmezlik Sorunu Çözümü) */
-/* Tehlikeli 'overflow' ve 'height' kurallarını kaldırdık. 
-   Sadece flex yapısında sıkışmasını engellemek için min-width veriyoruz. */
 .recharts-responsive-container {
     min-width: 0;
 }
@@ -23,21 +23,20 @@ body {
   [role="dialog"] {
     max-width: 95vw !important;
     margin: 0 auto;
-    max-height: 90vh; /* important kaldırdık, esneklik sağladık */
+    max-height: 90vh; 
     overflow-y: auto; 
     border-radius: 0.75rem;
   }
 }
 
 /* 4. iOS INPUT ZOOM ENGELLEME */
-/* iPhone'larda forma tıklayınca ekranın yakınlaşmasını engeller */
 @media screen and (max-width: 768px) {
   input, textarea, select {
     font-size: 16px !important;
   }
 }
 
-/* 5. SCROLLBAR DÜZENLEMESİ (Opsiyonel - Daha şık görünüm için) */
+/* 5. SCROLLBAR DÜZENLEMESİ */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

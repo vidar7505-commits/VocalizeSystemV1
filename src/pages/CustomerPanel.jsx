@@ -122,10 +122,6 @@ export default function CustomerPanel() {
   const businessName = businesses.find(b => b.id === selectedBusiness)?.business_name;
   const branchName = branches.find(b => b.id === selectedBranch)?.branch_name_tr || qrInfo?.branch_name;
 
-  const warningMessage = !selectedBusiness
-    ? (fromQR ? null : (language === 'tr' ? 'Lütfen önce işletme seçiniz.' : 'Please select a business first.'))
-    : (!selectedBranch ? (language === 'tr' ? 'Lütfen şube seçiniz.' : 'Please select a branch.') : null);
-
   const lastLoggedRef = useRef({ business: null, branch: null });
 
   useEffect(() => {
@@ -290,7 +286,8 @@ export default function CustomerPanel() {
       startWithQR: 'QR kod okutarak başlayın ve geri bildirim gönderin',
       selectBranchForFeedback: 'Geri bildirim göndermek için şube seçin',
       loading: 'Yükleniyor...',
-      branchSelection: 'Şube Seçimi'
+      branchSelection: 'Şube Seçimi',
+      sortBy: 'Sıralama'
     },
     en: {
       welcome: 'Welcome',
@@ -436,7 +433,8 @@ export default function CustomerPanel() {
       startWithQR: 'Scan a QR code to get started and send feedback',
       selectBranchForFeedback: 'Select a branch to send feedback',
       loading: 'Loading...',
-      branchSelection: 'Branch Selection'
+      branchSelection: 'Branch Selection',
+      sortBy: 'Sort By'
     }
   };
 
@@ -652,35 +650,6 @@ export default function CustomerPanel() {
     }
   }, [isGuest, user, currentView, fetchStats, fetchFeedbacks]);
 
-  const handleBusinessChange = async (e) => {
-    const bizId = e.target.value;
-    setSelectedBusiness(bizId);
-    setSelectedBranch('');
-    
-    if (bizId) localStorage.setItem('vocalize_last_business', bizId);
-    else localStorage.removeItem('vocalize_last_business');
-    localStorage.removeItem('vocalize_last_branch');
-    
-    const newParams = new URLSearchParams(searchParams);
-    if (bizId) newParams.set('business', bizId); else newParams.delete('business');
-    newParams.delete('branch');
-    
-    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-    if (isGuest) { localStorage.setItem('vocalize_guest_business_id', bizId); localStorage.removeItem('vocalize_guest_branch_id'); }
-    if (bizId) await fetchBranches(bizId); else setBranches([]);
-  };
-
-  const handleBranchChange = (e) => {
-    const brId = e.target.value;
-    setSelectedBranch(brId);
-    if (brId) localStorage.setItem('vocalize_last_branch', brId);
-    else localStorage.removeItem('vocalize_last_branch');
-    const newParams = new URLSearchParams(searchParams);
-    if (brId) newParams.set('branch', brId); else newParams.delete('branch');
-    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-    if (isGuest) localStorage.setItem('vocalize_guest_branch_id', brId);
-  };
-
   // ========== REFACTORED: BUSINESS CARD CLICK HANDLER (Guest Navigation Fix) ==========
   const handleBusinessCardClick = async (businessId) => {
     try {
@@ -732,18 +701,22 @@ export default function CustomerPanel() {
   };
 
   const proceedToFeedback = (type) => {
-    if (!selectedBusiness) {
+    if (!selectedBusiness && !fromQR) {
         toast({ title: t.warningTitle || "Uyarı", description: t.selectBusiness, className: "bg-slate-800 text-white border-none" });
         return;
     }
-    if (!selectedBranch) {
-        toast({ title: t.warningTitle || "Uyarı", description: t.selectBranch, className: "bg-slate-800 text-white border-none" });
-        return;
+    const targetBusiness = selectedBusiness || qrInfo?.business_id;
+    const targetBranch = selectedBranch || qrInfo?.branch_id;
+
+    if (!targetBusiness || !targetBranch) {
+         toast({ title: "Hata", description: "İşletme bilgisi eksik.", variant: "destructive" });
+         return;
     }
+
     const params = new URLSearchParams();
     params.set('type', type);
-    params.set('business', selectedBusiness);
-    params.set('branch', selectedBranch);
+    params.set('business', targetBusiness);
+    params.set('branch', targetBranch);
     if (isGuest) params.set('guest', 'true');
     if (qrInfo?.qr_code) params.set('qr', qrInfo.qr_code);
     params.set('lang', language);
@@ -1057,22 +1030,47 @@ export default function CustomerPanel() {
                 <p className="text-slate-400 text-sm md:text-base">{t.subtitle}</p>
               </div>
 
-              {fromQR ? (
+              {/* === GÜNCELLENEN KISIM: İŞLETME SEÇİLİYSE FORMLAR ÇIKSIN === */}
+              {selectedBusiness ? (
                 <div className="bg-gradient-to-r from-green-500/20 to-green-600/20 border border-green-500/50 p-6 rounded-xl mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
                   <div className="flex items-center gap-4">
-                    <div className="bg-green-500/20 p-3 rounded-full shrink-0"><QrCode className="h-8 w-8 text-green-400" /></div>
+                    <div className="bg-green-500/20 p-3 rounded-full shrink-0"><Building2 className="h-8 w-8 text-green-400" /></div>
                     <div>
-                      <h3 className="text-white font-bold text-lg break-words">✅ {t.qrScanned}</h3>
-                      <p className="text-green-200 text-sm break-words">{t.qrInfo(businessName || '', branchName || '')}</p>
-                      <button onClick={() => { setHasScannedQR(false); navigate(location.pathname); }} className="text-xs text-green-300 underline hover:text-green-200 mt-1 block">{t.changeInfo}</button>
+                      <h3 className="text-white font-bold text-lg break-words">{businessName || 'İşletme Seçili'}</h3>
+                      {branchName && <p className="text-green-200 text-sm break-words">{branchName}</p>}
+                      <button onClick={() => { setSelectedBusiness(''); setSelectedBranch(''); }} className="text-xs text-green-300 underline hover:text-green-200 mt-1 block">{t.changeInfo}</button>
                     </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+                    <button onClick={() => handleFeedback('complaint')} className="bg-red-500/20 border border-red-500/50 p-4 rounded-xl hover:bg-red-500/30 transition-all flex items-center gap-3">
+                        <AlertTriangle className="h-6 w-6 text-red-400" />
+                        <div className="text-left">
+                            <h3 className="font-bold text-red-200">{t.complaint}</h3>
+                            <p className="text-xs text-red-300/80">{t.complaintDesc}</p>
+                        </div>
+                    </button>
+                    <button onClick={() => handleFeedback('suggestion')} className="bg-blue-500/20 border border-blue-500/50 p-4 rounded-xl hover:bg-blue-500/30 transition-all flex items-center gap-3">
+                        <Lightbulb className="h-6 w-6 text-blue-400" />
+                        <div className="text-left">
+                            <h3 className="font-bold text-blue-200">{t.suggestion}</h3>
+                            <p className="text-xs text-blue-300/80">{t.suggestionDesc}</p>
+                        </div>
+                    </button>
+                    <button onClick={() => handleFeedback('review')} className="bg-yellow-500/20 border border-yellow-500/50 p-4 rounded-xl hover:bg-yellow-500/30 transition-all flex items-center gap-3">
+                        <Star className="h-6 w-6 text-yellow-400" />
+                        <div className="text-left">
+                            <h3 className="font-bold text-yellow-200">{t.review}</h3>
+                            <p className="text-xs text-yellow-300/80">{t.reviewDesc}</p>
+                        </div>
+                    </button>
                   </div>
                 </div>
               ) : (
+                /* İŞLETME SEÇİLİ DEĞİLSE MEVCUT GÖRÜNÜM (Ziyaret edilenler vs.) */
                 <>
                   <div className="bg-slate-800/30 border border-slate-700/20 rounded-lg p-4 mb-6"><div className="text-slate-400 text-sm leading-relaxed text-center space-y-1"><p>{t.qrAutoDetect1}</p><p>{t.qrAutoDetect2}</p><p className="text-slate-500 text-xs opacity-70">{t.qrAutoDetect3}</p></div></div>
                   
-                  {/* REFACTORED: Visited Businesses Section */}
                   <div className="mb-8">
                     <h2 className="text-2xl font-bold text-white mb-6">{t.visitedBusinesses}</h2>
                     {businesses.length === 0 ? (
@@ -1146,7 +1144,46 @@ export default function CustomerPanel() {
                     <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4 flex-1">
                       <div className="flex flex-col w-full md:max-w-xs"><label className="text-xs text-slate-400 mb-1 font-semibold uppercase ml-1">{t.formType}</label><div className="relative"><select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition appearance-none pr-10 font-medium"><option value="all">{t.all}</option><option value="complaint">🔴 {t.complaintBadge}</option><option value="suggestion">💡 {t.suggestionBadge}</option><option value="review">⭐ {t.reviewBadge}</option></select><ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" /></div></div>
                     </div>
-                    <div className="w-full md:w-auto"><button onClick={() => setShowAdvancedFilter(true)} className={`w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 ${activeFilterCount > 0 ? 'bg-teal-600 text-white hover:bg-teal-700 shadow-lg shadow-teal-900/20' : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'}`}><Filter className="h-4 w-4" /><span>{t.advancedFilter}</span>{activeFilterCount > 0 && <span className="bg-white text-teal-600 text-xs font-bold px-2 py-0.5 rounded-full ml-1">{activeFilterCount}</span>}</button></div>
+                    {/* --- GÜNCELLENEN KISIM: POPOVER EKLENDİ --- */}
+                    <div className="w-full md:w-auto">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <button className={`w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 ${activeFilterCount > 0 ? 'bg-teal-600 text-white hover:bg-teal-700 shadow-lg shadow-teal-900/20' : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'}`}>
+                                    <Filter className="h-4 w-4" /><span>{t.advancedFilter}</span>{activeFilterCount > 0 && <span className="bg-white text-teal-600 text-xs font-bold px-2 py-0.5 rounded-full ml-1">{activeFilterCount}</span>}
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 bg-slate-800 border-slate-700 text-white p-4">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <h4 className="font-medium text-sm text-slate-300">{t.branch}</h4>
+                                        <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-md px-3 py-2 text-sm text-white">
+                                            <option value="all">{t.filterAllBranches}</option>
+                                            {uniqueBranches.map(b => (<option key={b} value={b}>{b}</option>))}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h4 className="font-medium text-sm text-slate-300">{t.status}</h4>
+                                        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-md px-3 py-2 text-sm text-white">
+                                            <option value="all">{t.filterAllStatuses}</option>
+                                            <option value="new">{t.delivered}</option>
+                                            <option value="in_progress">{t.reviewing}</option>
+                                            <option value="resolved">{t.resolved}</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h4 className="font-medium text-sm text-slate-300">{t.sortBy}</h4>
+                                        <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-md px-3 py-2 text-sm text-white">
+                                            <option value="newest">{t.newest}</option>
+                                            <option value="oldest">{t.oldest}</option>
+                                        </select>
+                                    </div>
+                                    <div className="pt-2">
+                                        <Button variant="outline" size="sm" onClick={() => { setFilterBranch('all'); setFilterStatus('all'); setSortOrder('newest'); }} className="w-full border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white h-8 text-xs">{t.cancel}</Button>
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                   </div>
 
                   {feedbackList.length === 0 ? (
@@ -1242,12 +1279,7 @@ export default function CustomerPanel() {
                     </Popover>
                   )}
                 </div>
-                {!isGuest && stats.total > 0 && (
-                  <div className="text-right">
-                    <p className="text-slate-400 text-sm mb-1">{t.total}</p>
-                    <p className="text-4xl md:text-5xl font-bold text-teal-400">{stats.total}</p>
-                  </div>
-                )}
+                {/* --- GÜNCELLENEN KISIM: SAĞ ÜSTTEKİ SAYAÇ KALDIRILDI --- */}
               </div>
 
               {isGuest ? (

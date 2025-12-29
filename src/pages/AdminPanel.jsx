@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAdminContext } from '@/contexts/AdminContext';
@@ -10,13 +10,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList, AreaChart, Area
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList, AreaChart, Area } from 'recharts';
 import { subDays, startOfDay, endOfDay, subMonths, startOfMonth } from 'date-fns';
 import { cn, formatCustomerName, getCustomerData, calculateDelta } from "@/lib/utils";
 
@@ -26,7 +22,6 @@ import AdminMobileNavbar from '@/components/AdminMobileNavbar';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
 
 // --- SUB-COMPONENTS ---
-
 const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass, sparkData, loading, isInverseMetric = false }) => {
   let sentimentColor = "bg-slate-800 text-slate-400 border-slate-700"; 
   let TrendIcon = Minus;
@@ -159,7 +154,7 @@ const AdminPanel = () => {
       let query = supabase.from('feedbacks')
         .select('id, created_at, status, feedback_type, rating, general_eval_rating, resolved_at')
         .eq('business_id', businessId)
-        .gte('created_at', prevStart.toISOString());
+        .gte('created_at', prevStart.toISOString()); 
       
       if (selectedBranchId !== 'all') query = query.eq('branch_id', selectedBranchId);
 
@@ -283,13 +278,46 @@ const AdminPanel = () => {
             customer_profiles (
               id, name, email, phone, customer_number, created_at, updated_at, 
               flag_vip_customer, flag_sensitive_customer, admin_note, 
-              user:user_id(first_name, last_name)
+              users:user_id(first_name, last_name)
             ),
             manager_note_updater:manager_note_updated_by (first_name, last_name)
         `).eq('business_id', businessId).order('created_at', { ascending: false }).limit(10);
 
       if (selectedBranchId !== 'all') recentQuery = recentQuery.eq('branch_id', selectedBranchId);
       const { data: recentData } = await recentQuery;
+
+      // --- SELF-HEALING (Kendi Kendini Onarma) ---
+      // Eşleşmemiş profilleri e-posta ile bul ve frontend'de birleştir.
+      if (recentData && recentData.length > 0) {
+          const unlinkedFeedbacks = recentData.filter(f => !f.customer_profiles && f.customer_email);
+          const emailsToCheck = [...new Set(unlinkedFeedbacks.map(f => f.customer_email))];
+
+          if (emailsToCheck.length > 0) {
+              const { data: profiles } = await supabase
+                  .from('customer_profiles')
+                  .select('id, name, email, flag_vip_customer, flag_sensitive_customer, admin_note, users(first_name, last_name)')
+                  .in('email', emailsToCheck);
+
+              if (profiles && profiles.length > 0) {
+                  const profileMap = {};
+                  profiles.forEach(p => { profileMap[p.email] = p; });
+
+                  recentData.forEach(f => {
+                      if (!f.customer_profiles && f.customer_email && profileMap[f.customer_email]) {
+                          // 1. Frontend'de veriyi güncelle (Parlama ve isim için)
+                          f.customer_profiles = profileMap[f.customer_email];
+                          
+                          // 2. Arka planda DB'yi güncelle (Sessizce)
+                          supabase.from('feedbacks')
+                              .update({ customer_profile_id: profileMap[f.customer_email].id })
+                              .eq('id', f.id)
+                              .then(({ error }) => { if(error) console.error("Auto-link error", error) });
+                      }
+                  });
+              }
+          }
+      }
+
       setRecentFeedbacks(recentData || []);
 
     } catch (error) {
@@ -323,13 +351,16 @@ const AdminPanel = () => {
 
   const handleOpenCustomerProfile = (e, feedback) => {
     e.stopPropagation();
-    setSelectedCustomer({ id: feedback.customer_profile_id, email: getCustomerData(feedback, 'email') });
+    const profileId = feedback.customer_profile_id || (feedback.customer_profiles?.id) || null;
+    const profileEmail = getCustomerData(feedback, 'email');
+    
+    setSelectedCustomer({ id: profileId, email: profileEmail });
     setCustomerModalOpen(true);
   };
 
   const handleFlagsUpdate = (customerId, newFlags) => {
       setRecentFeedbacks(prev => prev.map(f => {
-          if (f.customer_profile_id === customerId) {
+          if (f.customer_profile_id === customerId || f.customer_profiles?.id === customerId) {
                return { 
                  ...f, 
                  customer_profiles: { 
@@ -426,8 +457,13 @@ const AdminPanel = () => {
         {loadingFeedbacks ? (<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>) : recentFeedbacks.length === 0 ? (<div className="text-center py-8 text-slate-500">Henüz aktivite yok.</div>) : (
             <div className="space-y-3">
                 {recentFeedbacks.map((f) => {
-                   const customerName = getCustomerData(f, 'name');
+                   const profileFirstName = f.customer_profiles?.users?.first_name;
+                   const profileLastName = f.customer_profiles?.users?.last_name || '';
+                   const profileFullName = profileFirstName ? `${profileFirstName} ${profileLastName}` : f.customer_profiles?.name;
+                   
+                   const customerName = profileFullName || f.customer_name || 'İsimsiz';
                    const smartName = formatCustomerName(customerName);
+
                    const isVip = f.flag_vip_customer || f.customer_profiles?.flag_vip_customer;
                    const isSensitive = f.flag_sensitive_customer || f.customer_profiles?.flag_sensitive_customer;
                    const rating = f.rating || f.general_eval_rating;

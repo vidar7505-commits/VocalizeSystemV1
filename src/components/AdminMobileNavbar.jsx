@@ -62,7 +62,6 @@ const AdminMobileNavbar = () => {
       
       if (!error) {
         setNotifications(data || []);
-        const unread = data?.filter(n => !n.is_read).length || 0;
         const { count } = await supabase
           .from('notifications')
           .select('*', { count: 'exact', head: true })
@@ -92,6 +91,7 @@ const AdminMobileNavbar = () => {
     };
   }, [user]);
 
+  // Click Outside (Dışarı tıklayınca kapatma)
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
@@ -99,10 +99,15 @@ const AdminMobileNavbar = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside); // Mobilde daha iyi tepki için
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, []);
 
-  const handleBellClick = () => {
+  const handleBellClick = (e) => {
+    e.stopPropagation(); 
     setShowNotifications(!showNotifications);
   };
 
@@ -111,41 +116,49 @@ const AdminMobileNavbar = () => {
     navigate('/admin-panel/notifications');
   };
 
-  const handleNotificationClick = async (notification) => {
-    setShowNotifications(false);
-    
-    // Okundu olarak işaretle
-    if (!notification.is_read) {
-        const { error } = await supabase
-            .from('notifications')
-            .update({ is_read: true })
-            .eq('id', notification.id);
-            
-        if (!error) {
-            setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
-            setUnreadCount(prev => Math.max(0, prev - 1));
-        }
+  // --- GÜNCELLENEN KISIM: HEMEN YÖNLENDİRME ---
+  const handleNotificationClick = (notification, e) => {
+    if (e) e.stopPropagation();
+    setShowNotifications(false); // Menüyü hemen kapat
+
+    // 1. Önce sayfaya yönlendir (Bekletme yok)
+    if (notification.related_id) {
+        navigate('/admin-panel/feedbacks', { 
+            state: { openFeedbackId: notification.related_id } 
+        });
     }
 
-    // İlgili sayfaya git (Örn: Geri bildirim detayına)
-    if (notification.related_id) {
-        // ID bilgisini 'state' olarak sayfaya gönderiyoruz
-        navigate('/admin-panel/feedbacks', { state: { openFeedbackId: notification.related_id } });
+    // 2. Okundu işaretlemesini arka planda yap (Optimistic Update)
+    if (!notification.is_read) {
+        // UI'ı hemen güncelle
+        setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+
+        // DB işlemini arkada yap
+        supabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('id', notification.id)
+            .then(({ error }) => {
+                if (error) console.error("Bildirim DB hatası:", error);
+            });
     }
   };
 
-  const handleMarkAllRead = async () => {
-     const { error } = await supabase
+  const handleMarkAllRead = async (e) => {
+     if(e) e.stopPropagation();
+     
+     // UI Optimistic Update
+     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+     setUnreadCount(0);
+     toast({ title: "Tüm bildirimler okundu" });
+
+     // DB Update
+     await supabase
         .from('notifications')
         .update({ is_read: true })
         .eq('user_id', user.id)
         .eq('is_read', false);
-        
-     if (!error) {
-        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-        setUnreadCount(0);
-        toast({ title: "Tüm bildirimler okundu" });
-     }
   };
 
   const getSelectedBranchLabel = () => {
@@ -171,12 +184,12 @@ const AdminMobileNavbar = () => {
         {/* MIDDLE: Branch Selector */}
         <div className="flex-1 flex justify-center px-1 min-w-0">
            {branches.length > 1 && (
-             <div className="w-full max-w-[100px]">
+             <div className="w-full max-w-[130px]">
                <Select 
                  value={selectedBranchId} 
                  onValueChange={setSelectedBranchId}
                >
-                 <SelectTrigger className="bg-transparent border-none text-white h-8 p-0 focus:ring-0 focus:ring-offset-0 justify-center">
+                 <SelectTrigger className="bg-transparent border-none text-white h-8 p-0 focus:ring-0 focus:ring-offset-0 justify-center shadow-none">
                     <div className="flex items-center gap-1 truncate mx-auto">
                       <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span className="truncate font-medium text-xs">{getSelectedBranchLabel()}</span>
@@ -220,7 +233,7 @@ const AdminMobileNavbar = () => {
                               <CheckCheck className="w-3.5 h-3.5" />
                            </button>
                        )}
-                       <button onClick={() => setShowNotifications(false)} className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white">
+                       <button onClick={(e) => { e.stopPropagation(); setShowNotifications(false); }} className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white">
                           <X className="w-3.5 h-3.5" />
                        </button>
                     </div>
@@ -230,7 +243,7 @@ const AdminMobileNavbar = () => {
                         notifications.map(n => (
                             <div 
                                 key={n.id} 
-                                onClick={() => handleNotificationClick(n)}
+                                onClick={(e) => handleNotificationClick(n, e)}
                                 className={`p-3 border-b border-slate-700/50 flex gap-3 cursor-pointer hover:bg-slate-800 transition-colors ${!n.is_read ? 'bg-slate-700/20' : ''}`}
                             >
                                 <div className={`w-2 h-2 mt-1.5 rounded-full shrink-0 ${n.is_read ? 'bg-slate-600' : 'bg-blue-500'}`}></div>
