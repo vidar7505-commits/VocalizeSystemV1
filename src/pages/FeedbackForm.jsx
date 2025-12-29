@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { 
   QrCode, ArrowLeft, ImagePlus, X, CheckCircle2, Send, Loader2, Star, 
   AlertTriangle, Lightbulb, Info, Building2, AlertCircle, MapPin, 
-  Calendar as CalendarIcon, Trash2, Maximize2, Clock 
+  Calendar as CalendarIcon, Trash2, Maximize2, Clock, ThumbsUp, Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -16,7 +16,7 @@ import { format } from 'date-fns';
 import { tr, enUS } from 'date-fns/locale';
 
 // ============================================================================
-// STATIC DATA & HELPERS (Component Dışına Taşındı - Performans ve Hata Önleme İçin)
+// STATIC DATA & HELPERS
 // ============================================================================
 
 const getEmojiForRating = (rating, emojis) => emojis[rating] || '';
@@ -75,7 +75,14 @@ const TEXTS = {
     images: { label: "Görseller", placeholder: "Fotoğraf Ekle", sub: "Max 3 adet", uploaded: "yüklendi" },
     submit: { sending: "Gönderiliyor...", send: "Gönder", error: "Hata oluştu.", errorValidation: "Eksik alanlar var." },
     disclaimer: "Geri dönüş süreci işletmeye bağlıdır.",
-    success: { title: "Teşekkürler!", desc: (name) => `Bildiriminiz ${name} yöneticisine iletildi.`, footer: "Bizi tercih ettiğiniz için teşekkürler.", button: "Tamam" }
+    success: { title: "Teşekkürler!", desc: (name) => `Bildiriminiz ${name} yöneticisine iletildi.`, footer: "Bizi tercih ettiğiniz için teşekkürler.", button: "Tamam" },
+    googleReview: {
+        title: "Deneyiminizi Paylaşın!",
+        text: "Bu güzel deneyimi Google'da paylaşarak bize destek olmak ister misiniz?",
+        yes: "Evet, Google'da Paylaş",
+        no: "Hayır, Teşekkürler",
+        copied: "Yorumunuz kopyalandı! Google'a yapıştırabilirsiniz."
+    }
   },
   en: {
     errorLoad: "Error loading data.",
@@ -106,7 +113,14 @@ const TEXTS = {
     images: { label: "Images", placeholder: "Add Photo", sub: "Max 3 images", uploaded: "images uploaded" },
     submit: { sending: "Sending...", send: "Send", error: "Error occurred.", errorValidation: "Missing fields." },
     disclaimer: "Response depends on the business.",
-    success: { title: "Thank You!", desc: (name) => `Sent to ${name} manager.`, footer: "Thanks for choosing us.", button: "OK" }
+    success: { title: "Thank You!", desc: (name) => `Sent to ${name} manager.`, footer: "Thanks for choosing us.", button: "OK" },
+    googleReview: {
+        title: "Share Your Experience!",
+        text: "Would you like to support us by sharing this great experience on Google?",
+        yes: "Yes, Share on Google",
+        no: "No, Thanks",
+        copied: "Your comment copied! You can paste it on Google."
+    }
   }
 };
 
@@ -135,6 +149,7 @@ export default function FeedbackForm() {
   const [businessName, setBusinessName] = useState('');
   const [branches, setBranches] = useState([]); 
   const [selectedBranch, setSelectedBranch] = useState(branchParam || '');
+  const [currentBranchData, setCurrentBranchData] = useState(null); // Şube detaylarını tutmak için (Google Linki buradan gelecek)
   const [qrCode, setQrCode] = useState(qrParam || null);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -184,32 +199,40 @@ export default function FeedbackForm() {
             const { data: bizData } = await supabase.from('businesses').select('business_name').eq('id', targetBusinessId).single();
             if (bizData) setBusinessName(bizData.business_name);
 
-            // Fetch ALL active branches
-            const { data: allBranches } = await supabase.from('branches').select('id, branch_name_tr').eq('business_id', targetBusinessId).eq('is_active', true);
+            // Fetch ALL active branches (google_review_url dahil edildi)
+            const { data: allBranches } = await supabase.from('branches')
+                .select('id, branch_name_tr, business_id, google_review_url')
+                .eq('business_id', targetBusinessId)
+                .eq('is_active', true);
             
             if (allBranches) {
                 setBranches(allBranches);
                 
-                // MANTIK DEĞİŞİKLİĞİ: Eğer branchParam değişirse veya branches ilk kez yükleniyorsa güncelle
-                // Manuel seçimde tekrar buraya girmemesi için dependency array'den 'selectedBranch' zaten çıkarıldı.
                 if (branchParam && allBranches.some(b => b.id === branchParam)) {
                     setSelectedBranch(branchParam);
+                    setCurrentBranchData(allBranches.find(b => b.id === branchParam));
                 } else if (allBranches.length === 1) {
                     setSelectedBranch(allBranches[0].id);
+                    setCurrentBranchData(allBranches[0]);
                 }
             }
         }
       } catch (error) {
         console.error('Error initializing feedback form:', error);
-        // Hata durumunda statik metin göster (t.errorLoad yerine)
         toast({ title: "Hata", description: "Veri yüklenemedi", variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
     };
     init();
-  // ÖNEMLİ: Dependency Array'den 't' ve 'toast' kaldırıldı. Sadece veri parametreleri kaldı.
   }, [typeParam, businessParam, branchParam, qrParam, langParam]);
+
+  // Handle branch change manually
+  const handleBranchChange = (branchId) => {
+      setSelectedBranch(branchId);
+      const branchData = branches.find(b => b.id === branchId);
+      setCurrentBranchData(branchData);
+  };
 
   // IMAGE HANDLERS
   const handleImageUpload = (e) => {
@@ -369,10 +392,37 @@ export default function FeedbackForm() {
     navigate(`/customer-panel?${searchParams.toString()}`, { state: { showSuccessNotification: true, feedbackType } });
   };
 
+  // GOOGLE REDIRECT HANDLER
+  const handleGoogleRedirect = () => {
+      // 1. Yorumu kopyala
+      if (message) {
+          navigator.clipboard.writeText(message).then(() => {
+              toast({ 
+                  title: t.googleReview.copied, 
+                  className: "bg-green-600 text-white border-none"
+              });
+          }).catch(err => console.error('Copy failed', err));
+      }
+
+      // 2. Google'a yönlendir
+      if (currentBranchData?.google_review_url) {
+          window.open(currentBranchData.google_review_url, '_blank');
+      }
+
+      // 3. Modalı kapat ve panele dön
+      handleSuccessClose();
+  };
+
   if (isLoading) return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center"><Loader2 className="h-12 w-12 text-orange-500 animate-spin" /></div>;
 
   const logoUrl = "https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/13d4a6d0cb60030e231821b7e8ea74ad.png";
   const formInfo = getFormInfo(feedbackType, t.titles);
+
+  // Google Yönlendirme Şartı: Puan 4 veya 5 İSE VE Link varsa
+  // Not: Genel formlarda 'rating' kullanılır, şikayet/öneri formlarında 'generalRating' kullanılabilir.
+  // Burada mantık: Hangi puan türü kullanıldıysa ona bak.
+  const currentRating = feedbackType === 'review' ? rating : generalRating;
+  const showGoogleRedirect = currentBranchData?.google_review_url && currentRating >= 4;
 
   return (
     <div className="min-h-screen bg-[#0f172a] px-4 py-8 md:px-8 md:py-12 font-sans text-white overflow-x-hidden">
@@ -401,7 +451,7 @@ export default function FeedbackForm() {
               <p className="text-xs text-slate-500 font-bold uppercase mb-1">{t.businessLabel}</p>
               <h3 className="font-bold text-lg text-white truncate mb-2">{businessName}</h3>
               <div className="relative">
-                <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg py-2 pl-3 pr-8 focus:ring-1 focus:ring-teal-500 focus:border-teal-500 appearance-none transition-colors">
+                <select value={selectedBranch} onChange={(e) => handleBranchChange(e.target.value)} className="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg py-2 pl-3 pr-8 focus:ring-1 focus:ring-teal-500 focus:border-teal-500 appearance-none transition-colors">
                   <option value="" disabled>{t.branch.placeholder}</option>
                   {branches.map(branch => (<option key={branch.id} value={branch.id}>{branch.branch_name_tr}</option>))}
                 </select>
@@ -495,8 +545,41 @@ export default function FeedbackForm() {
             <div className="absolute inset-0 bg-gradient-to-b from-green-500/5 to-transparent pointer-events-none"></div>
             <div className="bg-green-500/20 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.2)]"><CheckCircle2 className="h-12 w-12 text-green-500" /></div>
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 tracking-tight break-words">{t.success.title}</h2>
-            <div className="bg-slate-800/50 rounded-xl p-4 mb-8 border border-slate-700/50"><p className="text-slate-300 leading-relaxed text-sm break-words">{t.success.desc(businessName || t.businessLabel)}</p><div className="mt-3 pt-3 border-t border-slate-700/50"><span className="text-green-400 font-bold text-sm flex items-center justify-center gap-2 flex-wrap"><Star className="h-4 w-4 fill-green-400 text-green-400 shrink-0" /> {t.success.footer}</span></div></div>
-            <Button onClick={handleSuccessClose} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 h-auto text-base rounded-xl transition shadow-lg shadow-teal-900/20 hover:scale-[1.02]"><ArrowLeft className="mr-2 h-5 w-5" />{t.success.button}</Button>
+            
+            {showGoogleRedirect ? (
+                // Google Yönlendirme Modu (Şartlar Sağlandığında)
+                <div className="bg-slate-800/80 rounded-xl p-5 mb-6 border border-blue-500/30 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex justify-center mb-3">
+                        <div className="bg-white p-2 rounded-full shadow-lg">
+                            {/* Google G Logo SVG */}
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+                        </div>
+                    </div>
+                    <h4 className="text-white font-bold text-lg mb-2">{t.googleReview.title}</h4>
+                    <p className="text-slate-300 text-sm mb-4 leading-relaxed">{t.googleReview.text}</p>
+                    
+                    <div className="flex flex-col gap-3">
+                        <Button 
+                            onClick={handleGoogleRedirect} 
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-blue-900/30"
+                        >
+                            <Copy className="h-4 w-4" /> {t.googleReview.yes}
+                        </Button>
+                        <button 
+                            onClick={handleSuccessClose} 
+                            className="text-slate-400 hover:text-white text-sm font-medium transition-colors py-2"
+                        >
+                            {t.googleReview.no}
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                // Standart Başarı Ekranı
+                <>
+                    <div className="bg-slate-800/50 rounded-xl p-4 mb-8 border border-slate-700/50"><p className="text-slate-300 leading-relaxed text-sm break-words">{t.success.desc(businessName || t.businessLabel)}</p><div className="mt-3 pt-3 border-t border-slate-700/50"><span className="text-green-400 font-bold text-sm flex items-center justify-center gap-2 flex-wrap"><Star className="h-4 w-4 fill-green-400 text-green-400 shrink-0" /> {t.success.footer}</span></div></div>
+                    <Button onClick={handleSuccessClose} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 h-auto text-base rounded-xl transition shadow-lg shadow-teal-900/20 hover:scale-[1.02]"><ArrowLeft className="mr-2 h-5 w-5" />{t.success.button}</Button>
+                </>
+            )}
           </div>
         </div>
       )}
