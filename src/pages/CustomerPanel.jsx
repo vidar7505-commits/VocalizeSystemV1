@@ -832,12 +832,16 @@ export default function CustomerPanel() {
     
     setIsUpdatingEmail(true);
     try {
-      const { error } = await supabase.auth.updateUser({ email: newEmail });
+      const { error } = await supabase.auth.updateUser(
+        { email: newEmail },
+        { emailRedirectTo: 'https://www.vocalize.global/customer-panel' }
+      );
+
       if (error) throw error;
       
       toast({ 
-        title: language === 'tr' ? 'Başarılı' : 'Success', 
-        description: language === 'tr' ? 'E-posta başarıyla güncellendi' : 'Email successfully updated', 
+        title: language === 'tr' ? 'Onay E-postası Gönderildi' : 'Confirmation Email Sent', 
+        description: language === 'tr' ? 'Lütfen yeni e-posta adresinize gelen linke tıklayarak değişikliği onaylayın.' : 'Please click the link sent to your new email to confirm.', 
         className: "bg-teal-600 text-white border-none" 
       });
       setNewEmail('');

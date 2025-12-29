@@ -16,11 +16,11 @@ const CUSTOMER_LOGO_URL = "https://horizons-cdn.hostinger.com/b40913c4-5edd-44d9
 const ADMIN_LOGO_URL = "https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/3d6a29cc801b191db966e74d52e248ab.png";    // Koyu Turkuaz
 
 const translateError = (errorMsg) => {
-	if (!errorMsg) return "Bir hata oluştu.";
-	if (errorMsg.includes("Invalid login credentials")) return "E-posta veya şifre hatalı.";
-	if (errorMsg.includes("User already registered")) return "Bu e-posta adresi zaten kayıtlı.";
-	if (errorMsg.includes("Password should be at least")) return "Şifre en az 6 karakter olmalıdır.";
-	return "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.";
+  if (!errorMsg) return "Bir hata oluştu.";
+  if (errorMsg.includes("Invalid login credentials")) return "E-posta veya şifre hatalı.";
+  if (errorMsg.includes("User already registered")) return "Bu e-posta adresi zaten kayıtlı.";
+  if (errorMsg.includes("Password should be at least")) return "Şifre en az 6 karakter olmalıdır.";
+  return "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.";
 };
 
 export default function AuthModal({ 
@@ -96,11 +96,18 @@ export default function AuthModal({
     }
     setIsLoading(true);
     try {
+      // --- DÜZELTİLEN KISIM: Canlı URL Yönlendirmesi ---
       const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: window.location.origin + '/reset-password',
+        redirectTo: 'https://www.vocalize.global/update-password',
       });
+      
       if (error) throw error;
-      toast({ title: "E-posta Gönderildi", description: "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi." });
+      
+      toast({ 
+        title: "E-posta Gönderildi", 
+        description: "Şifre sıfırlama talimatları e-posta adresinize gönderildi.",
+        className: "bg-teal-600 text-white border-none" 
+      });
       setViewMode('auth');
       setActiveTab('login');
       setFormData(prev => ({ ...prev, email: '' }));
