@@ -53,6 +53,20 @@ const QRRedirector = () => {
         localStorage.setItem('vocalize_last_business', branchData.business_id);
         localStorage.setItem('vocalize_last_branch', branchData.id);
 
+        // 3.1. VISITED BUSINESSES ARRAY'İNİ GÜNCELLE
+        try {
+          const visitedBusinessesJson = localStorage.getItem('vocalize_visited_businesses');
+          let visitedBusinesses = visitedBusinessesJson ? JSON.parse(visitedBusinessesJson) : [];
+          
+          // Eğer bu business_id zaten dizide yoksa ekle
+          if (!visitedBusinesses.includes(branchData.business_id)) {
+            visitedBusinesses.push(branchData.business_id);
+            localStorage.setItem('vocalize_visited_businesses', JSON.stringify(visitedBusinesses));
+          }
+        } catch (e) {
+          console.warn('Failed to update visited businesses:', e);
+        }
+
         // Store branch data
         setQrData(branchData);
 
@@ -63,9 +77,15 @@ const QRRedirector = () => {
           // A) User logged in
           await handleAuthenticatedUser(session, branchData);
         } else {
-          // B) User not logged in - Show Auth Modal
-          setShowAuthModal(true);
-          setIsLoading(false); 
+          // B) User not logged in - Redirect to Landing Page with state
+          navigate('/', { 
+            state: { 
+              openAuthModal: true, 
+              defaultTab: 'register',
+              qrData: branchData 
+            },
+            replace: true
+          });
         }
 
       } catch (err) {
@@ -214,18 +234,6 @@ const QRRedirector = () => {
           <Loader2 className="h-12 w-12 text-teal-500 animate-spin mb-6" />
           <p className="text-slate-400 text-lg font-medium">QR kod işleniyor...</p>
         </div>
-        
-        {/* Keep AuthModal mounted but hidden if needed, or just condition it */}
-        {showAuthModal && (
-          <AuthModal
-            isOpen={showAuthModal}
-            onClose={handleModalClose}
-            defaultTab="register"
-            defaultRole="customer"
-            showGuestOption={true}
-            onGuestContinue={handleGuestContinue}
-          />
-        )}
       </div>
     );
   }
@@ -255,20 +263,9 @@ const QRRedirector = () => {
     );
   }
 
-  // This part might be reached if showAuthModal is true but isLoading is false 
-  // (e.g. if we set isLoading(false) when showing modal)
-  return (
-    <div className="min-h-screen bg-[#0f172a]">
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={handleModalClose}
-        defaultTab="register"
-        defaultRole="customer"
-        showGuestOption={true}
-        onGuestContinue={handleGuestContinue}
-      />
-    </div>
-  );
+  // Eğer buraya gelindiyse, kullanıcı zaten yönlendirilmiş demektir
+  // Bu kısım artık erişilmemeli ama güvenlik için null döndürelim
+  return null;
 };
 
 export default QRRedirector;

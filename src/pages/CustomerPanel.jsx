@@ -1049,62 +1049,108 @@ export default function CustomerPanel() {
                     <div className="bg-green-500/20 p-3 rounded-full shrink-0"><Building2 className="h-8 w-8 text-green-400" /></div>
                     <div>
                       <h3 className="text-white font-bold text-lg break-words">{businessName || 'İşletme Seçili'}</h3>
-                      {branchName && <p className="text-green-200 text-sm break-words">{branchName}</p>}
+                      {branchName && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-green-200 text-sm break-words">{branchName}</p>
+                          {/* Buradasınız Etiketi - Eğer QR ile gelen şube seçili şubeyle eşleşiyorsa */}
+                          {(qrParam && branchParam === selectedBranch) || (localStorage.getItem('vocalize_last_branch') === selectedBranch) ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/20 border border-green-500/50 rounded-full text-xs font-semibold text-green-300 animate-pulse">
+                              📍 {language === 'tr' ? 'Buradasınız' : 'You are here'}
+                            </span>
+                          ) : null}
+                        </div>
+                      )}
                       <button onClick={() => { setSelectedBusiness(''); setSelectedBranch(''); }} className="text-xs text-green-300 underline hover:text-green-200 mt-1 block">{t.changeInfo}</button>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 gap-4 mt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                     {/* Şikayet Kartı */}
                     <button 
                       onClick={() => handleFeedback('complaint')} 
-                      className="bg-slate-800/50 border-2 border-slate-700 p-5 rounded-xl hover:border-red-500/70 hover:bg-slate-800/80 hover:scale-[1.02] transition-all duration-300 flex items-center justify-between gap-4 group"
+                      disabled={!selectedBranch}
+                      className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 text-left ${
+                        !selectedBranch 
+                          ? 'bg-slate-800/50 border-2 border-slate-700 opacity-50 cursor-not-allowed' 
+                          : 'bg-gradient-to-br from-red-600 to-red-700 border-2 border-red-500 hover:scale-105 hover:shadow-2xl hover:shadow-red-900/50'
+                      }`}
                     >
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="bg-red-500/20 p-4 rounded-lg shrink-0 group-hover:bg-red-500/30 transition-colors">
-                          <AlertTriangle className="h-8 w-8 text-red-400" />
+                      <div className="relative z-10">
+                        <div className="mb-4">
+                          <AlertTriangle className={`h-12 w-12 ${!selectedBranch ? 'text-slate-600' : 'text-white'}`} />
                         </div>
-                        <div className="text-left flex-1 min-w-0">
-                          <h3 className="font-bold text-white text-lg mb-1 break-words">{t.complaint}</h3>
-                          <p className="text-sm text-slate-400 break-words">{t.complaintDesc}</p>
-                        </div>
+                        <h3 className={`font-bold text-xl mb-2 ${!selectedBranch ? 'text-slate-500' : 'text-white'}`}>
+                          {t.complaint}
+                        </h3>
+                        <p className={`text-sm ${!selectedBranch ? 'text-slate-600' : 'text-red-100'}`}>
+                          {t.complaintDesc}
+                        </p>
                       </div>
-                      <ChevronRight className="h-6 w-6 text-slate-500 group-hover:text-red-400 group-hover:translate-x-1 transition-all shrink-0" />
+                      {!selectedBranch && (
+                        <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-[2px]"></div>
+                      )}
                     </button>
 
                     {/* Öneri Kartı */}
                     <button 
                       onClick={() => handleFeedback('suggestion')} 
-                      className="bg-slate-800/50 border-2 border-slate-700 p-5 rounded-xl hover:border-blue-500/70 hover:bg-slate-800/80 hover:scale-[1.02] transition-all duration-300 flex items-center justify-between gap-4 group"
+                      disabled={!selectedBranch}
+                      className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 text-left ${
+                        !selectedBranch 
+                          ? 'bg-slate-800/50 border-2 border-slate-700 opacity-50 cursor-not-allowed' 
+                          : 'bg-gradient-to-br from-blue-600 to-blue-700 border-2 border-blue-500 hover:scale-105 hover:shadow-2xl hover:shadow-blue-900/50'
+                      }`}
                     >
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="bg-blue-500/20 p-4 rounded-lg shrink-0 group-hover:bg-blue-500/30 transition-colors">
-                          <Lightbulb className="h-8 w-8 text-blue-400" />
+                      <div className="relative z-10">
+                        <div className="mb-4">
+                          <Lightbulb className={`h-12 w-12 ${!selectedBranch ? 'text-slate-600' : 'text-white'}`} />
                         </div>
-                        <div className="text-left flex-1 min-w-0">
-                          <h3 className="font-bold text-white text-lg mb-1 break-words">{t.suggestion}</h3>
-                          <p className="text-sm text-slate-400 break-words">{t.suggestionDesc}</p>
-                        </div>
+                        <h3 className={`font-bold text-xl mb-2 ${!selectedBranch ? 'text-slate-500' : 'text-white'}`}>
+                          {t.suggestion}
+                        </h3>
+                        <p className={`text-sm ${!selectedBranch ? 'text-slate-600' : 'text-blue-100'}`}>
+                          {t.suggestionDesc}
+                        </p>
                       </div>
-                      <ChevronRight className="h-6 w-6 text-slate-500 group-hover:text-blue-400 group-hover:translate-x-1 transition-all shrink-0" />
+                      {!selectedBranch && (
+                        <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-[2px]"></div>
+                      )}
                     </button>
 
                     {/* Değerlendirme Kartı */}
                     <button 
                       onClick={() => handleFeedback('review')} 
-                      className="bg-slate-800/50 border-2 border-slate-700 p-5 rounded-xl hover:border-yellow-500/70 hover:bg-slate-800/80 hover:scale-[1.02] transition-all duration-300 flex items-center justify-between gap-4 group"
+                      disabled={!selectedBranch}
+                      className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 text-left ${
+                        !selectedBranch 
+                          ? 'bg-slate-800/50 border-2 border-slate-700 opacity-50 cursor-not-allowed' 
+                          : 'bg-gradient-to-br from-orange-500 to-orange-600 border-2 border-orange-400 hover:scale-105 hover:shadow-2xl hover:shadow-orange-900/50'
+                      }`}
                     >
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="bg-yellow-500/20 p-4 rounded-lg shrink-0 group-hover:bg-yellow-500/30 transition-colors">
-                          <Star className="h-8 w-8 text-yellow-400" />
+                      <div className="relative z-10">
+                        <div className="mb-4">
+                          <Star className={`h-12 w-12 ${!selectedBranch ? 'text-slate-600' : 'text-white'}`} />
                         </div>
-                        <div className="text-left flex-1 min-w-0">
-                          <h3 className="font-bold text-white text-lg mb-1 break-words">{t.review}</h3>
-                          <p className="text-sm text-slate-400 break-words">{t.reviewDesc}</p>
-                        </div>
+                        <h3 className={`font-bold text-xl mb-2 ${!selectedBranch ? 'text-slate-500' : 'text-white'}`}>
+                          {t.review}
+                        </h3>
+                        <p className={`text-sm ${!selectedBranch ? 'text-slate-600' : 'text-orange-100'}`}>
+                          {t.reviewDesc}
+                        </p>
                       </div>
-                      <ChevronRight className="h-6 w-6 text-slate-500 group-hover:text-yellow-400 group-hover:translate-x-1 transition-all shrink-0" />
+                      {!selectedBranch && (
+                        <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-[2px]"></div>
+                      )}
                     </button>
+                  </div>
+                  
+                  {/* ALT BİLGİ UYARISI */}
+                  <div className="bg-red-950/30 border-2 border-red-500/50 rounded-xl p-5 mt-6 flex items-start gap-3">
+                    <AlertCircle className="h-6 w-6 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-red-300 font-semibold mb-1">{t.warningTitle}</h4>
+                      <p className="text-sm text-red-200/80 leading-relaxed">{t.warningText}</p>
+                    </div>
                   </div>
                 </div>
               ) : (
