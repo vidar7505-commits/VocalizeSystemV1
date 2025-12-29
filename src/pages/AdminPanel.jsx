@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAdminContext } from '@/contexts/AdminContext';
 import { 
@@ -102,6 +102,7 @@ const hasImages = (f) => {
 const AdminPanel = () => {
   const { businessId, selectedBranchId, branches, dateRange, setDateRange } = useAdminContext();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const [metrics, setMetrics] = useState({
@@ -123,6 +124,17 @@ const AdminPanel = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+
+  useEffect(() => {
+    if (location.state?.openFeedbackId && recentFeedbacks.length > 0) {
+      const targetFeedback = recentFeedbacks.find(f => f.id === location.state.openFeedbackId);
+      if (targetFeedback) {
+        setSelectedFeedback(targetFeedback);
+        setIsDetailModalOpen(true);
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, recentFeedbacks]);
 
   const displayTitle = selectedBranchId === 'all' 
     ? "Ana Panel" 
@@ -281,13 +293,11 @@ const AdminPanel = () => {
               users:user_id(first_name, last_name)
             ),
             manager_note_updater:manager_note_updated_by (first_name, last_name)
-        `).eq('business_id', businessId).order('created_at', { ascending: false }).limit(10);
+        `).eq('business_id', businessId).order('created_at', { ascending: false }).limit(20);
 
       if (selectedBranchId !== 'all') recentQuery = recentQuery.eq('branch_id', selectedBranchId);
       const { data: recentData } = await recentQuery;
 
-      // --- SELF-HEALING (Kendi Kendini Onarma) ---
-      // Eşleşmemiş profilleri e-posta ile bul ve frontend'de birleştir.
       if (recentData && recentData.length > 0) {
           const unlinkedFeedbacks = recentData.filter(f => !f.customer_profiles && f.customer_email);
           const emailsToCheck = [...new Set(unlinkedFeedbacks.map(f => f.customer_email))];
@@ -304,10 +314,7 @@ const AdminPanel = () => {
 
                   recentData.forEach(f => {
                       if (!f.customer_profiles && f.customer_email && profileMap[f.customer_email]) {
-                          // 1. Frontend'de veriyi güncelle (Parlama ve isim için)
                           f.customer_profiles = profileMap[f.customer_email];
-                          
-                          // 2. Arka planda DB'yi güncelle (Sessizce)
                           supabase.from('feedbacks')
                               .update({ customer_profile_id: profileMap[f.customer_email].id })
                               .eq('id', f.id)
@@ -404,9 +411,11 @@ const AdminPanel = () => {
         <Tabs defaultValue="stars" className="w-full">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div><h2 className="text-white font-bold text-xl mb-1">Analiz Grafikleri</h2><p className="text-slate-400 text-sm">Müşteri geri bildirimlerinin detaylı dağılımı</p></div>
-            <TabsList className="bg-slate-800 border-slate-700">
-              <TabsTrigger value="stars" className="data-[state=active]:bg-slate-700"><Star className="w-4 h-4 mr-2" />Yıldız Dağılımı</TabsTrigger>
-              <TabsTrigger value="types" className="data-[state=active]:bg-slate-700"><MessageSquare className="w-4 h-4 mr-2" />Geri Bildirim Tipleri</TabsTrigger>
+            
+            {/* GÜNCELLENDİ: Webde Flex, Mobilde Grid (Butonlar yan yana sığsın) */}
+            <TabsList className="bg-slate-800 border-slate-700 w-full grid grid-cols-2 h-auto p-1 sm:w-auto sm:flex sm:h-10">
+              <TabsTrigger value="stars" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm"><Star className="w-4 h-4 mr-2" />Yıldız Dağılımı</TabsTrigger>
+              <TabsTrigger value="types" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm"><MessageSquare className="w-4 h-4 mr-2" />Form Türleri</TabsTrigger>
             </TabsList>
           </div>
 
@@ -416,10 +425,12 @@ const AdminPanel = () => {
                 <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><Star className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz değerlendirme almadınız</h3></div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
+                  {/* GÜNCELLENDİ: Sol (left) margin -20'den 0'a çekildi ki yazılar sığsın */}
                   <BarChart layout="vertical" data={ratingDistribution} margin={{ top: 5, right: 30, left: 0, bottom: 5 }} barSize={24}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
                     <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} domain={[0, 'auto']} />
-                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={50} />
+                    {/* Width 60 yapıldı ki "5 Yıldız" yazısı sığsın */}
+                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={60} />
                     <Tooltip formatter={(value) => [value, 'Adet']} labelFormatter={() => ''} contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} cursor={{ fill: '#ffffff10' }} />
                     <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={32}>{ratingDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}<LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={12} /></Bar>
                   </BarChart>
@@ -434,10 +445,11 @@ const AdminPanel = () => {
                 <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><MessageSquare className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz geri bildirim almadınız</h3></div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
+                  {/* GÜNCELLENDİ: Sol margin 0 ve YAxis width 85 (Değerlendirme yazısı uzun olduğu için) */}
                   <BarChart layout="vertical" data={feedbackTypeDistribution} margin={{ top: 5, right: 30, left: 0, bottom: 5 }} barSize={24}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
                     <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={60} />
+                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={85} />
                     <Tooltip formatter={(value) => [value, 'Adet']} labelFormatter={() => ''} contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} cursor={{ fill: '#ffffff10' }} />
                     <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={40}>{feedbackTypeDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}<LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={12} /></Bar>
                   </BarChart>

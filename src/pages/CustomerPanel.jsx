@@ -11,10 +11,11 @@ import {
   Settings, MessageSquare, MapPin, Mail, Phone, Lock, LogOut, Trash2, X, Star, ChevronDown,
   AlertTriangle, Lightbulb, Home, List, TrendingUp, Menu, QrCode, Info, AlertCircle, Filter,
   MessageCircle, Loader2, Image as ImageIcon, Upload, PieChart, BarChart, Activity, UserPlus, LogIn,
-  Building2, CheckCircle2, ChevronRight, Edit2, Maximize2, KeyRound, Shield, HelpCircle, ArrowRight
+  Building2, CheckCircle2, ChevronRight, Edit2, Maximize2, KeyRound, Shield, HelpCircle, ArrowRight,
+  Send, AlertOctagon // AlertOctagon eklendi
 } from 'lucide-react';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription // DialogDescription eklendi
 } from "@/components/ui/dialog";
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -73,6 +74,9 @@ export default function CustomerPanel() {
   const [pendingFeedbackType, setPendingFeedbackType] = useState(null);
   const [dontShowGuestWarning, setDontShowGuestWarning] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
+  
+  // YENİ STATE: Hesap Silme Onay Modalı için
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
 
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
@@ -925,6 +929,7 @@ export default function CustomerPanel() {
       });
       
       setShowSettingsModal(false);
+      setShowDeleteConfirmModal(false); // Modal'ı da kapat
       
       await signOut();
       
@@ -1030,7 +1035,7 @@ export default function CustomerPanel() {
                 <p className="text-slate-400 text-sm md:text-base">{t.subtitle}</p>
               </div>
 
-              {/* === GÜNCELLENEN KISIM: İŞLETME SEÇİLİYSE FORMLAR ÇIKSIN === */}
+              {/* === İŞLETME SEÇİLİYSE FORMLAR ÇIKSIN === */}
               {selectedBusiness ? (
                 <div className="bg-gradient-to-r from-green-500/20 to-green-600/20 border border-green-500/50 p-6 rounded-xl mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
                   <div className="flex items-center gap-4">
@@ -1067,7 +1072,6 @@ export default function CustomerPanel() {
                   </div>
                 </div>
               ) : (
-                /* İŞLETME SEÇİLİ DEĞİLSE MEVCUT GÖRÜNÜM (Ziyaret edilenler vs.) */
                 <>
                   <div className="bg-slate-800/30 border border-slate-700/20 rounded-lg p-4 mb-6"><div className="text-slate-400 text-sm leading-relaxed text-center space-y-1"><p>{t.qrAutoDetect1}</p><p>{t.qrAutoDetect2}</p><p className="text-slate-500 text-xs opacity-70">{t.qrAutoDetect3}</p></div></div>
                   
@@ -1622,64 +1626,43 @@ export default function CustomerPanel() {
                   </div>
                 )}
                 
-                {/* ACCOUNT TAB */}
+                {/* ACCOUNT TAB - GÜNCELLENDİ (MODAL TETİKLEYİCİ) */}
                 {settingsTab === 'account' && (
                   <div className="space-y-4">
-                    <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4">
-                      <p className="text-sm text-red-300 mb-4">
-                        {language === 'tr' 
-                          ? 'Dikkat: Bu işlem geri alınamaz. Hesabınız tamamen silinecektir.' 
-                          : 'Warning: This action cannot be undone. Your account will be permanently deleted.'}
-                      </p>
-                      <div className="flex items-center gap-2 mb-4">
-                        <Checkbox 
-                          id="deleteConfirm" 
-                          checked={deleteAccountConfirmed} 
-                          onCheckedChange={setDeleteAccountConfirmed} 
-                        />
-                        <label htmlFor="deleteConfirm" className="text-sm text-red-300 cursor-pointer">
-                          {language === 'tr' 
-                            ? 'Eminim, hesabımı silmek istiyorum' 
-                            : 'I am sure, I want to delete my account'}
-                        </label>
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertOctagon className="h-5 w-5 text-red-500" />
+                        <h3 className="font-bold text-red-400 text-sm">
+                          {language === 'tr' ? 'Tehlikeli Bölge' : 'Danger Zone'}
+                        </h3>
                       </div>
+                      <p className="text-sm text-slate-400 mb-4">
+                        {language === 'tr' 
+                          ? 'Hesabınızı sildiğinizde tüm verileriniz kalıcı olarak silinir ve geri getirilemez.' 
+                          : 'Deleting your account is permanent. All your data will be lost.'}
+                      </p>
+                      
                       <Button
-                        onClick={handleSoftDeleteAccount}
-                        disabled={isDeletingAccount || !deleteAccountConfirmed}
-                        className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => setShowDeleteConfirmModal(true)}
+                        variant="destructive"
+                        className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold"
                       >
-                        {isDeletingAccount ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            {language === 'tr' ? 'Siliniyor...' : 'Deleting...'}
-                          </>
-                        ) : (
-                          <>
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            {language === 'tr' ? 'Hesabı Sil' : 'Delete Account'}
-                          </>
-                        )}
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {language === 'tr' ? 'Hesabı Silme İşlemini Başlat' : 'Start Account Deletion'}
                       </Button>
                     </div>
                   </div>
                 )}
               </div>
               
-              {/* FOOTER - ACTION BUTTONS */}
-              <DialogFooter className="px-6 py-4 border-t border-slate-800 flex-shrink-0 gap-2">
-                <Button
-                  onClick={() => setShowSettingsModal(false)}
-                  variant="outline"
-                  className="border-slate-700 hover:bg-slate-800 text-white"
-                >
-                  {language === 'tr' ? 'İptal' : 'Cancel'}
-                </Button>
-                
+              {/* FOOTER - ACTION BUTTONS & GLOBAL LOGOUT */}
+              <div className="px-6 py-4 border-t border-slate-800 flex-shrink-0 flex flex-col gap-3">
+                {/* Tab Specific Actions */}
                 {settingsTab === 'profile' && (
                   <Button
                     onClick={handleUpdateEmail}
                     disabled={isUpdatingEmail || !newEmail.trim()}
-                    className="bg-teal-600 hover:bg-teal-700 text-white font-semibold"
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold"
                   >
                     {isUpdatingEmail ? (
                       <>
@@ -1699,7 +1682,7 @@ export default function CustomerPanel() {
                   <Button
                     onClick={handleUpdatePassword}
                     disabled={isUpdatingPassword || !newPassword.trim() || !newPasswordConfirm.trim()}
-                    className="bg-teal-600 hover:bg-teal-700 text-white font-semibold"
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold"
                   >
                     {isUpdatingPassword ? (
                       <>
@@ -1714,17 +1697,37 @@ export default function CustomerPanel() {
                     )}
                   </Button>
                 )}
+
+                <div className="h-px bg-slate-800 w-full my-1"></div>
+
+                {/* Global Actions (Always Visible) */}
+                <div className="grid grid-cols-2 gap-3">
+                    <Button
+                        onClick={() => { setShowSettingsModal(false); setSupportModalOpen(true); }}
+                        variant="outline"
+                        className="border-teal-500/30 text-teal-400 hover:bg-teal-500/10 hover:text-teal-300"
+                    >
+                        <Send className="h-4 w-4 mr-2" />
+                        {language === 'tr' ? "Vocalize'a Bildir" : "Feedback to Vocalize"}
+                    </Button>
+
+                    <Button
+                        onClick={handleLogout}
+                        className="bg-slate-700 hover:bg-slate-600 text-white font-semibold"
+                    >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        {language === 'tr' ? 'Çıkış Yap' : 'Logout'}
+                    </Button>
+                </div>
                 
-                {settingsTab === 'account' && (
-                  <Button
-                    onClick={handleLogout}
-                    className="bg-slate-700 hover:bg-slate-600 text-white font-semibold"
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    {language === 'tr' ? 'Çıkış Yap' : 'Logout'}
-                  </Button>
-                )}
-              </DialogFooter>
+                <Button
+                  onClick={() => setShowSettingsModal(false)}
+                  variant="ghost"
+                  className="w-full text-slate-500 hover:text-slate-300 hover:bg-transparent h-8 text-xs"
+                >
+                  {language === 'tr' ? 'Pencereyi Kapat' : 'Close Window'}
+                </Button>
+              </div>
             </>
           ) : (
             // GUEST VIEW
@@ -1748,7 +1751,16 @@ export default function CustomerPanel() {
                 {t.register}
               </Button>
               
-              <DialogFooter className="w-full mt-auto pt-6 border-t border-slate-800">
+              <DialogFooter className="w-full mt-auto pt-6 border-t border-slate-800 flex flex-col gap-3">
+                <Button
+                    onClick={() => { setShowSettingsModal(false); setSupportModalOpen(true); }}
+                    variant="outline"
+                    className="w-full border-teal-500/30 text-teal-400 hover:bg-teal-500/10 hover:text-teal-300"
+                >
+                    <Send className="h-4 w-4 mr-2" />
+                    {language === 'tr' ? "Vocalize'a Bildir" : "Feedback to Vocalize"}
+                </Button>
+
                 <Button
                   onClick={handleLogout}
                   className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold"
@@ -1759,6 +1771,69 @@ export default function CustomerPanel() {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* YENİ EKLENEN HESAP SİLME ONAY MODALI */}
+      <Dialog open={showDeleteConfirmModal} onOpenChange={(open) => {
+        setShowDeleteConfirmModal(open);
+        if(!open) setDeleteAccountConfirmed(false); 
+      }}>
+        <DialogContent className="bg-slate-900 border-red-500/50 text-white max-w-md rounded-xl shadow-2xl shadow-red-900/20">
+          <DialogHeader>
+            <DialogTitle className="text-red-500 flex items-center gap-2 text-xl">
+              <AlertTriangle className="h-6 w-6" />
+              {language === 'tr' ? 'Hesabınızı Silmek Üzeresiniz' : 'You Are About To Delete Your Account'}
+            </DialogTitle>
+            <DialogDescription className="text-slate-300 mt-2">
+              {language === 'tr' 
+                ? 'Bu işlem geri alınamaz. Hesabınız silindiğinde tüm geri bildirim geçmişiniz, profil bilgileriniz ve ayarlarınız kalıcı olarak silinecektir.' 
+                : 'This action cannot be undone. All your feedback history, profile information, and settings will be permanently deleted.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <div className="flex items-start gap-3 bg-red-950/30 p-4 rounded-lg border border-red-900/50">
+              <Checkbox 
+                id="finalDeleteConfirm" 
+                checked={deleteAccountConfirmed} 
+                onCheckedChange={setDeleteAccountConfirmed} 
+                className="mt-1 border-red-400 data-[state=checked]:bg-red-500 data-[state=checked]:text-white"
+              />
+              <label htmlFor="finalDeleteConfirm" className="text-sm text-red-200 cursor-pointer leading-tight">
+                {language === 'tr' 
+                  ? 'Sonuçları anlıyorum ve hesabımı kalıcı olarak silmeyi onaylıyorum.' 
+                  : 'I understand the consequences and confirm the permanent deletion of my account.'}
+              </label>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              onClick={() => setShowDeleteConfirmModal(false)}
+              variant="outline"
+              className="border-slate-700 hover:bg-slate-800 text-white"
+            >
+              {language === 'tr' ? 'Vazgeç' : 'Cancel'}
+            </Button>
+            <Button
+              onClick={handleSoftDeleteAccount}
+              disabled={isDeletingAccount || !deleteAccountConfirmed}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold"
+            >
+              {isDeletingAccount ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  {language === 'tr' ? 'Siliniyor...' : 'Deleting...'}
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {language === 'tr' ? 'Evet, Hesabımı Sil' : 'Yes, Delete My Account'}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
