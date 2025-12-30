@@ -219,14 +219,14 @@ const AdminHeader = () => {
   if (!loading && isSpecialOffer === true && monthlyFeeOverride !== null) {
     const fee = Number(monthlyFeeOverride);
     
-    // GÜNCELLEME: 49.00 → 79.00
+    // GÜNCELLEME: 49.00 → 79.00 ($79)
     if (fee === 79.00) {
       badgeConfig = {
         text: "Erken Aşama Avantajı",
         icon: "⭐",
         badgeClassName: "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20",
         cardTitle: "⭐ Ayrıcalıklı Erken Erişim",
-        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli ömür boyu ₺79 olarak mühürlenmiştir.",
+        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli ömür boyu $79 olarak mühürlenmiştir.",
         cardBorderColor: "border-amber-500/50",
         cardTitleColor: "text-amber-400"
       };
@@ -236,7 +236,7 @@ const AdminHeader = () => {
         icon: "🚀",
         badgeClassName: "bg-teal-500/10 border-teal-500/30 text-teal-400 hover:bg-teal-500/20",
         cardTitle: "🚀 Kurumsal Esnek Paket",
-        cardDesc: `İşletmenizin ihtiyaçlarına özel olarak yapılandırılmış ödeme planıdır. Aylık kullanım bedeli ₺${fee} olarak tanımlanmıştır.`,
+        cardDesc: `İşletmenizin ihtiyaçlarına özel olarak yapılandırılmış ödeme planıdır. Aylık kullanım bedeli $${fee} olarak tanımlanmıştır.`,
         cardBorderColor: "border-teal-500/50",
         cardTitleColor: "text-teal-400"
       };

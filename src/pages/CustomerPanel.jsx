@@ -529,29 +529,61 @@ export default function CustomerPanel() {
   // ========== REFACTORED: localStorage FILTER ==========
   const fetchBusinesses = useCallback(async () => {
     try {
-      // Get visited businesses from localStorage
-      const visitedBusinessesJson = localStorage.getItem('vocalize_visited_businesses');
-      const visitedIds = visitedBusinessesJson ? JSON.parse(visitedBusinessesJson) : [];
+      // ============================================================================
+      // GÜNCELLEME: localStorage yerine customer_qr_scans tablosundan çek
+      // Artık cihaz/tarayıcı fark etmez - aynı hesap = aynı işletmeler
+      // ============================================================================
       
-      // If no visited businesses, return empty state
-      if (!visitedIds || visitedIds.length === 0) {
-        setBusinesses([]);
-        return;
-      }
-      
-      // Fetch only visited businesses from Supabase
-      const { data, error } = await supabase
-        .from('businesses')
-        .select('id, business_name')
-        .in('id', visitedIds);
+      if (isGuest) {
+        // Misafir kullanıcı: localStorage'dan çek
+        const visitedBusinessesJson = localStorage.getItem('vocalize_visited_businesses');
+        const visitedIds = visitedBusinessesJson ? JSON.parse(visitedBusinessesJson) : [];
         
-      if (error) throw error;
-      setBusinesses(data || []);
+        if (!visitedIds || visitedIds.length === 0) {
+          setBusinesses([]);
+          return;
+        }
+        
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('id, business_name')
+          .in('id', visitedIds);
+          
+        if (error) throw error;
+        setBusinesses(data || []);
+      } else if (user?.id) {
+        // Kayıtlı kullanıcı: customer_qr_scans tablosundan çek
+        const { data: scans, error: scansError } = await supabase
+          .from('customer_qr_scans')
+          .select('business_id, businesses(id, business_name)')
+          .eq('user_id', user.id)
+          .eq('is_guest', false);
+          
+        if (scansError) throw scansError;
+        
+        // Benzersiz işletmeleri al
+        const uniqueBusinesses = [];
+        const seenIds = new Set();
+        
+        scans?.forEach(scan => {
+          if (scan.businesses && !seenIds.has(scan.businesses.id)) {
+            seenIds.add(scan.businesses.id);
+            uniqueBusinesses.push({
+              id: scan.businesses.id,
+              business_name: scan.businesses.business_name
+            });
+          }
+        });
+        
+        setBusinesses(uniqueBusinesses);
+      } else {
+        setBusinesses([]);
+      }
     } catch (error) {
       console.error('Error fetching businesses:', error);
       setBusinesses([]);
     }
-  }, []);
+  }, [user, isGuest]);
 
   const fetchBranches = useCallback(async (businessId) => {
     if (!businessId) return;
@@ -715,14 +747,12 @@ export default function CustomerPanel() {
   const handleBranchSelectForFeedback = (branchId) => {
     setShowBranchSelector(false);
     
-    // Navigate to feedback form with selected business and branch
-    const params = new URLSearchParams();
-    params.set('business', selectedBusinessForBranches);
-    params.set('branch', branchId);
-    params.set('lang', language);
-    if (isGuest) params.set('guest', 'true');
+    // İşletme ve şubeyi state'e set et (form seçim ekranını göster)
+    setSelectedBusiness(selectedBusinessForBranches);
+    setSelectedBranch(branchId);
     
-    navigate(`/feedback?${params.toString()}`);
+    // Artık direkt feedback'e gitme - form seçim kartları gösterilecek
+    // (Satır 1060-1094'teki form seçim kartları otomatik görünecek)
   };
 
   const proceedToFeedback = (type) => {
@@ -764,6 +794,19 @@ export default function CustomerPanel() {
   const handleLogout = async () => {
     try {
       const { error } = await signOut();
+      
+      // GÜNCELLEME: 403 hatası bile olsa çıkışı tamamla
+      if (error) {
+        console.warn("Sign out API error (403 ignored):", error);
+        // Toast göster ama devam et
+        toast({
+          title: language === 'tr' ? "Bilgi" : "Info",
+          description: language === 'tr' ? "Oturum kapatıldı." : "Signed out successfully.",
+          variant: "default"
+        });
+      }
+      
+      // Her durumda local storage temizle ve yönlendir
       localStorage.removeItem('vocalize_guest_mode');
       localStorage.removeItem('vocalize_guest_business_id');
       localStorage.removeItem('vocalize_guest_branch_id');
@@ -773,7 +816,9 @@ export default function CustomerPanel() {
       setDeleteAccountConfirmed(false);
       navigate('/', { replace: true });
     } catch (error) {
-      console.error("Logout error", error);
+      console.error("Logout error:", error);
+      // Kritik hata bile olsa yönlendir
+      navigate('/', { replace: true });
     }
   };
 
@@ -1069,26 +1114,55 @@ export default function CustomerPanel() {
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-                    <button onClick={() => handleFeedback('complaint')} className="bg-red-500/20 border border-red-500/50 p-4 rounded-xl hover:bg-red-500/30 transition-all flex items-center gap-3">
-                        <AlertTriangle className="h-6 w-6 text-red-400" />
-                        <div className="text-left">
-                            <h3 className="font-bold text-red-200">{t.complaint}</h3>
-                            <p className="text-xs text-red-300/80">{t.complaintDesc}</p>
+                    {/* Şikayet Kartı */}
+                    <button 
+                      onClick={() => handleFeedback('complaint')} 
+                      className="group relative bg-gradient-to-br from-red-500/30 via-red-600/20 to-red-700/30 border-2 border-red-500/60 p-5 rounded-2xl hover:border-red-400 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 hover:scale-105 overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="relative flex items-center gap-3">
+                        <div className="bg-red-500/30 p-3 rounded-xl group-hover:bg-red-500/40 transition-all group-hover:scale-110">
+                          <AlertTriangle className="h-7 w-7 text-red-300 group-hover:text-red-200 transition-colors" />
                         </div>
+                        <div className="text-left">
+                          <h3 className="font-bold text-red-100 text-base group-hover:text-white transition-colors">{t.complaint}</h3>
+                          <p className="text-xs text-red-200/70 group-hover:text-red-100/80 transition-colors">{t.complaintDesc}</p>
+                        </div>
+                      </div>
                     </button>
-                    <button onClick={() => handleFeedback('suggestion')} className="bg-blue-500/20 border border-blue-500/50 p-4 rounded-xl hover:bg-blue-500/30 transition-all flex items-center gap-3">
-                        <Lightbulb className="h-6 w-6 text-blue-400" />
-                        <div className="text-left">
-                            <h3 className="font-bold text-blue-200">{t.suggestion}</h3>
-                            <p className="text-xs text-blue-300/80">{t.suggestionDesc}</p>
+
+                    {/* Öneri Kartı */}
+                    <button 
+                      onClick={() => handleFeedback('suggestion')} 
+                      className="group relative bg-gradient-to-br from-blue-500/30 via-blue-600/20 to-indigo-600/30 border-2 border-blue-500/60 p-5 rounded-2xl hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="relative flex items-center gap-3">
+                        <div className="bg-blue-500/30 p-3 rounded-xl group-hover:bg-blue-500/40 transition-all group-hover:scale-110">
+                          <Lightbulb className="h-7 w-7 text-blue-300 group-hover:text-blue-200 transition-colors" />
                         </div>
+                        <div className="text-left">
+                          <h3 className="font-bold text-blue-100 text-base group-hover:text-white transition-colors">{t.suggestion}</h3>
+                          <p className="text-xs text-blue-200/70 group-hover:text-blue-100/80 transition-colors">{t.suggestionDesc}</p>
+                        </div>
+                      </div>
                     </button>
-                    <button onClick={() => handleFeedback('review')} className="bg-yellow-500/20 border border-yellow-500/50 p-4 rounded-xl hover:bg-yellow-500/30 transition-all flex items-center gap-3">
-                        <Star className="h-6 w-6 text-yellow-400" />
-                        <div className="text-left">
-                            <h3 className="font-bold text-yellow-200">{t.review}</h3>
-                            <p className="text-xs text-yellow-300/80">{t.reviewDesc}</p>
+
+                    {/* Değerlendirme Kartı */}
+                    <button 
+                      onClick={() => handleFeedback('review')} 
+                      className="group relative bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-2 border-yellow-500/60 p-5 rounded-2xl hover:border-yellow-400 hover:shadow-lg hover:shadow-yellow-500/30 transition-all duration-300 hover:scale-105 overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="relative flex items-center gap-3">
+                        <div className="bg-yellow-500/30 p-3 rounded-xl group-hover:bg-yellow-500/40 transition-all group-hover:scale-110">
+                          <Star className="h-7 w-7 text-yellow-300 group-hover:text-yellow-200 transition-colors" />
                         </div>
+                        <div className="text-left">
+                          <h3 className="font-bold text-yellow-100 text-base group-hover:text-white transition-colors">{t.review}</h3>
+                          <p className="text-xs text-yellow-200/70 group-hover:text-yellow-100/80 transition-colors">{t.reviewDesc}</p>
+                        </div>
+                      </div>
                     </button>
                   </div>
                 </div>

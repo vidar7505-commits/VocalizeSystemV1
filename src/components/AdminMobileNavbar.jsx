@@ -13,6 +13,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from "@/components/ui/use-toast";
 import { AnimatePresence, motion } from 'framer-motion';
+import FeedbackDetailModal from '@/components/FeedbackDetailModal'; // ✅ EKLEME
 
 const formatTimeAgo = (dateString) => {
   if (!dateString) return '';
@@ -48,6 +49,10 @@ const AdminMobileNavbar = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const notificationRef = useRef(null);
+  
+  // ✅ EKLEME: FeedbackDetailModal için state'ler
+  const [selectedFeedback, setSelectedFeedback] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -116,21 +121,56 @@ const AdminMobileNavbar = () => {
     navigate('/admin-panel/notifications');
   };
 
-  const handleNotificationClick = (notification, e) => {
-    // Event propagation'ı durdurarak panelin hemen kapanmasını önle (önlem olarak)
+  const handleNotificationClick = async (notification, e) => {
+    // Event propagation'ı durdurarak panelin hemen kapanmasını önle
     if (e) {
         e.stopPropagation();
         e.preventDefault();
     }
     
-    setShowNotifications(false); 
+    setShowNotifications(false);
 
-    if (notification.related_id) {
-        navigate('/admin-panel/feedbacks', { 
+    // ✅ GÜNCELLEME: Feedback datasını çek ve modal aç
+    try {
+      const { data: feedbackData, error: feedbackError } = await supabase
+        .from('feedbacks')
+        .select(`
+          *, 
+          branches(branch_name_tr),
+          customer_profiles(
+            id, name, email, phone, customer_number, created_at, updated_at,
+            flag_vip_customer, flag_sensitive_customer, admin_note,
+            users:user_id(first_name, last_name)
+          ),
+          manager_note_updater:manager_note_updated_by(first_name, last_name)
+        `)
+        .eq('id', notification.related_id)
+        .single();
+      
+      if (feedbackError) {
+        console.error('Feedback fetch error:', feedbackError);
+        // Hata varsa eski yöntemle devam et
+        if (notification.related_id) {
+          navigate('/admin-panel/feedbacks', { 
             state: { openFeedbackId: notification.related_id } 
-        });
+          });
+        }
+        return;
+      }
+
+      // Modal'ı aç
+      setSelectedFeedback(feedbackData);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching feedback:', error);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Hata', 
+        description: 'Geri bildirim detayı yüklenemedi.' 
+      });
     }
 
+    // Okundu işaretle
     if (!notification.is_read) {
         setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
         setUnreadCount(prev => Math.max(0, prev - 1));
@@ -268,6 +308,15 @@ const AdminMobileNavbar = () => {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* ✅ EKLEME: FeedbackDetailModal */}
+      {isModalOpen && selectedFeedback && (
+        <FeedbackDetailModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          feedback={selectedFeedback} 
+        />
+      )}
     </div>
   );
 };
