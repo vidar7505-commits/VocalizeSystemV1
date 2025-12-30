@@ -133,7 +133,12 @@ export default function CustomerPanel() {
     if (lastLoggedRef.current.business === businessParam && lastLoggedRef.current.branch === branchParam) return;
 
     lastLoggedRef.current = { business: businessParam, branch: branchParam };
-    const source = (fromQrParam === 'true' || qrParam) ? 'qr' : 'web';
+    
+    // QR source tracking - localStorage'dan da kontrol et
+    const qrDataKey = `vocalize_qr_${businessParam}`;
+    const storedQrData = localStorage.getItem(qrDataKey);
+    const isFromQr = (fromQrParam === 'true' || qrParam || storedQrData || location.pathname.includes('/qr/'));
+    const source = isFromQr ? 'qr' : 'web';
 
     supabase.from('page_views').insert({
       business_id: businessParam,
@@ -143,7 +148,7 @@ export default function CustomerPanel() {
     }).then(({ error }) => {
        if (error) console.warn("Analytics error:", error.message);
     });
-  }, [businessParam, branchParam, qrParam, fromQrParam]);
+  }, [businessParam, branchParam, qrParam, fromQrParam, location.pathname]);
 
   const texts = {
     tr: {
@@ -569,6 +574,100 @@ export default function CustomerPanel() {
     }
   }, []);
 
+  // ========== QR PERSISTENCE SYSTEM ==========
+  // Persist QR scan to both localStorage and database
+  const persistQrScan = useCallback(async (businessId, branchId, qrCode) => {
+    try {
+      // 1. Save to localStorage immediately
+      const qrData = {
+        business_id: businessId,
+        branch_id: branchId,
+        qr_code: qrCode,
+        scanned_at: new Date().toISOString()
+      };
+      
+      localStorage.setItem(`vocalize_qr_${businessId}`, JSON.stringify(qrData));
+      console.log('✅ QR saved to localStorage:', qrCode);
+      
+      // 2. If user is logged in, also save to database
+      if (user?.email) {
+        const { error } = await supabase.from('customer_qr_scans').upsert({
+          customer_email: user.email,
+          business_id: businessId,
+          branch_id: branchId,
+          qr_code: qrCode,
+          last_scan_at: new Date().toISOString()
+        }, {
+          onConflict: 'customer_email,business_id,branch_id,qr_code'
+        });
+        
+        if (!error) {
+          console.log('✅ QR persisted to database for user:', user.email);
+        } else {
+          console.warn('⚠️ QR database persist error:', error.message);
+        }
+      }
+    } catch (err) {
+      console.error('Error persisting QR scan:', err);
+    }
+  }, [user]);
+
+  // Load persisted QR scans from database and sync to localStorage
+  const loadPersistedQrs = useCallback(async () => {
+    if (!user?.email) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('customer_qr_scans')
+        .select(`
+          business_id, 
+          branch_id, 
+          qr_code, 
+          last_scan_at,
+          businesses(business_name), 
+          branches(branch_name_tr)
+        `)
+        .eq('customer_email', user.email)
+        .order('last_scan_at', { ascending: false });
+      
+      if (!error && data && data.length > 0) {
+        console.log(`✅ Loaded ${data.length} persisted QR scans from database`);
+        
+        // Sync to localStorage
+        data.forEach(qr => {
+          const qrData = {
+            business_id: qr.business_id,
+            branch_id: qr.branch_id,
+            qr_code: qr.qr_code,
+            business_name: qr.businesses?.business_name,
+            branch_name: qr.branches?.branch_name_tr,
+            scanned_at: qr.last_scan_at
+          };
+          localStorage.setItem(`vocalize_qr_${qr.business_id}`, JSON.stringify(qrData));
+        });
+        
+        console.log('✅ QR scans synced to localStorage');
+      }
+    } catch (err) {
+      console.error('Error loading persisted QRs:', err);
+    }
+  }, [user]);
+
+  // Load persisted QRs when user logs in
+  useEffect(() => {
+    if (user && !isGuest) {
+      loadPersistedQrs();
+    }
+  }, [user, isGuest, loadPersistedQrs]);
+
+  // Persist QR when scanned
+  useEffect(() => {
+    if (qrParam && businessParam && branchParam) {
+      persistQrScan(businessParam, branchParam, qrParam);
+    }
+  }, [qrParam, businessParam, branchParam, persistQrScan]);
+  // ========== END QR PERSISTENCE SYSTEM ==========
+
   const fetchStats = useCallback(async () => {
     if (!user?.email) return;
     try {
@@ -715,14 +814,19 @@ export default function CustomerPanel() {
   const handleBranchSelectForFeedback = (branchId) => {
     setShowBranchSelector(false);
     
-    // Navigate to feedback form with selected business and branch
+    // Set selected business and branch
+    setSelectedBusiness(selectedBusinessForBranches);
+    setSelectedBranch(branchId);
+    
+    // Navigate back to dashboard with selected business/branch
     const params = new URLSearchParams();
     params.set('business', selectedBusinessForBranches);
     params.set('branch', branchId);
     params.set('lang', language);
     if (isGuest) params.set('guest', 'true');
     
-    navigate(`/feedback?${params.toString()}`);
+    // Navigate to customer panel (not feedback form directly)
+    navigate(`/customer?${params.toString()}`);
   };
 
   const proceedToFeedback = (type) => {

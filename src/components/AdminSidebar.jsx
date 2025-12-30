@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, MessageSquare, BarChart3, Settings, 
-  Menu, X, LogOut, Send, Loader2, Image as ImageIcon, Upload, Crown
+  Menu, X, LogOut, Send, Loader2, Image as ImageIcon, Upload
 } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useAdminContext } from '@/contexts/AdminContext';
@@ -16,8 +16,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 const AdminSidebar = () => {
   const { pathname } = useLocation();
   const { signOut, user } = useAuth();
-  const { businessName, isSpecialOffer, monthlyFeeOverride, loading: contextLoading } = useAdminContext();
+  const { businessName, isSpecialOffer, monthlyFeeOverride } = useAdminContext();
   const [isOpen, setIsOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -31,6 +32,35 @@ const AdminSidebar = () => {
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
+
+  // Badge configuration for special offers
+  const badgeConfig = useMemo(() => {
+    if (!isSpecialOffer) return null;
+    
+    const fee = monthlyFeeOverride || 79.00;
+    
+    if (fee === 79.00) {
+      return {
+        text: "Erken Erişim",
+        icon: "⭐",
+        badgeClassName: "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20",
+        cardTitle: "⭐ Ayrıcalıklı Erken Erişim",
+        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli ömür boyu $79 olarak mühürlenmiştir.",
+        cardBorderColor: "border-amber-500/50",
+        cardTitleColor: "text-amber-400"
+      };
+    } else {
+      return {
+        text: "Esnek Plan",
+        icon: "🚀",
+        badgeClassName: "bg-teal-500/10 border-teal-500/30 text-teal-400 hover:bg-teal-500/20",
+        cardTitle: "🚀 Kurumsal Esnek Paket",
+        cardDesc: `İşletmenizin ihtiyaçlarına özel olarak yapılandırılmış ödeme planıdır. Aylık kullanım bedeli $${fee} olarak tanımlanmıştır.`,
+        cardBorderColor: "border-teal-500/50",
+        cardTitleColor: "text-teal-400"
+      };
+    }
+  }, [isSpecialOffer, monthlyFeeOverride]);
 
   const handleLogout = async () => {
     await signOut();
@@ -138,33 +168,6 @@ const AdminSidebar = () => {
     return false;
   };
 
-  // Pricing Badge Logic
-  let badgeConfig = null;
-
-  if (!contextLoading && isSpecialOffer === true && monthlyFeeOverride !== null) {
-    const fee = Number(monthlyFeeOverride);
-    
-    if (fee === 79.00) {
-      badgeConfig = {
-        text: "Erken Aşama Avantajı",
-        icon: "⭐",
-        badgeClassName: "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20",
-        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli ömür boyu $79 olarak mühürlenmiştir.",
-        iconBg: "bg-amber-500/20",
-        iconColor: "text-amber-400"
-      };
-    } else {
-      badgeConfig = {
-        text: "Esnek Plan",
-        icon: "🚀",
-        badgeClassName: "bg-teal-500/10 border-teal-500/30 text-teal-400 hover:bg-teal-500/20",
-        cardDesc: `İşletmenizin ihtiyaçlarına özel olarak yapılandırılmış ödeme planıdır. Aylık kullanım bedeli $${fee} olarak tanımlanmıştır.`,
-        iconBg: "bg-teal-500/20",
-        iconColor: "text-teal-400"
-      };
-    }
-  }
-
   return (
     <>
       {/* Mobile Trigger */}
@@ -181,12 +184,11 @@ const AdminSidebar = () => {
 
       {/* Sidebar Content (Desktop & Mobile) */}
       <aside className={cn(
-        // DÜZELTME: md:h-full eklendi, böylece layout içinde tam boy kaplar
-        "fixed inset-y-0 left-0 z-50 w-64 bg-[#111827] border-r border-slate-800 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-full",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-[#111827] border-r border-slate-800 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 md:static",
         isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
       )}>
         {/* Logo Area */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800 bg-[#111827] shrink-0">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800 bg-[#111827]">
           <div className="flex items-center gap-3">
              <img 
                 src="https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/a394cb1bd41831c36846246fa8755c18.png" 
@@ -206,12 +208,11 @@ const AdminSidebar = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              onClick={() => setIsOpen(false)} // Mobilde seçim yapınca menü kapansın
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
                 isActive(item.path)
@@ -226,7 +227,8 @@ const AdminSidebar = () => {
         </nav>
 
         {/* User / Footer */}
-        <div className="p-4 border-t border-slate-800 bg-[#0f172a]/50 flex flex-col gap-3 shrink-0">
+        <div className="p-4 border-t border-slate-800 bg-[#0f172a]/50 flex flex-col gap-3">
+          {/* Contact Button - Style Updated as requested */}
           <Button 
             variant="ghost" 
             className="w-full justify-start text-teal-400 hover:text-teal-300 hover:bg-teal-900/20 group border border-dashed border-slate-700 hover:border-teal-500/30"
@@ -236,46 +238,74 @@ const AdminSidebar = () => {
             <span className="font-medium transition-colors">Bizimle İletişime Geçin</span>
           </Button>
 
-          {/* Profil Kartı (Pricing ile süslü - Mobil) */}
-          <div className={cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
-            "md:hidden", // ✅ DÜZELTME: Bu sınıf buraya sabitlendi. Veri gecikse bile masaüstünde asla görünmez.
-            badgeConfig 
-              ? `border-2 ${badgeConfig.badgeClassName.includes('amber') ? 'border-amber-500/50 bg-amber-500/5' : 'border-teal-500/50 bg-teal-500/5'}` 
-              : "bg-slate-800/30"
-          )}>
-            <div className="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
-              {businessName ? businessName.substring(0, 2).toUpperCase() : 'AD'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{businessName || 'Admin Panel'}</p>
-              <p className={cn(
-                "text-xs truncate flex items-center gap-1",
-                badgeConfig 
-                  ? (badgeConfig.badgeClassName.includes('amber') ? 'text-amber-400 font-semibold' : 'text-teal-400 font-semibold')
-                  : 'text-slate-500'
-              )}>
-                {badgeConfig ? (
-                  <>
-                    {badgeConfig.badgeClassName.includes('amber') ? <Crown className="w-3 h-3" /> : <span>🚀</span>}
-                    {badgeConfig.text}
-                  </>
-                ) : (
-                  'Yönetici'
-                )}
-              </p>
-            </div>
-          </div>
-
-          {/* Web için normal profil kartı (pricing olmadan) */}
-          <div className="hidden md:flex items-center gap-3 px-2 py-2 rounded-lg bg-slate-800/30">
+          <div 
+            className="relative flex items-center gap-3 px-2 py-2 rounded-lg bg-slate-800/30 transition-colors hover:bg-slate-800/50"
+            onMouseEnter={() => {
+              // Desktop'ta hover disable (badge yok, header'da var)
+              if (window.innerWidth < 768 && badgeConfig) {
+                setIsHovered(true);
+              }
+            }}
+            onMouseLeave={() => {
+              if (window.innerWidth < 768) {
+                setIsHovered(false);
+              }
+            }}
+            onClick={() => {
+              // Mobile'da badge'e tıklayınca toggle
+              if (window.innerWidth < 768 && badgeConfig) {
+                setIsHovered(prev => !prev);
+              }
+            }}
+          >
             <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
               {businessName ? businessName.substring(0, 2).toUpperCase() : 'AD'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{businessName || 'Admin Panel'}</p>
-              <p className="text-xs text-slate-500 truncate">Yönetici</p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-slate-500 truncate">Yönetici</p>
+                {badgeConfig && (
+                  <div className={cn(
+                    "md:hidden flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[10px] font-semibold whitespace-nowrap",
+                    badgeConfig.badgeClassName
+                  )}>
+                    <span>{badgeConfig.icon}</span>
+                    <span className="hidden xl:inline">{badgeConfig.text}</span>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Hover Card - Mobile: Full screen modal, Desktop: Hidden */}
+            {badgeConfig && isHovered && (
+              <>
+                {/* Mobile Backdrop (Desktop'ta hidden) */}
+                <div 
+                  className="fixed inset-0 bg-black/60 z-[90] backdrop-blur-sm md:hidden"
+                  onClick={() => setIsHovered(false)}
+                />
+                
+                {/* Hover Card (Desktop'ta hidden) */}
+                <div 
+                  className={cn(
+                    // Mobile: Fixed centered modal
+                    "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] max-w-sm px-4 py-3 rounded-lg shadow-2xl z-[100] bg-slate-800 border",
+                    // Desktop: Hidden (badge yok, header'da var)
+                    "md:hidden",
+                    badgeConfig.cardBorderColor
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className={cn("text-sm font-semibold mb-1.5", badgeConfig.cardTitleColor)}>
+                    {badgeConfig.cardTitle}
+                  </div>
+                  <div className="text-xs text-slate-300 leading-relaxed">
+                    {badgeConfig.cardDesc}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <Button 

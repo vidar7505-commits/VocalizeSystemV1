@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { subDays, startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay } from "date-fns";
 import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
+import AdminMobileNavbar from '@/components/AdminMobileNavbar';
 import { useToast } from "@/components/ui/use-toast";
 import { cn, formatCustomerName, getCustomerData } from "@/lib/utils";
 
@@ -211,18 +212,24 @@ const FeedbackManagement = () => {
   const hasImages = (f) => ((f.feedback_images && f.feedback_images.length > 0) || (f.receipt_images && f.receipt_images.length > 0));
 
   return (
-    <div className="space-y-6 h-full flex flex-col relative">
-      {hasUrgentFeedbacks && (
-        <div className="bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.3)] shrink-0">
-          <div className="flex items-center gap-3"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
-          <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg" onClick={() => setShowUrgentOnly(true)}>İncele</Button>
-        </div>
-      )}
-
-     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0 pt-20 md:pt-0">
-        <div><h1 className="text-3xl font-bold text-white tracking-tight">Geri Bildirim Yönetimi</h1><p className="text-slate-400 mt-1">Müşteri geri bildirimlerini inceleyin, filtreleyin ve yönetin.</p></div>
-        <Button onClick={fetchFeedbacks} variant="outline" className="gap-2 border-slate-700 hover:bg-slate-800 text-slate-300"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />Yenile</Button>
+    <>
+      {/* Mobile Navbar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50">
+        <AdminMobileNavbar />
       </div>
+
+      <div className="space-y-6 h-full flex flex-col relative">
+        {hasUrgentFeedbacks && (
+          <div className="bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.3)] shrink-0">
+            <div className="flex items-center gap-3"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
+            <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg" onClick={() => setShowUrgentOnly(true)}>İncele</Button>
+          </div>
+        )}
+
+       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0 pt-20 md:pt-0">
+          <div><h1 className="text-3xl font-bold text-white tracking-tight">Geri Bildirim Yönetimi</h1><p className="text-slate-400 mt-1">Müşteri geri bildirimlerini inceleyin, filtreleyin ve yönetin.</p></div>
+          <Button onClick={fetchFeedbacks} variant="outline" className="gap-2 border-slate-700 hover:bg-slate-800 text-slate-300"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />Yenile</Button>
+        </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-5 shrink-0 shadow-sm relative z-10">
          <div className="flex flex-col xl:flex-row gap-5">
@@ -241,7 +248,7 @@ const FeedbackManagement = () => {
          </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-1 mt-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1 pb-20 md:pb-4 mt-4">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-500"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /><p className="text-sm font-medium">Geri bildirimler yükleniyor...</p></div>
         ) : filteredFeedbacks.length === 0 ? (
@@ -306,7 +313,8 @@ const FeedbackManagement = () => {
       {selectedFeedback && <FeedbackDetailModal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} feedback={selectedFeedback} onFeedbackUpdate={handleFeedbackUpdate} onFlagsUpdate={handleFlagsUpdate} />}
       
       {customerModalOpen && <CustomerProfileModal isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} customerProfileId={selectedCustomer?.id} customerEmail={selectedCustomer?.email} businessId={businessId} onFlagsUpdate={handleFlagsUpdate} />}
-    </div>
+      </div>
+    </>
   );
 };
 

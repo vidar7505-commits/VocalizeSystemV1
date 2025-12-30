@@ -75,14 +75,7 @@ const TEXTS = {
     images: { label: "Görseller", placeholder: "Fotoğraf Ekle", sub: "Max 3 adet", uploaded: "yüklendi" },
     submit: { sending: "Gönderiliyor...", send: "Gönder", error: "Hata oluştu.", errorValidation: "Eksik alanlar var." },
     disclaimer: "Geri dönüş süreci işletmeye bağlıdır.",
-    success: { title: "Teşekkürler!", desc: (name) => `Bildiriminiz ${name} yöneticisine iletildi.`, footer: "Bizi tercih ettiğiniz için teşekkürler.", button: "Tamam" },
-    google: {
-      title: "Harika Deneyim! 🌟",
-      question: "Bu olumlu deneyiminizi Google'da da paylaşmak ister misiniz?",
-      info: "Mesajınız otomatik kopyalandı - Google'da sadece yapıştırmanız yeterli!",
-      shareButton: "Google'da Paylaş",
-      skipButton: "Hayır, Teşekkürler"
-    }
+    success: { title: "Teşekkürler!", desc: (name) => `Bildiriminiz ${name} yöneticisine iletildi.`, footer: "Bizi tercih ettiğiniz için teşekkürler.", button: "Tamam" }
   },
   en: {
     errorLoad: "Error loading data.",
@@ -113,14 +106,7 @@ const TEXTS = {
     images: { label: "Images", placeholder: "Add Photo", sub: "Max 3 images", uploaded: "images uploaded" },
     submit: { sending: "Sending...", send: "Send", error: "Error occurred.", errorValidation: "Missing fields." },
     disclaimer: "Response depends on the business.",
-    success: { title: "Thank You!", desc: (name) => `Sent to ${name} manager.`, footer: "Thanks for choosing us.", button: "OK" },
-    google: {
-      title: "Great Experience! 🌟",
-      question: "Would you like to share this positive experience on Google?",
-      info: "Your message has been automatically copied - just paste it on Google!",
-      shareButton: "Share on Google",
-      skipButton: "No, Thanks"
-    }
+    success: { title: "Thank You!", desc: (name) => `Sent to ${name} manager.`, footer: "Thanks for choosing us.", button: "OK" }
   }
 };
 
@@ -169,8 +155,6 @@ export default function FeedbackForm() {
   const [imageModalSrc, setImageModalSrc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showGooglePrompt, setShowGooglePrompt] = useState(false);
-  const [submittedMessage, setSubmittedMessage] = useState('');
 
   const t = TEXTS[language] || TEXTS.tr;
 
@@ -201,7 +185,7 @@ export default function FeedbackForm() {
             if (bizData) setBusinessName(bizData.business_name);
 
             // Fetch ALL active branches
-            const { data: allBranches } = await supabase.from('branches').select('id, branch_name_tr, google_review_url').eq('business_id', targetBusinessId).eq('is_active', true);
+            const { data: allBranches } = await supabase.from('branches').select('id, branch_name_tr').eq('business_id', targetBusinessId).eq('is_active', true);
             
             if (allBranches) {
                 setBranches(allBranches);
@@ -226,6 +210,34 @@ export default function FeedbackForm() {
     init();
   // ÖNEMLİ: Dependency Array'den 't' ve 'toast' kaldırıldı. Sadece veri parametreleri kaldı.
   }, [typeParam, businessParam, branchParam, qrParam, langParam]);
+
+  // MOBILE BACK BUTTON HANDLER
+  // Handle browser back button when modals are open
+  useEffect(() => {
+    const handlePopState = (event) => {
+      // If image modal is open, close it
+      if (imageModalOpen) {
+        event.preventDefault();
+        setImageModalOpen(false);
+        setImageModalSrc('');
+        return;
+      }
+      
+      // If success modal is open, close it and navigate back
+      if (showSuccessModal) {
+        event.preventDefault();
+        setShowSuccessModal(false);
+        navigate('/customer');
+        return;
+      }
+    };
+    
+    // Add popstate listener
+    window.addEventListener('popstate', handlePopState);
+    
+    // Cleanup
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [imageModalOpen, showSuccessModal, navigate]);
 
   // IMAGE HANDLERS
   const handleImageUpload = (e) => {
@@ -372,79 +384,12 @@ export default function FeedbackForm() {
         lang: language
       });
 
-      // Gönderilen mesajı sakla (Google review için)
-      setSubmittedMessage(message);
-
-      // Yüksek puan VE Google URL varsa prompt göster
-      const selectedBranchData = branches.find(b => b.id === selectedBranch);
-      const hasHighRating = rating >= 4 || generalRating >= 4;
-      const hasGoogleUrl = selectedBranchData?.google_review_url;
-
-      if (hasHighRating && hasGoogleUrl) {
-        setShowGooglePrompt(true);
-      } else {
-        setShowSuccessModal(true);
-      }
+      setShowSuccessModal(true);
     } catch (error) {
       toast({ title: t.submit.error, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // Google Review Functions
-  const copyToClipboard = async (text) => {
-    try {
-      // Modern Clipboard API (Desktop + Mobile)
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-      
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      
-      try {
-        document.execCommand('copy');
-        textArea.remove();
-        return true;
-      } catch (err) {
-        textArea.remove();
-        return false;
-      }
-    } catch (err) {
-      return false;
-    }
-  };
-
-  const handleGoogleReview = async () => {
-    const selectedBranchData = branches.find(b => b.id === selectedBranch);
-    
-    // Mesajı kopyala
-    if (submittedMessage) {
-      await copyToClipboard(submittedMessage);
-    }
-    
-    // Google Review sayfasını aç
-    if (selectedBranchData?.google_review_url) {
-      window.open(selectedBranchData.google_review_url, '_blank');
-    }
-    
-    // Modal'ları kapat ve yönlendir
-    setShowGooglePrompt(false);
-    setShowSuccessModal(true);
-  };
-
-  const handleSkipGoogle = () => {
-    setShowGooglePrompt(false);
-    setShowSuccessModal(true);
   };
 
   const handleSuccessClose = () => {
@@ -569,59 +514,6 @@ export default function FeedbackForm() {
         <div className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200 backdrop-blur-sm" onClick={() => setImageModalOpen(false)}>
           <button className="absolute top-4 right-4 text-white hover:text-red-500 transition bg-slate-800/50 p-2 rounded-full" onClick={(e) => { e.stopPropagation(); setImageModalOpen(false); }}><X className="h-8 w-8" /></button>
           <img src={imageModalSrc} className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
-        </div>
-      )}
-
-      {/* GOOGLE REVIEW PROMPT MODAL */}
-      {showGooglePrompt && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-          <div className="bg-[#1a2847] rounded-2xl p-6 md:p-8 max-w-md w-full text-center animate-in zoom-in-95 fade-in duration-300 border border-slate-700 shadow-2xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-teal-500/5 to-transparent pointer-events-none"></div>
-            
-            {/* Icon */}
-            <div className="bg-teal-500/20 w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6 border border-teal-500/30 shadow-[0_0_20px_rgba(20,184,166,0.2)]">
-              <Star className="h-10 w-10 md:h-12 md:w-12 text-teal-400 fill-teal-400" />
-            </div>
-            
-            {/* Title */}
-            <h2 className="text-xl md:text-2xl font-bold text-white mb-3 tracking-tight break-words">
-              {t.google.title}
-            </h2>
-            
-            {/* Question */}
-            <div className="bg-slate-800/50 rounded-xl p-4 mb-4 border border-slate-700/50">
-              <p className="text-slate-300 leading-relaxed text-sm break-words">
-                {t.google.question}
-              </p>
-            </div>
-            
-            {/* Info Badge */}
-            <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-3 mb-6">
-              <p className="text-teal-300 text-xs font-medium flex items-center justify-center gap-2 flex-wrap">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span className="break-words">{t.google.info}</span>
-              </p>
-            </div>
-            
-            {/* Buttons */}
-            <div className="flex flex-col gap-3">
-              <Button 
-                onClick={handleGoogleReview} 
-                className="w-full bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white font-bold py-3 md:py-4 h-auto text-sm md:text-base rounded-xl transition shadow-lg shadow-teal-900/20 hover:scale-[1.02]"
-              >
-                <Star className="mr-2 h-4 w-4 md:h-5 md:w-5 fill-white" />
-                {t.google.shareButton}
-              </Button>
-              
-              <Button 
-                onClick={handleSkipGoogle} 
-                variant="outline"
-                className="w-full bg-slate-800/50 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700 font-medium py-3 md:py-4 h-auto text-sm md:text-base rounded-xl transition"
-              >
-                {t.google.skipButton}
-              </Button>
-            </div>
-          </div>
         </div>
       )}
 
