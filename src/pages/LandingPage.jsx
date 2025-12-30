@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link as ScrollLink, animateScroll as scroll, scroller } from 'react-scroll';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
 import { Menu, X, Zap, CheckCircle2, Timer, Send, Lightbulb, Heart, QrCode, Loader2, ArrowRight, TrendingUp, Target, RefreshCw, Cpu, BrainCircuit, Activity, Sparkles, MessageSquare as MessageSquareText, Info, AlertTriangle, Layers, Zap as ZapIcon, Network } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -214,7 +214,7 @@ const LandingPage = () => {
     toast
   } = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const progressRef = useRef(null);
   const progressInView = useInView(progressRef, {
     once: true
@@ -231,18 +231,22 @@ const LandingPage = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  // QR Redirector'dan gelen state'i kontrol et ve AuthModal'ı aç
+  
+  // ✅ QRRedirector'dan geldiğinde modal aç
   useEffect(() => {
-    if (location.state?.openAuthModal) {
+    const openAuth = searchParams.get('openAuth');
+    if (openAuth === 'true') {
+      setAuthDefaultTab('register');
+      setAuthDefaultRole('customer');
       setIsAuthModalOpen(true);
-      if (location.state.defaultTab) {
-        setAuthDefaultTab(location.state.defaultTab);
-      }
-      // Tarayıcı geçmişini temizle ki sayfa yenilenince modal tekrar açılmasın
-      window.history.replaceState({}, document.title);
+      
+      // URL'den openAuth parametresini temizle
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('openAuth');
+      navigate(`?${newParams.toString()}`, { replace: true });
     }
-  }, [location]);
+  }, [searchParams, navigate]);
+  
   const scrollToTop = () => {
     scroll.scrollToTop();
   };
@@ -277,22 +281,12 @@ const LandingPage = () => {
 
   const handleGuestContinue = () => {
     setIsAuthModalOpen(false);
-    
-    // LocalStorage'dan QR verilerini kontrol et
-    const lastBusiness = localStorage.getItem('vocalize_last_business');
-    const lastBranch = localStorage.getItem('vocalize_last_branch');
-    
     toast({
       title: "Misafir Modu",
-      description: lastBusiness ? "QR ile doğrulanan şubeye yönlendiriliyorsunuz." : "Geri bildirim göndermek için işletme seçin."
+      description: "Geri bildirim göndermek için işletme seçin."
     });
-    
     setTimeout(() => {
-      if (lastBusiness && lastBranch) {
-        navigate(`/customer-panel?guest=true&business=${lastBusiness}&branch=${lastBranch}&from_qr=true`);
-      } else {
-        navigate('/customer-panel?guest=true');
-      }
+      navigate('/customer-panel?guest=true');
     }, 500);
   };
 
@@ -1096,7 +1090,7 @@ const LandingPage = () => {
         </div>
       </footer>
      
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} defaultTab={authDefaultTab} defaultRole={authDefaultRole} showGuestOption={true} onGuestContinue={handleGuestContinue} />
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} defaultTab={authDefaultTab} defaultRole={authDefaultRole} showGuestOption={true} />
       
       {/* New Installation Modal added here before Toaster */}
       <InstallationRequestModal isOpen={installModalOpen} onClose={() => setInstallModalOpen(false)} />

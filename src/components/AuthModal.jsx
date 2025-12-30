@@ -16,11 +16,11 @@ const CUSTOMER_LOGO_URL = "https://horizons-cdn.hostinger.com/b40913c4-5edd-44d9
 const ADMIN_LOGO_URL = "https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/3d6a29cc801b191db966e74d52e248ab.png";    // Koyu Turkuaz
 
 const translateError = (errorMsg) => {
-  if (!errorMsg) return "Bir hata oluştu.";
-  if (errorMsg.includes("Invalid login credentials")) return "E-posta veya şifre hatalı.";
-  if (errorMsg.includes("User already registered")) return "Bu e-posta adresi zaten kayıtlı.";
-  if (errorMsg.includes("Password should be at least")) return "Şifre en az 6 karakter olmalıdır.";
-  return "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.";
+	if (!errorMsg) return "Bir hata oluştu.";
+	if (errorMsg.includes("Invalid login credentials")) return "E-posta veya şifre hatalı.";
+	if (errorMsg.includes("User already registered")) return "Bu e-posta adresi zaten kayıtlı.";
+	if (errorMsg.includes("Password should be at least")) return "Şifre en az 6 karakter olmalıdır.";
+	return "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.";
 };
 
 export default function AuthModal({ 
@@ -29,7 +29,7 @@ export default function AuthModal({
   defaultTab = "login", 
   defaultRole = "customer", 
   showGuestOption = false,
-  onGuestContinue
+  onGuestContinue // QRRedirector için eklendi
 }) {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [viewMode, setViewMode] = useState('auth');
@@ -82,31 +82,29 @@ export default function AuthModal({
   };
 
   const handleGuestLogin = () => {
-    loginAsGuest();
-    localStorage.setItem('vocalize_guest_mode', 'true');
-    
-    // Eğer LandingPage'den gelen onGuestContinue varsa onu çalıştır
-    if (onGuestContinue && typeof onGuestContinue === 'function') {
+    if (onGuestContinue) {
+      // QRRedirector'dan çağrılıyorsa, kendi fonksiyonunu kullan
       onGuestContinue();
-      onClose();
-      return;
-    }
-    
-    // Yoksa, localStorage'dan business bilgisini kontrol et
-    const lastBusiness = localStorage.getItem('vocalize_last_business');
-    const lastBranch = localStorage.getItem('vocalize_last_branch');
-    
-    toast({ 
-      title: "Misafir Girişi Başarılı", 
-      description: lastBusiness ? "QR ile doğrulanan şubeye yönlendiriliyorsunuz." : "Müşteri paneline yönlendiriliyorsunuz." 
-    });
-    
-    onClose();
-    
-    if (lastBusiness && lastBranch) {
-      navigate(`/customer-panel?guest=true&business=${lastBusiness}&branch=${lastBranch}&from_qr=true`, { replace: true });
     } else {
-      navigate('/customer-panel?guest=true', { replace: true });
+      // Normal kullanım (LandingPage veya başka yerlerden)
+      console.log('🎯 Misafir girişi başlatıldı...');
+      loginAsGuest();
+      localStorage.setItem('vocalize_guest_mode', 'true');
+      
+      toast({ 
+        title: "Misafir Girişi Başarılı", 
+        description: "Yönlendiriliyorsunuz...",
+        className: "bg-teal-600 text-white border-none"
+      });
+      
+      // Modal'ı kapat ve navigate yap
+      onClose();
+      
+      // Navigate'i biraz geciktir (modal kapanma animasyonu için)
+      setTimeout(() => {
+        console.log('🚀 CustomerPanel\'e yönlendiriliyor...');
+        navigate('/customer-panel?guest=true', { replace: true });
+      }, 300);
     }
   };
 
@@ -118,18 +116,12 @@ export default function AuthModal({
     }
     setIsLoading(true);
     try {
-      // --- DÜZELTİLEN KISIM: Canlı URL Yönlendirmesi ---
+      // ✅ DÜZELTİLDİ: /reset-password -> /update-password
       const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: 'https://www.vocalize.global/update-password',
+        redirectTo: window.location.origin + '/update-password',
       });
-      
       if (error) throw error;
-      
-      toast({ 
-        title: "E-posta Gönderildi", 
-        description: "Şifre sıfırlama talimatları e-posta adresinize gönderildi.",
-        className: "bg-teal-600 text-white border-none" 
-      });
+      toast({ title: "E-posta Gönderildi", description: "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi." });
       setViewMode('auth');
       setActiveTab('login');
       setFormData(prev => ({ ...prev, email: '' }));
@@ -165,36 +157,129 @@ export default function AuthModal({
         }
         
         localStorage.removeItem('vocalize_guest_mode');
-        toast({ title: "Giriş Başarılı", description: `Hoşgeldiniz, ${activeRole === 'customer' ? 'Müşteri' : 'Yönetici'} paneline yönlendiriliyorsunuz.` });
-        onClose();
-        navigate(activeRole === 'customer' ? '/customer-panel' : '/admin-panel');
-      } 
-      else {
-        if (!legalAccepted) throw new Error("Devam etmek için yasal şartları onaylamalısınız.");
-        if (!validatePhone(formData.phone)) throw new Error("Telefon numarası 05 ile başlamalı ve 11 haneli olmalıdır.");
-        if (formData.password.length < 6) throw new Error("Şifre en az 6 karakter olmalıdır.");
-        if (activeRole === 'manager' && !formData.managerCode) throw new Error("Yönetici kayıtları için Yönetici Kodu zorunludur.");
 
-        const { first, last } = splitName(formData.fullName);
-        const { error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              user_type: activeRole,
-              first_name: first,
-              last_name: last,
-              phone: formData.phone,
-              manager_code: activeRole === 'manager' ? formData.managerCode : null,
-            }
-          }
+        toast({
+          title: "Giriş Başarılı",
+          description: `Hoş geldiniz${data.user.user_metadata.first_name ? ', ' + data.user.user_metadata.first_name : ''}!`,
+          className: "bg-teal-600 text-white border-none"
         });
 
-        if (error) throw error;
+        onClose();
 
-        toast({ title: "Hesap Oluşturuldu", description: "Devam etmek için lütfen e-posta adresinizi onaylayın." });
-        setActiveTab('login');
-        setFormData({ fullName: '', email: '', phone: '', password: '', managerCode: '' });
+        if (userType === 'customer') navigate('/customer-panel', { replace: true });
+        if (userType === 'manager') navigate('/admin-panel', { replace: true });
+
+      } else {
+        if (!legalAccepted) {
+          toast({ title: "Hata", description: "Kullanım koşullarını ve KVKK metnini kabul etmelisiniz.", variant: "destructive" });
+          setIsLoading(false);
+          return;
+        }
+
+        const phone = formData.phone.replace(/\s/g, '');
+        if (!validatePhone(phone)) {
+          toast({ title: "Hata", description: "Geçersiz telefon numarası. Format: 05XXXXXXXXX", variant: "destructive" });
+          setIsLoading(false);
+          return;
+        }
+
+        if (activeRole === 'manager') {
+          if (!formData.managerCode.startsWith('MGR_')) {
+            toast({ title: "Hata", description: "Geçersiz yönetici kodu formatı.", variant: "destructive" });
+            setIsLoading(false);
+            return;
+          }
+
+          const { data: managerData, error: managerError } = await supabase
+            .from('managers')
+            .select('business_id, business_name')
+            .eq('manager_code', formData.managerCode)
+            .maybeSingle();
+
+          if (managerError || !managerData) {
+            toast({ title: "Hata", description: "Geçersiz yönetici kodu.", variant: "destructive" });
+            setIsLoading(false);
+            return;
+          }
+
+          const { first, last } = splitName(formData.fullName);
+
+          const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: formData.email,
+            password: formData.password,
+            options: {
+              data: {
+                first_name: first,
+                last_name: last,
+                phone: phone,
+                user_type: 'manager',
+                manager_code: formData.managerCode,
+                business_id: managerData.business_id
+              }
+            }
+          });
+
+          if (authError) throw authError;
+
+          const { error: profileError } = await supabase.from('manager_profiles').insert({
+            user_id: authData.user.id,
+            name: formData.fullName,
+            email: formData.email,
+            phone: phone,
+            manager_code: formData.managerCode,
+            business_id: managerData.business_id
+          });
+
+          if (profileError) console.warn('Profile creation warning:', profileError);
+
+          toast({
+            title: "Kayıt Başarılı",
+            description: "E-postanızı doğrulayın ve giriş yapın.",
+            className: "bg-teal-600 text-white border-none"
+          });
+
+          setActiveTab('login');
+          setFormData({ fullName: '', email: '', phone: '', password: '', managerCode: '' });
+          setLegalAccepted(false);
+
+        } else {
+          const { first, last } = splitName(formData.fullName);
+
+          const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: formData.email,
+            password: formData.password,
+            options: {
+              data: {
+                first_name: first,
+                last_name: last,
+                phone: phone,
+                user_type: 'customer'
+              }
+            }
+          });
+
+          if (authError) throw authError;
+
+          const { error: profileError } = await supabase.from('customer_profiles').insert({
+            user_id: authData.user.id,
+            name: formData.fullName,
+            email: formData.email,
+            phone: phone
+          });
+
+          if (profileError) console.warn('Profile creation warning:', profileError);
+
+          localStorage.removeItem('vocalize_guest_mode');
+
+          toast({
+            title: "Kayıt Başarılı",
+            description: `Hoş geldiniz ${first}! Yönlendiriliyorsunuz...`,
+            className: "bg-teal-600 text-white border-none"
+          });
+
+          onClose();
+          navigate('/customer-panel', { replace: true });
+        }
       }
     } catch (error) {
       toast({ title: "Hata", description: translateError(error.message), variant: "destructive" });
@@ -206,78 +291,42 @@ export default function AuthModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-[#0f172a] border-slate-700 text-white max-w-md p-0 overflow-hidden">
-          {viewMode === 'forgot-password' && (
-            <button 
-              onClick={() => { setViewMode('auth'); setFormData(prev => ({ ...prev, email: '' })); }} 
-              className="absolute top-4 left-4 p-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200 group z-10"
-              title="Geri Dön"
-            >
-              <ArrowLeft className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            </button>
-          )}
-
-          <div className="flex flex-col items-center pt-10 pb-6 px-6">
-            
-            {/* ======================== */}
-            {/* 1. DİNAMİK LOGO (2 Ton Açılmış) */}
-            {/* ======================== */}
-            <div className="flex flex-col items-center mb-6 w-full">
-              
-              <div className="relative h-24 w-auto mb-4">
-                 <img 
-                   src={activeRole === 'customer' ? CUSTOMER_LOGO_URL : ADMIN_LOGO_URL} 
-                   alt="Vocalize Logo" 
-                   // ✨ GÜNCELLENDİ: brightness-[2.2] ile logo daha aydınlık, saturate-150 ile canlı.
-                   className={`h-full w-full object-contain transition-all duration-500 hover:scale-105 ${
-                     activeRole === 'manager' ? 'brightness-[2.2] saturate-150' : ''
-                   }`}
-                 />
-              </div>
-
-              <div className="text-center w-full">
-                {viewMode === 'forgot-password' ? (
-                  <>
-                    <h2 className="text-xl font-bold text-white mb-2">Şifremi Sıfırla</h2>
-                    <p className="text-sm text-slate-400">
-                      Şifre sıfırlama bağlantısı için e-postanızı girin.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="text-xl font-bold text-white mb-2">
-                      {activeRole === 'customer' ? 'Hoş Geldiniz' : 'Yönetici Girişi'}
-                    </h2>
-                    <p className="text-sm text-slate-400">
-                      {activeTab === 'login' 
-                        ? 'Hesabınıza erişmek için bilgilerinizi girin.' 
-                        : 'Yeni hesap oluşturmak için formu doldurun.'}
-                    </p>
-                  </>
-                )}
-              </div>
+        <DialogContent className="sm:max-w-md bg-slate-900 border-slate-800 text-white max-h-[95vh] overflow-y-auto p-0">
+          <div className="p-6 md:p-8">
+            <div className="flex flex-col items-center mb-6 md:mb-8">
+              <img 
+                src={activeRole === 'customer' ? CUSTOMER_LOGO_URL : CUSTOMER_LOGO_URL} 
+                alt="Vocalize" 
+                className="h-12 md:h-16 w-auto mb-4 object-contain transition-all duration-300"
+                style={activeRole === 'manager' ? { filter: 'brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(152deg) brightness(97%) contrast(101%)' } : {}}
+              />
             </div>
 
-            {/* =================== */}
-            {/* 2. FORM ALANI */}
-            {/* =================== */}
             <div className="w-full">
               {viewMode === 'forgot-password' ? (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                    <Input 
-                      name="email" 
-                      type="email" 
-                      placeholder="E-posta Adresi" 
-                      className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${
-                        activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'
-                      }`}
-                      value={formData.email} 
-                      onChange={handleInputChange} 
-                      required 
-                    />
+                  <button type="button" onClick={() => setViewMode('auth')} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors mb-4">
+                    <ArrowLeft className="h-4 w-4" /> Geri Dön
+                  </button>
+                  <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-2">Şifremi Unuttum</h2>
+                  <p className="text-slate-400 text-sm text-center mb-6">E-posta adresinize şifre sıfırlama bağlantısı göndereceğiz.</p>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-300 ml-1">E-posta Adresi</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input 
+                        name="email" 
+                        type="email" 
+                        placeholder="ornek@email.com" 
+                        value={formData.email} 
+                        onChange={handleInputChange} 
+                        className="pl-10 h-11 bg-slate-800 border-slate-700 text-white focus-visible:ring-teal-500 transition-all" 
+                        required 
+                      />
+                    </div>
                   </div>
+
                   <Button 
                     type="submit" 
                     disabled={isLoading} 
@@ -290,7 +339,6 @@ export default function AuthModal({
                 <>
                   <Tabs value={activeRole} onValueChange={setActiveRole} className="w-full mb-6">
                     <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 p-1">
-                      {/* Buton tonları korundu: 600 serisi */}
                       <TabsTrigger value="customer" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white transition-colors duration-300">Müşteri</TabsTrigger>
                       <TabsTrigger value="manager" className="data-[state=active]:bg-teal-600 data-[state=active]:text-white transition-colors duration-300">Yönetici</TabsTrigger>
                     </TabsList>

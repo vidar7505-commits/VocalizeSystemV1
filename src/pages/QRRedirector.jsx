@@ -14,8 +14,9 @@ const QRRedirector = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const initializeScan = async () => {
+    const processQRScan = async () => {
       try {
+        // 1️⃣ QR Code parametresini al
         const qrCode = searchParams.get('qr') || searchParams.get('code');
 
         if (!qrCode) {
@@ -24,12 +25,11 @@ const QRRedirector = () => {
             description: "Geçersiz QR kod parametresi.",
             variant: "destructive"
           });
-          setError("QR kod parametresi bulunamadı.");
-          setIsLoading(false);
+          setTimeout(() => navigate('/'), 2000);
           return;
         }
 
-        // 1. Şube Bilgisini Çek
+        // 2️⃣ Supabase'den branch bilgilerini çek
         const { data: branchData, error: branchError } = await supabase
           .from('branches')
           .select('id, business_id, branch_name_tr, qr_code')
@@ -43,56 +43,61 @@ const QRRedirector = () => {
           return;
         }
 
-        // 2. HAFIZA İŞLEMLERİ (GÜNCELLENDİ)
-        // A) Son okutulanı kaydet (Otomatik açılış için)
-        localStorage.setItem('vocalize_last_qr', qrCode);
-        localStorage.setItem('vocalize_last_business', branchData.business_id);
-        localStorage.setItem('vocalize_last_branch', branchData.id);
+        const { id: branch_id, business_id, qr_code, branch_name_tr } = branchData;
 
-        // B) "Ziyaret Edilen İşletmeler" listesine ekle (Kalıcılık için)
-        const storedVisits = localStorage.getItem('vocalize_visited_businesses');
-        let visitedIds = storedVisits ? JSON.parse(storedVisits) : [];
-        
-        // Eğer listede yoksa ekle
-        if (!visitedIds.includes(branchData.business_id)) {
-            visitedIds.push(branchData.business_id);
-            localStorage.setItem('vocalize_visited_businesses', JSON.stringify(visitedIds));
-        }
-
-        // 3. Oturum Kontrolü
+        // 3️⃣ Session kontrolü
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session) {
-          // Giriş yapmışsa -> Logla ve Panele git
+          // ✅ KAYITLI KULLANICI: CustomerPanel'e yönlendir
           await handleAuthenticatedUser(session, branchData);
         } else {
-          // Giriş yapmamışsa -> Landing Page'e git ve Modalı aç
-          navigate('/', { 
-            state: { 
-              openAuthModal: true, 
-              defaultTab: 'register',
-              qrData: branchData 
-            } 
+          // ❌ KAYITSIZ KULLANICI: localStorage'a kaydet ve LandingPage'e yönlendir
+          saveBusinessToLocalStorage(business_id);
+          
+          // Analytics log (guest için)
+          try {
+            await supabase.from('qr_scans').insert({
+              branch_id,
+              business_id,
+              qr_code,
+              user_agent: navigator.userAgent
+            });
+          } catch (e) {
+            console.warn("Analytics log failed", e);
+          }
+
+          toast({
+            title: "Hoş Geldiniz",
+            description: `${branch_name_tr} - Kayıt olmak için lütfen giriş yapın.`,
+            variant: "default"
           });
+
+          // LandingPage'e yönlendir ve modal açılsın (LandingPage kendi modalini açacak)
+          navigate(`/?qr=${qrCode}&business=${business_id}&branch=${branch_id}&openAuth=true`);
         }
 
       } catch (err) {
-        console.error('Scan error:', err);
-        setError('İşlem sırasında beklenmedik bir hata oluştu.');
+        console.error('QR scan error:', err);
+        setError('İşlem sırasında bir hata oluştu.');
         setIsLoading(false);
       }
     };
 
-    initializeScan();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+    processQRScan();
+  }, [searchParams, navigate, toast]);
 
+  // ✅ KAYITLI KULLANICI İÇİN İŞLEM
   const handleAuthenticatedUser = async (session, branchInfo) => {
     try {
       const user_id = session.user.id;
       const { id: branch_id, business_id, qr_code, branch_name_tr } = branchInfo;
 
-      // Loglama
+      // localStorage'a kaydet
+      saveBusinessToLocalStorage(business_id);
+      localStorage.setItem('vocalize_last_branch', branch_id);
+
+      // customer_qr_scans tablosuna kaydet
       const { error: scanError } = await supabase
         .from('customer_qr_scans')
         .insert({
@@ -103,13 +108,17 @@ const QRRedirector = () => {
           is_guest: false
         });
 
-      if (scanError) console.warn('Failed to log customer QR scan:', scanError);
+      if (scanError) {
+        console.warn('Failed to log customer QR scan:', scanError);
+      }
 
+      // qr_scans (analytics) tablosuna kaydet
       try {
         await supabase.from('qr_scans').insert({
           branch_id,
           business_id,
           qr_code,
+          user_agent: navigator.userAgent
         });
       } catch (logError) {
         console.warn('Failed to log analytics scan:', logError);
@@ -117,10 +126,11 @@ const QRRedirector = () => {
 
       toast({
         title: "Hoş Geldiniz",
-        description: `✅ QR kod başarıyla okundu - ${branch_name_tr}`,
-        className: "bg-teal-600 text-white border-none"
+        description: `✅ ${branch_name_tr} başarıyla seçildi`,
+        variant: "default"
       });
 
+      // CustomerPanel'e yönlendir (işletme ve şube otomatik seçili)
       navigate(`/customer-panel?business=${business_id}&branch=${branch_id}&from_qr=true`);
 
     } catch (err) {
@@ -134,12 +144,28 @@ const QRRedirector = () => {
     }
   };
 
+  // ✅ LOCALSTORAGE'A İŞLETME KAYDET
+  const saveBusinessToLocalStorage = (businessId) => {
+    try {
+      const existingBusinesses = JSON.parse(localStorage.getItem('vocalize_visited_businesses') || '[]');
+      if (!existingBusinesses.includes(businessId)) {
+        existingBusinesses.push(businessId);
+        localStorage.setItem('vocalize_visited_businesses', JSON.stringify(existingBusinesses));
+      }
+      localStorage.setItem('vocalize_last_business', businessId);
+    } catch (e) {
+      console.warn('Failed to save to localStorage:', e);
+    }
+  };
+
+  // ========== RENDER STATES ==========
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f172a]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f172a] p-4">
         <div className="flex flex-col items-center animate-in fade-in duration-500">
-          <Loader2 className="h-12 w-12 text-teal-500 animate-spin mb-6" />
-          <p className="text-slate-400 text-lg font-medium">Yönlendiriliyorsunuz...</p>
+          <Loader2 className="h-12 w-12 md:h-16 md:w-16 text-teal-500 animate-spin mb-6" />
+          <p className="text-slate-400 text-base md:text-lg font-medium text-center">QR kod işleniyor...</p>
         </div>
       </div>
     );
@@ -148,14 +174,21 @@ const QRRedirector = () => {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f172a] p-4">
-        <div className="bg-slate-800 p-8 rounded-xl shadow-2xl max-w-md w-full text-center border-2 border-red-500/50 relative overflow-hidden">
+        <div className="bg-slate-800 p-6 md:p-8 rounded-xl shadow-2xl max-w-md w-full text-center border-2 border-red-500/50 relative overflow-hidden">
+          {/* Background glow effect */}
           <div className="absolute top-0 left-0 w-full h-full bg-red-500/5 pointer-events-none" />
-          <div className="bg-slate-900/50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-700">
-            <AlertCircle className="h-10 w-10 text-red-500" />
+          
+          <div className="bg-slate-900/50 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6 border border-slate-700">
+            <AlertCircle className="h-8 w-8 md:h-10 md:w-10 text-red-500" />
           </div>
-          <h2 className="text-2xl font-bold text-red-500 mb-3">QR Kod Geçersiz</h2>
-          <p className="text-slate-400 mb-8 leading-relaxed">{error}</p>
-          <Button onClick={() => navigate('/')} className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6 text-lg font-semibold shadow-lg hover:shadow-teal-500/20 transition-all duration-300">
+          
+          <h2 className="text-xl md:text-2xl font-bold text-red-500 mb-3">QR Kod Geçersiz</h2>
+          <p className="text-slate-400 mb-6 md:mb-8 leading-relaxed text-sm md:text-base">{error}</p>
+          
+          <Button 
+            onClick={() => navigate('/')} 
+            className="w-full bg-teal-600 hover:bg-teal-700 text-white py-4 md:py-6 text-base md:text-lg font-semibold shadow-lg hover:shadow-teal-500/20 transition-all duration-300"
+          >
             Ana Sayfaya Dön
           </Button>
         </div>
