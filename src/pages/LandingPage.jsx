@@ -321,6 +321,8 @@ const LandingPage = () => {
         name: leadForm.name,
         email: leadForm.email,
         phone: leadForm.phone || null,
+        company_name: null,
+        sector: null,
         message: leadForm.message,
         lead_type: leadType,
         lead_score: 10,
@@ -332,6 +334,14 @@ const LandingPage = () => {
         description: "Ekibimiz en kısa sürede sizinle iletişime geçecek."
       });
       setLeadModalOpen(false);
+      
+      // Form sıfırlama
+      setLeadForm({
+        name: '',
+        email: '',
+        phone: '',
+        message: ''
+      });
     } catch (error) {
       console.error('Lead submit error:', error);
       toast({

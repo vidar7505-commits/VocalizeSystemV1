@@ -529,61 +529,29 @@ export default function CustomerPanel() {
   // ========== REFACTORED: localStorage FILTER ==========
   const fetchBusinesses = useCallback(async () => {
     try {
-      // ============================================================================
-      // GÜNCELLEME: localStorage yerine customer_qr_scans tablosundan çek
-      // Artık cihaz/tarayıcı fark etmez - aynı hesap = aynı işletmeler
-      // ============================================================================
+      // Get visited businesses from localStorage
+      const visitedBusinessesJson = localStorage.getItem('vocalize_visited_businesses');
+      const visitedIds = visitedBusinessesJson ? JSON.parse(visitedBusinessesJson) : [];
       
-      if (isGuest) {
-        // Misafir kullanıcı: localStorage'dan çek
-        const visitedBusinessesJson = localStorage.getItem('vocalize_visited_businesses');
-        const visitedIds = visitedBusinessesJson ? JSON.parse(visitedBusinessesJson) : [];
-        
-        if (!visitedIds || visitedIds.length === 0) {
-          setBusinesses([]);
-          return;
-        }
-        
-        const { data, error } = await supabase
-          .from('businesses')
-          .select('id, business_name')
-          .in('id', visitedIds);
-          
-        if (error) throw error;
-        setBusinesses(data || []);
-      } else if (user?.id) {
-        // Kayıtlı kullanıcı: customer_qr_scans tablosundan çek
-        const { data: scans, error: scansError } = await supabase
-          .from('customer_qr_scans')
-          .select('business_id, businesses(id, business_name)')
-          .eq('user_id', user.id)
-          .eq('is_guest', false);
-          
-        if (scansError) throw scansError;
-        
-        // Benzersiz işletmeleri al
-        const uniqueBusinesses = [];
-        const seenIds = new Set();
-        
-        scans?.forEach(scan => {
-          if (scan.businesses && !seenIds.has(scan.businesses.id)) {
-            seenIds.add(scan.businesses.id);
-            uniqueBusinesses.push({
-              id: scan.businesses.id,
-              business_name: scan.businesses.business_name
-            });
-          }
-        });
-        
-        setBusinesses(uniqueBusinesses);
-      } else {
+      // If no visited businesses, return empty state
+      if (!visitedIds || visitedIds.length === 0) {
         setBusinesses([]);
+        return;
       }
+      
+      // Fetch only visited businesses from Supabase
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('id, business_name')
+        .in('id', visitedIds);
+        
+      if (error) throw error;
+      setBusinesses(data || []);
     } catch (error) {
       console.error('Error fetching businesses:', error);
       setBusinesses([]);
     }
-  }, [user, isGuest]);
+  }, []);
 
   const fetchBranches = useCallback(async (businessId) => {
     if (!businessId) return;
@@ -747,12 +715,14 @@ export default function CustomerPanel() {
   const handleBranchSelectForFeedback = (branchId) => {
     setShowBranchSelector(false);
     
-    // İşletme ve şubeyi state'e set et (form seçim ekranını göster)
-    setSelectedBusiness(selectedBusinessForBranches);
-    setSelectedBranch(branchId);
+    // Navigate to feedback form with selected business and branch
+    const params = new URLSearchParams();
+    params.set('business', selectedBusinessForBranches);
+    params.set('branch', branchId);
+    params.set('lang', language);
+    if (isGuest) params.set('guest', 'true');
     
-    // Artık direkt feedback'e gitme - form seçim kartları gösterilecek
-    // (Satır 1060-1094'teki form seçim kartları otomatik görünecek)
+    navigate(`/feedback?${params.toString()}`);
   };
 
   const proceedToFeedback = (type) => {
@@ -794,19 +764,6 @@ export default function CustomerPanel() {
   const handleLogout = async () => {
     try {
       const { error } = await signOut();
-      
-      // GÜNCELLEME: 403 hatası bile olsa çıkışı tamamla
-      if (error) {
-        console.warn("Sign out API error (403 ignored):", error);
-        // Toast göster ama devam et
-        toast({
-          title: language === 'tr' ? "Bilgi" : "Info",
-          description: language === 'tr' ? "Oturum kapatıldı." : "Signed out successfully.",
-          variant: "default"
-        });
-      }
-      
-      // Her durumda local storage temizle ve yönlendir
       localStorage.removeItem('vocalize_guest_mode');
       localStorage.removeItem('vocalize_guest_business_id');
       localStorage.removeItem('vocalize_guest_branch_id');
@@ -816,15 +773,29 @@ export default function CustomerPanel() {
       setDeleteAccountConfirmed(false);
       navigate('/', { replace: true });
     } catch (error) {
-      console.error("Logout error:", error);
-      // Kritik hata bile olsa yönlendir
-      navigate('/', { replace: true });
+      console.error("Logout error", error);
     }
   };
 
   const handleRegisterClick = () => { setAuthDefaultTab('register'); setShowAuthModal(true); };
   const handleGuestWarningContinue = () => { if (dontShowGuestWarning) localStorage.setItem('vocalize_guest_warning_dismissed', 'true'); setShowGuestWarningModal(false); if (pendingFeedbackType) proceedToFeedback(pendingFeedbackType); };
   const handleGuestWarningLogin = () => { setShowGuestWarningModal(false); setAuthDefaultTab('login'); setShowAuthModal(true); };
+  
+  // AuthModal kapandığında auth durumunu kontrol et ve gerekirse guest mode'dan çık
+  const handleAuthModalClose = () => {
+    setShowAuthModal(false);
+    
+    // Eğer artık authenticated user varsa ve guest mode aktifse
+    if (authUser && isGuest) {
+      // Guest mode'u temizle
+      localStorage.removeItem('vocalize_guest_mode');
+      localStorage.removeItem('vocalize_guest_business_id');
+      localStorage.removeItem('vocalize_guest_branch_id');
+      
+      // Sayfayı yenile - kayıtlı kullanıcı olarak yüklensin
+      window.location.reload();
+    }
+  };
   
   const handleSupportImageChange = (e) => { const files = Array.from(e.target.files); if (files.length + supportImages.length > 3) { toast({ title: t.support.errorTitle, description: t.support.maxImages, variant: "destructive" }); return; } setSupportImages([...supportImages, ...files]); };
   const removeImage = (index) => { setSupportImages(prev => prev.filter((_, i) => i !== index)); };
@@ -1114,53 +1085,53 @@ export default function CustomerPanel() {
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-                    {/* Şikayet Kartı */}
+                    {/* Şikayet Kartı - Daha Canlı Kırmızı */}
                     <button 
                       onClick={() => handleFeedback('complaint')} 
-                      className="group relative bg-gradient-to-br from-red-500/30 via-red-600/20 to-red-700/30 border-2 border-red-500/60 p-5 rounded-2xl hover:border-red-400 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 hover:scale-105 overflow-hidden"
+                      className="group relative bg-gradient-to-br from-red-500/50 via-red-600/40 to-red-700/50 border-2 border-red-500/80 p-5 rounded-2xl hover:border-red-400 hover:shadow-lg hover:shadow-red-500/50 transition-all duration-300 hover:scale-105 overflow-hidden"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-red-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                       <div className="relative flex items-center gap-3">
-                        <div className="bg-red-500/30 p-3 rounded-xl group-hover:bg-red-500/40 transition-all group-hover:scale-110">
-                          <AlertTriangle className="h-7 w-7 text-red-300 group-hover:text-red-200 transition-colors" />
+                        <div className="bg-red-500/40 p-3 rounded-xl group-hover:bg-red-500/60 transition-all group-hover:scale-110">
+                          <AlertTriangle className="h-7 w-7 text-red-100 group-hover:text-white transition-colors" />
                         </div>
                         <div className="text-left">
-                          <h3 className="font-bold text-red-100 text-base group-hover:text-white transition-colors">{t.complaint}</h3>
-                          <p className="text-xs text-red-200/70 group-hover:text-red-100/80 transition-colors">{t.complaintDesc}</p>
+                          <h3 className="font-bold text-red-50 text-base group-hover:text-white transition-colors">{t.complaint}</h3>
+                          <p className="text-xs text-red-100/80 group-hover:text-red-50 transition-colors">{t.complaintDesc}</p>
                         </div>
                       </div>
                     </button>
-
-                    {/* Öneri Kartı */}
+                    
+                    {/* Öneri Kartı - Daha Canlı Mavi */}
                     <button 
                       onClick={() => handleFeedback('suggestion')} 
-                      className="group relative bg-gradient-to-br from-blue-500/30 via-blue-600/20 to-indigo-600/30 border-2 border-blue-500/60 p-5 rounded-2xl hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 overflow-hidden"
+                      className="group relative bg-gradient-to-br from-blue-500/50 via-blue-600/40 to-indigo-600/50 border-2 border-blue-500/80 p-5 rounded-2xl hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 overflow-hidden"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                       <div className="relative flex items-center gap-3">
-                        <div className="bg-blue-500/30 p-3 rounded-xl group-hover:bg-blue-500/40 transition-all group-hover:scale-110">
-                          <Lightbulb className="h-7 w-7 text-blue-300 group-hover:text-blue-200 transition-colors" />
+                        <div className="bg-blue-500/40 p-3 rounded-xl group-hover:bg-blue-500/60 transition-all group-hover:scale-110">
+                          <Lightbulb className="h-7 w-7 text-blue-100 group-hover:text-white transition-colors" />
                         </div>
                         <div className="text-left">
-                          <h3 className="font-bold text-blue-100 text-base group-hover:text-white transition-colors">{t.suggestion}</h3>
-                          <p className="text-xs text-blue-200/70 group-hover:text-blue-100/80 transition-colors">{t.suggestionDesc}</p>
+                          <h3 className="font-bold text-blue-50 text-base group-hover:text-white transition-colors">{t.suggestion}</h3>
+                          <p className="text-xs text-blue-100/80 group-hover:text-blue-50 transition-colors">{t.suggestionDesc}</p>
                         </div>
                       </div>
                     </button>
-
-                    {/* Değerlendirme Kartı */}
+                    
+                    {/* Değerlendirme Kartı - Daha Canlı Sarı */}
                     <button 
                       onClick={() => handleFeedback('review')} 
-                      className="group relative bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-2 border-yellow-500/60 p-5 rounded-2xl hover:border-yellow-400 hover:shadow-lg hover:shadow-yellow-500/30 transition-all duration-300 hover:scale-105 overflow-hidden"
+                      className="group relative bg-gradient-to-br from-yellow-500/50 via-amber-500/40 to-orange-500/50 border-2 border-yellow-500/80 p-5 rounded-2xl hover:border-yellow-400 hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 hover:scale-105 overflow-hidden"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                       <div className="relative flex items-center gap-3">
-                        <div className="bg-yellow-500/30 p-3 rounded-xl group-hover:bg-yellow-500/40 transition-all group-hover:scale-110">
-                          <Star className="h-7 w-7 text-yellow-300 group-hover:text-yellow-200 transition-colors" />
+                        <div className="bg-yellow-500/40 p-3 rounded-xl group-hover:bg-yellow-500/60 transition-all group-hover:scale-110">
+                          <Star className="h-7 w-7 text-yellow-100 group-hover:text-white transition-colors" />
                         </div>
                         <div className="text-left">
-                          <h3 className="font-bold text-yellow-100 text-base group-hover:text-white transition-colors">{t.review}</h3>
-                          <p className="text-xs text-yellow-200/70 group-hover:text-yellow-100/80 transition-colors">{t.reviewDesc}</p>
+                          <h3 className="font-bold text-yellow-50 text-base group-hover:text-white transition-colors">{t.review}</h3>
+                          <p className="text-xs text-yellow-100/80 group-hover:text-yellow-50 transition-colors">{t.reviewDesc}</p>
                         </div>
                       </div>
                     </button>
@@ -1499,7 +1470,7 @@ export default function CustomerPanel() {
         </div>
       </nav>
 
-      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} defaultTab={authDefaultTab} defaultRole="customer" />
+      <AuthModal isOpen={showAuthModal} onClose={handleAuthModalClose} defaultTab={authDefaultTab} defaultRole="customer" />
       
       {/* BRANCH SELECTOR MODAL FOR CARD CLICK */}
       <Dialog open={showBranchSelector} onOpenChange={setShowBranchSelector}>
