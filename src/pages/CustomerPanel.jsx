@@ -575,10 +575,47 @@ export default function CustomerPanel() {
   }, []);
 
   // ========== QR PERSISTENCE SYSTEM ==========
+  // Persist visited business to database
+  const persistVisitedBusiness = useCallback(async (businessId) => {
+    try {
+      // 1. Save to localStorage immediately
+      const existingJson = localStorage.getItem('vocalize_visited_businesses');
+      const existingIds = existingJson ? JSON.parse(existingJson) : [];
+      
+      if (!existingIds.includes(businessId)) {
+        existingIds.push(businessId);
+        localStorage.setItem('vocalize_visited_businesses', JSON.stringify(existingIds));
+        console.log('✅ Business saved to localStorage:', businessId);
+      }
+      
+      // 2. If user is logged in, also save to database
+      if (user?.email) {
+        const { error } = await supabase.from('customer_visited_businesses').upsert({
+          customer_email: user.email,
+          business_id: businessId,
+          last_visit_at: new Date().toISOString()
+        }, {
+          onConflict: 'customer_email,business_id'
+        });
+        
+        if (!error) {
+          console.log('✅ Business persisted to database for user:', user.email);
+        } else {
+          console.warn('⚠️ Business database persist error:', error.message);
+        }
+      }
+    } catch (err) {
+      console.error('Error persisting visited business:', err);
+    }
+  }, [user]);
+
   // Persist QR scan to both localStorage and database
   const persistQrScan = useCallback(async (businessId, branchId, qrCode) => {
     try {
-      // 1. Save to localStorage immediately
+      // 1. Save visited business first
+      await persistVisitedBusiness(businessId);
+      
+      // 2. Save QR data to localStorage
       const qrData = {
         business_id: businessId,
         branch_id: branchId,
@@ -589,7 +626,7 @@ export default function CustomerPanel() {
       localStorage.setItem(`vocalize_qr_${businessId}`, JSON.stringify(qrData));
       console.log('✅ QR saved to localStorage:', qrCode);
       
-      // 2. If user is logged in, also save to database
+      // 3. If user is logged in, also save to database
       if (user?.email) {
         const { error } = await supabase.from('customer_qr_scans').upsert({
           customer_email: user.email,
@@ -609,6 +646,31 @@ export default function CustomerPanel() {
       }
     } catch (err) {
       console.error('Error persisting QR scan:', err);
+    }
+  }, [user, persistVisitedBusiness]);
+
+  // Load persisted visited businesses from database
+  const loadPersistedBusinesses = useCallback(async () => {
+    if (!user?.email) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('customer_visited_businesses')
+        .select('business_id')
+        .eq('customer_email', user.email)
+        .order('last_visit_at', { ascending: false});
+      
+      if (!error && data && data.length > 0) {
+        console.log(`✅ Loaded ${data.length} visited businesses from database`);
+        
+        // Sync to localStorage
+        const businessIds = data.map(item => item.business_id);
+        localStorage.setItem('vocalize_visited_businesses', JSON.stringify(businessIds));
+        
+        console.log('✅ Visited businesses synced to localStorage');
+      }
+    } catch (err) {
+      console.error('Error loading persisted businesses:', err);
     }
   }, [user]);
 
@@ -653,12 +715,18 @@ export default function CustomerPanel() {
     }
   }, [user]);
 
-  // Load persisted QRs when user logs in
+  // Load persisted data when user logs in
   useEffect(() => {
     if (user && !isGuest) {
-      loadPersistedQrs();
+      const loadData = async () => {
+        await loadPersistedBusinesses();
+        await loadPersistedQrs();
+        // After loading persisted data, fetch businesses
+        fetchBusinesses();
+      };
+      loadData();
     }
-  }, [user, isGuest, loadPersistedQrs]);
+  }, [user, isGuest, loadPersistedBusinesses, loadPersistedQrs, fetchBusinesses]);
 
   // Persist QR when scanned
   useEffect(() => {
@@ -667,6 +735,56 @@ export default function CustomerPanel() {
     }
   }, [qrParam, businessParam, branchParam, persistQrScan]);
   // ========== END QR PERSISTENCE SYSTEM ==========
+
+  // ========== URL PARAMS TO STATE SYNC ==========
+  // Sync URL parameters to component state when they change
+  useEffect(() => {
+    if (businessParam && businessParam !== selectedBusiness) {
+      console.log('🔄 Syncing business from URL:', businessParam);
+      setSelectedBusiness(businessParam);
+    }
+    
+    if (branchParam && branchParam !== selectedBranch) {
+      console.log('🔄 Syncing branch from URL:', branchParam);
+      setSelectedBranch(branchParam);
+      
+      // Also fetch business name if not already set
+      if (businessParam && !businessName) {
+        supabase
+          .from('businesses')
+          .select('business_name')
+          .eq('id', businessParam)
+          .single()
+          .then(({ data }) => {
+            if (data) {
+              setBusinesses(prev => {
+                const exists = prev.find(b => b.id === businessParam);
+                if (!exists) {
+                  return [...prev, { id: businessParam, business_name: data.business_name }];
+                }
+                return prev;
+              });
+            }
+          });
+      }
+    }
+  }, [businessParam, branchParam, selectedBusiness, selectedBranch, businessName]);
+  // ========== END URL PARAMS SYNC ==========
+
+  // ========== BROWSER BACK BUTTON HANDLER ==========
+  // Handle browser back button - always go to dashboard
+  useEffect(() => {
+    const handlePopState = () => {
+      // Always navigate to dashboard on back button
+      console.log('⬅️ Back button pressed - navigating to dashboard');
+      navigate('/customer', { replace: true });
+      setCurrentView('dashboard');
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [navigate]);
+  // ========== END BROWSER BACK BUTTON HANDLER ==========
 
   const fetchStats = useCallback(async () => {
     if (!user?.email) return;
@@ -777,6 +895,9 @@ export default function CustomerPanel() {
   // ========== REFACTORED: BUSINESS CARD CLICK HANDLER (Guest Navigation Fix) ==========
   const handleBusinessCardClick = async (businessId) => {
     try {
+      // Persist visited business (localStorage + DB)
+      await persistVisitedBusiness(businessId);
+      
       // Fetch branches for this business
       const { data: branchesData, error } = await supabase
         .from('branches')
@@ -811,22 +932,50 @@ export default function CustomerPanel() {
   };
 
   // Handle branch selection from modal
-  const handleBranchSelectForFeedback = (branchId) => {
+  const handleBranchSelectForFeedback = async (branchId) => {
     setShowBranchSelector(false);
     
-    // Set selected business and branch
-    setSelectedBusiness(selectedBusinessForBranches);
-    setSelectedBranch(branchId);
+    console.log('🏪 Branch selected:', branchId, 'for business:', selectedBusinessForBranches);
     
-    // Navigate back to dashboard with selected business/branch
+    try {
+      // Fetch business name
+      const { data: businessData } = await supabase
+        .from('businesses')
+        .select('business_name')
+        .eq('id', selectedBusinessForBranches)
+        .single();
+      
+      // Fetch branch details
+      const { data: branchData } = await supabase
+        .from('branches')
+        .select('branch_name_tr')
+        .eq('id', branchId)
+        .single();
+      
+      // Set selected business and branch
+      setSelectedBusiness(selectedBusinessForBranches);
+      setSelectedBranch(branchId);
+      
+      console.log('✅ Fetched business:', businessData?.business_name, 'branch:', branchData?.branch_name_tr);
+      
+    } catch (error) {
+      console.error('Error fetching business/branch data:', error);
+    }
+    
+    // Navigate with URL params
     const params = new URLSearchParams();
     params.set('business', selectedBusinessForBranches);
     params.set('branch', branchId);
     params.set('lang', language);
     if (isGuest) params.set('guest', 'true');
     
-    // Navigate to customer panel (not feedback form directly)
-    navigate(`/customer?${params.toString()}`);
+    // Navigate to customer panel (state will be synced by useEffect)
+    navigate(`/customer?${params.toString()}`, { replace: true });
+    
+    // Force view to dashboard
+    setCurrentView('dashboard');
+    
+    console.log('✅ Navigation complete, displaying dashboard');
   };
 
   const proceedToFeedback = (type) => {

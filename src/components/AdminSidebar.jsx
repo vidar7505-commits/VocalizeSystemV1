@@ -228,7 +228,7 @@ const AdminSidebar = () => {
 
         {/* User / Footer */}
         <div className="p-4 border-t border-slate-800 bg-[#0f172a]/50 flex flex-col gap-3">
-          {/* Contact Button - Style Updated as requested */}
+          {/* Contact Button */}
           <Button 
             variant="ghost" 
             className="w-full justify-start text-teal-400 hover:text-teal-300 hover:bg-teal-900/20 group border border-dashed border-slate-700 hover:border-teal-500/30"
@@ -241,7 +241,6 @@ const AdminSidebar = () => {
           <div 
             className="relative flex items-center gap-3 px-2 py-2 rounded-lg bg-slate-800/30 transition-colors hover:bg-slate-800/50"
             onMouseEnter={() => {
-              // Desktop'ta hover disable (badge yok, header'da var)
               if (window.innerWidth < 768 && badgeConfig) {
                 setIsHovered(true);
               }
@@ -252,7 +251,6 @@ const AdminSidebar = () => {
               }
             }}
             onClick={() => {
-              // Mobile'da badge'e tıklayınca toggle
               if (window.innerWidth < 768 && badgeConfig) {
                 setIsHovered(prev => !prev);
               }
@@ -277,21 +275,17 @@ const AdminSidebar = () => {
               </div>
             </div>
 
-            {/* Hover Card - Mobile: Full screen modal, Desktop: Hidden */}
+            {/* Hover Card - Mobile Only */}
             {badgeConfig && isHovered && (
               <>
-                {/* Mobile Backdrop (Desktop'ta hidden) */}
                 <div 
                   className="fixed inset-0 bg-black/60 z-[90] backdrop-blur-sm md:hidden"
                   onClick={() => setIsHovered(false)}
                 />
                 
-                {/* Hover Card (Desktop'ta hidden) */}
                 <div 
                   className={cn(
-                    // Mobile: Fixed centered modal
                     "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] max-w-sm px-4 py-3 rounded-lg shadow-2xl z-[100] bg-slate-800 border",
-                    // Desktop: Hidden (badge yok, header'da var)
                     "md:hidden",
                     badgeConfig.cardBorderColor
                   )}

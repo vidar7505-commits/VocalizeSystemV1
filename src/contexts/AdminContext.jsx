@@ -32,19 +32,33 @@ export const AdminProvider = ({ children }) => {
     endDate.setHours(23, 59, 59, 999);
 
     switch (range) {
-      case 'Bugün': break; // Already today
-      case 'Son 7 Gün': startDate.setDate(endDate.getDate() - 7); break;
-      case 'Son 30 Gün': startDate.setDate(endDate.getDate() - 30); break;
-      case 'Son 90 Gün': startDate.setDate(endDate.getDate() - 90); break;
-      case 'Bu Ay': startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1); break;
+      case 'Bugün': 
+        // Bugün için start ve end aynı gün
+        break;
+      case 'Son 7 Gün': 
+        startDate.setDate(endDate.getDate() - 7); 
+        break;
+      case 'Son 30 Gün': 
+        startDate.setDate(endDate.getDate() - 30); 
+        break;
+      case 'Son 90 Gün': 
+        startDate.setDate(endDate.getDate() - 90); 
+        break;
+      case 'Bu Ay': 
+        startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+        startDate.setHours(0, 0, 0, 0);
+        break;
       case 'allTime': 
         if (businessCreatedAt) {
             startDate = new Date(businessCreatedAt);
         } else {
             startDate = new Date(2020, 0, 1);
         }
+        startDate.setHours(0, 0, 0, 0);
         break;
-      default: startDate.setDate(endDate.getDate() - 7); break;
+      default: 
+        startDate.setDate(endDate.getDate() - 7); 
+        break;
     }
 
     return { startDate, endDate };
@@ -109,8 +123,13 @@ export const AdminProvider = ({ children }) => {
       }
 
       const { count, error: qrError } = await qrQuery;
-      if (qrError) throw qrError;
-      setQrCount(count || 0);
+      if (qrError) {
+        console.error('QR Count Error:', qrError);
+        setQrCount(0);
+      } else {
+        setQrCount(count || 0);
+        console.log('QR Count fetched:', count, 'for dateRange:', dateRange, 'branch:', selectedBranchId);
+      }
 
     } catch (error) {
       console.error('AdminContext Load Error:', error);

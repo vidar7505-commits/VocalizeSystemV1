@@ -211,15 +211,12 @@ const AdminHeader = () => {
     return labels[dateRange] || 'Son 7 Gün';
   };
 
-  // ============================================================================
-  // GÜNCELLEME: 49 TL → 79 TL (Erken Aşama Avantajı)
-  // ============================================================================
+  // Badge configuration
   let badgeConfig = null;
 
   if (!loading && isSpecialOffer === true && monthlyFeeOverride !== null) {
     const fee = Number(monthlyFeeOverride);
     
-    // GÜNCELLEME: 49.00 → 79.00 ($79)
     if (fee === 79.00) {
       badgeConfig = {
         text: "Erken Aşama Avantajı",

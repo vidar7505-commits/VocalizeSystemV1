@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAdminContext } from '@/contexts/AdminContext';
-import { Bell, QrCode, Building2, CheckCheck, X } from 'lucide-react';
+import { Bell, QrCode, Building2, CheckCheck, X, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -13,7 +13,8 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from "@/components/ui/use-toast";
 import { AnimatePresence, motion } from 'framer-motion';
-import FeedbackDetailModal from '@/components/FeedbackDetailModal'; // ✅ EKLEME
+import FeedbackDetailModal from '@/components/FeedbackDetailModal';
+import { cn } from '@/lib/utils';
 
 const formatTimeAgo = (dateString) => {
   if (!dateString) return '';
@@ -39,7 +40,9 @@ const AdminMobileNavbar = () => {
     selectedBranchId, 
     setSelectedBranchId,
     qrCount,
-    loading
+    loading,
+    isSpecialOffer,
+    monthlyFeeOverride
   } = useAdminContext();
   
   const { user } = useAuth();
@@ -50,9 +53,41 @@ const AdminMobileNavbar = () => {
   const [notifications, setNotifications] = useState([]);
   const notificationRef = useRef(null);
   
-  // ✅ EKLEME: FeedbackDetailModal için state'ler
+  // Pricing flag detail state
+  const [showPricingDetail, setShowPricingDetail] = useState(false);
+  
+  // FeedbackDetailModal için state'ler
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Pricing badge config
+  const badgeConfig = React.useMemo(() => {
+    if (!isSpecialOffer || monthlyFeeOverride === null) return null;
+    
+    const fee = Number(monthlyFeeOverride);
+    
+    if (fee === 79.00) {
+      return {
+        text: "Erken Erişim",
+        icon: "⭐",
+        badgeClassName: "bg-amber-500/10 border-amber-500/30 text-amber-400",
+        cardTitle: "⭐ Ayrıcalıklı Erken Erişim",
+        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli ömür boyu $79 olarak mühürlenmiştir.",
+        cardBorderColor: "border-amber-500/50",
+        cardTitleColor: "text-amber-400"
+      };
+    } else {
+      return {
+        text: "Esnek Plan",
+        icon: "🚀",
+        badgeClassName: "bg-teal-500/10 border-teal-500/30 text-teal-400",
+        cardTitle: "🚀 Kurumsal Esnek Paket",
+        cardDesc: `İşletmenizin ihtiyaçlarına özel olarak yapılandırılmış ödeme planıdır. Aylık kullanım bedeli $${fee} olarak tanımlanmıştır.`,
+        cardBorderColor: "border-teal-500/50",
+        cardTitleColor: "text-teal-400"
+      };
+    }
+  }, [isSpecialOffer, monthlyFeeOverride]);
 
   useEffect(() => {
     if (!user) return;
@@ -96,15 +131,12 @@ const AdminMobileNavbar = () => {
     };
   }, [user]);
 
-  // --- KRİTİK DÜZELTME: touchstart KALDIRILDI ---
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setShowNotifications(false);
       }
     };
-    // Mobilde 'touchstart' çakışma yarattığı için sadece mousedown kullanıyoruz.
-    // Modern mobil tarayıcılar mousedown'u da tetikler, bu yeterlidir.
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -122,67 +154,67 @@ const AdminMobileNavbar = () => {
   };
 
   const handleNotificationClick = async (notification, e) => {
-    // Event propagation'ı durdurarak panelin hemen kapanmasını önle
     if (e) {
         e.stopPropagation();
         e.preventDefault();
     }
     
+    // Önce paneli kapat
     setShowNotifications(false);
-
-    // ✅ GÜNCELLEME: Feedback datasını çek ve modal aç
-    try {
-      const { data: feedbackData, error: feedbackError } = await supabase
-        .from('feedbacks')
-        .select(`
-          *, 
-          branches(branch_name_tr),
-          customer_profiles(
-            id, name, email, phone, customer_number, created_at, updated_at,
-            flag_vip_customer, flag_sensitive_customer, admin_note,
-            users:user_id(first_name, last_name)
-          ),
-          manager_note_updater:manager_note_updated_by(first_name, last_name)
-        `)
-        .eq('id', notification.related_id)
-        .single();
-      
-      if (feedbackError) {
-        console.error('Feedback fetch error:', feedbackError);
-        // Hata varsa eski yöntemle devam et
-        if (notification.related_id) {
-          navigate('/admin-panel/feedbacks', { 
-            state: { openFeedbackId: notification.related_id } 
-          });
+    
+    // Kısa bir gecikme ile modal aç (state update'lerin tamamlanması için)
+    setTimeout(async () => {
+      try {
+        const { data: feedbackData, error: feedbackError } = await supabase
+          .from('feedbacks')
+          .select(`
+            *, 
+            branches(branch_name_tr),
+            customer_profiles(
+              id, name, email, phone, customer_number, created_at, updated_at,
+              flag_vip_customer, flag_sensitive_customer, admin_note,
+              users:user_id(first_name, last_name)
+            ),
+            manager_note_updater:manager_note_updated_by(first_name, last_name)
+          `)
+          .eq('id', notification.related_id)
+          .single();
+        
+        if (feedbackError) {
+          console.error('Feedback fetch error:', feedbackError);
+          if (notification.related_id) {
+            navigate('/admin-panel/feedbacks', { 
+              state: { openFeedbackId: notification.related_id } 
+            });
+          }
+          return;
         }
-        return;
+
+        setSelectedFeedback(feedbackData);
+        setIsModalOpen(true);
+      } catch (error) {
+        console.error('Error fetching feedback:', error);
+        toast({ 
+          variant: 'destructive', 
+          title: 'Hata', 
+          description: 'Geri bildirim detayı yüklenemedi.' 
+        });
       }
 
-      // Modal'ı aç
-      setSelectedFeedback(feedbackData);
-      setIsModalOpen(true);
-    } catch (error) {
-      console.error('Error fetching feedback:', error);
-      toast({ 
-        variant: 'destructive', 
-        title: 'Hata', 
-        description: 'Geri bildirim detayı yüklenemedi.' 
-      });
-    }
+      // Okundu işaretle
+      if (!notification.is_read) {
+          setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
+          setUnreadCount(prev => Math.max(0, prev - 1));
 
-    // Okundu işaretle
-    if (!notification.is_read) {
-        setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-
-        supabase
-            .from('notifications')
-            .update({ is_read: true })
-            .eq('id', notification.id)
-            .then(({ error }) => {
-                if (error) console.error("Bildirim DB hatası:", error);
-            });
-    }
+          supabase
+              .from('notifications')
+              .update({ is_read: true })
+              .eq('id', notification.id)
+              .then(({ error }) => {
+                  if (error) console.error("Bildirim DB hatası:", error);
+              });
+      }
+    }, 100);
   };
 
   const handleMarkAllRead = async (e) => {
@@ -219,9 +251,68 @@ const AdminMobileNavbar = () => {
           </span>
         </div>
 
-        {/* MIDDLE: Branch Selector */}
+        {/* MIDDLE: Branch Selector veya Pricing Flag */}
         <div className="flex-1 flex justify-center px-1 min-w-0">
-           {branches.length > 1 && (
+           {badgeConfig ? (
+             /* Pricing Flag Badge */
+             <div className="relative">
+               <div 
+                 onClick={() => setShowPricingDetail(!showPricingDetail)}
+                 className={cn(
+                   "flex items-center gap-1.5 px-3 py-1.5 rounded-full border cursor-pointer transition-all hover:scale-105 active:scale-95",
+                   badgeConfig.badgeClassName
+                 )}
+               >
+                 <span className="text-sm">{badgeConfig.icon}</span>
+                 <span className="text-xs font-semibold whitespace-nowrap">{badgeConfig.text}</span>
+                 <Info className="w-3 h-3 ml-0.5 opacity-70" />
+               </div>
+               
+               {/* Detail Dropdown */}
+               <AnimatePresence>
+                 {showPricingDetail && (
+                   <>
+                     {/* Backdrop */}
+                     <motion.div
+                       initial={{ opacity: 0 }}
+                       animate={{ opacity: 1 }}
+                       exit={{ opacity: 0 }}
+                       onClick={() => setShowPricingDetail(false)}
+                       className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+                     />
+                     
+                     {/* Detail Box */}
+                     <motion.div
+                       initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                       animate={{ opacity: 1, scale: 1, y: 0 }}
+                       exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                       className={cn(
+                         "fixed left-1/2 top-20 -translate-x-1/2 w-[85%] max-w-sm px-4 py-3 rounded-lg shadow-2xl z-[70] bg-slate-800 border",
+                         badgeConfig.cardBorderColor
+                       )}
+                       onClick={(e) => e.stopPropagation()}
+                     >
+                       <div className="flex items-start justify-between mb-2">
+                         <div className={cn("text-sm font-semibold", badgeConfig.cardTitleColor)}>
+                           {badgeConfig.cardTitle}
+                         </div>
+                         <button
+                           onClick={() => setShowPricingDetail(false)}
+                           className="text-slate-400 hover:text-white -mt-1 -mr-1 p-1"
+                         >
+                           <X className="w-4 h-4" />
+                         </button>
+                       </div>
+                       <div className="text-xs text-slate-300 leading-relaxed">
+                         {badgeConfig.cardDesc}
+                       </div>
+                     </motion.div>
+                   </>
+                 )}
+               </AnimatePresence>
+             </div>
+           ) : branches.length > 1 ? (
+             /* Branch Selector */
              <div className="w-full max-w-[130px]">
                <Select 
                  value={selectedBranchId} 
@@ -243,7 +334,7 @@ const AdminMobileNavbar = () => {
                  </SelectContent>
                </Select>
              </div>
-           )}
+           ) : null}
         </div>
 
         {/* RIGHT: Notifications */}
@@ -261,7 +352,6 @@ const AdminMobileNavbar = () => {
                 initial={{ opacity: 0, scale: 0.95, y: 10 }} 
                 animate={{ opacity: 1, scale: 1, y: 0 }} 
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                // onClick eventini durdurarak panel içi tıklamaların dışarı taşmasını engelliyoruz
                 onClick={(e) => e.stopPropagation()} 
                 className="absolute top-full right-0 mt-2 w-[280px] sm:w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden"
               >
@@ -309,7 +399,7 @@ const AdminMobileNavbar = () => {
         </div>
       </div>
 
-      {/* ✅ EKLEME: FeedbackDetailModal */}
+      {/* FeedbackDetailModal */}
       {isModalOpen && selectedFeedback && (
         <FeedbackDetailModal 
           isOpen={isModalOpen} 
