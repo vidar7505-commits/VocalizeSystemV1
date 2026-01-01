@@ -49,7 +49,43 @@ const QRRedirector = () => {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session) {
-          // ✅ KAYITLI KULLANICI: CustomerPanel'e yönlendir
+          // KRİTİK: User type kontrolü
+          const userType = session.user?.user_metadata?.user_type;
+          
+          if (userType === 'manager') {
+            // ⚠️ MANAGER HESABI VARSA: Çıkış yap ve auth modal aç
+            console.log('🚨 Manager detected on QR scan - signing out and redirecting to auth');
+            
+            // Session'ı temizle
+            await supabase.auth.signOut({ scope: 'local' });
+            
+            toast({
+              title: "Yönetici Hesabı",
+              description: "Müşteri paneline erişmek için yönetici hesabından çıkış yapıldı. Lütfen müşteri hesabınızla giriş yapın.",
+              variant: "default"
+            });
+            
+            // Business bilgilerini localStorage'a kaydet
+            saveBusinessToLocalStorage(business_id);
+            
+            // Analytics log
+            try {
+              await supabase.from('qr_scans').insert({
+                branch_id,
+                business_id,
+                qr_code,
+                user_agent: navigator.userAgent
+              });
+            } catch (e) {
+              console.warn("Analytics log failed", e);
+            }
+            
+            // LandingPage'e yönlendir ve auth modal aç
+            navigate(`/?qr=${qrCode}&business=${business_id}&branch=${branch_id}&openAuth=true&authTab=login`);
+            return;
+          }
+          
+          // ✅ CUSTOMER HESABI: Normal flow
           await handleAuthenticatedUser(session, branchData);
         } else {
           // ❌ KAYITSIZ KULLANICI: localStorage'a kaydet ve LandingPage'e yönlendir
@@ -73,7 +109,7 @@ const QRRedirector = () => {
             variant: "default"
           });
 
-          // LandingPage'e yönlendir ve modal açılsın (LandingPage kendi modalini açacak)
+          // LandingPage'e yönlendir ve modal açılsın
           navigate(`/?qr=${qrCode}&business=${business_id}&branch=${branch_id}&openAuth=true`);
         }
 
@@ -87,7 +123,7 @@ const QRRedirector = () => {
     processQRScan();
   }, [searchParams, navigate, toast]);
 
-  // ✅ KAYITLI KULLANICI İÇİN İŞLEM
+  // ✅ KAYITLI CUSTOMER İÇİN İŞLEM
   const handleAuthenticatedUser = async (session, branchInfo) => {
     try {
       const user_id = session.user.id;
@@ -175,7 +211,6 @@ const QRRedirector = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f172a] p-4">
         <div className="bg-slate-800 p-6 md:p-8 rounded-xl shadow-2xl max-w-md w-full text-center border-2 border-red-500/50 relative overflow-hidden">
-          {/* Background glow effect */}
           <div className="absolute top-0 left-0 w-full h-full bg-red-500/5 pointer-events-none" />
           
           <div className="bg-slate-900/50 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6 border border-slate-700">

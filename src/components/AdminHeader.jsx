@@ -211,19 +211,22 @@ const AdminHeader = () => {
     return labels[dateRange] || 'Son 7 Gün';
   };
 
-  // Badge configuration
+  // ============================================================================
+  // GÜNCELLEME: 49 TL → 79 TL (Erken Aşama Avantajı)
+  // ============================================================================
   let badgeConfig = null;
 
   if (!loading && isSpecialOffer === true && monthlyFeeOverride !== null) {
     const fee = Number(monthlyFeeOverride);
     
+    // GÜNCELLEME: 49.00 → 79.00 ($79)
     if (fee === 79.00) {
       badgeConfig = {
         text: "Erken Aşama Avantajı",
         icon: "⭐",
         badgeClassName: "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20",
         cardTitle: "⭐ Ayrıcalıklı Erken Erişim",
-        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli ömür boyu $79 olarak mühürlenmiştir.",
+        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli $79 olarak belirleniştir ve ömür boyu %20 indirim hakkı mühürlenmiştir.",
         cardBorderColor: "border-amber-500/50",
         cardTitleColor: "text-amber-400"
       };

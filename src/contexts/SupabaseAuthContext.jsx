@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
-
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -16,7 +15,6 @@ export const AuthProvider = ({ children }) => {
   const handleSession = useCallback((session) => {
     setSession(session);
     setUser(session?.user ?? null);
-    // If we have a real session, we are definitely not a guest anymore
     if (session?.user) {
       setIsGuest(false);
     }
@@ -33,8 +31,6 @@ export const AuthProvider = ({ children }) => {
         if (mounted) handleSession(session);
       } catch (error) {
         console.error("Auth session fetch error:", error);
-        // In case of fetch error (e.g. invalid URL or network issue), 
-        // we stop loading to prevent infinite loops/hangs.
         if (mounted) setLoading(false);
       }
     };
@@ -98,21 +94,37 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = useCallback(async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      // KRİTİK DÜZELTME: scope: 'local' parametresi eklendi
+      // Bu "auth session missing" hatasını önler
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
       
-      // Reset guest state on sign out
+      // Reset all states
       setIsGuest(false);
+      setUser(null);
+      setSession(null);
 
       if (error) {
+        // Session missing hatası önemli değil, yine de çıkış yaptır
+        if (error.message?.includes('session')) {
+          console.warn('Session already cleared:', error);
+          return { error: null };
+        }
+        
         toast({
           variant: "destructive",
-          title: "Sign out Failed",
-          description: error.message || "Something went wrong",
+          title: "Çıkış Hatası",
+          description: error.message || "Bir sorun oluştu",
         });
+        return { error };
       }
-      return { error };
+      
+      return { error: null };
     } catch (err) {
       console.error("Sign out error:", err);
+      // Hata olsa bile state'i temizle
+      setIsGuest(false);
+      setUser(null);
+      setSession(null);
       return { error: err };
     }
   }, [toast]);

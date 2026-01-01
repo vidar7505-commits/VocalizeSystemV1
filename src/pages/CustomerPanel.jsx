@@ -970,7 +970,7 @@ export default function CustomerPanel() {
     if (isGuest) params.set('guest', 'true');
     
     // Navigate to customer panel (state will be synced by useEffect)
-    navigate(`/customer?${params.toString()}`, { replace: true });
+    navigate(`/customer-panel?${params.toString()}`, { replace: true });
     
     // Force view to dashboard
     setCurrentView('dashboard');

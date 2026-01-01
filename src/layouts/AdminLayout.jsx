@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { AdminProvider } from '@/contexts/AdminContext';
 import AdminHeader from '@/components/AdminHeader';
 import AdminSidebar from '@/components/AdminSidebar';
+import AdminMobileNavbar from '@/components/AdminMobileNavbar';
 
 const AdminLayout = () => {
   return (
@@ -16,6 +17,7 @@ const AdminLayout = () => {
         
         <div className="flex-1 flex flex-col min-w-0 h-full">
           <AdminHeader />
+          <AdminMobileNavbar />
           
           {/* DÜZELTME: main alanı artık kapsayıcının kalan yüksekliğini doldurur 
              ve sadece kendi içinde scroll olur. 

@@ -18,7 +18,6 @@ import { cn, formatCustomerName, getCustomerData, calculateDelta } from "@/lib/u
 
 // Components
 import FeedbackDetailModal from '@/components/FeedbackDetailModal';
-import AdminMobileNavbar from '@/components/AdminMobileNavbar';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
 
 // --- SUB-COMPONENTS ---
@@ -386,7 +385,6 @@ const AdminPanel = () => {
 
   return (
     <div className="mx-auto max-w-7xl pb-10 px-4 pt-20 md:px-6 md:pt-0 lg:px-8">
-      <AdminMobileNavbar />
       <div className="mt-4 flex flex-col justify-between gap-6 md:mt-0 md:flex-row md:items-start mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">{displayTitle}</h1>
@@ -412,7 +410,7 @@ const AdminPanel = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div><h2 className="text-white font-bold text-xl mb-1">Analiz Grafikleri</h2><p className="text-slate-400 text-sm">Müşteri geri bildirimlerinin detaylı dağılımı</p></div>
             
-            {/* Mobilde Grid, Webde Flex */}
+            {/* GÜNCELLENDİ: Webde Flex, Mobilde Grid (Butonlar yan yana sığsın) */}
             <TabsList className="bg-slate-800 border-slate-700 w-full grid grid-cols-2 h-auto p-1 sm:w-auto sm:flex sm:h-10">
               <TabsTrigger value="stars" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm"><Star className="w-4 h-4 mr-2" />Yıldız Dağılımı</TabsTrigger>
               <TabsTrigger value="types" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm"><MessageSquare className="w-4 h-4 mr-2" />Form Türleri</TabsTrigger>
@@ -425,9 +423,11 @@ const AdminPanel = () => {
                 <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><Star className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz değerlendirme almadınız</h3></div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
+                  {/* GÜNCELLENDİ: Sol (left) margin -20'den 0'a çekildi ki yazılar sığsın */}
                   <BarChart layout="vertical" data={ratingDistribution} margin={{ top: 5, right: 30, left: 0, bottom: 5 }} barSize={24}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
                     <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} domain={[0, 'auto']} />
+                    {/* Width 60 yapıldı ki "5 Yıldız" yazısı sığsın */}
                     <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={60} />
                     <Tooltip formatter={(value) => [value, 'Adet']} labelFormatter={() => ''} contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} cursor={{ fill: '#ffffff10' }} />
                     <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={32}>{ratingDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}<LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={12} /></Bar>
@@ -443,6 +443,7 @@ const AdminPanel = () => {
                 <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><MessageSquare className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz geri bildirim almadınız</h3></div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
+                  {/* GÜNCELLENDİ: Sol margin 0 ve YAxis width 85 (Değerlendirme yazısı uzun olduğu için) */}
                   <BarChart layout="vertical" data={feedbackTypeDistribution} margin={{ top: 5, right: 30, left: 0, bottom: 5 }} barSize={24}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
                     <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
