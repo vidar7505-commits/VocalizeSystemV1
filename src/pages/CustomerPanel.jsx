@@ -534,29 +534,51 @@ export default function CustomerPanel() {
   // ========== REFACTORED: localStorage FILTER ==========
   const fetchBusinesses = useCallback(async () => {
     try {
-      // Get visited businesses from localStorage
-      const visitedBusinessesJson = localStorage.getItem('vocalize_visited_businesses');
-      const visitedIds = visitedBusinessesJson ? JSON.parse(visitedBusinessesJson) : [];
+      let allBusinessIds = [];
       
-      // If no visited businesses, return empty state
-      if (!visitedIds || visitedIds.length === 0) {
+      // 1. Get from localStorage
+      const visitedBusinessesJson = localStorage.getItem('vocalize_visited_businesses');
+      const localIds = visitedBusinessesJson ? JSON.parse(visitedBusinessesJson) : [];
+      allBusinessIds = [...localIds];
+      
+      // 2. If user is logged in, also fetch from database and merge
+      if (user?.email && !isGuest) {
+        const { data: dbBusinesses, error } = await supabase
+          .from('customer_visited_businesses')
+          .select('business_id')
+          .eq('customer_email', user.email);
+        
+        if (!error && dbBusinesses) {
+          const dbIds = dbBusinesses.map(b => b.business_id);
+          // Merge localStorage with database (unique)
+          allBusinessIds = [...new Set([...allBusinessIds, ...dbIds])];
+          
+          // Update localStorage with merged data
+          localStorage.setItem('vocalize_visited_businesses', JSON.stringify(allBusinessIds));
+          console.log('✅ Businesses synced from database:', dbIds.length);
+        }
+      }
+      
+      // 3. If no businesses found, return empty
+      if (allBusinessIds.length === 0) {
         setBusinesses([]);
         return;
       }
       
-      // Fetch only visited businesses from Supabase
+      // 4. Fetch business details
       const { data, error } = await supabase
         .from('businesses')
         .select('id, business_name')
-        .in('id', visitedIds);
+        .in('id', allBusinessIds);
         
       if (error) throw error;
       setBusinesses(data || []);
+      console.log('✅ Fetched businesses:', data?.length || 0);
     } catch (error) {
       console.error('Error fetching businesses:', error);
       setBusinesses([]);
     }
-  }, []);
+  }, [user, isGuest]);
 
   const fetchBranches = useCallback(async (businessId) => {
     if (!businessId) return;
@@ -771,19 +793,58 @@ export default function CustomerPanel() {
   }, [businessParam, branchParam, selectedBusiness, selectedBranch, businessName]);
   // ========== END URL PARAMS SYNC ==========
 
-  // ========== BROWSER BACK BUTTON HANDLER ==========
-  // Handle browser back button - always go to dashboard
+  // ========== SELECTED BUSINESS CHANGE HANDLER ==========
+  // Update URL when business/branch selection changes
   useEffect(() => {
-    const handlePopState = () => {
-      // Always navigate to dashboard on back button
-      console.log('⬅️ Back button pressed - navigating to dashboard');
-      navigate('/customer', { replace: true });
-      setCurrentView('dashboard');
+    if (!selectedBusiness) {
+      // Business deselected - clear from URL
+      const params = new URLSearchParams(searchParams);
+      params.delete('business');
+      params.delete('branch');
+      window.history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
+      setSelectedBranch(''); // Clear branch selection too
+      console.log('🔄 Business deselected, URL cleared');
+    } else if (selectedBusiness && selectedBranch) {
+      // Both business and branch selected - update URL
+      const params = new URLSearchParams(searchParams);
+      params.set('business', selectedBusiness);
+      params.set('branch', selectedBranch);
+      params.set('lang', language);
+      if (isGuest) params.set('guest', 'true');
+      window.history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
+      console.log('🔄 Business+Branch selected, URL updated');
+    }
+  }, [selectedBusiness, selectedBranch, language, isGuest, searchParams, location.pathname]);
+  // ========== END SELECTED BUSINESS CHANGE HANDLER ==========
+
+  // ========== BROWSER BACK BUTTON HANDLER ==========
+  // Handle browser back button - smart navigation
+  useEffect(() => {
+    const handlePopState = (e) => {
+      console.log('⬅️ Back button pressed');
+      
+      // If business is selected, go back to business cards
+      if (selectedBusiness) {
+        setSelectedBusiness('');
+        setSelectedBranch('');
+        console.log('⬅️ Back to business cards');
+        return;
+      }
+      
+      // If in feedbacks/stats view, go back to dashboard
+      if (currentView !== 'dashboard') {
+        setCurrentView('dashboard');
+        console.log('⬅️ Back to dashboard');
+        return;
+      }
+      
+      // Otherwise, normal browser back
+      console.log('⬅️ Normal browser back');
     };
     
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [navigate]);
+  }, [selectedBusiness, selectedBranch, currentView]);
   // ========== END BROWSER BACK BUTTON HANDLER ==========
 
   const fetchStats = useCallback(async () => {
@@ -937,45 +998,21 @@ export default function CustomerPanel() {
     
     console.log('🏪 Branch selected:', branchId, 'for business:', selectedBusinessForBranches);
     
-    try {
-      // Fetch business name
-      const { data: businessData } = await supabase
-        .from('businesses')
-        .select('business_name')
-        .eq('id', selectedBusinessForBranches)
-        .single();
-      
-      // Fetch branch details
-      const { data: branchData } = await supabase
-        .from('branches')
-        .select('branch_name_tr')
-        .eq('id', branchId)
-        .single();
-      
-      // Set selected business and branch
-      setSelectedBusiness(selectedBusinessForBranches);
-      setSelectedBranch(branchId);
-      
-      console.log('✅ Fetched business:', businessData?.business_name, 'branch:', branchData?.branch_name_tr);
-      
-    } catch (error) {
-      console.error('Error fetching business/branch data:', error);
-    }
+    // Set selected business and branch
+    setSelectedBusiness(selectedBusinessForBranches);
+    setSelectedBranch(branchId);
     
-    // Navigate with URL params
-    const params = new URLSearchParams();
+    // Update URL parameters (without navigation)
+    const params = new URLSearchParams(searchParams);
     params.set('business', selectedBusinessForBranches);
     params.set('branch', branchId);
     params.set('lang', language);
     if (isGuest) params.set('guest', 'true');
     
-    // Navigate to customer panel (state will be synced by useEffect)
-    navigate(`/customer-panel?${params.toString()}`, { replace: true });
+    // Update URL without page reload
+    window.history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
     
-    // Force view to dashboard
-    setCurrentView('dashboard');
-    
-    console.log('✅ Navigation complete, displaying dashboard');
+    console.log('✅ Business and branch selected, staying on dashboard');
   };
 
   const proceedToFeedback = (type) => {

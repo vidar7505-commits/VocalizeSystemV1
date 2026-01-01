@@ -45,7 +45,7 @@ const AdminSidebar = () => {
         icon: "⭐",
         badgeClassName: "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20",
         cardTitle: "⭐ Ayrıcalıklı Erken Erişim",
-        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli $79 olarak belirleniştir ve ömür boyu %20 indirim hakkı mühürlenmiştir.",
+        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli $79 olarak belirlenmiştir ve ömür boyu %20 indirim hakkı mühürlenmiştir.",
         cardBorderColor: "border-amber-500/50",
         cardTitleColor: "text-amber-400"
       };
@@ -228,6 +228,20 @@ const AdminSidebar = () => {
 
         {/* User / Footer */}
         <div className="p-4 border-t border-slate-800 bg-[#0f172a]/50 flex flex-col gap-3">
+          {/* Erken Erişim Flag - Ayrı Bölüm */}
+          {badgeConfig && (
+            <button
+              onClick={() => setIsHovered(prev => !prev)}
+              className={cn(
+                "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-all duration-200",
+                badgeConfig.badgeClassName
+              )}
+            >
+              <span className="text-lg">{badgeConfig.icon}</span>
+              <span className="text-xs font-semibold">{badgeConfig.text}</span>
+            </button>
+          )}
+
           {/* Contact Button - Style Updated as requested */}
           <Button 
             variant="ghost" 
@@ -238,74 +252,14 @@ const AdminSidebar = () => {
             <span className="font-medium transition-colors">Bizimle İletişime Geçin</span>
           </Button>
 
-          <div 
-            className="relative flex items-center gap-3 px-2 py-2 rounded-lg bg-slate-800/30 transition-colors hover:bg-slate-800/50"
-            onMouseEnter={() => {
-              // Desktop'ta hover disable (badge yok, header'da var)
-              if (window.innerWidth < 768 && badgeConfig) {
-                setIsHovered(true);
-              }
-            }}
-            onMouseLeave={() => {
-              if (window.innerWidth < 768) {
-                setIsHovered(false);
-              }
-            }}
-            onClick={() => {
-              // Mobile'da badge'e tıklayınca toggle
-              if (window.innerWidth < 768 && badgeConfig) {
-                setIsHovered(prev => !prev);
-              }
-            }}
-          >
+          <div className="relative flex items-center gap-3 px-2 py-2 rounded-lg bg-slate-800/30 transition-colors hover:bg-slate-800/50">
             <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
               {businessName ? businessName.substring(0, 2).toUpperCase() : 'AD'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{businessName || 'Admin Panel'}</p>
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-slate-500 truncate">Yönetici</p>
-                {badgeConfig && (
-                  <div className={cn(
-                    "md:hidden flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[10px] font-semibold whitespace-nowrap",
-                    badgeConfig.badgeClassName
-                  )}>
-                    <span>{badgeConfig.icon}</span>
-                    <span className="hidden xl:inline">{badgeConfig.text}</span>
-                  </div>
-                )}
-              </div>
+              <p className="text-xs text-slate-500 truncate">Yönetici</p>
             </div>
-
-            {/* Hover Card - Mobile: Full screen modal, Desktop: Hidden */}
-            {badgeConfig && isHovered && (
-              <>
-                {/* Mobile Backdrop (Desktop'ta hidden) */}
-                <div 
-                  className="fixed inset-0 bg-black/60 z-[90] backdrop-blur-sm md:hidden"
-                  onClick={() => setIsHovered(false)}
-                />
-                
-                {/* Hover Card (Desktop'ta hidden) */}
-                <div 
-                  className={cn(
-                    // Mobile: Fixed centered modal
-                    "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] max-w-sm px-4 py-3 rounded-lg shadow-2xl z-[100] bg-slate-800 border",
-                    // Desktop: Hidden (badge yok, header'da var)
-                    "md:hidden",
-                    badgeConfig.cardBorderColor
-                  )}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className={cn("text-sm font-semibold mb-1.5", badgeConfig.cardTitleColor)}>
-                    {badgeConfig.cardTitle}
-                  </div>
-                  <div className="text-xs text-slate-300 leading-relaxed">
-                    {badgeConfig.cardDesc}
-                  </div>
-                </div>
-              </>
-            )}
           </div>
 
           <Button 
@@ -317,6 +271,33 @@ const AdminSidebar = () => {
             <span className="group-hover:text-red-300 transition-colors text-xs">Çıkış Yap</span>
           </Button>
         </div>
+
+        {/* Hover Card Modal - Sidebar dışında fixed positioned */}
+        {badgeConfig && isHovered && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/60 z-[90] backdrop-blur-sm"
+              onClick={() => setIsHovered(false)}
+            />
+            
+            {/* Modal Card */}
+            <div 
+              className={cn(
+                "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] max-w-sm px-4 py-3 rounded-lg shadow-2xl z-[100] bg-slate-800 border",
+                badgeConfig.cardBorderColor
+              )}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={cn("text-sm font-semibold mb-1.5", badgeConfig.cardTitleColor)}>
+                {badgeConfig.cardTitle}
+              </div>
+              <div className="text-xs text-slate-300 leading-relaxed">
+                {badgeConfig.cardDesc}
+              </div>
+            </div>
+          </>
+        )}
       </aside>
 
       {/* Mobile Overlay */}

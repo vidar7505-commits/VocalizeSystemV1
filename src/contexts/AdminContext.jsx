@@ -18,7 +18,7 @@ export const AdminProvider = ({ children }) => {
 
   const [branches, setBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState('all');
-  const [dateRange, setDateRange] = useState('Son 7 Gün'); 
+  const [dateRange, setDateRange] = useState('allTime'); 
 
   const [qrCount, setQrCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -32,25 +32,45 @@ export const AdminProvider = ({ children }) => {
     endDate.setHours(23, 59, 59, 999);
 
     switch (range) {
-      case 'Bugün': break; // Already today
-      case 'Son 7 Gün': startDate.setDate(endDate.getDate() - 7); break;
-      case 'Son 30 Gün': startDate.setDate(endDate.getDate() - 30); break;
-      case 'Son 90 Gün': startDate.setDate(endDate.getDate() - 90); break;
-      case 'Bu Ay': startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1); break;
+      case 'Bugün': 
+      case 'Bugün': // UTF-8 variant
+        break; // Already today
+      case 'Son 7 Gün': 
+      case 'Son 7 Gün': // UTF-8 variant
+        startDate.setDate(endDate.getDate() - 7); 
+        break;
+      case 'Son 30 Gün': 
+      case 'Son 30 Gün': // UTF-8 variant
+        startDate.setDate(endDate.getDate() - 30); 
+        break;
+      case 'Son 90 Gün': 
+      case 'Son 90 Gün': // UTF-8 variant
+        startDate.setDate(endDate.getDate() - 90); 
+        break;
+      case 'Bu Ay': 
+        startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1); 
+        break;
       case 'allTime': 
+      case 'Tüm Zamanlar':
         if (businessCreatedAt) {
             startDate = new Date(businessCreatedAt);
         } else {
             startDate = new Date(2020, 0, 1);
         }
         break;
-      default: startDate.setDate(endDate.getDate() - 7); break;
+      default: 
+        startDate.setDate(endDate.getDate() - 7); 
+        break;
     }
 
     return { startDate, endDate };
   }, [businessCreatedAt]);
 
   const getDateFilterISO = useCallback((range) => {
+    // 'allTime' için filter uygulanmamalı (tüm veriler çekilmeli)
+    if (range === 'allTime' || range === 'Tüm Zamanlar') {
+      return null;
+    }
     const { startDate } = getDateRange(range);
     return startDate ? startDate.toISOString() : null;
   }, [getDateRange]);

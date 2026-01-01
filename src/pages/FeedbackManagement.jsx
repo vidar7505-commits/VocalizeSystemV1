@@ -9,13 +9,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Loader2, Search, RefreshCw, Calendar, MessageSquare, User, Star,
   Image as ImageIcon, Filter, AlertTriangle, Crown, Siren,
-  StickyNote
+  StickyNote, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { subDays, startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay } from "date-fns";
 import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
-import AdminMobileNavbar from '@/components/AdminMobileNavbar';
 import { useToast } from "@/components/ui/use-toast";
 import { cn, formatCustomerName, getCustomerData } from "@/lib/utils";
 
@@ -35,6 +34,10 @@ const FeedbackManagement = () => {
   const [dateFilter, setDateFilter] = useState('last30');
   const [showNotesOnly, setShowNotesOnly] = useState(false);
   const [showUrgentOnly, setShowUrgentOnly] = useState(false);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30;
 
   // Modallar
   const [selectedFeedback, setSelectedFeedback] = useState(null);
@@ -140,6 +143,17 @@ const FeedbackManagement = () => {
     });
   }, [feedbacks, searchQuery, statusFilter, typeFilter, flagFilter, dateFilter, showNotesOnly, showUrgentOnly]);
 
+  // Pagination hesaplamaları
+  const totalPages = Math.ceil(filteredFeedbacks.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedFeedbacks = filteredFeedbacks.slice(startIndex, endIndex);
+
+  // Filtre değiştiğinde sayfayı 1'e sıfırla
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, typeFilter, flagFilter, dateFilter, showNotesOnly, showUrgentOnly]);
+
   const hasUrgentFeedbacks = useMemo(() => feedbacks.some(f => f.status === 'escalated'), [feedbacks]);
 
   const handleFeedbackClick = (feedback) => {
@@ -213,12 +227,7 @@ const FeedbackManagement = () => {
 
   return (
     <>
-      {/* Mobile Navbar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50">
-        <AdminMobileNavbar />
-      </div>
-
-      <div className="space-y-6 h-full flex flex-col relative">
+      <div className="space-y-6 relative">
         {hasUrgentFeedbacks && (
           <div className="bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.3)] shrink-0">
             <div className="flex items-center gap-3"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
@@ -226,7 +235,7 @@ const FeedbackManagement = () => {
           </div>
         )}
 
-       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0 pt-20 md:pt-0">
+       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
           <div><h1 className="text-3xl font-bold text-white tracking-tight">Geri Bildirim Yönetimi</h1><p className="text-slate-400 mt-1">Müşteri geri bildirimlerini inceleyin, filtreleyin ve yönetin.</p></div>
           <Button onClick={fetchFeedbacks} variant="outline" className="gap-2 border-slate-700 hover:bg-slate-800 text-slate-300"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />Yenile</Button>
         </div>
@@ -248,14 +257,15 @@ const FeedbackManagement = () => {
          </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1 pb-20 md:pb-4 mt-4">
+      <div className="mt-4">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-500"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /><p className="text-sm font-medium">Geri bildirimler yükleniyor...</p></div>
         ) : filteredFeedbacks.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 gap-4 bg-slate-900/30 rounded-xl border border-dashed border-slate-800"><div className="bg-slate-800/50 p-4 rounded-full"><MessageSquare className="w-8 h-8 text-slate-500" /></div><div className="text-center"><h3 className="text-lg font-medium text-slate-300">Kayıt bulunamadı</h3></div></div>
         ) : (
-          <div className="grid gap-3 pb-8">
-            {filteredFeedbacks.map((f) => {
+          <>
+            <div className="grid gap-3">
+              {paginatedFeedbacks.map((f) => {
               const customerName = getCustomerData(f, 'name');
               const smartName = formatCustomerName(customerName);
               const isVip = f.customer_profiles?.flag_vip_customer || f.flag_vip_customer;
@@ -306,7 +316,82 @@ const FeedbackManagement = () => {
                 </div>
               );
             })}
-          </div>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-6 pb-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="border-slate-700 hover:bg-slate-800 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                
+                <div className="flex items-center gap-1 px-3">
+                  {/* Mobil: Sadece sayfa numarası */}
+                  <span className="text-sm text-slate-400 md:hidden">
+                    {currentPage} / {totalPages}
+                  </span>
+                  
+                  {/* Desktop: Detaylı sayfa numaraları */}
+                  <div className="hidden md:flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        // İlk 2, son 2 ve mevcut sayfa etrafındaki 2 sayfa
+                        return (
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        );
+                      })
+                      .map((page, idx, arr) => {
+                        // Atlanan sayfalar için "..." ekle
+                        const showEllipsis = idx > 0 && page - arr[idx - 1] > 1;
+                        return (
+                          <React.Fragment key={page}>
+                            {showEllipsis && (
+                              <span className="text-slate-600 px-2">...</span>
+                            )}
+                            <Button
+                              variant={currentPage === page ? "default" : "ghost"}
+                              size="sm"
+                              onClick={() => setCurrentPage(page)}
+                              className={cn(
+                                "min-w-[32px] h-8",
+                                currentPage === page
+                                  ? "bg-teal-600 hover:bg-teal-700 text-white"
+                                  : "text-slate-400 hover:text-white hover:bg-slate-800"
+                              )}
+                            >
+                              {page}
+                            </Button>
+                          </React.Fragment>
+                        );
+                      })}
+                  </div>
+                  
+                  {/* Mobil & Desktop: Toplam sonuç sayısı */}
+                  <span className="text-xs text-slate-500 ml-2">
+                    ({filteredFeedbacks.length} sonuç)
+                  </span>
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="border-slate-700 hover:bg-slate-800 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
