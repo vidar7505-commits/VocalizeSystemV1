@@ -13,7 +13,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from "@/components/ui/use-toast";
 import { AnimatePresence, motion } from 'framer-motion';
-import FeedbackDetailModal from '@/components/FeedbackDetailModal'; // ✅ EKLEME
+import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 
 const formatTimeAgo = (dateString) => {
   if (!dateString) return '';
@@ -50,7 +50,6 @@ const AdminMobileNavbar = () => {
   const [notifications, setNotifications] = useState([]);
   const notificationRef = useRef(null);
   
-  // ✅ EKLEME: FeedbackDetailModal için state'ler
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -96,15 +95,12 @@ const AdminMobileNavbar = () => {
     };
   }, [user]);
 
-  // --- KRİTİK DÜZELTME: touchstart KALDIRILDI ---
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setShowNotifications(false);
       }
     };
-    // Mobilde 'touchstart' çakışma yarattığı için sadece mousedown kullanıyoruz.
-    // Modern mobil tarayıcılar mousedown'u da tetikler, bu yeterlidir.
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -122,15 +118,13 @@ const AdminMobileNavbar = () => {
   };
 
   const handleNotificationClick = async (notification, e) => {
-    // Event propagation'ı durdurarak panelin hemen kapanmasını önle
+    // 🟢 DÜZELTME: preventDefault kaldırıldı, sadece stopPropagation
     if (e) {
         e.stopPropagation();
-        e.preventDefault();
     }
     
     setShowNotifications(false);
 
-    // ✅ GÜNCELLEME: Feedback datasını çek ve modal aç
     try {
       const { data: feedbackData, error: feedbackError } = await supabase
         .from('feedbacks')
@@ -149,7 +143,6 @@ const AdminMobileNavbar = () => {
       
       if (feedbackError) {
         console.error('Feedback fetch error:', feedbackError);
-        // Hata varsa eski yöntemle devam et
         if (notification.related_id) {
           navigate('/admin-panel/feedbacks', { 
             state: { openFeedbackId: notification.related_id } 
@@ -158,7 +151,6 @@ const AdminMobileNavbar = () => {
         return;
       }
 
-      // Modal'ı aç
       setSelectedFeedback(feedbackData);
       setIsModalOpen(true);
     } catch (error) {
@@ -170,7 +162,6 @@ const AdminMobileNavbar = () => {
       });
     }
 
-    // Okundu işaretle
     if (!notification.is_read) {
         setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
         setUnreadCount(prev => Math.max(0, prev - 1));
@@ -211,7 +202,6 @@ const AdminMobileNavbar = () => {
     <div className="fixed top-0 left-0 right-0 z-40 h-16 bg-slate-900 border-b border-slate-800 px-2 py-3 md:hidden shadow-lg">
       <div className="flex items-center justify-between h-full pl-16">
         
-        {/* LEFT: QR Counter */}
         <div className="flex items-center gap-1.5 bg-teal-900/20 border border-teal-500/30 rounded-lg px-2 py-1 shrink-0 max-w-[100px]">
           <QrCode className="w-3.5 h-3.5 text-teal-400" />
           <span className="text-teal-400 font-medium text-xs truncate">
@@ -219,7 +209,6 @@ const AdminMobileNavbar = () => {
           </span>
         </div>
 
-        {/* MIDDLE: Branch Selector */}
         <div className="flex-1 flex justify-center px-1 min-w-0">
            {branches.length > 1 && (
              <div className="w-full max-w-[130px]">
@@ -246,7 +235,6 @@ const AdminMobileNavbar = () => {
            )}
         </div>
 
-        {/* RIGHT: Notifications */}
         <div className="flex items-center gap-2 shrink-0 relative" ref={notificationRef}>
           <Button onClick={handleBellClick} variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white p-0 relative">
             <Bell className="w-5 h-5" />
@@ -261,7 +249,6 @@ const AdminMobileNavbar = () => {
                 initial={{ opacity: 0, scale: 0.95, y: 10 }} 
                 animate={{ opacity: 1, scale: 1, y: 0 }} 
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                // onClick eventini durdurarak panel içi tıklamaların dışarı taşmasını engelliyoruz
                 onClick={(e) => e.stopPropagation()} 
                 className="absolute top-full right-0 mt-2 w-[280px] sm:w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden"
               >
@@ -309,7 +296,6 @@ const AdminMobileNavbar = () => {
         </div>
       </div>
 
-      {/* ✅ EKLEME: FeedbackDetailModal */}
       {isModalOpen && selectedFeedback && (
         <FeedbackDetailModal 
           isOpen={isModalOpen} 

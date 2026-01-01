@@ -12,10 +12,10 @@ import {
   AlertTriangle, Lightbulb, Home, List, TrendingUp, Menu, QrCode, Info, AlertCircle, Filter,
   MessageCircle, Loader2, Image as ImageIcon, Upload, PieChart, BarChart, Activity, UserPlus, LogIn,
   Building2, CheckCircle2, ChevronRight, Edit2, Maximize2, KeyRound, Shield, HelpCircle, ArrowRight,
-  Send, AlertOctagon // AlertOctagon eklendi
+  Send, AlertOctagon
 } from 'lucide-react';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription // DialogDescription eklendi
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -75,7 +75,6 @@ export default function CustomerPanel() {
   const [dontShowGuestWarning, setDontShowGuestWarning] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
   
-  // YENİ STATE: Hesap Silme Onay Modalı için
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
 
   const [selectedFeedback, setSelectedFeedback] = useState(null);
@@ -98,8 +97,9 @@ export default function CustomerPanel() {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteAccountConfirmed, setDeleteAccountConfirmed] = useState(false);
 
-  const [selectedBusiness, setSelectedBusiness] = useState('');
-  const [selectedBranch, setSelectedBranch] = useState('');
+  const [selectedBusiness, setSelectedBusiness] = useState(() => businessParam || '');
+  const [selectedBranch, setSelectedBranch] = useState(() => branchParam || '');
+  
   const [businesses, setBusinesses] = useState([]);
   const [branches, setBranches] = useState([]);
   const [hasScannedQR, setHasScannedQR] = useState(false);
@@ -128,13 +128,13 @@ export default function CustomerPanel() {
 
   const lastLoggedRef = useRef({ business: null, branch: null });
 
+  // Analytics
   useEffect(() => {
     if (!businessParam) return;
     if (lastLoggedRef.current.business === businessParam && lastLoggedRef.current.branch === branchParam) return;
 
     lastLoggedRef.current = { business: businessParam, branch: branchParam };
     
-    // QR source tracking - localStorage'dan da kontrol et
     const qrDataKey = `vocalize_qr_${businessParam}`;
     const storedQrData = localStorage.getItem(qrDataKey);
     const isFromQr = (fromQrParam === 'true' || qrParam || storedQrData || location.pathname.includes('/qr/'));
@@ -453,6 +453,7 @@ export default function CustomerPanel() {
     localStorage.setItem('vocalize_lang', language);
   }, [language]);
 
+  // --- INITIALIZATION ---
   useEffect(() => {
     const init = async () => {
       if (authLoading) return;
@@ -485,6 +486,7 @@ export default function CustomerPanel() {
           setSupportEmail('');
         }
 
+        // --- HAFIZA OKUMA VE GERİ YÜKLEME MANTIĞI ---
         let targetBusinessId = businessParam;
         let targetBranchId = branchParam;
 
@@ -506,16 +508,27 @@ export default function CustomerPanel() {
               setQrInfo({ business_id: businessParam, branch_id: branchParam, qr_code: qrParam, branch_name: branchData.branch_name_tr });
             }
           }
-        } else {
-             if (targetBusinessId) {
-                 setSelectedBusiness(targetBusinessId);
-                 fetchBranches(targetBusinessId);
-                 const newParams = new URLSearchParams(searchParams);
-                 newParams.set('business', targetBusinessId);
-                 if (targetBranchId) {
-                     setSelectedBranch(targetBranchId);
-                     newParams.set('branch', targetBranchId);
-                 }
+        } 
+        
+        // --- KRİTİK EKLENTİ: URL BOŞSA BİLE STATE'İ VE URL'İ ZORLA DOLDUR ---
+        if (targetBusinessId) {
+             setSelectedBusiness(targetBusinessId);
+             fetchBranches(targetBusinessId);
+             
+             const newParams = new URLSearchParams(searchParams);
+             newParams.set('business', targetBusinessId);
+             
+             if (targetBranchId) {
+                 setSelectedBranch(targetBranchId);
+                 newParams.set('branch', targetBranchId);
+             }
+             
+             if (language) newParams.set('lang', language);
+             if (isGuestUser) newParams.set('guest', 'true');
+
+             // Eğer mevcut URL ile hedef URL farklıysa, URL'i güncelle (Sayfa yenilemeden)
+             // Bu, formdan çıkınca işletme kartına düşme sorununu çözer.
+             if (location.search !== `?${newParams.toString()}`) {
                  navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
              }
         }
@@ -531,17 +544,13 @@ export default function CustomerPanel() {
     init();
   }, [businessParam, branchParam, qrParam, guestParam, authUser, authLoading]);
 
-  // ========== REFACTORED: localStorage FILTER ==========
   const fetchBusinesses = useCallback(async () => {
     try {
       let allBusinessIds = [];
-      
-      // 1. Get from localStorage
       const visitedBusinessesJson = localStorage.getItem('vocalize_visited_businesses');
       const localIds = visitedBusinessesJson ? JSON.parse(visitedBusinessesJson) : [];
       allBusinessIds = [...localIds];
       
-      // 2. If user is logged in, also fetch from database and merge
       if (user?.email && !isGuest) {
         const { data: dbBusinesses, error } = await supabase
           .from('customer_visited_businesses')
@@ -550,22 +559,16 @@ export default function CustomerPanel() {
         
         if (!error && dbBusinesses) {
           const dbIds = dbBusinesses.map(b => b.business_id);
-          // Merge localStorage with database (unique)
           allBusinessIds = [...new Set([...allBusinessIds, ...dbIds])];
-          
-          // Update localStorage with merged data
           localStorage.setItem('vocalize_visited_businesses', JSON.stringify(allBusinessIds));
-          console.log('✅ Businesses synced from database:', dbIds.length);
         }
       }
       
-      // 3. If no businesses found, return empty
       if (allBusinessIds.length === 0) {
         setBusinesses([]);
         return;
       }
       
-      // 4. Fetch business details
       const { data, error } = await supabase
         .from('businesses')
         .select('id, business_name')
@@ -573,7 +576,6 @@ export default function CustomerPanel() {
         
       if (error) throw error;
       setBusinesses(data || []);
-      console.log('✅ Fetched businesses:', data?.length || 0);
     } catch (error) {
       console.error('Error fetching businesses:', error);
       setBusinesses([]);
@@ -596,48 +598,34 @@ export default function CustomerPanel() {
     }
   }, []);
 
-  // ========== QR PERSISTENCE SYSTEM ==========
-  // Persist visited business to database
   const persistVisitedBusiness = useCallback(async (businessId) => {
     try {
-      // 1. Save to localStorage immediately
       const existingJson = localStorage.getItem('vocalize_visited_businesses');
       const existingIds = existingJson ? JSON.parse(existingJson) : [];
       
       if (!existingIds.includes(businessId)) {
         existingIds.push(businessId);
         localStorage.setItem('vocalize_visited_businesses', JSON.stringify(existingIds));
-        console.log('✅ Business saved to localStorage:', businessId);
       }
       
-      // 2. If user is logged in, also save to database
       if (user?.email) {
-        const { error } = await supabase.from('customer_visited_businesses').upsert({
+        await supabase.from('customer_visited_businesses').upsert({
           customer_email: user.email,
           business_id: businessId,
           last_visit_at: new Date().toISOString()
         }, {
           onConflict: 'customer_email,business_id'
         });
-        
-        if (!error) {
-          console.log('✅ Business persisted to database for user:', user.email);
-        } else {
-          console.warn('⚠️ Business database persist error:', error.message);
-        }
       }
     } catch (err) {
       console.error('Error persisting visited business:', err);
     }
   }, [user]);
 
-  // Persist QR scan to both localStorage and database
   const persistQrScan = useCallback(async (businessId, branchId, qrCode) => {
     try {
-      // 1. Save visited business first
       await persistVisitedBusiness(businessId);
       
-      // 2. Save QR data to localStorage
       const qrData = {
         business_id: businessId,
         branch_id: branchId,
@@ -646,11 +634,9 @@ export default function CustomerPanel() {
       };
       
       localStorage.setItem(`vocalize_qr_${businessId}`, JSON.stringify(qrData));
-      console.log('✅ QR saved to localStorage:', qrCode);
       
-      // 3. If user is logged in, also save to database
       if (user?.email) {
-        const { error } = await supabase.from('customer_qr_scans').upsert({
+        await supabase.from('customer_qr_scans').upsert({
           customer_email: user.email,
           business_id: businessId,
           branch_id: branchId,
@@ -659,22 +645,14 @@ export default function CustomerPanel() {
         }, {
           onConflict: 'customer_email,business_id,branch_id,qr_code'
         });
-        
-        if (!error) {
-          console.log('✅ QR persisted to database for user:', user.email);
-        } else {
-          console.warn('⚠️ QR database persist error:', error.message);
-        }
       }
     } catch (err) {
       console.error('Error persisting QR scan:', err);
     }
   }, [user, persistVisitedBusiness]);
 
-  // Load persisted visited businesses from database
   const loadPersistedBusinesses = useCallback(async () => {
     if (!user?.email) return;
-    
     try {
       const { data, error } = await supabase
         .from('customer_visited_businesses')
@@ -683,23 +661,16 @@ export default function CustomerPanel() {
         .order('last_visit_at', { ascending: false});
       
       if (!error && data && data.length > 0) {
-        console.log(`✅ Loaded ${data.length} visited businesses from database`);
-        
-        // Sync to localStorage
         const businessIds = data.map(item => item.business_id);
         localStorage.setItem('vocalize_visited_businesses', JSON.stringify(businessIds));
-        
-        console.log('✅ Visited businesses synced to localStorage');
       }
     } catch (err) {
       console.error('Error loading persisted businesses:', err);
     }
   }, [user]);
 
-  // Load persisted QR scans from database and sync to localStorage
   const loadPersistedQrs = useCallback(async () => {
     if (!user?.email) return;
-    
     try {
       const { data, error } = await supabase
         .from('customer_qr_scans')
@@ -715,9 +686,6 @@ export default function CustomerPanel() {
         .order('last_scan_at', { ascending: false });
       
       if (!error && data && data.length > 0) {
-        console.log(`✅ Loaded ${data.length} persisted QR scans from database`);
-        
-        // Sync to localStorage
         data.forEach(qr => {
           const qrData = {
             business_id: qr.business_id,
@@ -729,49 +697,66 @@ export default function CustomerPanel() {
           };
           localStorage.setItem(`vocalize_qr_${qr.business_id}`, JSON.stringify(qrData));
         });
-        
-        console.log('✅ QR scans synced to localStorage');
       }
     } catch (err) {
       console.error('Error loading persisted QRs:', err);
     }
   }, [user]);
 
-  // Load persisted data when user logs in
   useEffect(() => {
     if (user && !isGuest) {
       const loadData = async () => {
         await loadPersistedBusinesses();
         await loadPersistedQrs();
-        // After loading persisted data, fetch businesses
         fetchBusinesses();
       };
       loadData();
     }
   }, [user, isGuest, loadPersistedBusinesses, loadPersistedQrs, fetchBusinesses]);
 
-  // Persist QR when scanned
   useEffect(() => {
     if (qrParam && businessParam && branchParam) {
       persistQrScan(businessParam, branchParam, qrParam);
     }
   }, [qrParam, businessParam, branchParam, persistQrScan]);
-  // ========== END QR PERSISTENCE SYSTEM ==========
 
-  // ========== URL PARAMS TO STATE SYNC ==========
-  // Sync URL parameters to component state when they change
+  // --- URL DEĞİŞİKLİĞİNİ DİNLEYEN BLOK ---
   useEffect(() => {
-    if (businessParam && businessParam !== selectedBusiness) {
-      console.log('🔄 Syncing business from URL:', businessParam);
-      setSelectedBusiness(businessParam);
+    if (isLoading && (businessParam || branchParam)) return;
+
+    if (businessParam) {
+        if (businessParam !== selectedBusiness) {
+            setSelectedBusiness(businessParam);
+        }
+    } else {
+        if (selectedBusiness) setSelectedBusiness('');
     }
     
-    if (branchParam && branchParam !== selectedBranch) {
-      console.log('🔄 Syncing branch from URL:', branchParam);
-      setSelectedBranch(branchParam);
-      
-      // Also fetch business name if not already set
-      if (businessParam && !businessName) {
+    if (branchParam) {
+        if (branchParam !== selectedBranch) {
+            setSelectedBranch(branchParam);
+        }
+    } else {
+        // --- BURASI FORM ÇIKIŞI İÇİN ÖNEMLİ ---
+        // URL'de şube yoksa, hafızadan geri yükle.
+        const savedBranch = localStorage.getItem('vocalize_last_branch');
+        const savedBusiness = localStorage.getItem('vocalize_last_business');
+
+        if (savedBranch && savedBusiness === selectedBusiness && selectedBusiness) {
+             // Şube hafızada varsa state'e geri yükle
+             setSelectedBranch(savedBranch);
+             
+             // URL'i de güncelle ki tutarlı olsun (replace ile)
+             const newParams = new URLSearchParams(searchParams);
+             newParams.set('branch', savedBranch);
+             navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
+        } else {
+             // Gerçekten silindiyse (Değiştir'e basıldıysa)
+             if (selectedBranch) setSelectedBranch('');
+        }
+    }
+
+    if (businessParam && !businessName) {
         supabase
           .from('businesses')
           .select('business_name')
@@ -788,64 +773,36 @@ export default function CustomerPanel() {
               });
             }
           });
-      }
     }
-  }, [businessParam, branchParam, selectedBusiness, selectedBranch, businessName]);
-  // ========== END URL PARAMS SYNC ==========
+  }, [businessParam, branchParam, selectedBusiness, selectedBranch, businessName, isLoading]);
 
-  // ========== SELECTED BUSINESS CHANGE HANDLER ==========
-  // Update URL when business/branch selection changes
+  // --- URL SENKRONİZASYONU ---
   useEffect(() => {
-    if (!selectedBusiness) {
-      // Business deselected - clear from URL
-      const params = new URLSearchParams(searchParams);
-      params.delete('business');
-      params.delete('branch');
-      window.history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
-      setSelectedBranch(''); // Clear branch selection too
-      console.log('🔄 Business deselected, URL cleared');
-    } else if (selectedBusiness && selectedBranch) {
-      // Both business and branch selected - update URL
-      const params = new URLSearchParams(searchParams);
-      params.set('business', selectedBusiness);
-      params.set('branch', selectedBranch);
-      params.set('lang', language);
-      if (isGuest) params.set('guest', 'true');
-      window.history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
-      console.log('🔄 Business+Branch selected, URL updated');
+    if (isLoading) return;
+
+    if (selectedBusiness) {
+        const params = new URLSearchParams(searchParams);
+        
+        if (params.get('business') !== selectedBusiness) {
+             params.set('business', selectedBusiness);
+        }
+        
+        if (selectedBranch) {
+            if (params.get('branch') !== selectedBranch) {
+                params.set('branch', selectedBranch);
+            }
+        }
+        // Not: Burada 'branch' silme kodu yok, çünkü yukarıdaki efekt onu yönetiyor.
+        
+        params.set('lang', language);
+        if (isGuest) params.set('guest', 'true');
+        
+        const newUrl = `${location.pathname}?${params.toString()}`;
+        if (window.location.search !== `?${params.toString()}`) {
+             window.history.replaceState(null, '', newUrl);
+        }
     }
-  }, [selectedBusiness, selectedBranch, language, isGuest, searchParams, location.pathname]);
-  // ========== END SELECTED BUSINESS CHANGE HANDLER ==========
-
-  // ========== BROWSER BACK BUTTON HANDLER ==========
-  // Handle browser back button - smart navigation
-  useEffect(() => {
-    const handlePopState = (e) => {
-      console.log('⬅️ Back button pressed');
-      
-      // If business is selected, go back to business cards
-      if (selectedBusiness) {
-        setSelectedBusiness('');
-        setSelectedBranch('');
-        console.log('⬅️ Back to business cards');
-        return;
-      }
-      
-      // If in feedbacks/stats view, go back to dashboard
-      if (currentView !== 'dashboard') {
-        setCurrentView('dashboard');
-        console.log('⬅️ Back to dashboard');
-        return;
-      }
-      
-      // Otherwise, normal browser back
-      console.log('⬅️ Normal browser back');
-    };
-    
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedBusiness, selectedBranch, currentView]);
-  // ========== END BROWSER BACK BUTTON HANDLER ==========
+  }, [selectedBusiness, selectedBranch, language, isGuest, searchParams, location.pathname, isLoading]);
 
   const fetchStats = useCallback(async () => {
     if (!user?.email) return;
@@ -919,19 +876,9 @@ export default function CustomerPanel() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      
-      console.log('✅ Fetched feedbacks successfully:', data?.length || 0, 'items');
-      if (data && data.length > 0) {
-        console.log('📋 Sample feedback:', {
-          rating: data[0].rating,
-          general_eval_rating: data[0].general_eval_rating,
-          has_general_eval: !!(data[0].general_eval_rating || data[0].general_eval_comment)
-        });
-      }
       setFeedbackList(data || []);
     } catch (error) { 
       console.error('❌ Error fetching feedbacks:', error);
-      console.error('Error details:', error.message, error.details, error.hint);
     }
   }, [user]);
 
@@ -953,13 +900,10 @@ export default function CustomerPanel() {
     }
   }, [isGuest, user, currentView, fetchStats, fetchFeedbacks]);
 
-  // ========== REFACTORED: BUSINESS CARD CLICK HANDLER (Guest Navigation Fix) ==========
   const handleBusinessCardClick = async (businessId) => {
     try {
-      // Persist visited business (localStorage + DB)
       await persistVisitedBusiness(businessId);
       
-      // Fetch branches for this business
       const { data: branchesData, error } = await supabase
         .from('branches')
         .select('id, branch_name_tr')
@@ -977,7 +921,6 @@ export default function CustomerPanel() {
         return;
       }
 
-      // Set branches and show branch selector
       setBranches(branchesData);
       setSelectedBusinessForBranches(businessId);
       setShowBranchSelector(true);
@@ -987,32 +930,31 @@ export default function CustomerPanel() {
       toast({ 
         title: language === 'tr' ? 'Hata' : 'Error', 
         description: language === 'tr' ? 'Şubeler yüklenirken hata oluştu' : 'Error loading branches',
-        variant: "destructive"
+        variant: "destructive" 
       });
     }
   };
 
-  // Handle branch selection from modal
   const handleBranchSelectForFeedback = async (branchId) => {
     setShowBranchSelector(false);
     
-    console.log('🏪 Branch selected:', branchId, 'for business:', selectedBusinessForBranches);
-    
-    // Set selected business and branch
+    // State güncelle
     setSelectedBusiness(selectedBusinessForBranches);
     setSelectedBranch(branchId);
     
-    // Update URL parameters (without navigation)
+    // Hafızayı güncelle
+    localStorage.setItem('vocalize_last_business', selectedBusinessForBranches);
+    localStorage.setItem('vocalize_last_branch', branchId);
+    
+    // URL parametrelerini hazırla
     const params = new URLSearchParams(searchParams);
     params.set('business', selectedBusinessForBranches);
     params.set('branch', branchId);
     params.set('lang', language);
     if (isGuest) params.set('guest', 'true');
     
-    // Update URL without page reload
-    window.history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
-    
-    console.log('✅ Business and branch selected, staying on dashboard');
+    // navigate kullan
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true });
   };
 
   const proceedToFeedback = (type) => {
@@ -1058,8 +1000,13 @@ export default function CustomerPanel() {
       localStorage.removeItem('vocalize_guest_business_id');
       localStorage.removeItem('vocalize_guest_branch_id');
       localStorage.removeItem('vocalize_guest_warning_dismissed');
+      localStorage.removeItem('vocalize_last_business');
+      localStorage.removeItem('vocalize_last_branch');
+      
       setUser(null);
       setIsGuest(false);
+      setSelectedBusiness('');
+      setSelectedBranch('');
       setDeleteAccountConfirmed(false);
       navigate('/', { replace: true });
     } catch (error) {
@@ -1071,18 +1018,12 @@ export default function CustomerPanel() {
   const handleGuestWarningContinue = () => { if (dontShowGuestWarning) localStorage.setItem('vocalize_guest_warning_dismissed', 'true'); setShowGuestWarningModal(false); if (pendingFeedbackType) proceedToFeedback(pendingFeedbackType); };
   const handleGuestWarningLogin = () => { setShowGuestWarningModal(false); setAuthDefaultTab('login'); setShowAuthModal(true); };
   
-  // AuthModal kapandığında auth durumunu kontrol et ve gerekirse guest mode'dan çık
   const handleAuthModalClose = () => {
     setShowAuthModal(false);
-    
-    // Eğer artık authenticated user varsa ve guest mode aktifse
     if (authUser && isGuest) {
-      // Guest mode'u temizle
       localStorage.removeItem('vocalize_guest_mode');
       localStorage.removeItem('vocalize_guest_business_id');
       localStorage.removeItem('vocalize_guest_branch_id');
-      
-      // Sayfayı yenile - kayıtlı kullanıcı olarak yüklensin
       window.location.reload();
     }
   };
@@ -1107,15 +1048,10 @@ export default function CustomerPanel() {
 
   const handleBusinessSuggestion = async (e) => {
     e.preventDefault();
-    
     if (!suggestedBusinessName.trim() || !suggestedBusinessLocation.trim()) {
-      toast({ 
-        title: t.businessSuggestion.errorMsg, 
-        variant: "destructive" 
-      });
+      toast({ title: t.businessSuggestion.errorMsg, variant: "destructive" });
       return;
     }
-
     setSuggestingBusiness(true);
     try {
       const { error } = await supabase.from('vocalize_support_tickets').insert({
@@ -1124,57 +1060,31 @@ export default function CustomerPanel() {
         images: [],
         origin: 'business_suggestion'
       });
-
       if (error) throw error;
-
-      toast({ 
-        title: t.businessSuggestion.successMsg, 
-        className: "bg-teal-600 text-white border-none" 
-      });
-
+      toast({ title: t.businessSuggestion.successMsg, className: "bg-teal-600 text-white border-none" });
       setSuggestedBusinessName('');
       setSuggestedBusinessLocation('');
     } catch (err) {
       console.error('Error:', err);
-      toast({ 
-        title: language === 'tr' ? 'Hata' : 'Error', 
-        description: language === 'tr' ? 'Bir hata oluştu, lütfen tekrar deneyin.' : 'An error occurred, please try again.',
-        variant: "destructive" 
-      });
+      toast({ title: language === 'tr' ? 'Hata' : 'Error', description: language === 'tr' ? 'Bir hata oluştu, lütfen tekrar deneyin.' : 'An error occurred, please try again.', variant: "destructive" });
     } finally {
       setSuggestingBusiness(false);
     }
   };
 
-  // --- SETTINGS HANDLERS ---
-
   const handleUpdateEmail = async () => {
     if (!newEmail.trim()) {
-      toast({ 
-        title: language === 'tr' ? 'Hata' : 'Error', 
-        description: language === 'tr' ? 'Lütfen tüm alanları doldurunuz' : 'Please fill in all fields', 
-        variant: "destructive" 
-      });
+      toast({ title: language === 'tr' ? 'Hata' : 'Error', description: language === 'tr' ? 'Lütfen tüm alanları doldurunuz' : 'Please fill in all fields', variant: "destructive" });
       return;
     }
-    
     setIsUpdatingEmail(true);
     try {
       const { error } = await supabase.auth.updateUser({ email: newEmail });
       if (error) throw error;
-      
-      toast({ 
-        title: language === 'tr' ? 'Başarılı' : 'Success', 
-        description: language === 'tr' ? 'E-posta başarıyla güncellendi' : 'Email successfully updated', 
-        className: "bg-teal-600 text-white border-none" 
-      });
+      toast({ title: language === 'tr' ? 'Başarılı' : 'Success', description: language === 'tr' ? 'E-posta başarıyla güncellendi' : 'Email successfully updated', className: "bg-teal-600 text-white border-none" });
       setNewEmail('');
     } catch (err) {
-      toast({ 
-        title: language === 'tr' ? 'Hata' : 'Error', 
-        description: err.message, 
-        variant: "destructive" 
-      });
+      toast({ title: language === 'tr' ? 'Hata' : 'Error', description: err.message, variant: "destructive" });
     } finally {
       setIsUpdatingEmail(false);
     }
@@ -1182,50 +1092,26 @@ export default function CustomerPanel() {
 
   const handleUpdatePassword = async () => {
     if (!newPassword.trim() || !newPasswordConfirm.trim()) {
-      toast({ 
-        title: language === 'tr' ? 'Hata' : 'Error', 
-        description: language === 'tr' ? 'Lütfen tüm alanları doldurunuz' : 'Please fill in all fields', 
-        variant: "destructive" 
-      });
+      toast({ title: language === 'tr' ? 'Hata' : 'Error', description: language === 'tr' ? 'Lütfen tüm alanları doldurunuz' : 'Please fill in all fields', variant: "destructive" });
       return;
     }
-    
     if (newPassword !== newPasswordConfirm) {
-      toast({ 
-        title: language === 'tr' ? 'Hata' : 'Error', 
-        description: language === 'tr' ? 'Şifreler eşleşmiyor' : 'Passwords do not match', 
-        variant: "destructive" 
-      });
+      toast({ title: language === 'tr' ? 'Hata' : 'Error', description: language === 'tr' ? 'Şifreler eşleşmiyor' : 'Passwords do not match', variant: "destructive" });
       return;
     }
-    
     if (newPassword.length < 6) {
-      toast({ 
-        title: language === 'tr' ? 'Hata' : 'Error', 
-        description: language === 'tr' ? 'Şifre en az 6 karakter olmalı' : 'Password must be at least 6 characters', 
-        variant: "destructive" 
-      });
+      toast({ title: language === 'tr' ? 'Hata' : 'Error', description: language === 'tr' ? 'Şifre en az 6 karakter olmalı' : 'Password must be at least 6 characters', variant: "destructive" });
       return;
     }
-    
     setIsUpdatingPassword(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-      
-      toast({ 
-        title: language === 'tr' ? 'Başarılı' : 'Success', 
-        description: language === 'tr' ? 'Şifre başarıyla güncellendi' : 'Password successfully updated', 
-        className: "bg-teal-600 text-white border-none" 
-      });
+      toast({ title: language === 'tr' ? 'Başarılı' : 'Success', description: language === 'tr' ? 'Şifre başarıyla güncellendi' : 'Password successfully updated', className: "bg-teal-600 text-white border-none" });
       setNewPassword('');
       setNewPasswordConfirm('');
     } catch (err) {
-      toast({ 
-        title: language === 'tr' ? 'Hata' : 'Error', 
-        description: err.message, 
-        variant: "destructive" 
-      });
+      toast({ title: language === 'tr' ? 'Hata' : 'Error', description: err.message, variant: "destructive" });
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -1233,42 +1119,22 @@ export default function CustomerPanel() {
 
   const handleSoftDeleteAccount = async () => {
     if (!deleteAccountConfirmed) {
-      toast({ 
-        title: language === 'tr' ? 'Hata' : 'Error', 
-        description: language === 'tr' ? 'Lütfen onay kutusunu işaretleyin' : 'Please check the confirmation box', 
-        variant: "destructive" 
-      });
+      toast({ title: language === 'tr' ? 'Hata' : 'Error', description: language === 'tr' ? 'Lütfen onay kutusunu işaretleyin' : 'Please check the confirmation box', variant: "destructive" });
       return;
     }
-    
     if (!user?.id) return;
-    
     setIsDeletingAccount(true);
     try {
       const { error } = await supabase.rpc('delete_user_account');
-      
       if (error) throw error;
-      
-      toast({ 
-        title: language === 'tr' ? 'Hesap Silindi' : 'Account Deleted', 
-        description: language === 'tr' ? 'Verileriniz anonimleştirildi ve hesabınız kapatıldı.' : 'Your data has been anonymized and account closed.', 
-        className: "bg-red-600 text-white border-none" 
-      });
-      
+      toast({ title: language === 'tr' ? 'Hesap Silindi' : 'Account Deleted', description: language === 'tr' ? 'Verileriniz anonimleştirildi ve hesabınız kapatıldı.' : 'Your data has been anonymized and account closed.', className: "bg-red-600 text-white border-none" });
       setShowSettingsModal(false);
-      setShowDeleteConfirmModal(false); // Modal'ı da kapat
-      
+      setShowDeleteConfirmModal(false);
       await signOut();
-      
       navigate('/', { replace: true });
-      
     } catch (err) {
       console.error('Delete account error:', err);
-      toast({ 
-        title: language === 'tr' ? 'Hata' : 'Error', 
-        description: err.message || (language === 'tr' ? 'Hesap silinirken bir hata oluştu.' : 'An error occurred while deleting account.'), 
-        variant: "destructive" 
-      });
+      toast({ title: language === 'tr' ? 'Hata' : 'Error', description: err.message || (language === 'tr' ? 'Hesap silinirken bir hata oluştu.' : 'An error occurred while deleting account.'), variant: "destructive" });
     } finally {
       setIsDeletingAccount(false);
     }
@@ -1302,7 +1168,6 @@ export default function CustomerPanel() {
     </div>
   );
 
-  // ========== REFACTORED: EMPTY STATE COMPONENT ==========
   const EmptyStateVisitedBusinesses = () => (
     <div className="bg-slate-900/50 border border-dashed border-slate-700 rounded-xl p-12 md:p-16 text-center animate-in fade-in zoom-in-95 duration-500">
       <div className="bg-slate-800/80 p-8 rounded-full inline-flex mb-6 shadow-lg">
@@ -1362,7 +1227,6 @@ export default function CustomerPanel() {
                 <p className="text-slate-400 text-sm md:text-base">{t.subtitle}</p>
               </div>
 
-              {/* === İŞLETME SEÇİLİYSE FORMLAR ÇIKSIN === */}
               {selectedBusiness ? (
                 <div className="bg-gradient-to-r from-green-500/20 to-green-600/20 border border-green-500/50 p-6 rounded-xl mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
                   <div className="flex items-center gap-4">
@@ -1370,12 +1234,29 @@ export default function CustomerPanel() {
                     <div>
                       <h3 className="text-white font-bold text-lg break-words">{businessName || 'İşletme Seçili'}</h3>
                       {branchName && <p className="text-green-200 text-sm break-words">{branchName}</p>}
-                      <button onClick={() => { setSelectedBusiness(''); setSelectedBranch(''); }} className="text-xs text-green-300 underline hover:text-green-200 mt-1 block">{t.changeInfo}</button>
+                      <button 
+                        onClick={() => { 
+                          setSelectedBusiness(''); 
+                          setSelectedBranch(''); 
+                          localStorage.removeItem('vocalize_last_business');
+                          localStorage.removeItem('vocalize_last_branch');
+                          
+                          const params = new URLSearchParams(searchParams);
+                          params.delete('business');
+                          params.delete('branch');
+                          if (isGuest) params.set('guest', 'true'); 
+                          params.set('lang', language);
+                          
+                          navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+                        }} 
+                        className="text-xs text-green-300 underline hover:text-green-200 mt-1 block"
+                      >
+                        {t.changeInfo}
+                      </button>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-                    {/* Şikayet Kartı - Daha Canlı Kırmızı */}
                     <button 
                       onClick={() => handleFeedback('complaint')} 
                       className="group relative bg-gradient-to-br from-red-500/50 via-red-600/40 to-red-700/50 border-2 border-red-500/80 p-5 rounded-2xl hover:border-red-400 hover:shadow-lg hover:shadow-red-500/50 transition-all duration-300 hover:scale-105 overflow-hidden"
@@ -1392,7 +1273,6 @@ export default function CustomerPanel() {
                       </div>
                     </button>
                     
-                    {/* Öneri Kartı - Daha Canlı Mavi */}
                     <button 
                       onClick={() => handleFeedback('suggestion')} 
                       className="group relative bg-gradient-to-br from-blue-500/50 via-blue-600/40 to-indigo-600/50 border-2 border-blue-500/80 p-5 rounded-2xl hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 overflow-hidden"
@@ -1409,7 +1289,6 @@ export default function CustomerPanel() {
                       </div>
                     </button>
                     
-                    {/* Değerlendirme Kartı - Daha Canlı Sarı */}
                     <button 
                       onClick={() => handleFeedback('review')} 
                       className="group relative bg-gradient-to-br from-yellow-500/50 via-amber-500/40 to-orange-500/50 border-2 border-yellow-500/80 p-5 rounded-2xl hover:border-yellow-400 hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 hover:scale-105 overflow-hidden"
@@ -1504,7 +1383,6 @@ export default function CustomerPanel() {
                     <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4 flex-1">
                       <div className="flex flex-col w-full md:max-w-xs"><label className="text-xs text-slate-400 mb-1 font-semibold uppercase ml-1">{t.formType}</label><div className="relative"><select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition appearance-none pr-10 font-medium"><option value="all">{t.all}</option><option value="complaint">🔴 {t.complaintBadge}</option><option value="suggestion">💡 {t.suggestionBadge}</option><option value="review">⭐ {t.reviewBadge}</option></select><ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" /></div></div>
                     </div>
-                    {/* --- GÜNCELLENEN KISIM: POPOVER EKLENDİ --- */}
                     <div className="w-full md:w-auto">
                         <Popover>
                             <PopoverTrigger asChild>
@@ -1644,7 +1522,6 @@ export default function CustomerPanel() {
                     </Popover>
                   )}
                 </div>
-                {/* --- GÜNCELLENEN KISIM: SAĞ ÜSTTEKİ SAYAÇ KALDIRILDI --- */}
               </div>
 
               {isGuest ? (
@@ -1762,13 +1639,18 @@ export default function CustomerPanel() {
 
       <AuthModal isOpen={showAuthModal} onClose={handleAuthModalClose} defaultTab={authDefaultTab} defaultRole="customer" />
       
-      {/* BRANCH SELECTOR MODAL FOR CARD CLICK */}
       <Dialog open={showBranchSelector} onOpenChange={setShowBranchSelector}>
         <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
               <Building2 className="h-6 w-6 text-teal-500" />
-              {t.branchSelection}
+              {/* ŞUBE SEÇİMİ BAŞLIĞI DÜZELTİLDİ: Artık İşletme Adını da gösteriyor */}
+              {(() => {
+                const targetBusiness = businesses.find(b => b.id === selectedBusinessForBranches);
+                return targetBusiness 
+                  ? `${targetBusiness.business_name} - ${t.branchSelection}`
+                  : t.branchSelection;
+              })()}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-4">
@@ -1898,7 +1780,6 @@ export default function CustomerPanel() {
         </div>
       )}
 
-      {/* SETTINGS MODAL */}
       <Dialog open={showSettingsModal} onOpenChange={(open) => {
         setShowSettingsModal(open);
         if (!open) setDeleteAccountConfirmed(false);
@@ -1913,7 +1794,6 @@ export default function CustomerPanel() {
           
           {!isGuest ? (
             <>
-              {/* TAB BUTTONS - Only for authenticated users */}
               <div className="flex gap-2 px-6 pt-4 flex-shrink-0 border-b border-slate-800">
                 <button
                   onClick={() => setSettingsTab('profile')}
@@ -1950,9 +1830,7 @@ export default function CustomerPanel() {
                 </button>
               </div>
               
-              {/* TAB CONTENT */}
               <div className="flex-1 overflow-y-auto px-6 py-4">
-                {/* PROFILE TAB */}
                 {settingsTab === 'profile' && (
                   <div className="space-y-4">
                     <div>
@@ -1981,7 +1859,6 @@ export default function CustomerPanel() {
                   </div>
                 )}
                 
-                {/* SECURITY TAB */}
                 {settingsTab === 'security' && (
                   <div className="space-y-4">
                     <div>
@@ -2011,7 +1888,6 @@ export default function CustomerPanel() {
                   </div>
                 )}
                 
-                {/* ACCOUNT TAB - GÜNCELLENDİ (MODAL TETİKLEYİCİ) */}
                 {settingsTab === 'account' && (
                   <div className="space-y-4">
                     <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
@@ -2040,9 +1916,7 @@ export default function CustomerPanel() {
                 )}
               </div>
               
-              {/* FOOTER - ACTION BUTTONS & GLOBAL LOGOUT */}
               <div className="px-6 py-4 border-t border-slate-800 flex-shrink-0 flex flex-col gap-3">
-                {/* Tab Specific Actions */}
                 {settingsTab === 'profile' && (
                   <Button
                     onClick={handleUpdateEmail}
@@ -2085,7 +1959,6 @@ export default function CustomerPanel() {
 
                 <div className="h-px bg-slate-800 w-full my-1"></div>
 
-                {/* Global Actions (Always Visible) */}
                 <div className="grid grid-cols-2 gap-3">
                     <Button
                         onClick={() => { setShowSettingsModal(false); setSupportModalOpen(true); }}
@@ -2115,7 +1988,6 @@ export default function CustomerPanel() {
               </div>
             </>
           ) : (
-            // GUEST VIEW
             <div className="flex-1 flex flex-col items-center justify-center p-8">
               <div className="bg-slate-800/80 p-8 rounded-full inline-flex mb-6">
                 <UserPlus className="h-12 w-12 text-teal-500" />
@@ -2136,7 +2008,7 @@ export default function CustomerPanel() {
                 {t.register}
               </Button>
               
-              <DialogFooter className="w-full mt-auto pt-6 border-t border-slate-800 flex flex-col gap-3">
+              <DialogFooter className="w-full mt-auto pt-6 border-t border-slate-800 flex-shrink-0 flex flex-col gap-3">
                 <Button
                     onClick={() => { setShowSettingsModal(false); setSupportModalOpen(true); }}
                     variant="outline"
@@ -2159,7 +2031,6 @@ export default function CustomerPanel() {
         </DialogContent>
       </Dialog>
 
-      {/* YENİ EKLENEN HESAP SİLME ONAY MODALI */}
       <Dialog open={showDeleteConfirmModal} onOpenChange={(open) => {
         setShowDeleteConfirmModal(open);
         if(!open) setDeleteAccountConfirmed(false); 

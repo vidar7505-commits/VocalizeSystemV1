@@ -194,17 +194,14 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-          {/* GÜNCELLENEN KISIM: FeedbackDetailModal ile aynı yapı */}
           <DialogContent className="w-[95vw] sm:w-full sm:max-w-2xl max-h-[90vh] flex flex-col bg-slate-900 border border-slate-800 text-slate-100 p-0 gap-0 overflow-hidden">
             
-            {/* HEADER */}
             <DialogHeader className="px-6 py-4 border-b border-slate-800 flex-shrink-0">
                 <DialogTitle className="text-xl font-bold flex items-center gap-2">
                     <User className="w-6 h-6 text-indigo-400" /> Müşteri Profili
                 </DialogTitle>
             </DialogHeader>
 
-            {/* BODY - SCROLLABLE */}
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 space-y-6">
                 {loading ? (
                     <div className="flex justify-center py-12"><Loader2 className="w-10 h-10 animate-spin text-indigo-500" /></div>
@@ -245,7 +242,7 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
                             <h3 className="text-lg font-bold text-white">Geri Bildirim Geçmişi ({filteredList.length})</h3>
                             <div className="flex flex-wrap gap-2 items-center w-full">
                                 <Select value={filterType} onValueChange={setFilterType}>
-                                    <SelectTrigger className="w-[120px] h-8 text-xs bg-slate-800 border-slate-700"><span className="truncate">{filterType === 'all' ? 'Tüm Tipler' : filterType === 'complaint' ? 'Şikayet' : filterType === 'suggestion' ? 'Öneri' : 'Değerlendirme'}</span></SelectTrigger>
+                                    <SelectTrigger className="w-[120px] h-8 text-xs bg-slate-800 border-slate-700"><span className="truncate">{filterType === 'all' ? 'Tümü' : filterType === 'complaint' ? 'Şikayet' : filterType === 'suggestion' ? 'Öneri' : 'Değerlendirme'}</span></SelectTrigger>
                                     <SelectContent className="bg-slate-800 border-slate-700"><SelectItem value="all">Tümü</SelectItem><SelectItem value="complaint">Şikayet</SelectItem><SelectItem value="suggestion">Öneri</SelectItem><SelectItem value="evaluation">Değerlendirme</SelectItem></SelectContent>
                                 </Select>
                                 <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -266,6 +263,9 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
                                   const rating = f.rating || f.overall_rating;
                                   const hasImgs = hasImages(f);
                                   const hasManagerNote = !!f.manager_note;
+                                  // 🟢 GÜNCELLENDİ: "Genel D." Flag'i Eklendi
+                                  const hasComment = (f.message && f.message.trim().length > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
+
                                   return (
                                     <div key={f.id} onClick={() => setDetailFeedback(f)} className="group bg-slate-800/40 p-3 rounded-lg border border-slate-700/50 hover:bg-slate-800/80 transition-colors cursor-pointer relative overflow-hidden">
                                         <div className="flex justify-between items-start mb-2">
@@ -282,6 +282,8 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
                                                         {rating > 0 && (<div className="flex items-center gap-0.5 text-yellow-500 shrink-0">{[...Array(5)].map((_, i) => (<Star key={i} className={`w-3 h-3 ${i < rating ? 'fill-current' : 'text-slate-700 fill-none'}`} />))}</div>)}
                                                     </div>
                                                     <div className="flex items-center gap-1.5 shrink-0">
+                                                        {/* 🟢 YENİ FLAG EKLENDİ */}
+                                                        {hasComment && (<div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-700/50 rounded text-[10px] text-blue-400 border border-slate-600/50"><FileText className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
                                                         {hasImgs && (<div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-700/50 rounded text-[10px] text-teal-400 border border-slate-600/50" title="Görsel Var"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
                                                         {hasManagerNote && (<div className="flex items-center justify-center w-5 h-5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30" title="Yönetici Notu Var"><StickyNote className="w-3 h-3 fill-current" /></div>)}
                                                     </div>

@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Loader2, Search, RefreshCw, Calendar, MessageSquare, User, Star,
   Image as ImageIcon, Filter, AlertTriangle, Crown, Siren,
-  StickyNote, ChevronLeft, ChevronRight
+  StickyNote, ChevronLeft, ChevronRight, FileText
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { subDays, startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay } from "date-fns";
@@ -27,7 +27,7 @@ const FeedbackManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Filtreler
+  // Filtreler (Varsayılan last30)
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [flagFilter, setFlagFilter] = useState('all');
@@ -54,7 +54,6 @@ const FeedbackManagement = () => {
         setSelectedFeedback(targetFeedback);
         setIsDetailModalOpen(true);
       }
-      // State'i temizle ki sürekli açılmasın
       window.history.replaceState({}, document.title);
     }
   }, [location.state?.openFeedbackId, feedbacks]);
@@ -63,7 +62,6 @@ const FeedbackManagement = () => {
     if (!businessId) return;
     setLoading(true);
     try {
-      // SORGULAMA KISMI GÜNCELLENDİ: general_eval alanları eklendi
       let query = supabase.from('feedbacks').select(`
           *,
           branches(id, branch_name_tr),
@@ -91,7 +89,6 @@ const FeedbackManagement = () => {
     }
   };
 
-  // ... (useMemo filteredFeedbacks aynı kalacak) ...
   const filteredFeedbacks = useMemo(() => {
     return feedbacks.filter(f => {
       const cName = getCustomerData(f, 'name') || '';
@@ -143,13 +140,11 @@ const FeedbackManagement = () => {
     });
   }, [feedbacks, searchQuery, statusFilter, typeFilter, flagFilter, dateFilter, showNotesOnly, showUrgentOnly]);
 
-  // Pagination hesaplamaları
   const totalPages = Math.ceil(filteredFeedbacks.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedFeedbacks = filteredFeedbacks.slice(startIndex, endIndex);
 
-  // Filtre değiştiğinde sayfayı 1'e sıfırla
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, typeFilter, flagFilter, dateFilter, showNotesOnly, showUrgentOnly]);
@@ -170,7 +165,6 @@ const FeedbackManagement = () => {
     setCustomerModalOpen(true);
   };
 
-  // --- ACTIONS (GÜNCELLEME) ---
   const handleFeedbackUpdate = (feedbackId, updates) => {
     setFeedbacks(prev => prev.map(f => {
       if (f.id === feedbackId) {
@@ -180,20 +174,15 @@ const FeedbackManagement = () => {
     }));
   };
 
-  // --- FLAG GÜNCELLEME (DÜZELTİLDİ) ---
-  // Bu fonksiyon artık hem profil içindeki flag'i hem de ana obje üzerindeki flag'i günceller.
   const handleFlagsUpdate = (profileId, newFlags, relatedEmail) => {
     setFeedbacks(prev => prev.map(f => {
       const matchesId = f.customer_profile_id === profileId;
-      // Profil ID yoksa email üzerinden eşleştirme yap
       const matchesEmail = !f.customer_profile_id && relatedEmail && f.customer_email === relatedEmail;
 
       if (matchesId || matchesEmail) {
         return {
           ...f,
-          // Eğer profil yeni oluştuysa ID'yi de set et
           customer_profile_id: profileId,
-          // İç içe objeyi güncelle
           customer_profiles: { 
             ...f.customer_profiles, 
             id: profileId,
@@ -201,7 +190,6 @@ const FeedbackManagement = () => {
             flag_sensitive_customer: newFlags.sensitive,
             admin_note: newFlags.admin_note 
           },
-          // Ana objeyi de güncelle (Filtreleme ve görünüm için kritik)
           flag_vip_customer: newFlags.vip,
           flag_sensitive_customer: newFlags.sensitive
         };
@@ -210,7 +198,6 @@ const FeedbackManagement = () => {
     }));
   };
 
-  // --- RENDER HELPERS ---
   const getTypeBadge = (type) => {
     const styles = { complaint: "text-red-400 bg-red-900/20 border-red-900/30", suggestion: "text-blue-400 bg-blue-900/20 border-blue-900/30", evaluation: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", review: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", rating: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30" };
     const labels = { complaint: "Şikayet", suggestion: "Öneri", evaluation: "Değerlendirme", review: "Değerlendirme", rating: "Değerlendirme" };
@@ -227,7 +214,7 @@ const FeedbackManagement = () => {
 
   return (
     <>
-      <div className="space-y-6 relative">
+      <div className="pt-24 md:pt-0 space-y-6 relative">
         {hasUrgentFeedbacks && (
           <div className="bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.3)] shrink-0">
             <div className="flex items-center gap-3"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
@@ -275,6 +262,7 @@ const FeedbackManagement = () => {
               const hasImgs = hasImages(f);
               const isEscalated = f.status === 'escalated';
               const hasManagerNote = !!f.manager_note;
+              const hasComment = (f.message && f.message.trim().length > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
 
               return (
                 <div key={f.id} onClick={() => handleFeedbackClick(f)} className={cn("group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
@@ -306,6 +294,8 @@ const FeedbackManagement = () => {
                       </div>
                       
                       <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
+                        {/* 🟢 DÜZELTME: "Genel D." */}
+                        {hasComment && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><FileText className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
                         {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
                         {hasManagerNote && (<div className="flex items-center justify-center w-6 h-6 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30"><StickyNote className="w-3.5 h-3.5 fill-current" /></div>)}
                         {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}
@@ -318,7 +308,6 @@ const FeedbackManagement = () => {
             })}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-2 mt-6 pb-4">
                 <Button
@@ -332,16 +321,13 @@ const FeedbackManagement = () => {
                 </Button>
                 
                 <div className="flex items-center gap-1 px-3">
-                  {/* Mobil: Sadece sayfa numarası */}
                   <span className="text-sm text-slate-400 md:hidden">
                     {currentPage} / {totalPages}
                   </span>
                   
-                  {/* Desktop: Detaylı sayfa numaraları */}
                   <div className="hidden md:flex items-center gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter(page => {
-                        // İlk 2, son 2 ve mevcut sayfa etrafındaki 2 sayfa
                         return (
                           page === 1 ||
                           page === totalPages ||
@@ -349,7 +335,6 @@ const FeedbackManagement = () => {
                         );
                       })
                       .map((page, idx, arr) => {
-                        // Atlanan sayfalar için "..." ekle
                         const showEllipsis = idx > 0 && page - arr[idx - 1] > 1;
                         return (
                           <React.Fragment key={page}>
@@ -374,7 +359,6 @@ const FeedbackManagement = () => {
                       })}
                   </div>
                   
-                  {/* Mobil & Desktop: Toplam sonuç sayısı */}
                   <span className="text-xs text-slate-500 ml-2">
                     ({filteredFeedbacks.length} sonuç)
                   </span>

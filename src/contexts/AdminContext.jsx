@@ -18,7 +18,9 @@ export const AdminProvider = ({ children }) => {
 
   const [branches, setBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState('all');
-  const [dateRange, setDateRange] = useState('allTime'); 
+  
+  // 🟢 DÜZELTME 1: Varsayılan tarih 'last7' (Son 7 Gün) yapıldı.
+  const [dateRange, setDateRange] = useState('last7'); 
 
   const [qrCount, setQrCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -32,31 +34,29 @@ export const AdminProvider = ({ children }) => {
     endDate.setHours(23, 59, 59, 999);
 
     switch (range) {
+      case 'today': 
       case 'Bugün': 
-      case 'Bugün': // UTF-8 variant
-        break; // Already today
+        break; 
+      case 'last7':
       case 'Son 7 Gün': 
-      case 'Son 7 Gün': // UTF-8 variant
         startDate.setDate(endDate.getDate() - 7); 
         break;
+      case 'last30':
       case 'Son 30 Gün': 
-      case 'Son 30 Gün': // UTF-8 variant
         startDate.setDate(endDate.getDate() - 30); 
         break;
+      case 'last90':
       case 'Son 90 Gün': 
-      case 'Son 90 Gün': // UTF-8 variant
         startDate.setDate(endDate.getDate() - 90); 
         break;
+      case 'thisMonth':
       case 'Bu Ay': 
         startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1); 
         break;
       case 'allTime': 
       case 'Tüm Zamanlar':
-        if (businessCreatedAt) {
-            startDate = new Date(businessCreatedAt);
-        } else {
-            startDate = new Date(2020, 0, 1);
-        }
+        // Başlangıç tarihini çok eskiye çek
+        startDate = new Date(2000, 0, 1);
         break;
       default: 
         startDate.setDate(endDate.getDate() - 7); 
@@ -67,7 +67,6 @@ export const AdminProvider = ({ children }) => {
   }, [businessCreatedAt]);
 
   const getDateFilterISO = useCallback((range) => {
-    // 'allTime' için filter uygulanmamalı (tüm veriler çekilmeli)
     if (range === 'allTime' || range === 'Tüm Zamanlar') {
       return null;
     }
@@ -112,17 +111,15 @@ export const AdminProvider = ({ children }) => {
       if (branchError) throw branchError;
       setBranches(branchData || []);
 
-      // 3. Fetch QR Count
-      const dateFilter = getDateFilterISO(dateRange);
-      
+      // 🟢 DÜZELTME 2: QR Count Sorgusu (Tarih Filtresi Kaldırıldı)
+      // Artık tarih ne seçilirse seçilsin TOPLAM tarama sayısını getirir.
       let qrQuery = supabase
         .from('qr_scans')
         .select('*', { count: 'exact', head: true })
         .eq('business_id', bId);
 
-      if (dateFilter) {
-        qrQuery = qrQuery.gte('created_at', dateFilter);
-      }
+      // NOT: qrQuery.gte(...) satırı kaldırıldı. 
+      // Böylece header'daki sayaç her zaman "Tüm Zamanlar"ı gösterir.
 
       if (selectedBranchId && selectedBranchId !== 'all') {
         qrQuery = qrQuery.eq('branch_id', selectedBranchId);
@@ -142,7 +139,7 @@ export const AdminProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, dateRange, selectedBranchId, getDateFilterISO]);
+  }, [user, toast, selectedBranchId]); // getDateFilterISO ve dateRange dependency'den çıkarıldı çünkü QR için kullanmıyoruz artık
 
   useEffect(() => {
     if (user) {

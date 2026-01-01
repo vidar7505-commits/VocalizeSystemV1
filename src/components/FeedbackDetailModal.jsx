@@ -276,7 +276,28 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
 
             <div className={`rounded-lg p-5 border overflow-hidden ${currentStatus === 'escalated' ? 'bg-red-900/10 border-red-500/30' : 'bg-slate-800/50 border-slate-700/50'}`}>
               <div className="mb-2"><h4 className="text-xs font-semibold text-slate-400 uppercase flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> Müşteri Mesajı</h4></div>
-              <div className="bg-slate-900/80 p-4 rounded-md border border-slate-700/50 min-h-[80px] overflow-hidden"><p className="text-slate-200 whitespace-pre-wrap leading-relaxed text-sm md:text-base break-words">{feedback.message || <span className="text-slate-500 italic">Mesaj yok.</span>}</p></div>
+              <div className="bg-slate-900/80 p-4 rounded-md border border-slate-700/50 min-h-[80px] overflow-hidden">
+                <p className="text-slate-200 whitespace-pre-wrap leading-relaxed text-sm md:text-base break-words">{feedback.message || <span className="text-slate-500 italic">Mesaj yok.</span>}</p>
+                
+                {/* ✅ DÜZELTİLDİ: ANA DEĞERLENDİRME PUANI EKLENDİ */}
+                {(feedback.rating || feedback.overall_rating) && (
+                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-700/30">
+                    <span className="text-xs text-slate-400 font-medium">Puan:</span>
+                    <div className="flex gap-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star 
+                          key={i} 
+                          className={`w-4 h-4 ${i < (feedback.rating || feedback.overall_rating) ? "fill-yellow-500 text-yellow-500" : "fill-none text-slate-600"}`} 
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm font-bold text-yellow-500 ml-1">
+                      {feedback.rating || feedback.overall_rating} / 5
+                    </span>
+                  </div>
+                )}
+              </div>
+              
               {allImages.length > 0 && (
                 <div className="mt-6 space-y-6">
                   <div>

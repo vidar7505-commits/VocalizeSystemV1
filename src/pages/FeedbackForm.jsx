@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { 
   QrCode, ArrowLeft, ImagePlus, X, CheckCircle2, Send, Loader2, Star, 
   AlertTriangle, Lightbulb, Info, Building2, AlertCircle, MapPin, 
-  Calendar as CalendarIcon, Trash2, Maximize2, Clock 
+  Calendar as CalendarIcon, Trash2, Maximize2, Clock, Copy, ExternalLink 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -16,7 +16,7 @@ import { format } from 'date-fns';
 import { tr, enUS } from 'date-fns/locale';
 
 // ============================================================================
-// STATIC DATA & HELPERS (Component Dışına Taşındı - Performans ve Hata Önleme İçin)
+// STATIC DATA & HELPERS
 // ============================================================================
 
 const getEmojiForRating = (rating, emojis) => emojis[rating] || '';
@@ -75,7 +75,14 @@ const TEXTS = {
     images: { label: "Görseller", placeholder: "Fotoğraf Ekle", sub: "Max 3 adet", uploaded: "yüklendi" },
     submit: { sending: "Gönderiliyor...", send: "Gönder", error: "Hata oluştu.", errorValidation: "Eksik alanlar var." },
     disclaimer: "Geri dönüş süreci işletmeye bağlıdır.",
-    success: { title: "Teşekkürler!", desc: (name) => `Bildiriminiz ${name} yöneticisine iletildi.`, footer: "Bizi tercih ettiğiniz için teşekkürler.", button: "Tamam" }
+    success: { title: "Teşekkürler!", desc: (name) => `Bildiriminiz ${name} yöneticisine iletildi.`, footer: "Bizi tercih ettiğiniz için teşekkürler.", button: "Kapat" },
+    google: {
+        title: "Deneyimini Paylaşır mısın?",
+        desc: "Yorumunu kopyaladık! Google'da paylaşarak bize destek olabilirsin.",
+        yesButton: "Google'da Paylaş",
+        noButton: "Hayır, Teşekkürler",
+        copiedToast: "Yorumunuz kopyalandı! Google sayfasına yönlendiriliyorsunuz..."
+    }
   },
   en: {
     errorLoad: "Error loading data.",
@@ -106,7 +113,14 @@ const TEXTS = {
     images: { label: "Images", placeholder: "Add Photo", sub: "Max 3 images", uploaded: "images uploaded" },
     submit: { sending: "Sending...", send: "Send", error: "Error occurred.", errorValidation: "Missing fields." },
     disclaimer: "Response depends on the business.",
-    success: { title: "Thank You!", desc: (name) => `Sent to ${name} manager.`, footer: "Thanks for choosing us.", button: "OK" }
+    success: { title: "Thank You!", desc: (name) => `Sent to ${name} manager.`, footer: "Thanks for choosing us.", button: "Close" },
+    google: {
+        title: "Share Your Experience?",
+        desc: "We copied your feedback! You can support us by sharing it on Google.",
+        yesButton: "Share on Google",
+        noButton: "No, Thanks",
+        copiedToast: "Feedback copied! Redirecting to Google..."
+    }
   }
 };
 
@@ -126,6 +140,7 @@ export default function FeedbackForm() {
   const branchParam = searchParams.get('branch');
   const qrParam = searchParams.get('qr');
   const langParam = searchParams.get('lang');
+  const guestParam = searchParams.get('guest');
 
   // STATE MANAGEMENT
   const [language, setLanguage] = useState('tr');
@@ -155,6 +170,7 @@ export default function FeedbackForm() {
   const [imageModalSrc, setImageModalSrc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [googleRedirectUrl, setGoogleRedirectUrl] = useState(null);
 
   const t = TEXTS[language] || TEXTS.tr;
 
@@ -184,14 +200,14 @@ export default function FeedbackForm() {
             const { data: bizData } = await supabase.from('businesses').select('business_name').eq('id', targetBusinessId).single();
             if (bizData) setBusinessName(bizData.business_name);
 
-            // Fetch ALL active branches
-            const { data: allBranches } = await supabase.from('branches').select('id, branch_name_tr').eq('business_id', targetBusinessId).eq('is_active', true);
+            const { data: allBranches } = await supabase
+              .from('branches')
+              .select('id, branch_name_tr, google_review_url')
+              .eq('business_id', targetBusinessId)
+              .eq('is_active', true);
             
             if (allBranches) {
                 setBranches(allBranches);
-                
-                // MANTIK DEĞİŞİKLİĞİ: Eğer branchParam değişirse veya branches ilk kez yükleniyorsa güncelle
-                // Manuel seçimde tekrar buraya girmemesi için dependency array'den 'selectedBranch' zaten çıkarıldı.
                 if (branchParam && allBranches.some(b => b.id === branchParam)) {
                     setSelectedBranch(branchParam);
                 } else if (allBranches.length === 1) {
@@ -201,54 +217,57 @@ export default function FeedbackForm() {
         }
       } catch (error) {
         console.error('Error initializing feedback form:', error);
-        // Hata durumunda statik metin göster (t.errorLoad yerine)
         toast({ title: "Hata", description: "Veri yüklenemedi", variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
     };
     init();
-  // ÖNEMLİ: Dependency Array'den 't' ve 'toast' kaldırıldı. Sadece veri parametreleri kaldı.
   }, [typeParam, businessParam, branchParam, qrParam, langParam]);
 
   // MOBILE BACK BUTTON HANDLER
-  // Handle browser back button when modals are open
   useEffect(() => {
     const handlePopState = (event) => {
-      // If image modal is open, close it
       if (imageModalOpen) {
         event.preventDefault();
         setImageModalOpen(false);
         setImageModalSrc('');
         return;
       }
-      
-      // If success modal is open, close it and navigate back
       if (showSuccessModal) {
         event.preventDefault();
-        setShowSuccessModal(false);
-        navigate('/customer');
+        handleSuccessClose();
         return;
       }
     };
-    
-    // Add popstate listener
     window.addEventListener('popstate', handlePopState);
-    
-    // Cleanup
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [imageModalOpen, showSuccessModal, navigate]);
+  }, [imageModalOpen, showSuccessModal]);
+
+  // NAVIGATION FIX (Formdan çıkışta parametreleri koru)
+  const handleBackNavigation = () => {
+    const params = new URLSearchParams();
+    if (businessParam) params.set('business', businessParam);
+    if (branchParam) params.set('branch', branchParam);
+    if (guestParam) params.set('guest', guestParam);
+    if (qrParam) params.set('qr', qrParam);
+    if (langParam) params.set('lang', langParam);
+    
+    if (!branchParam) {
+        const lastBranch = localStorage.getItem('vocalize_last_branch');
+        if (lastBranch) params.set('branch', lastBranch);
+    }
+    navigate(`/customer-panel?${params.toString()}`);
+  };
 
   // IMAGE HANDLERS
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files || []);
     const remainingSlots = 3 - feedbackImages.length;
-    
     if (files.length > remainingSlots) {
       toast({ title: t.limitExceeded, description: t.limitDesc(remainingSlots), variant: "destructive" });
       return;
     }
-
     files.forEach(file => {
       if (file.size > 5 * 1024 * 1024) {
         toast({ title: t.fileTooLarge, description: t.fileTooLargeDesc(file.name), variant: "destructive" });
@@ -270,37 +289,21 @@ export default function FeedbackForm() {
       setReceiptPreview(URL.createObjectURL(file));
   };
 
-  const removeReceipt = () => {
-      setReceiptFile(null);
-      setReceiptPreview(null);
-  };
-
-  const removeImage = (index) => {
-    setFeedbackImages(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const openImageModal = (src) => {
-    setImageModalSrc(src);
-    setImageModalOpen(true);
-  };
-
+  const removeReceipt = () => { setReceiptFile(null); setReceiptPreview(null); };
+  const removeImage = (index) => { setFeedbackImages(prev => prev.filter((_, i) => i !== index)); };
+  const openImageModal = (src) => { setImageModalSrc(src); setImageModalOpen(true); };
+  
   // DATE HANDLERS
-  const handleDateChange = (e) => {
-      setVisitDate(e.target.value);
-  };
-
+  const handleDateChange = (e) => setVisitDate(e.target.value);
   const handleDateBlur = () => {
       if (!visitDate) return;
-
       const inputDate = new Date(visitDate);
       const now = new Date();
-
       if (inputDate > now) {
          setVisitDate(getCurrentLocalISOString());
          toast({ title: "Geçersiz Tarih", description: "Gelecek bir tarih seçemezsiniz.", variant: "destructive" });
          return;
       }
-
       const inputYear = inputDate.getFullYear();
       if (inputYear < MIN_YEAR) {
           const parts = visitDate.split('-');
@@ -308,10 +311,8 @@ export default function FeedbackForm() {
               const newDateString = `${MIN_YEAR}-${parts[1]}-${parts[2]}`;
               if (new Date(newDateString) > now) {
                   setVisitDate(getCurrentLocalISOString());
-                  toast({ title: "Tarih Düzeltildi", description: "Geleceğe denk geldiği için bugüne ayarlandı.", className: "bg-slate-800 text-white" });
               } else {
                   setVisitDate(newDateString);
-                  toast({ title: "Yıl Güncellendi", description: `Yıl ${MIN_YEAR} olarak güncellendi.`, className: "bg-slate-800 text-white" });
               }
           }
       }
@@ -324,7 +325,6 @@ export default function FeedbackForm() {
     if ((feedbackType === 'complaint' || feedbackType === 'suggestion') && message.length < 10) return false;
     if (hasReceipt && !receiptFile) return false;
     if (!hasReceipt && (feedbackType === 'complaint' || feedbackType === 'suggestion') && !visitDate) return false;
-    
     return true;
   };
 
@@ -348,6 +348,25 @@ export default function FeedbackForm() {
     setIsSubmitting(true);
     
     try {
+      // 1. GÜVENLİ GOOGLE YÖNLENDİRME MANTIĞI
+      // Sadece şikayet DEĞİLSE ve puan 4 veya üzeriyse linki ayarla
+      if (feedbackType !== 'complaint') {
+          const effectiveRating = feedbackType === 'review' ? rating : generalRating;
+          
+          if (effectiveRating >= 4) {
+            const currentBranch = branches.find(b => b.id === selectedBranch);
+            if (currentBranch && currentBranch.google_review_url) {
+              setGoogleRedirectUrl(currentBranch.google_review_url);
+            } else {
+              setGoogleRedirectUrl(null);
+            }
+          } else {
+            setGoogleRedirectUrl(null);
+          }
+      } else {
+          setGoogleRedirectUrl(null);
+      }
+
       let receiptUrl = null;
       let feedbackImageUrls = [];
 
@@ -394,7 +413,38 @@ export default function FeedbackForm() {
 
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
-    navigate(`/customer-panel?${searchParams.toString()}`, { state: { showSuccessNotification: true, feedbackType } });
+    const params = new URLSearchParams();
+    if (businessParam) params.set('business', businessParam);
+    if (branchParam) params.set('branch', branchParam);
+    if (guestParam) params.set('guest', guestParam);
+    if (qrParam) params.set('qr', qrParam);
+    if (langParam) params.set('lang', langParam);
+    navigate(`/customer-panel?${params.toString()}`, { state: { showSuccessNotification: true, feedbackType } });
+  };
+
+  // --- GOOGLE SHARE LOGIC ---
+  const handleGoogleShare = async () => {
+      // 1. Panoya Kopyala
+      try {
+          if (message) {
+              await navigator.clipboard.writeText(message);
+          } else if (generalComment) {
+              await navigator.clipboard.writeText(generalComment);
+          }
+          
+          toast({ 
+              title: "Kopyalandı!", 
+              description: t.google.copiedToast,
+              className: "bg-green-600 text-white border-none"
+          });
+      } catch (err) {
+          console.error("Clipboard error:", err);
+      }
+
+      // 2. Yönlendir
+      setTimeout(() => {
+          window.location.href = googleRedirectUrl;
+      }, 1000);
   };
 
   if (isLoading) return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center"><Loader2 className="h-12 w-12 text-orange-500 animate-spin" /></div>;
@@ -406,7 +456,7 @@ export default function FeedbackForm() {
     <div className="min-h-screen bg-[#0f172a] px-4 py-8 md:px-8 md:py-12 font-sans text-white overflow-x-hidden">
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <button onClick={() => navigate('/customer-panel')} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors duration-200 group">
+          <button onClick={handleBackNavigation} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors duration-200 group">
             <div className="bg-slate-800 p-2 rounded-full group-hover:bg-slate-700 transition-colors"><ArrowLeft className="h-5 w-5" /></div>
             <span className="text-sm font-medium hidden sm:inline">{t.back}</span>
           </button>
@@ -523,8 +573,32 @@ export default function FeedbackForm() {
             <div className="absolute inset-0 bg-gradient-to-b from-green-500/5 to-transparent pointer-events-none"></div>
             <div className="bg-green-500/20 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.2)]"><CheckCircle2 className="h-12 w-12 text-green-500" /></div>
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 tracking-tight break-words">{t.success.title}</h2>
-            <div className="bg-slate-800/50 rounded-xl p-4 mb-8 border border-slate-700/50"><p className="text-slate-300 leading-relaxed text-sm break-words">{t.success.desc(businessName || t.businessLabel)}</p><div className="mt-3 pt-3 border-t border-slate-700/50"><span className="text-green-400 font-bold text-sm flex items-center justify-center gap-2 flex-wrap"><Star className="h-4 w-4 fill-green-400 text-green-400 shrink-0" /> {t.success.footer}</span></div></div>
-            <Button onClick={handleSuccessClose} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 h-auto text-base rounded-xl transition shadow-lg shadow-teal-900/20 hover:scale-[1.02]"><ArrowLeft className="mr-2 h-5 w-5" />{t.success.button}</Button>
+            <div className="bg-slate-800/50 rounded-xl p-4 mb-6 border border-slate-700/50">
+                <p className="text-slate-300 leading-relaxed text-sm break-words">{t.success.desc(businessName || t.businessLabel)}</p>
+            </div>
+
+            {/* GOOGLE REDIRECT SECTION */}
+            {googleRedirectUrl && (
+                <div className="bg-gradient-to-r from-blue-900/50 to-indigo-900/50 rounded-xl p-5 mb-6 border border-blue-700/50 shadow-lg">
+                    <h3 className="text-blue-100 font-bold text-lg mb-2">{t.google.title}</h3>
+                    <p className="text-blue-200/80 text-sm mb-4 leading-snug">{t.google.desc}</p>
+                    <div className="flex flex-col gap-3">
+                         <Button onClick={handleGoogleShare} className="w-full bg-white text-blue-900 hover:bg-blue-50 font-bold py-5 h-auto text-base rounded-xl transition shadow-lg shadow-white/10 hover:scale-[1.02] flex items-center justify-center gap-2">
+                            <span className="text-xl">⭐</span> {t.google.yesButton} <Copy className="w-4 h-4 ml-1 opacity-60" />
+                         </Button>
+                         <Button variant="ghost" onClick={handleSuccessClose} className="w-full text-blue-300 hover:text-white hover:bg-blue-800/30">
+                            {t.google.noButton}
+                         </Button>
+                    </div>
+                </div>
+            )}
+            
+            {/* Sadece Google yoksa normal kapatma butonu göster */}
+            {!googleRedirectUrl && (
+                <Button onClick={handleSuccessClose} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 h-auto text-base rounded-xl transition shadow-lg shadow-teal-900/20 hover:scale-[1.02]">{t.success.button}</Button>
+            )}
+            
+            <div className="mt-6 pt-3 border-t border-slate-700/50"><span className="text-slate-500 font-medium text-xs flex items-center justify-center gap-2 flex-wrap"><Star className="h-3 w-3 fill-slate-500 text-slate-500 shrink-0" /> {t.success.footer}</span></div>
           </div>
         </div>
       )}

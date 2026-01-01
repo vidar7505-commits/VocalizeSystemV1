@@ -60,13 +60,14 @@ const getBranchStatus = (score, riskyRate, resolveRate, total) => {
   return { label: 'İyi', color: 'text-green-400', bg: 'bg-green-500/10', icon: CheckCircle2, reason: "Tüm performans metrikleri dengeli." };
 };
 
-// --- INFO TOOLTIP ---
-const InfoTooltip = ({ text }) => (
+// --- INFO TOOLTIP (GÜNCELLENDİ: Yön parametresi eklendi) ---
+const InfoTooltip = ({ text, side = "top" }) => (
   <div className="group relative inline-flex items-center ml-1 z-10">
     <Info className="w-3.5 h-3.5 text-slate-500 hover:text-slate-300 cursor-help" />
-    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 bg-slate-950 border border-slate-700 rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] pointer-events-none">
+    <div className={`absolute left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-950 border border-slate-700 rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] pointer-events-none ${side === "bottom" ? "top-full mt-2" : "bottom-full mb-2"}`}>
       <p className="text-[11px] text-slate-300 leading-relaxed text-center font-medium">{text}</p>
-      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-700"></div>
+      {/* Ok Yönü Ayarlaması */}
+      <div className={`absolute left-1/2 -translate-x-1/2 border-4 border-transparent ${side === "bottom" ? "bottom-full border-b-slate-700" : "top-full border-t-slate-700"}`}></div>
     </div>
   </div>
 );
@@ -156,7 +157,6 @@ const KpiCard = ({ title, value, previousValue, icon: Icon, colorClass, suffix =
   );
 };
 
-// --- MAIN COMPONENT ---
 const DetailedAnalytics = () => {
   const { businessId, selectedBranchId } = useAdminContext();
   const { toast } = useToast();
@@ -166,10 +166,11 @@ const DetailedAnalytics = () => {
   const [prevFeedbacks, setPrevFeedbacks] = useState([]);
   const [trafficStats, setTrafficStats] = useState({ visits: 0, conversionRate: 0, qrCount: 0, webCount: 0 });
   const [trendViewMode, setTrendViewMode] = useState('total');
-  const [dateRange, setDateRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
-  const [preset, setPreset] = useState('30days');
+  
+  // Varsayılan tarih: Tüm Zamanlar
+  const [dateRange, setDateRange] = useState({ from: new Date(2020, 0, 1), to: new Date() });
+  const [preset, setPreset] = useState('allTime');
 
-  // --- VERİ ÇEKME ---
   const fetchData = useCallback(async () => {
     if (!businessId || !dateRange?.from || !dateRange?.to) return;
     setLoading(true);
@@ -213,7 +214,6 @@ const DetailedAnalytics = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // --- KPI HESAPLAMA ---
   const kpi = useMemo(() => {
     const calc = (data) => {
       const total = data.length;
@@ -232,7 +232,6 @@ const DetailedAnalytics = () => {
     return { curr: calc(feedbacks), prev: calc(prevFeedbacks) };
   }, [feedbacks, prevFeedbacks]);
 
-  // --- TREND VERİSİ ---
   const trendData = useMemo(() => {
     const dailyMap = {};
     let currentDate = new Date(dateRange.from);
@@ -253,7 +252,6 @@ const DetailedAnalytics = () => {
     return Object.values(dailyMap);
   }, [feedbacks, dateRange]);
 
-  // --- MARKA vs DENEYIM ---
   const loyaltyComparison = useMemo(() => {
     let iSum = 0, iCount = 0, gSum = 0, gCount = 0;
     feedbacks.forEach(f => {
@@ -265,7 +263,6 @@ const DetailedAnalytics = () => {
     return { instant, general };
   }, [feedbacks]);
 
-  // --- DUYGU ANALİZİ ---
   const sentimentData = useMemo(() => {
     const valid = feedbacks.filter(f => f.general_eval_rating || f.rating);
     const total = valid.length || 1;
@@ -285,7 +282,6 @@ const DetailedAnalytics = () => {
     { name: 'Web/Link', value: trafficStats.webCount, color: COLORS.primary }
   ].filter(i => i.value > 0), [trafficStats]);
 
-  // --- ŞUBE PERFORMANS ---
   const branchLeaderboard = useMemo(() => {
     if (selectedBranchId !== 'all') return null;
     const map = {};
@@ -334,7 +330,6 @@ const DetailedAnalytics = () => {
           </div>
         </div>
 
-        {/* KPI KARTLARI */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
           <KpiCard title="Toplam Bildirim" value={kpi.curr.total} previousValue={kpi.prev.total} icon={Activity} colorClass="text-sky-400" />
           <KpiCard title="Sadakat Skoru" value={kpi.curr.loyaltyScore} previousValue={kpi.prev.loyaltyScore} icon={Heart} colorClass="text-pink-400" suffix="/100" />
@@ -347,7 +342,6 @@ const DetailedAnalytics = () => {
         ) : (
           <div className="space-y-8">
             
-            {/* TREND & MARKA ALGISI - GÜNCELLENDİ (MOBİL UYUMLU) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6 shadow-lg">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -410,7 +404,6 @@ const DetailedAnalytics = () => {
               </div>
             </div>
 
-            {/* TRAFİK ANALİZİ */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex flex-col">
                 <div className="flex items-center justify-between mb-6 z-10 relative">
@@ -451,20 +444,21 @@ const DetailedAnalytics = () => {
               </div>
             </div>
 
-            {/* ŞUBE PERFORMANS (SCROLLABLE YAPILDI) */}
             {selectedBranchId === 'all' && branchLeaderboard && (
-              <div className="bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6">
+              <div className="bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6 relative overflow-visible z-0">
                 <div className="flex items-center gap-2 mb-6"><LayoutList className="w-5 h-5 text-green-400" /><div><h3 className="text-white font-bold text-lg">Şube Performans Karşılaştırması</h3><p className="text-slate-400 text-xs">Operasyonel karşılaştırma tablosu.</p></div></div>
-                <div className="overflow-x-auto pb-4">
+                {/* overflow-visible ile tooltip'in kesilmesini engelliyoruz */}
+                <div className="overflow-x-auto pb-4 relative z-0">
                   <table className="w-full min-w-[800px] text-left text-sm text-slate-400 border-collapse">
                     <thead className="bg-[#0f172a] text-xs uppercase font-bold text-slate-500 tracking-wider">
                       <tr>
                         <th className="px-6 py-4 rounded-l-lg border-r border-slate-800/50">Durum</th>
                         <th className="px-6 py-4 border-r border-slate-800/50">Şube Adı</th>
-                        <th className="px-6 py-4 text-center border-r border-slate-800/50"><div className="flex items-center justify-center gap-1">Sadakat Skoru <InfoTooltip text="Yıldız ve genel değerlendirme puanlarının 100 üzerinden ağırlıklı ortalaması." /></div></th>
+                        {/* Header'da Tooltip (AŞAĞI AÇILACAK - side="bottom") */}
+                        <th className="px-6 py-4 text-center border-r border-slate-800/50"><div className="flex items-center justify-center gap-1">Sadakat Skoru <InfoTooltip text="Yıldız ve genel değerlendirme puanlarının 100 üzerinden ağırlıklı ortalaması." side="bottom" /></div></th>
                         <th className="px-6 py-4 text-center w-56 border-r border-slate-800/50">Pozitif / Nötr / Negatif</th>
                         <th className="px-6 py-4 text-center border-r border-slate-800/50">Çözüm Oranı</th>
-                        <th className="px-6 py-4 text-right rounded-r-lg"><div className="flex items-center justify-end gap-1">Toplam Bildirim <InfoTooltip text="Seçili tarih aralığında bu şubeye gelen toplam geri bildirim sayısı." /></div></th>
+                        <th className="px-6 py-4 text-right rounded-r-lg"><div className="flex items-center justify-end gap-1">Toplam Bildirim <InfoTooltip text="Seçili tarih aralığında bu şubeye gelen toplam geri bildirim sayısı." side="bottom" /></div></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
@@ -473,7 +467,18 @@ const DetailedAnalytics = () => {
                         const StatusIcon = status.icon;
                         return (
                           <tr key={i} className="hover:bg-slate-800/60 transition-colors group">
-                            <td className="px-6 py-4 border-r border-slate-800/50"><div className={`group/tooltip relative flex items-center gap-2 px-2.5 py-1.5 rounded-full w-fit ${status.bg} border border-white/5 transition-transform hover:scale-105 cursor-help`}><StatusIcon className={`w-4 h-4 ${status.color}`} /><span className={`text-xs font-bold ${status.color}`}>{status.label}</span><div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 w-48 p-3 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-[9999] pointer-events-none"><p className="text-[11px] text-white font-medium leading-snug">{status.reason}</p><div className="absolute right-full top-1/2 -translate-y-1/2 -mr-1 border-4 border-transparent border-r-slate-700"></div></div></div></td>
+                            {/* Satır İçi Tooltip (YUKARI AÇILACAK - Varsayılan) */}
+                            <td className="px-6 py-4 border-r border-slate-800/50 relative">
+                                <div className={`group/tooltip relative flex items-center gap-2 px-2.5 py-1.5 rounded-full w-fit ${status.bg} border border-white/5 transition-transform hover:scale-105 cursor-help z-10`}>
+                                    <StatusIcon className={`w-4 h-4 ${status.color}`} />
+                                    <span className={`text-xs font-bold ${status.color}`}>{status.label}</span>
+                                    {/* Buradaki tooltip'i de InfoTooltip bileşeniyle değiştirebiliriz veya mevcut manuel yapıyı z-index ile koruyabiliriz. Mevcut yapı güzel, sadece z-index ve position önemli. */}
+                                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 w-48 p-3 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-[9999] pointer-events-none">
+                                        <p className="text-[11px] text-white font-medium leading-snug">{status.reason}</p>
+                                        <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-1 border-4 border-transparent border-r-slate-700"></div>
+                                    </div>
+                                </div>
+                            </td>
                             <td className="px-6 py-4 font-medium text-white group-hover:text-sky-400 transition-colors border-r border-slate-800/50">{branch.name}</td>
                             <td className="px-6 py-4 text-center border-r border-slate-800/50"><div className="flex flex-col items-center"><span className={`text-xl font-extrabold ${Number(branch.loyaltyScore) < 50 ? 'text-red-400' : Number(branch.loyaltyScore) < 70 ? 'text-yellow-400' : 'text-green-400'}`}>{branch.loyaltyScore}</span><span className="text-[10px] text-slate-500">{Number(branch.loyaltyScore) < 50 ? 'Geliştirilmeli' : Number(branch.loyaltyScore) < 70 ? 'Orta' : 'İyi'}</span></div></td>
                             <td className="px-6 py-4 text-center border-r border-slate-800/50"><div className="flex h-2.5 w-full bg-slate-800 rounded-full overflow-hidden"><div className="bg-green-500 h-full" style={{ width: `${branch.happyRate}%` }}></div><div className="bg-yellow-500 h-full" style={{ width: `${branch.neutralRate}%` }}></div><div className="bg-red-500 h-full" style={{ width: `${branch.riskyRate}%` }}></div></div><div className="flex justify-between text-[10px] mt-1 text-slate-500 font-medium px-1"><span className="text-green-400">%{branch.happyRate}</span><span className="text-red-400">%{branch.riskyRate}</span></div></td>

@@ -5,7 +5,7 @@ import { useAdminContext } from '@/contexts/AdminContext';
 import { 
   MessageSquare, Star, AlertTriangle, Calendar, Loader2, ChevronRight, 
   ArrowUpRight, ArrowDownRight, Minus, CheckCircle2, User, Phone, 
-  Image as ImageIcon, StickyNote, Crown, FileText, Siren
+  Image as ImageIcon, StickyNote, Crown, FileText, Siren 
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -410,7 +410,6 @@ const AdminPanel = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div><h2 className="text-white font-bold text-xl mb-1">Analiz Grafikleri</h2><p className="text-slate-400 text-sm">Müşteri geri bildirimlerinin detaylı dağılımı</p></div>
             
-            {/* GÜNCELLENDİ: Webde Flex, Mobilde Grid (Butonlar yan yana sığsın) */}
             <TabsList className="bg-slate-800 border-slate-700 w-full grid grid-cols-2 h-auto p-1 sm:w-auto sm:flex sm:h-10">
               <TabsTrigger value="stars" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm"><Star className="w-4 h-4 mr-2" />Yıldız Dağılımı</TabsTrigger>
               <TabsTrigger value="types" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm"><MessageSquare className="w-4 h-4 mr-2" />Form Türleri</TabsTrigger>
@@ -423,11 +422,9 @@ const AdminPanel = () => {
                 <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><Star className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz değerlendirme almadınız</h3></div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  {/* GÜNCELLENDİ: Sol (left) margin -20'den 0'a çekildi ki yazılar sığsın */}
                   <BarChart layout="vertical" data={ratingDistribution} margin={{ top: 5, right: 30, left: 0, bottom: 5 }} barSize={24}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
                     <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} domain={[0, 'auto']} />
-                    {/* Width 60 yapıldı ki "5 Yıldız" yazısı sığsın */}
                     <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={60} />
                     <Tooltip formatter={(value) => [value, 'Adet']} labelFormatter={() => ''} contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} cursor={{ fill: '#ffffff10' }} />
                     <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={32}>{ratingDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}<LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={12} /></Bar>
@@ -443,7 +440,6 @@ const AdminPanel = () => {
                 <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><MessageSquare className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz geri bildirim almadınız</h3></div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  {/* GÜNCELLENDİ: Sol margin 0 ve YAxis width 85 (Değerlendirme yazısı uzun olduğu için) */}
                   <BarChart layout="vertical" data={feedbackTypeDistribution} margin={{ top: 5, right: 30, left: 0, bottom: 5 }} barSize={24}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
                     <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
@@ -481,6 +477,8 @@ const AdminPanel = () => {
                    const isEscalated = f.status === 'escalated';
                    const hasManagerNote = !!f.manager_note;
                    const hasCustomerProfileNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
+                   // 🟢 GÜNCELLENDİ: Mesaj veya Genel Yorum Kontrolü
+                   const hasComment = (f.message && f.message.trim().length > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
 
                    return (
                     <div key={f.id} onClick={() => handleFeedbackClick(f)} className={cn("group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
@@ -507,6 +505,8 @@ const AdminPanel = () => {
                              </div>
                            </div>
                            <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
+                              {/* 🟢 GÜNCELLENDİ: "Genel D." Flag'i Eklendi */}
+                              {hasComment && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><FileText className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
                               {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
                               {hasManagerNote && (<div className="flex items-center justify-center w-6 h-6 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30"><StickyNote className="w-3.5 h-3.5 fill-current" /></div>)}
                               {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}
