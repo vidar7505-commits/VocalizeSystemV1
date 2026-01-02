@@ -13,7 +13,7 @@ const QRRedirector = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [debugInfo, setDebugInfo] = useState('');
-  const [showDebug, setShowDebug] = useState(false); // Hata detayını gizle/göster
+  const [showDebug, setShowDebug] = useState(false);
   
   const processingRef = useRef(false);
 
@@ -57,7 +57,7 @@ const QRRedirector = () => {
         // 3. Kullanıcı Oturumunu Kontrol Et
         const { data: { session } } = await supabase.auth.getSession();
 
-        // LocalStorage İşlemleri
+        // LocalStorage İşlemleri (Ziyaret geçmişi için)
         try {
             const existing = JSON.parse(localStorage.getItem('vocalize_visited_businesses') || '[]');
             if (!existing.includes(business_id)) {
@@ -68,17 +68,30 @@ const QRRedirector = () => {
             localStorage.setItem('vocalize_last_branch', branch_id);
         } catch (e) { console.warn("Storage Error", e); }
 
+        // --- YÖNLENDİRME MANTIĞI (GÜNCELLENDİ) ---
+
         if (session) {
           const userType = session.user?.user_metadata?.user_type;
           
+          // DURUM A: YÖNETİCİ İSE -> Çıkış Yap -> Ana Sayfaya Git (Login Modalı Aç)
           if (userType === 'manager') {
             await supabase.auth.signOut({ scope: 'local' });
-            navigate(`/?qr=${qrCode}&business=${business_id}&branch=${branch_id}&openAuth=true&authTab=login`, { replace: true });
+            
+            toast({ 
+                title: "Yönetici Çıkışı", 
+                description: "Müşteri akışını test etmek için çıkış yapıldı. Lütfen giriş yapın veya misafir olarak devam edin.",
+                duration: 4000 
+            });
+
+            // Ana sayfaya yönlendir ve Login Modal'ını açtır (Parametreleri taşıyoruz)
+            setTimeout(() => {
+                navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
+            }, 500);
             return;
           }
           
+          // DURUM B: MÜŞTERİ İSE -> Direkt Panele Git
           const user_id = session.user.id;
-          // Geçmiş kaydı
           await supabase.from('customer_qr_scans').upsert({ 
               user_id, 
               business_id, 
@@ -92,7 +105,10 @@ const QRRedirector = () => {
           navigate(`/customer-panel?business=${business_id}&branch=${branch_id}&from_qr=true`, { replace: true });
 
         } else {
-          navigate(`/customer-panel?business=${business_id}&branch=${branch_id}&guest=true&from_qr=true`, { replace: true });
+          // DURUM C: GİRİŞ YAPMAMIŞ (MİSAFİR) -> Ana Sayfaya Git (Login Modalı Aç)
+          // Direkt panele gitmek yerine, Ana Sayfaya gidip Login/Register modalını açıyoruz.
+          // Kullanıcı oradan "Misafir Devam Et" diyebilir veya giriş yapabilir.
+          navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
         }
 
       } catch (err) {
@@ -128,7 +144,6 @@ const QRRedirector = () => {
           <h2 className="text-xl font-bold text-red-500 mb-2">Hata Oluştu</h2>
           <p className="text-slate-400 mb-6 text-sm">{error}</p>
           
-          {/* PROFESYONEL DEBUG ALANI (Varsayılan olarak kapalı) */}
           <div className="mb-4">
             <button 
                 onClick={() => setShowDebug(!showDebug)} 
