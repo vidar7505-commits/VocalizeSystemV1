@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useAdminContext } from '@/contexts/AdminContext';
@@ -21,6 +21,39 @@ const SettingsPage = () => {
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackImages, setFeedbackImages] = useState([]);
+
+  // 🟢 MOBİL GERİ TUŞU: Feedback Modal
+  useEffect(() => {
+    if (!feedbackModalOpen) return;
+
+    const handlePopState = () => {
+      console.log('🔙 Geri tuşu: Feedback modal kapatılıyor');
+      setFeedbackModalOpen(false);
+      setFeedbackMessage('');
+      setFeedbackImages([]);
+    };
+
+    window.history.pushState({ feedbackModal: true }, '');
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [feedbackModalOpen]);
+
+  // 🟢 MEMORY LEAK FIX: Image Preview URL Cleanup
+  useEffect(() => {
+    return () => {
+      feedbackImages.forEach(file => {
+        try {
+          const url = URL.createObjectURL(file);
+          URL.revokeObjectURL(url);
+        } catch (e) {
+          // Ignore errors
+        }
+      });
+    };
+  }, [feedbackImages]);
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
@@ -132,6 +165,17 @@ const SettingsPage = () => {
     }
   };
 
+  // 🟢 MODAL KAPATMA (History desteği ile)
+  const handleCloseModal = () => {
+    setFeedbackModalOpen(false);
+    setFeedbackMessage('');
+    setFeedbackImages([]);
+    
+    if (window.history.state?.feedbackModal) {
+      window.history.back();
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-8 pt-16 md:pt-0 pb-10">
       <div className="flex justify-center md:justify-start">
@@ -206,7 +250,8 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      <Dialog open={feedbackModalOpen} onOpenChange={setFeedbackModalOpen}>
+      {/* 🟢 GÜNCELLENMIŞ MODAL (onOpenChange kullanımı) */}
+      <Dialog open={feedbackModalOpen} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-800 text-white">
           <DialogHeader>
             <DialogTitle className="text-white">Vocalize Ekibiyle İletişim</DialogTitle>

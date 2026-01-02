@@ -1666,7 +1666,7 @@ export default function CustomerPanel() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
               <Building2 className="h-6 w-6 text-teal-500" />
-              {t.branchSelection}
+              {selectedBusinessForBranches ? `${businesses.find(b => b.id === selectedBusinessForBranches)?.business_name} ` : ''}{t.branchSelection}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-4">

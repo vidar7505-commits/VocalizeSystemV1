@@ -60,16 +60,29 @@ const getBranchStatus = (score, riskyRate, resolveRate, total) => {
   return { label: 'İyi', color: 'text-green-400', bg: 'bg-green-500/10', icon: CheckCircle2, reason: "Tüm performans metrikleri dengeli." };
 };
 
-// --- INFO TOOLTIP (GÜNCELLENDİ: Yön parametresi eklendi) ---
-const InfoTooltip = ({ text, side = "top" }) => (
-  <div className="group relative inline-flex items-center ml-1 z-10">
-    <Info className="w-3.5 h-3.5 text-slate-500 hover:text-slate-300 cursor-help" />
-    <div className={`absolute left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-950 border border-slate-700 rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] pointer-events-none ${side === "bottom" ? "top-full mt-2" : "bottom-full mb-2"}`}>
-      <p className="text-[11px] text-slate-300 leading-relaxed text-center font-medium">{text}</p>
-      <div className={`absolute left-1/2 -translate-x-1/2 border-4 border-transparent ${side === "bottom" ? "bottom-full border-b-slate-700" : "top-full border-t-slate-700"}`}></div>
-    </div>
-  </div>
-);
+// --- 🟢 MOBİL UYUMLU INFO TOOLTIP (Toast ile) ---
+const InfoTooltip = ({ text }) => {
+  const { toast } = useToast();
+  
+  const handleClick = (e) => {
+    e.stopPropagation();
+    toast({
+      title: "Bilgi",
+      description: text,
+      duration: 4000,
+    });
+  };
+  
+  return (
+    <button
+      onClick={handleClick}
+      className="inline-flex items-center ml-1 cursor-pointer group"
+      type="button"
+    >
+      <Info className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300 transition-colors" />
+    </button>
+  );
+};
 
 // --- GRAFİK TOOLTIP ---
 const CustomTooltip = ({ active, payload, label }) => {
@@ -176,7 +189,7 @@ const DetailedAnalytics = () => {
     }
   }, [businessCreatedAt, preset]);
 
-  // --- VERİ ÇEKME (🟢 GÜNCELLEME: QR ve WEB AYRILDI) ---
+  // --- VERİ ÇEKME ---
   const fetchData = useCallback(async () => {
     if (!businessId || !dateRange?.from || !dateRange?.to) return;
     setLoading(true);
@@ -191,7 +204,7 @@ const DetailedAnalytics = () => {
       let queryPrev = supabase.from('feedbacks').select('id, rating, general_eval_rating, status, feedback_type').eq('business_id', businessId).gte('created_at', startOfDay(prevFrom).toISOString()).lte('created_at', endOfDay(prevTo).toISOString());
       if (selectedBranchId !== 'all') queryPrev = queryPrev.eq('branch_id', selectedBranchId);
 
-      // 🟢 QR TRAFİĞİ: qr_scans tablosundan
+      // QR TRAFİĞİ: qr_scans tablosundan
       let qrTrafficQuery = supabase
         .from('qr_scans')
         .select('id, branch_id', { count: 'exact' })
@@ -199,7 +212,7 @@ const DetailedAnalytics = () => {
         .gte('created_at', startOfDay(dateRange.from).toISOString())
         .lte('created_at', endOfDay(dateRange.to).toISOString());
 
-      // 🟢 WEB TRAFİĞİ: page_views tablosundan (source='web' olanlar)
+      // WEB TRAFİĞİ: page_views tablosundan (source='web' olanlar)
       let webTrafficQuery = supabase
         .from('page_views')
         .select('id, branch_id', { count: 'exact' })
@@ -226,7 +239,7 @@ const DetailedAnalytics = () => {
       setFeedbacks(currData);
       setPrevFeedbacks(resPrev.data || []);
 
-      // 🟢 TRAFİK VERİSİ HESAPLAMA
+      // TRAFİK VERİSİ HESAPLAMA
       const qrCount = resQrTraffic.count || 0;
       const webCount = resWebTraffic.count || 0;
       const totalVisits = qrCount + webCount;
@@ -487,7 +500,7 @@ const DetailedAnalytics = () => {
               </div>
             </div>
 
-            {/* ŞUBE PERFORMANS (SCROLLABLE YAPILDI - TOOLTIP Z-INDEX DÜZELTİLDİ) */}
+            {/* ŞUBE PERFORMANS */}
             {selectedBranchId === 'all' && branchLeaderboard && (
               <div className="bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6 relative overflow-visible z-0">
                 <div className="flex items-center gap-2 mb-6"><LayoutList className="w-5 h-5 text-green-400" /><div><h3 className="text-white font-bold text-lg">Şube Performans Karşılaştırması</h3><p className="text-slate-400 text-xs">Operasyonel karşılaştırma tablosu.</p></div></div>
@@ -497,10 +510,10 @@ const DetailedAnalytics = () => {
                       <tr>
                         <th className="px-6 py-4 rounded-l-lg border-r border-slate-800/50">Durum</th>
                         <th className="px-6 py-4 border-r border-slate-800/50">Şube Adı</th>
-                        <th className="px-6 py-4 text-center border-r border-slate-800/50"><div className="flex items-center justify-center gap-1">Sadakat Skoru <InfoTooltip text="Yıldız ve genel değerlendirme puanlarının 100 üzerinden ağırlıklı ortalaması." side="bottom" /></div></th>
+                        <th className="px-6 py-4 text-center border-r border-slate-800/50"><div className="flex items-center justify-center gap-1">Sadakat Skoru <InfoTooltip text="Yıldız ve genel değerlendirme puanlarının 100 üzerinden ağırlıklı ortalaması." /></div></th>
                         <th className="px-6 py-4 text-center w-56 border-r border-slate-800/50">Pozitif / Nötr / Negatif</th>
                         <th className="px-6 py-4 text-center border-r border-slate-800/50">Çözüm Oranı</th>
-                        <th className="px-6 py-4 text-right rounded-r-lg"><div className="flex items-center justify-end gap-1">Toplam Bildirim <InfoTooltip text="Seçili tarih aralığında bu şubeye gelen toplam geri bildirim sayısı." side="bottom" /></div></th>
+                        <th className="px-6 py-4 text-right rounded-r-lg"><div className="flex items-center justify-end gap-1">Toplam Bildirim <InfoTooltip text="Seçili tarih aralığında bu şubeye gelen toplam geri bildirim sayısı." /></div></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
