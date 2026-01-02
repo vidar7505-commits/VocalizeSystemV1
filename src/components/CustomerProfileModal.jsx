@@ -40,14 +40,15 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
   const fetchAttemptRef = useRef(0);
   const maxRetries = 3;
 
-  // KRİTİK KONTROL: Modal açılmadan önce prerequisites
+  // ✅ DÜZELTİLDİ: Anonim kullanıcılar için "Identifier" zorunluluğu kaldırıldı
   const canFetchData = useMemo(() => {
     const hasBusinessId = !!businessId;
-    const hasIdentifier = !!(customerProfileId || customerEmail);
     const hasUser = !!user;
     
-    return hasBusinessId && hasIdentifier && hasUser;
-  }, [businessId, customerProfileId, customerEmail, user]);
+    // Anonim kullanıcılarda ID veya Email olmayabilir, bu bir hata değil durumdur.
+    // O yüzden sadece Business ve User'ın hazır olması yeterli.
+    return hasBusinessId && hasUser;
+  }, [businessId, user]);
 
   useEffect(() => {
     if (isOpen) {
@@ -59,18 +60,34 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
       setShowNotesOnly(false);
       fetchAttemptRef.current = 0;
       
+      // İlk kontrol: Temel gereksinimler hazır mı?
       if (canFetchData) {
+        // ✅ Hazır, direkt fetch et
         fetchData();
       } else {
-        setLoading(false);
-        toast({
-          variant: "destructive",
-          title: "Hata",
-          description: "Müşteri bilgileri yüklenemedi. Lütfen sayfayı yenileyin."
-        });
+        // ⏳ Eksik veriler var (BusinessId veya User henüz yüklenmemiş olabilir), 300ms bekle
+        const timer = setTimeout(() => {
+          const checkBusinessId = !!businessId;
+          const checkUser = !!user;
+
+          if (checkBusinessId && checkUser) {
+            // ✅ 300ms sonra hazır oldu, fetch et
+            fetchData();
+          } else {
+            // ❌ 300ms sonra hala BusinessID veya User yoksa hata ver
+            setLoading(false);
+            toast({
+              variant: "destructive",
+              title: "Hata",
+              description: "Oturum bilgileri eksik. Lütfen sayfayı yenileyin."
+            });
+          }
+        }, 300);
+        
+        return () => clearTimeout(timer);
       }
     }
-  }, [isOpen, customerProfileId, customerEmail, businessId, canFetchData]);
+  }, [isOpen, customerProfileId, customerEmail, businessId, canFetchData, user]);
 
   // MOBİL GERİ TUŞU YÖNETİMİ
   useEffect(() => {
