@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2, AlertCircle, Copy } from 'lucide-react'; // Copy eklendi
+import { Loader2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 
@@ -12,7 +12,8 @@ const QRRedirector = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [debugInfo, setDebugInfo] = useState(''); // Hata detayları için
+  const [debugInfo, setDebugInfo] = useState('');
+  const [showDebug, setShowDebug] = useState(false); // Hata detayını gizle/göster
   
   const processingRef = useRef(false);
 
@@ -44,21 +45,19 @@ const QRRedirector = () => {
         const logResult = await supabase.from('qr_scans').insert({
           branch_id,
           business_id,
-          qr_code,
+          qr_code: qrCode,
           user_agent: navigator.userAgent,
           created_at: new Date().toISOString()
         });
         
         if (logResult.error) {
             console.error("QR Insert Error:", logResult.error);
-            // Insert hatası olsa bile akışı kesmeyelim, sadece loglayalım
-            // throw { step: 'QR Insert', ...logResult.error }; 
         }
 
-        // 3. Kullanıcı Oturumunu Kontrol Et ve Yönlendir
+        // 3. Kullanıcı Oturumunu Kontrol Et
         const { data: { session } } = await supabase.auth.getSession();
 
-        // LocalStorage
+        // LocalStorage İşlemleri
         try {
             const existing = JSON.parse(localStorage.getItem('vocalize_visited_businesses') || '[]');
             if (!existing.includes(business_id)) {
@@ -79,9 +78,15 @@ const QRRedirector = () => {
           }
           
           const user_id = session.user.id;
-          // Müşteri geçmişini kaydet (Hata verirse yut, kritik değil)
-          await supabase.from('customer_qr_scans').upsert({ user_id, business_id, branch_id, qr_code, last_scan_at: new Date().toISOString() }, { onConflict: 'user_id, business_id, branch_id, qr_code' }).then(res => {
-              if(res.error) console.error("History Save Error:", res.error);
+          // Geçmiş kaydı
+          await supabase.from('customer_qr_scans').upsert({ 
+              user_id, 
+              business_id, 
+              branch_id, 
+              qr_code: qrCode,
+              last_scan_at: new Date().toISOString() 
+          }, { 
+              onConflict: 'user_id, business_id, branch_id, qr_code' 
           });
           
           navigate(`/customer-panel?business=${business_id}&branch=${branch_id}&from_qr=true`, { replace: true });
@@ -92,10 +97,9 @@ const QRRedirector = () => {
 
       } catch (err) {
         console.error('QR Process Error:', err);
-        // Hatayı string'e çevirip ekrana basacağız
         const errorMsg = err.message || JSON.stringify(err, null, 2);
-        setError('Bir hata oluştu.');
-        setDebugInfo(errorMsg); // Ekrana basılacak detay
+        setError('Bağlantı sırasında bir sorun oluştu.');
+        setDebugInfo(errorMsg);
         setIsLoading(false);
       }
     };
@@ -121,18 +125,30 @@ const QRRedirector = () => {
           <div className="bg-slate-900/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-700">
             <AlertCircle className="h-8 w-8 text-red-500" />
           </div>
-          <h2 className="text-xl font-bold text-red-500 mb-3">Hata Oluştu</h2>
-          <p className="text-slate-400 mb-4">{error}</p>
+          <h2 className="text-xl font-bold text-red-500 mb-2">Hata Oluştu</h2>
+          <p className="text-slate-400 mb-6 text-sm">{error}</p>
           
-          {/* HATA DETAYLARI (DEBUG İÇİN) */}
-          <div className="bg-black/50 p-3 rounded-lg text-left mb-4 overflow-auto max-h-48">
-            <p className="text-xs text-red-300 font-mono whitespace-pre-wrap break-all">
-                {debugInfo}
-            </p>
+          {/* PROFESYONEL DEBUG ALANI (Varsayılan olarak kapalı) */}
+          <div className="mb-4">
+            <button 
+                onClick={() => setShowDebug(!showDebug)} 
+                className="flex items-center justify-center gap-1 text-xs text-slate-500 hover:text-slate-300 w-full transition-colors"
+            >
+                {showDebug ? 'Teknik Detayları Gizle' : 'Teknik Detayları Göster'}
+                {showDebug ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+            
+            {showDebug && (
+                <div className="bg-black/50 p-3 rounded-lg text-left mt-2 overflow-auto max-h-48 animate-in slide-in-from-top-2">
+                    <p className="text-[10px] text-red-300 font-mono whitespace-pre-wrap break-all">
+                        {debugInfo}
+                    </p>
+                </div>
+            )}
           </div>
 
-          <Button onClick={() => window.location.reload()} className="w-full bg-slate-700 hover:bg-slate-600 text-white mb-2">Tekrar Dene</Button>
-          <Button onClick={() => navigate('/')} variant="outline" className="w-full border-slate-600 text-slate-300">Ana Sayfa</Button>
+          <Button onClick={() => window.location.reload()} className="w-full bg-teal-600 hover:bg-teal-700 text-white mb-3">Tekrar Dene</Button>
+          <Button onClick={() => navigate('/')} variant="outline" className="w-full border-slate-600 text-slate-300 hover:bg-slate-700">Ana Sayfa</Button>
         </div>
       </div>
     );
