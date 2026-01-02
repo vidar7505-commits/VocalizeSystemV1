@@ -27,7 +27,7 @@ const SettingsPage = () => {
     if (!feedbackModalOpen) return;
 
     const handlePopState = () => {
-      console.log('🔙 Geri tuşu: Feedback modal kapatılıyor');
+      
       setFeedbackModalOpen(false);
       setFeedbackMessage('');
       setFeedbackImages([]);

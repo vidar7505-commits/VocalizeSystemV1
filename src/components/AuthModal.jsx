@@ -87,7 +87,7 @@ export default function AuthModal({
       onGuestContinue();
     } else {
       // Normal kullanım (LandingPage veya başka yerlerden)
-      console.log('🎯 Misafir girişi başlatıldı...');
+      
       loginAsGuest();
       localStorage.setItem('vocalize_guest_mode', 'true');
       
@@ -102,7 +102,7 @@ export default function AuthModal({
       
       // Navigate'i biraz geciktir (modal kapanma animasyonu için)
       setTimeout(() => {
-        console.log('🚀 CustomerPanel\'e yönlendiriliyor...');
+        
         navigate('/customer-panel?guest=true', { replace: true });
       }, 300);
     }

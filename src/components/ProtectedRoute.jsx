@@ -30,7 +30,7 @@ const ProtectedRoute = ({ allowedRole }) => {
   }, [loading, user, isGuest]);
 
   if (loading || isLoading) {
-    console.log('ProtectedRoute - showing loader');
+    
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
         <Loader2 className="h-10 w-10 text-orange-500 animate-spin" />
@@ -39,10 +39,10 @@ const ProtectedRoute = ({ allowedRole }) => {
   }
 
   const isAuthenticated = !!user || isGuest;
-  console.log('ProtectedRoute - isAuthenticated:', isAuthenticated);
+  
 
   if (!isAuthenticated) {
-    console.log('ProtectedRoute - not authenticated, redirecting to /');
+    
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
@@ -51,30 +51,30 @@ const ProtectedRoute = ({ allowedRole }) => {
   
   if (isGuest) {
     userRole = 'customer';
-    console.log('ProtectedRoute - guest user, role:', userRole);
+    
   } else if (user?.user_metadata?.user_type) {
     userRole = user.user_metadata.user_type;
-    console.log('ProtectedRoute - authenticated user, role:', userRole);
+    
   }
 
   // Check role access
   if (allowedRole && userRole !== allowedRole) {
-    console.log('ProtectedRoute - role mismatch:', { userRole, allowedRole });
+    
     
     if (userRole === 'customer') {
-      console.log('ProtectedRoute - redirecting customer to /customer-panel');
+      
       return <Navigate to="/customer-panel" replace />;
     }
     if (userRole === 'manager') {
-      console.log('ProtectedRoute - redirecting manager to /admin-panel');
+      
       return <Navigate to="/admin-panel" replace />;
     }
     
-    console.log('ProtectedRoute - unknown role, redirecting to /');
+    
     return <Navigate to="/" replace />;
   }
 
-  console.log('ProtectedRoute - access granted, rendering outlet');
+  
   return <Outlet />;
 };
 

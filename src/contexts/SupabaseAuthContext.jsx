@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
+import { clearVocalizeCache } from '@/lib/cacheUtils'; // ✅ YENİ SATIR
 
 const AuthContext = createContext(undefined);
 
@@ -94,6 +95,10 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = useCallback(async () => {
     try {
+      // ✅ YENİ: Cache temizle (logout öncesi)
+      
+      clearVocalizeCache();
+      
       // KRİTİK DÜZELTME: scope: 'local' parametresi eklendi
       // Bu "auth session missing" hatasını önler
       const { error } = await supabase.auth.signOut({ scope: 'local' });
@@ -117,6 +122,7 @@ export const AuthProvider = ({ children }) => {
         });
         return { error };
       }
+      
       
       return { error: null };
     } catch (err) {

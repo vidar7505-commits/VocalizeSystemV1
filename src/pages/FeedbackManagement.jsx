@@ -46,7 +46,7 @@ const FeedbackManagement = () => {
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  // 🟢 MOBİL FİX İÇİN YENİ STATE'LER
+  // 🟢 MOBİL FİX İÇİN STATE'LER
   const [highlightedId, setHighlightedId] = useState(null);
   const [targetScrollId, setTargetScrollId] = useState(null);
   const [pendingFeedbackId, setPendingFeedbackId] = useState(null);
@@ -57,66 +57,40 @@ const FeedbackManagement = () => {
 
   useEffect(() => { if (businessId) fetchFeedbacks(); }, [businessId, selectedBranchId]);
 
-  // 🟢 ADIM 1: URL/localStorage'dan ID'yi yakala (location.state değiştiğinde)
+  // URL/localStorage'dan ID'yi yakala
   useEffect(() => {
-    // State'den gelen ID'yi kontrol et
     if (location.state?.openFeedbackId) {
       const targetId = location.state.openFeedbackId;
-      console.log('📍 Modal için ID yakalandı (state):', targetId);
-      
-      // Hem state'e hem localStorage'a kaydet (Mobil state kaybı önlemi)
       setPendingFeedbackId(targetId);
       localStorage.setItem('vocalize_pending_feedback', targetId);
       setModalOpenAttempts(0); 
-      
-      // URL State'i temizle
       navigate(location.pathname, { replace: true, state: {} });
     }
-    // Eğer state'de yoksa localStorage'dan kontrol et (Yedek mekanizma)
     else {
       const storedId = localStorage.getItem('vocalize_pending_feedback');
       if (storedId && !pendingFeedbackId) {
-        console.log('📍 Modal için ID yakalandı (localStorage):', storedId);
         setPendingFeedbackId(storedId);
         setModalOpenAttempts(0);
       }
     }
   }, [location.state, navigate, location.pathname, pendingFeedbackId]);
 
-  // 🟢 ADIM 2: Feedbacks yüklendiğinde ID'yi işle (RETRY MEKANİZMASI)
+  // Feedbacks yüklendiğinde ID'yi işle
   useEffect(() => {
-    // Eğer aranacak bir ID yoksa işlem yapma
     if (!pendingFeedbackId) return;
+    if (loading || feedbacks.length === 0) return;
     
-    // Eğer veriler henüz yüklenmediyse bekle (Retry çalışacak)
-    if (loading || feedbacks.length === 0) {
-      console.log('⏳ Feedbacks yükleniyor, bekleniyor...');
-      return;
-    }
-    
-    // Maximum 10 deneme (3 saniye) aşıldıysa dur
     if (modalOpenAttempts >= 10) {
-      console.error('❌ Modal açılamadı - süre aşımı');
-      toast({
-        variant: "destructive",
-        title: "Bildirim Bulunamadı",
-        description: "Aranan geri bildirim silinmiş veya farklı bir şubede olabilir."
-      });
+      toast({ variant: "destructive", title: "Bildirim Bulunamadı", description: "Aranan geri bildirim silinmiş veya farklı bir şubede olabilir." });
       setPendingFeedbackId(null);
       localStorage.removeItem('vocalize_pending_feedback');
       setModalOpenAttempts(0);
       return;
     }
 
-    console.log(`🔍 Feedback aranıyor... (Deneme ${modalOpenAttempts + 1}/10, ID: ${pendingFeedbackId})`);
-    
-    // Hedef feedback'i listede ara
     const targetFeedback = feedbacks.find(f => f.id === pendingFeedbackId);
     
     if (targetFeedback) {
-      console.log('✅ Feedback bulundu! Modal açılıyor...');
-      
-      // 1. Önce Filtreleri ZORLA TEMİZLE (Kartın görünür olması şart)
       setStatusFilter('all');
       setTypeFilter('all');
       setFlagFilter('all');
@@ -125,67 +99,41 @@ const FeedbackManagement = () => {
       setShowUrgentOnly(false);
       setSearchQuery('');
       
-      // 2. Sayfayı Hesapla
       const index = feedbacks.findIndex(f => f.id === pendingFeedbackId);
       const targetPage = Math.ceil((index + 1) / itemsPerPage);
       setCurrentPage(targetPage);
-      
-      // 3. Highlight ve Scroll hedefini ayarla
       setHighlightedId(pendingFeedbackId);
       setTargetScrollId(pendingFeedbackId);
       
-      // 4. Modalı AÇ (100ms gecikmeli - React State oturması için)
       setTimeout(() => {
         setSelectedFeedback(targetFeedback);
         setIsDetailModalOpen(true);
-        
-        // İşlem tamam, kuyruğu temizle
         setPendingFeedbackId(null);
         localStorage.removeItem('vocalize_pending_feedback');
         setModalOpenAttempts(0);
       }, 100);
       
     } else {
-      // Bulunamadıysa (Henüz render olmamış olabilir) - TEKRAR DENE
-      console.warn(`⚠️ Feedback listede yok, 300ms sonra tekrar denenecek...`);
-      
       setModalOpenAttempts(prev => prev + 1);
-      
       if (pendingTimeoutRef.current) clearTimeout(pendingTimeoutRef.current);
-      
-      // 300ms sonra state'i tetikle
-      pendingTimeoutRef.current = setTimeout(() => {
-        setModalOpenAttempts(prev => prev); // Re-render tetikleyici
-      }, 300);
+      pendingTimeoutRef.current = setTimeout(() => { setModalOpenAttempts(prev => prev); }, 300);
     }
-    
-    return () => {
-      if (pendingTimeoutRef.current) clearTimeout(pendingTimeoutRef.current);
-    };
+    return () => { if (pendingTimeoutRef.current) clearTimeout(pendingTimeoutRef.current); };
   }, [pendingFeedbackId, loading, feedbacks, modalOpenAttempts, itemsPerPage, toast]);
 
-  // 🟢 ADIM 3: Scroll Mekanizması (MOBİL İÇİN UZATILMIŞ SÜRE)
+  // Scroll Mekanizması
   useEffect(() => {
     if (targetScrollId && itemRefs.current[targetScrollId]) {
       const element = itemRefs.current[targetScrollId];
-      
-      // Mobilde DOM render süresi uzayabilir, 1000ms bekle
       const timer = setTimeout(() => {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setTargetScrollId(null);
       }, 1000);
-
-      // Parlama efektini 5 saniye sonra kaldır
       const highlightTimer = setTimeout(() => setHighlightedId(null), 5000);
-
-      return () => {
-        clearTimeout(timer);
-        clearTimeout(highlightTimer);
-      };
+      return () => { clearTimeout(timer); clearTimeout(highlightTimer); };
     }
   }, [targetScrollId, currentPage, loading]);
 
-  // 🟢 ADIM 4: Temizlik (Component Unmount)
   useEffect(() => {
     return () => {
       localStorage.removeItem('vocalize_pending_feedback');
@@ -195,11 +143,8 @@ const FeedbackManagement = () => {
 
   const fetchFeedbacks = async () => {
     if (!businessId) return;
-    
-    // Yenileme sırasında vurguyu kaldır
     setHighlightedId(null);
     setTargetScrollId(null);
-    
     setLoading(true);
     try {
       let query = supabase.from('feedbacks').select(`
@@ -229,9 +174,41 @@ const FeedbackManagement = () => {
     }
   };
 
+  // 🟢 GÜVENLİ HALE GETİRİLMİŞ FLAGS UPDATE (Artık Çökmez!)
+  const handleFlagsUpdate = (profileId, newFlags, relatedEmail) => {
+    setFeedbacks(prev => prev.map(f => {
+      // 1. Güvenlik
+      if (!f) return f;
+
+      // 2. Güvenli Erişim
+      const currentProfileId = f.customer_profile_id || f.customer_profiles?.id;
+      const currentEmail = f.customer_email || f.customer_profiles?.email;
+
+      const matchesId = profileId && currentProfileId === profileId;
+      const matchesEmail = relatedEmail && currentEmail === relatedEmail;
+
+      if (matchesId || matchesEmail) {
+        return {
+          ...f,
+          customer_profile_id: profileId || currentProfileId,
+          // 3. KRİTİK GÜVENLİK: customer_profiles null ise boş obje ile birleştir
+          customer_profiles: { 
+            ...(f.customer_profiles || {}), 
+            id: profileId || currentProfileId,
+            flag_vip_customer: newFlags.vip, 
+            flag_sensitive_customer: newFlags.sensitive,
+            admin_note: newFlags.admin_note 
+          },
+          flag_vip_customer: newFlags.vip,
+          flag_sensitive_customer: newFlags.sensitive
+        };
+      }
+      return f;
+    }));
+  };
+
   const filteredFeedbacks = useMemo(() => {
     return feedbacks.filter(f => {
-      // Highlight edilen kart filtrelerden etkilenmesin (Görünür kalsın)
       if (f.id === highlightedId || f.id === targetScrollId || f.id === pendingFeedbackId) return true;
 
       const cName = getCustomerData(f, 'name') || '';
@@ -290,7 +267,6 @@ const FeedbackManagement = () => {
   const endIndex = startIndex + itemsPerPage;
   const paginatedFeedbacks = filteredFeedbacks.slice(startIndex, endIndex);
 
-  // Filtre değişince sayfa 1'e döner (Bildirim işlemi yoksa)
   useEffect(() => {
     if (!targetScrollId && !highlightedId && !pendingFeedbackId) {
         setCurrentPage(1);
@@ -317,30 +293,6 @@ const FeedbackManagement = () => {
     setFeedbacks(prev => prev.map(f => {
       if (f.id === feedbackId) {
         return { ...f, ...updates };
-      }
-      return f;
-    }));
-  };
-
-  const handleFlagsUpdate = (profileId, newFlags, relatedEmail) => {
-    setFeedbacks(prev => prev.map(f => {
-      const matchesId = f.customer_profile_id === profileId;
-      const matchesEmail = !f.customer_profile_id && relatedEmail && f.customer_email === relatedEmail;
-
-      if (matchesId || matchesEmail) {
-        return {
-          ...f,
-          customer_profile_id: profileId,
-          customer_profiles: { 
-            ...f.customer_profiles, 
-            id: profileId,
-            flag_vip_customer: newFlags.vip, 
-            flag_sensitive_customer: newFlags.sensitive,
-            admin_note: newFlags.admin_note 
-          },
-          flag_vip_customer: newFlags.vip,
-          flag_sensitive_customer: newFlags.sensitive
-        };
       }
       return f;
     }));
@@ -419,7 +371,6 @@ const FeedbackManagement = () => {
                     key={f.id} 
                     ref={(el) => { if (el) itemRefs.current[f.id] = el; }}
                     onClick={() => handleFeedbackClick(f)} 
-                    // 🟢 Scroll Margin Top Eklendi (Header altında kalmaması için)
                     className={cn(
                         "group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border duration-500 ease-in-out scroll-mt-32",
                         isHighlighted 
