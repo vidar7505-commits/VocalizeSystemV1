@@ -58,8 +58,11 @@ const AdminHeader = () => {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  
+  // Header içinde modal açma state'leri kaldırıldı/pasife alındı çünkü sayfaya yönlendireceğiz
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
   const [isHovered, setIsHovered] = useState(false);
   const [escalatedCount, setEscalatedCount] = useState(0);
 
@@ -90,8 +93,8 @@ const AdminHeader = () => {
     if (error) {
       console.error("Error fetching notifications", error);
     } else {
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.is_read).length);
+      setNotifications(data || []);
+      setUnreadCount((data || []).filter(n => !n.is_read).length);
     }
   }, [user]);
 
@@ -124,8 +127,8 @@ const AdminHeader = () => {
           setNotifications(prev => [newNotification, ...prev.slice(0, 9)]);
           setUnreadCount(prev => prev + 1);
           toast({
-            title: `Yeni geri bildirim: ${newNotification.branch_name || ''}`,
-            description: newNotification.customer_name || 'Bir müşteriden.',
+            title: `Yeni geri bildirim`,
+            description: 'Bir müşteriden yeni bildirim aldınız.',
           });
         }
       )
@@ -147,33 +150,34 @@ const AdminHeader = () => {
     };
   }, [user, toast, businessId, checkEscalatedStatus]);
 
+  // 🟢 DÜZELTİLEN FONKSİYON: Artık fetch yapmaz, direkt yönlendirir.
   const handleNotificationClick = async (notification) => {
-    try {
-      const { data: feedbackData, error: feedbackError } = await supabase
-        .from('feedbacks')
-        .select(`*, branches(branch_name_tr)`)
-        .eq('id', notification.feedback_id)
-        .single();
-      
-      if (feedbackError) throw feedbackError;
+    // 1. Hedef ID'yi güvenli şekilde al (Farklı isimlendirmelere karşı önlem)
+    // Supabase tablonuzda sütun adı 'related_id' veya 'feedback_id' olabilir.
+    const targetId = notification.related_id || notification.feedback_id;
 
-      setSelectedFeedback(feedbackData);
-      setIsModalOpen(true);
-      setNotificationOpen(false);
+    if (!targetId) {
+        console.error("HATA: Bildirimde ID bulunamadı!", notification);
+        return;
+    }
 
-      if (!notification.is_read) {
-        const { error: updateError } = await supabase
-          .from('notifications')
-          .update({ is_read: true })
-          .eq('id', notification.id);
-        if (updateError) throw updateError;
-        
+    // 2. Menüyü kapat
+    setNotificationOpen(false);
+
+    // 3. Okundu olarak işaretle (Arka planda sessizce)
+    if (!notification.is_read) {
         setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
         setUnreadCount(prev => Math.max(0, prev - 1));
-      }
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'Geri bildirim detayı yüklenemedi.' });
+        
+        // Hata olsa bile kullanıcıyı bekletmemek için await kullanmıyoruz
+        supabase.from('notifications').update({ is_read: true }).eq('id', notification.id).then();
     }
+
+    // 4. SAYFAYA YÖNLENDİR (State ile ID taşıyoruz)
+    // Bu state FeedbackManagement.jsx tarafından yakalanıp scroll/highlight yapılacak.
+    navigate('/admin-panel/feedbacks', {
+        state: { openFeedbackId: targetId }
+    });
   };
 
   const handleMarkAllAsRead = async () => {
@@ -201,25 +205,21 @@ const AdminHeader = () => {
   
   const getQrDateLabel = () => {
     const labels = {
-      'Bugün': 'Bugün',
-      'Son 7 Gün': 'Son 7 Gün',
-      'Son 30 Gün': 'Son 30 Gün',
-      'Son 90 Gün': 'Son 90 Gün',
-      'Bu Ay': 'Bu Ay',
+      'today': 'Bugün',
+      'last7': 'Son 7 Gün',
+      'last30': 'Son 30 Gün',
+      'last90': 'Son 90 Gün',
+      'thisMonth': 'Bu Ay',
       'allTime': 'Tüm Zamanlar',
     };
     return labels[dateRange] || 'Son 7 Gün';
   };
 
-  // ============================================================================
-  // GÜNCELLEME: 49 TL → 79 TL (Erken Aşama Avantajı)
-  // ============================================================================
   let badgeConfig = null;
 
   if (!loading && isSpecialOffer === true && monthlyFeeOverride !== null) {
     const fee = Number(monthlyFeeOverride);
     
-    // GÜNCELLEME: 49.00 → 79.00 ($79)
     if (fee === 79.00) {
       badgeConfig = {
         text: "Erken Aşama Avantajı",
@@ -299,7 +299,6 @@ const AdminHeader = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* QR Counter */}
           <div className="flex items-center gap-3 bg-slate-800/50 border border-teal-500/30 rounded-lg px-4 py-2 hover:bg-slate-700/50 transition-colors">
             <QrCode className="h-5 w-5 text-teal-400" />
             <span className="text-sm font-semibold text-teal-300 whitespace-nowrap">
@@ -349,7 +348,7 @@ const AdminHeader = () => {
                           <MessageSquare className={`w-4 h-4 shrink-0 mt-1 ${n.is_read ? 'text-slate-500' : 'text-teal-400'}`} />
                           <div className="flex-grow">
                             <p className={`text-sm ${n.is_read ? 'text-slate-400' : 'text-slate-200 font-medium'}`}>
-                              <span className="font-semibold">{n.branch_name || 'Bilinmeyen Şube'}</span>: Yeni geri bildirim.
+                              <span className="font-semibold">{n.branch_name || 'Bilinmeyen Şube'}</span>: {n.message ? (n.message.length > 40 ? n.message.substring(0, 40) + '...' : n.message) : 'Yeni geri bildirim.'}
                             </p>
                             <p className="text-xs text-slate-500 mt-1">{formatTimeAgo(n.created_at)}</p>
                           </div>
@@ -382,6 +381,9 @@ const AdminHeader = () => {
           </DropdownMenu>
         </div>
       </header>
+      {/* NOT: Burada modal açan kodlar kalabilir ama handleNotificationClick artık bunları kullanmıyor.
+         Sayfaya yönlendirme yaptığı için bu kısım pasif kalacak, sorun yaratmaz.
+      */}
       {isModalOpen && selectedFeedback && (
         <FeedbackDetailModal 
           isOpen={isModalOpen} 

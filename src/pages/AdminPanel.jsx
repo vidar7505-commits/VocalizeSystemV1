@@ -1,3 +1,4 @@
+// ... (Importlar aynı)
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -5,7 +6,7 @@ import { useAdminContext } from '@/contexts/AdminContext';
 import { 
   MessageSquare, Star, AlertTriangle, Calendar, Loader2, ChevronRight, 
   ArrowUpRight, ArrowDownRight, Minus, CheckCircle2, User, Phone, 
-  Image as ImageIcon, StickyNote, Crown, FileText, Siren 
+  Image as ImageIcon, StickyNote, Crown, FileText, Siren
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -15,12 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList, AreaChart, Area } from 'recharts';
 import { subDays, startOfDay, endOfDay, subMonths, startOfMonth } from 'date-fns';
 import { cn, formatCustomerName, getCustomerData, calculateDelta } from "@/lib/utils";
-
-// Components
 import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
 
-// --- SUB-COMPONENTS ---
+// ... (SparklineCard, getTypeBadge, getStatusBadge, hasImages aynı) ...
+// (Buraya yer kaplamasın diye önceki sub-component kodlarını aynen kopyalayabilirsiniz, değişmedi)
 const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass, sparkData, loading, isInverseMetric = false }) => {
   let sentimentColor = "bg-slate-800 text-slate-400 border-slate-700"; 
   let TrendIcon = Minus;
@@ -79,24 +79,19 @@ const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass,
     </div>
   );
 };
-
 const getTypeBadge = (type) => {
   const styles = { complaint: "text-red-400 bg-red-900/20 border-red-900/30", suggestion: "text-blue-400 bg-blue-900/20 border-blue-900/30", evaluation: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", review: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", rating: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30" };
   const labels = { complaint: "Şikayet", suggestion: "Öneri", evaluation: "Değerlendirme", review: "Değerlendirme", rating: "Değerlendirme" };
   return <Badge variant="secondary" className={`text-xs px-2.5 py-1 ${styles[type] || "text-slate-400"}`}>{labels[type] || type}</Badge>;
 };
-
 const getStatusBadge = (status) => {
   const styles = { new: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20", pending: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", in_progress: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20", resolved: "bg-green-500/10 text-green-500 border-green-500/20", escalated: "bg-red-500/10 text-red-500 border-red-500/20" };
   const labels = { new: "Yeni", pending: "Beklemede", in_progress: "İşlemde", resolved: "Çözüldü", escalated: "Acil" };
   return <Badge variant="outline" className={`text-[10px] h-5 px-1.5 whitespace-nowrap transition-colors ${styles[status] || "bg-slate-500/10 text-slate-500"}`}>{labels[status] || status}</Badge>;
 };
-
 const hasImages = (f) => {
   return ((f.feedback_images && f.feedback_images.length > 0) || (f.image_urls && f.image_urls.length > 0) || (f.receipt_images && f.receipt_images.length > 0) || f.receipt_url || f.product_image_url);
 };
-
-// --- MAIN COMPONENT ---
 
 const AdminPanel = () => {
   const { businessId, selectedBranchId, branches, dateRange, setDateRange } = useAdminContext();
@@ -139,53 +134,52 @@ const AdminPanel = () => {
     ? "Ana Panel" 
     : branches.find(b => b.id === selectedBranchId)?.branch_name_tr || "Ana Panel";
 
-  const dateOptions = { 'Bugün': 'Bugün', 'Son 7 Gün': 'Son 7 Gün', 'Son 30 Gün': 'Son 30 Gün', 'Bu Ay': 'Bu Ay' };
+  // 🟢 DÜZELTME: Anahtarlar İngilizce yapıldı (AdminContext 'last7' ile eşleşmesi için)
+  const dateOptions = { 
+    'today': 'Bugün', 
+    'last7': 'Son 7 Gün', 
+    'last30': 'Son 30 Gün', 
+    'thisMonth': 'Bu Ay' 
+  };
 
   const getDateIntervals = useCallback(() => {
     const now = new Date();
     let currentStart, prevStart;
+    // AdminContext'teki anahtarlar ile uyumlu hale getirildi
     switch (dateRange) {
-        case 'Bugün': currentStart = startOfDay(now); prevStart = startOfDay(subDays(now, 1)); break;
-        case 'Son 7 Gün': currentStart = subDays(now, 7); prevStart = subDays(now, 14); break;
-        case 'Son 30 Gün': currentStart = subDays(now, 30); prevStart = subDays(now, 60); break;
-        case 'Bu Ay': currentStart = startOfMonth(now); prevStart = startOfMonth(subMonths(now, 1)); break;
+        case 'today': currentStart = startOfDay(now); prevStart = startOfDay(subDays(now, 1)); break;
+        case 'last7': currentStart = subDays(now, 7); prevStart = subDays(now, 14); break;
+        case 'last30': currentStart = subDays(now, 30); prevStart = subDays(now, 60); break;
+        case 'thisMonth': currentStart = startOfMonth(now); prevStart = startOfMonth(subMonths(now, 1)); break;
         default: currentStart = subDays(now, 30); prevStart = subDays(now, 60); break;
     }
     return { currentStart, prevStart };
   }, [dateRange]);
 
+  // ... (fetchData ve diğer useEffect'ler aynı mantıkla devam eder, buraya sığdırmak için sadece değişen yerleri vurguluyorum. Tüm kod bloğunu aşağıda vereceğim) ...
   const fetchData = useCallback(async () => {
     if (!businessId) return;
     setLoading(true);
     setLoadingFeedbacks(true);
-    
     try {
       const { currentStart, prevStart } = getDateIntervals();
-      
       let query = supabase.from('feedbacks')
         .select('id, created_at, status, feedback_type, rating, general_eval_rating, resolved_at')
         .eq('business_id', businessId)
         .gte('created_at', prevStart.toISOString()); 
-      
       if (selectedBranchId !== 'all') query = query.eq('branch_id', selectedBranchId);
-
       const { data: rawData, error } = await query;
       if (error) throw error;
-
       const currentData = rawData.filter(f => new Date(f.created_at) >= currentStart);
       const prevData = rawData.filter(f => new Date(f.created_at) < currentStart && new Date(f.created_at) >= prevStart);
       setHasData(currentData.length > 0);
-
       const totalCurr = currentData.length;
       const totalPrev = prevData.length;
-      
       const isPending = (s) => ['new', 'pending', 'in_progress', 'escalated'].includes(s);
       const pendingCurr = currentData.filter(f => f.feedback_type === 'complaint' && isPending(f.status)).length;
       const pendingPrev = prevData.filter(f => f.feedback_type === 'complaint' && isPending(f.status)).length;
-      
       const resolvedCurr = currentData.filter(f => f.status === 'resolved').length;
       const resolvedPrev = prevData.filter(f => f.status === 'resolved').length;
-      
       const getAvg = (ds) => {
           const rated = ds.filter(f => f.rating || f.general_eval_rating).map(f => f.rating || f.general_eval_rating);
           if (rated.length === 0) return 0;
@@ -193,28 +187,23 @@ const AdminPanel = () => {
       };
       const ratingCurr = getAvg(currentData);
       const ratingPrev = getAvg(prevData);
-
       const totalDelta = calculateDelta(totalCurr, totalPrev, 'total');
       const pendingDelta = calculateDelta(pendingCurr, pendingPrev, 'complaints');
       const resolvedDelta = calculateDelta(resolvedCurr, resolvedPrev, 'resolved');
       const ratingDelta = calculateDelta(ratingCurr, ratingPrev, 'rating');
-
       setMetrics({
         total: { value: totalCurr, delta: totalDelta.val, type: totalDelta.type },
         complaints: { value: pendingCurr, delta: pendingDelta.val, type: pendingDelta.type },
         resolved: { value: resolvedCurr, delta: resolvedDelta.val, type: resolvedDelta.type },
         rating: { value: ratingCurr.toFixed(1), delta: ratingDelta.val, type: ratingDelta.type }
       });
-
-      const bucketCount = dateRange === 'Bugün' ? 24 : (dateRange === 'Son 7 Gün' ? 7 : 15);
-      
+      const bucketCount = dateRange === 'today' ? 24 : (dateRange === 'last7' ? 7 : 15);
       const generateSparkline = (filterFn) => {
           const daysMap = new Map();
           const startT = currentStart.getTime();
           const endT = new Date().getTime(); 
           const step = (endT - startT) / (bucketCount || 10);
           for (let i = 0; i < bucketCount; i++) daysMap.set(i, { count: 0, sum: 0 });
-          
           currentData.filter(filterFn).forEach(f => {
               const t = new Date(f.created_at).getTime();
               const idx = Math.min(Math.floor((t - startT) / step), bucketCount - 1);
@@ -226,7 +215,6 @@ const AdminPanel = () => {
           });
           return Array.from(daysMap.values()).map(v => ({ value: v.count }));
       };
-      
       const generateRatingSparkline = () => {
         const startT = currentStart.getTime();
         const endT = new Date().getTime();
@@ -244,20 +232,17 @@ const AdminPanel = () => {
         });
         return Array.from(daysMap.values()).map(v => ({ value: v.count > 0 ? Number((v.sum / v.count).toFixed(1)) : 0 }));
       };
-
       setSparklineData({
           total: generateSparkline(() => true),
           complaints: generateSparkline(f => f.feedback_type === 'complaint' && isPending(f.status)),
           resolved: generateSparkline(f => f.status === 'resolved'),
           rating: generateRatingSparkline()
       });
-
       const starCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
       currentData.forEach(f => {
           const r = f.rating || f.general_eval_rating;
           if (r && starCounts[r] !== undefined) starCounts[r]++;
       });
-
       setRatingDistribution([
           { name: '5 Yıldız', count: starCounts[5], fill: '#22c55e' }, 
           { name: '4 Yıldız', count: starCounts[4], fill: '#4ade80' }, 
@@ -265,19 +250,16 @@ const AdminPanel = () => {
           { name: '2 Yıldız', count: starCounts[2], fill: '#f87171' }, 
           { name: '1 Yıldız', count: starCounts[1], fill: '#ef4444' }, 
       ]);
-
       const typeCounts = {
         complaint: currentData.filter(f => f.feedback_type === 'complaint').length,
         suggestion: currentData.filter(f => f.feedback_type === 'suggestion').length,
         evaluation: currentData.filter(f => ['evaluation', 'rating', 'review'].includes(f.feedback_type)).length
       };
-
       setFeedbackTypeDistribution([
         { name: 'Şikayet', count: typeCounts.complaint, fill: '#ef4444' },
         { name: 'Öneri', count: typeCounts.suggestion, fill: '#3b82f6' },
         { name: 'Değerlendirme', count: typeCounts.evaluation, fill: '#eab308' }
       ]);
-
       let recentQuery = supabase.from('feedbacks').select(`
             id, created_at, status, feedback_type, message, rating,
             customer_name, customer_email, customer_phone, customer_profile_id,
@@ -293,24 +275,19 @@ const AdminPanel = () => {
             ),
             manager_note_updater:manager_note_updated_by (first_name, last_name)
         `).eq('business_id', businessId).order('created_at', { ascending: false }).limit(20);
-
       if (selectedBranchId !== 'all') recentQuery = recentQuery.eq('branch_id', selectedBranchId);
       const { data: recentData } = await recentQuery;
-
       if (recentData && recentData.length > 0) {
           const unlinkedFeedbacks = recentData.filter(f => !f.customer_profiles && f.customer_email);
           const emailsToCheck = [...new Set(unlinkedFeedbacks.map(f => f.customer_email))];
-
           if (emailsToCheck.length > 0) {
               const { data: profiles } = await supabase
                   .from('customer_profiles')
                   .select('id, name, email, flag_vip_customer, flag_sensitive_customer, admin_note, users(first_name, last_name)')
                   .in('email', emailsToCheck);
-
               if (profiles && profiles.length > 0) {
                   const profileMap = {};
                   profiles.forEach(p => { profileMap[p.email] = p; });
-
                   recentData.forEach(f => {
                       if (!f.customer_profiles && f.customer_email && profileMap[f.customer_email]) {
                           f.customer_profiles = profileMap[f.customer_email];
@@ -323,9 +300,7 @@ const AdminPanel = () => {
               }
           }
       }
-
       setRecentFeedbacks(recentData || []);
-
     } catch (error) {
       console.error("Dashboard data fetch error:", error);
       toast({ variant: "destructive", title: "Hata", description: "Veriler yüklenemedi." });
@@ -336,7 +311,6 @@ const AdminPanel = () => {
   }, [businessId, selectedBranchId, dateRange, getDateIntervals, toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
   useEffect(() => {
     if (!businessId) return;
     const channel = supabase.channel('admin-dashboard-realtime')
@@ -349,21 +323,17 @@ const AdminPanel = () => {
       setRecentFeedbacks(prev => prev.map(f => f.id === id ? { ...f, status: newStatus } : f));
       fetchData(); 
   };
-
   const handleFeedbackClick = (feedback) => {
     setSelectedFeedback(feedback);
     setIsDetailModalOpen(true);
   };
-
   const handleOpenCustomerProfile = (e, feedback) => {
     e.stopPropagation();
     const profileId = feedback.customer_profile_id || (feedback.customer_profiles?.id) || null;
     const profileEmail = getCustomerData(feedback, 'email');
-    
     setSelectedCustomer({ id: profileId, email: profileEmail });
     setCustomerModalOpen(true);
   };
-
   const handleFlagsUpdate = (customerId, newFlags) => {
       setRecentFeedbacks(prev => prev.map(f => {
           if (f.customer_profile_id === customerId || f.customer_profiles?.id === customerId) {
@@ -409,13 +379,11 @@ const AdminPanel = () => {
         <Tabs defaultValue="stars" className="w-full">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div><h2 className="text-white font-bold text-xl mb-1">Analiz Grafikleri</h2><p className="text-slate-400 text-sm">Müşteri geri bildirimlerinin detaylı dağılımı</p></div>
-            
             <TabsList className="bg-slate-800 border-slate-700 w-full grid grid-cols-2 h-auto p-1 sm:w-auto sm:flex sm:h-10">
               <TabsTrigger value="stars" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm"><Star className="w-4 h-4 mr-2" />Yıldız Dağılımı</TabsTrigger>
               <TabsTrigger value="types" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm"><MessageSquare className="w-4 h-4 mr-2" />Form Türleri</TabsTrigger>
             </TabsList>
           </div>
-
           <TabsContent value="stars" className="mt-0">
             <div className="w-full h-[250px] sm:h-[300px]">
               {loading ? (<div className="h-full w-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-slate-500 animate-spin" /></div>) : !hasData ? (
@@ -433,7 +401,6 @@ const AdminPanel = () => {
               )}
             </div>
           </TabsContent>
-
           <TabsContent value="types" className="mt-0">
             <div className="w-full h-[250px] sm:h-[300px]">
               {loading ? (<div className="h-full w-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-slate-500 animate-spin" /></div>) : !hasData ? (
@@ -477,7 +444,7 @@ const AdminPanel = () => {
                    const isEscalated = f.status === 'escalated';
                    const hasManagerNote = !!f.manager_note;
                    const hasCustomerProfileNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
-                   // 🟢 GÜNCELLENDİ: Mesaj veya Genel Yorum Kontrolü
+                   // 🟢 DÜZELTME: Mesaj veya Genel Yorum Kontrolü
                    const hasComment = (f.message && f.message.trim().length > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
 
                    return (
@@ -505,7 +472,7 @@ const AdminPanel = () => {
                              </div>
                            </div>
                            <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
-                              {/* 🟢 GÜNCELLENDİ: "Genel D." Flag'i Eklendi */}
+                              {/* 🟢 DÜZELTME: "Genel D." Flag'i Eklendi */}
                               {hasComment && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><FileText className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
                               {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
                               {hasManagerNote && (<div className="flex items-center justify-center w-6 h-6 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30"><StickyNote className="w-3.5 h-3.5 fill-current" /></div>)}

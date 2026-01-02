@@ -13,7 +13,6 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from "@/components/ui/use-toast";
 import { AnimatePresence, motion } from 'framer-motion';
-import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 
 const formatTimeAgo = (dateString) => {
   if (!dateString) return '';
@@ -48,10 +47,9 @@ const AdminMobileNavbar = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const notificationRef = useRef(null);
   
-  const [selectedFeedback, setSelectedFeedback] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Ref, hem butonu hem de dropdown'ı kapsamalı
+  const containerRef = useRef(null); 
 
   useEffect(() => {
     if (!user) return;
@@ -95,21 +93,28 @@ const AdminMobileNavbar = () => {
     };
   }, [user]);
 
+  // Click Outside Handler
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
         setShowNotifications(false);
       }
     };
+    
+    // Mobilde "touchstart" daha etkilidir
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, []);
 
   const handleBellClick = (e) => {
     e.stopPropagation(); 
-    setShowNotifications(!showNotifications);
+    e.preventDefault(); // Mobilde çift tetiklemeyi önler
+    setShowNotifications((prev) => !prev);
   };
 
   const handleViewAll = () => {
@@ -118,66 +123,32 @@ const AdminMobileNavbar = () => {
   };
 
   const handleNotificationClick = async (notification, e) => {
-    // 🟢 DÜZELTME: preventDefault kaldırıldı, sadece stopPropagation
-    if (e) {
-        e.stopPropagation();
-    }
-    
+    e.stopPropagation();
     setShowNotifications(false);
 
-    try {
-      const { data: feedbackData, error: feedbackError } = await supabase
-        .from('feedbacks')
-        .select(`
-          *, 
-          branches(branch_name_tr),
-          customer_profiles(
-            id, name, email, phone, customer_number, created_at, updated_at,
-            flag_vip_customer, flag_sensitive_customer, admin_note,
-            users:user_id(first_name, last_name)
-          ),
-          manager_note_updater:manager_note_updated_by(first_name, last_name)
-        `)
-        .eq('id', notification.related_id)
-        .single();
-      
-      if (feedbackError) {
-        console.error('Feedback fetch error:', feedbackError);
-        if (notification.related_id) {
-          navigate('/admin-panel/feedbacks', { 
-            state: { openFeedbackId: notification.related_id } 
-          });
-        }
-        return;
-      }
+    // 🟢 STRATEJİ DEĞİŞİKLİĞİ: 
+    // Mobilde modalı burada açmak yerine, Feedback sayfasına yönlendirip
+    // state ile ID gönderiyoruz. Sayfa açılınca modal otomatik tetikleniyor.
+    // Bu, z-index ve layout sorunlarını %100 çözer.
+    
+    navigate('/admin-panel/feedbacks', { 
+        state: { openFeedbackId: notification.related_id } 
+    });
 
-      setSelectedFeedback(feedbackData);
-      setIsModalOpen(true);
-    } catch (error) {
-      console.error('Error fetching feedback:', error);
-      toast({ 
-        variant: 'destructive', 
-        title: 'Hata', 
-        description: 'Geri bildirim detayı yüklenemedi.' 
-      });
-    }
-
+    // Okundu işaretleme (Arka planda)
     if (!notification.is_read) {
         setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
         setUnreadCount(prev => Math.max(0, prev - 1));
 
-        supabase
+        await supabase
             .from('notifications')
             .update({ is_read: true })
-            .eq('id', notification.id)
-            .then(({ error }) => {
-                if (error) console.error("Bildirim DB hatası:", error);
-            });
+            .eq('id', notification.id);
     }
   };
 
   const handleMarkAllRead = async (e) => {
-     if(e) e.stopPropagation();
+     e.stopPropagation();
      
      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
      setUnreadCount(0);
@@ -202,6 +173,7 @@ const AdminMobileNavbar = () => {
     <div className="fixed top-0 left-0 right-0 z-40 h-16 bg-slate-900 border-b border-slate-800 px-2 py-3 md:hidden shadow-lg">
       <div className="flex items-center justify-between h-full pl-16">
         
+        {/* QR Sayacı */}
         <div className="flex items-center gap-1.5 bg-teal-900/20 border border-teal-500/30 rounded-lg px-2 py-1 shrink-0 max-w-[100px]">
           <QrCode className="w-3.5 h-3.5 text-teal-400" />
           <span className="text-teal-400 font-medium text-xs truncate">
@@ -209,6 +181,7 @@ const AdminMobileNavbar = () => {
           </span>
         </div>
 
+        {/* Şube Seçimi */}
         <div className="flex-1 flex justify-center px-1 min-w-0">
            {branches.length > 1 && (
              <div className="w-full max-w-[130px]">
@@ -235,7 +208,8 @@ const AdminMobileNavbar = () => {
            )}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 relative" ref={notificationRef}>
+        {/* Bildirim Alanı (Container Ref buraya taşındı) */}
+        <div className="flex items-center gap-2 shrink-0 relative" ref={containerRef}>
           <Button onClick={handleBellClick} variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white p-0 relative">
             <Bell className="w-5 h-5" />
              {unreadCount > 0 && (
@@ -249,7 +223,6 @@ const AdminMobileNavbar = () => {
                 initial={{ opacity: 0, scale: 0.95, y: 10 }} 
                 animate={{ opacity: 1, scale: 1, y: 0 }} 
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                onClick={(e) => e.stopPropagation()} 
                 className="absolute top-full right-0 mt-2 w-[280px] sm:w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden"
               >
                 <div className="flex items-center justify-between px-3 py-2 bg-slate-750 border-b border-slate-700">
@@ -265,6 +238,8 @@ const AdminMobileNavbar = () => {
                        </button>
                     </div>
                 </div>
+                
+                {/* Scrollable Area */}
                 <div className="max-h-[300px] overflow-y-auto">
                     {notifications.length > 0 ? (
                         notifications.map(n => (
@@ -285,6 +260,7 @@ const AdminMobileNavbar = () => {
                         <div className="p-4 text-center text-xs text-slate-500">Bildirim yok</div>
                     )}
                 </div>
+                
                 <div className="p-2 border-t border-slate-700 bg-slate-750/50">
                     <Button onClick={handleViewAll} variant="ghost" size="sm" className="w-full text-xs h-8 text-teal-400 hover:text-teal-300 hover:bg-slate-700">
                         Tümünü Gör
@@ -295,14 +271,6 @@ const AdminMobileNavbar = () => {
           </AnimatePresence>
         </div>
       </div>
-
-      {isModalOpen && selectedFeedback && (
-        <FeedbackDetailModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          feedback={selectedFeedback} 
-        />
-      )}
     </div>
   );
 };

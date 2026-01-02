@@ -368,25 +368,25 @@ const LandingPage = () => {
   }];
   const sectorImages = [{
     title: "Kafe & Restaurant",
-    image: "https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/00b228896e74778d7ea795141629e88c.jpg"
+    image: "Kafe.jpg"
   }, {
     title: "Fırın & Pastane",
-    image: "https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/53daccc4abfaee03e6227fede51196a6.jpg"
+    image: "FırınPastane.jpg"
   }, {
     title: "Otel",
-    image: "https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/87aead0e55387b5abc28dc65079f2199.jpg"
+    image: "Otel.jpg"
   }, {
     title: "Güzellik Salonu",
-    image: "https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/c9c49e56c6088a98bba2bc8a2aa3df13.jpg"
+    image: "GüzellikSalonu.jpg"
   }, {
     title: "Klinik",
-    image: "https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/c2e5d7c59fbd4a9fc853622592803bce.jpg"
+    image: "Klinik.jpg"
   }, {
     title: "Perakende",
-    image: "https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/a9f46187ca33115417e8f48732c348c2.jpg"
+    image: "Perakende.jpg"
   }, {
     title: "Zincir İşletme & Franchise",
-    image: "https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/4eda6a2273fab532bbdae6f6bcb9e384.jpg"
+    image: "Frenchise.jpg"
   }];
   return <div className="min-h-screen bg-[#0f172a] text-slate-100 font-sans overflow-x-hidden relative selection:bg-primary/30">
       <Helmet>
@@ -402,7 +402,7 @@ const LandingPage = () => {
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer relative" onClick={scrollToTop}>
             <div className="w-12 h-12 flex items-center justify-center relative z-20">
-               <img src="https://horizons-cdn.hostinger.com/b40913c4-5edd-44d9-8d18-8065daa4eea8/0a0619d3f364e3caf7bb54245ea8f02d.png" alt="Vocalize Logo" className="h-12 w-auto object-contain brightness-200 grayscale-0" />
+               <img src="faviconbeyaz.png" alt="Vocalize Logo" className="h-12 w-auto object-contain brightness-200 grayscale-0" />
             </div>
            
             <div className="relative h-10 w-[120px] overflow-hidden">
@@ -486,7 +486,7 @@ const LandingPage = () => {
         }} transition={{
           duration: 10,
           ease: "easeOut"
-        }} src="https://horizons-cdn.hostinger.com/b40913c4-5edd-44d9-8d18-8065daa4eea8/abed37db8d2375a5e2a6643ba2cff8ec.png" alt="Background cafe interior" className="w-full h-full object-cover" />
+        }} src="3görsel.png" alt="Background cafe interior" className="w-full h-full object-cover" />
         </div>
        
         <div className="container mx-auto px-4 relative z-20 text-center">
@@ -639,7 +639,7 @@ const LandingPage = () => {
               <div className="bg-[#0B4F56] p-1 rounded-[2rem] shadow-2xl rotate-[-2deg] transform hover:rotate-0 transition-transform duration-500">
                  <div className="bg-white text-black p-8 rounded-[1.8rem] w-[300px] h-[420px] flex flex-col items-center justify-between relative overflow-hidden">
                     <div className="z-10 flex flex-col items-center mt-2">
-                      <img src="https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/vocalize_logo.main.png-UX6ij.png" alt="Logo" className="w-16 h-16 mb-2" />
+                      <img src="faviconmain.png" alt="Logo" className="w-16 h-16 mb-2" />
                       <h3 className="font-bold text-3xl tracking-tight">Vocalize</h3>
                     </div>
                    
@@ -1092,7 +1092,7 @@ const LandingPage = () => {
 
            <div className="flex justify-center gap-4">
               <div className="w-6 h-6 text-slate-600 hover:text-white cursor-pointer flex items-center justify-center">
-                <img src="https://horizons-cdn.hostinger.com/b40913c4-5edd-44d9-8d18-8065daa4eea8/0a0619d3f364e3caf7bb54245ea8f02d.png" alt="Vocalize Logo Footer" className="h-full w-full object-contain brightness-200 grayscale-0" />
+                <img src="faviconbeyaz.png" alt="Vocalize Logo Footer" className="h-full w-full object-contain brightness-200 grayscale-0" />
               </div>
               <div className="w-4 h-4 text-slate-600 hover:text-white cursor-pointer"><span className="sr-only">LinkedIn</span>in</div>
               <div className="w-4 h-4 text-slate-600 hover:text-white cursor-pointer"><span className="sr-only">Instagram</span>ig</div>

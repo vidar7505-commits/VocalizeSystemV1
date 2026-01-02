@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Lock, Eye, EyeOff } from 'lucide-react';
 
-const LOGO_URL = "https://horizons-cdn.hostinger.com/b40913c4-5edd-44d9-8d18-8065daa4eea8/0a0619d3f364e3caf7bb54245ea8f02d.png";
+const LOGO_URL = "faviconbeyaz.png";
 
 export default function UpdatePassword() {
   const [password, setPassword] = useState('');

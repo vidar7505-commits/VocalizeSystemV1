@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom'; // 🟢 useNavigate eklendi
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAdminContext } from '@/contexts/AdminContext';
 import { Button } from "@/components/ui/button";
@@ -22,12 +22,13 @@ const FeedbackManagement = () => {
   const { businessId, selectedBranchId } = useAdminContext();
   const { toast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate(); // 🟢 React Router navigasyon kancası
 
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Filtreler (Varsayılan last30)
+  // Filtreler
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [flagFilter, setFlagFilter] = useState('all');
@@ -45,21 +46,77 @@ const FeedbackManagement = () => {
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
+  // Highlight & Scroll
+  const [highlightedId, setHighlightedId] = useState(null);
+  const [targetScrollId, setTargetScrollId] = useState(null);
+  const itemRefs = useRef({});
+
   useEffect(() => { if (businessId) fetchFeedbacks(); }, [businessId, selectedBranchId]);
 
+  // 🟢 ADIM 1: Veri Yüklendiğinde URL'den Gelen İsteği Algıla
   useEffect(() => {
-    if (location.state?.openFeedbackId && feedbacks.length > 0) {
-      const targetFeedback = feedbacks.find(f => f.id === location.state.openFeedbackId);
-      if (targetFeedback) {
+    // Sadece veri varsa ve state doluysa çalışır
+    if (!loading && feedbacks.length > 0 && location.state?.openFeedbackId) {
+      const targetId = location.state.openFeedbackId;
+      const index = feedbacks.findIndex(f => f.id === targetId);
+
+      if (index !== -1) {
+        const targetFeedback = feedbacks[index];
+        
+        // 1. Modalı Aç
         setSelectedFeedback(targetFeedback);
         setIsDetailModalOpen(true);
+
+        // 2. Filtreleri TEMİZLE
+        setStatusFilter('all');
+        setTypeFilter('all');
+        setFlagFilter('all');
+        setDateFilter('all');
+        setShowNotesOnly(false);
+        setShowUrgentOnly(false);
+        setSearchQuery('');
+
+        // 3. Sayfayı Bul ve Git
+        const targetPage = Math.ceil((index + 1) / itemsPerPage);
+        setCurrentPage(targetPage);
+
+        // 4. Vurgula ve Kaydır
+        setHighlightedId(targetId);
+        setTargetScrollId(targetId);
+
+        // 5. 🟢 ÖNEMLİ: React Router State'ini Temizle
+        // Bu sayede "Yenile" butonuna basınca modal tekrar açılmaz.
+        navigate(location.pathname, { replace: true, state: {} });
       }
-      window.history.replaceState({}, document.title);
     }
-  }, [location.state?.openFeedbackId, feedbacks]);
+  }, [loading, feedbacks, location.state, navigate, location.pathname]); 
+
+  // 🟢 ADIM 2: Scroll İşlemi (DOM Render Bekleyerek)
+  useEffect(() => {
+    if (targetScrollId && itemRefs.current[targetScrollId]) {
+      const element = itemRefs.current[targetScrollId];
+      const timer = setTimeout(() => {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTargetScrollId(null);
+      }, 300);
+
+      // 4 saniye sonra vurguyu otomatik kaldır
+      const highlightTimer = setTimeout(() => setHighlightedId(null), 4000);
+
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(highlightTimer);
+      };
+    }
+  }, [targetScrollId, currentPage, loading]);
 
   const fetchFeedbacks = async () => {
     if (!businessId) return;
+    
+    // 🟢 "Yenile" butonuna basınca vurguyu manuel söndür
+    setHighlightedId(null);
+    setTargetScrollId(null);
+    
     setLoading(true);
     try {
       let query = supabase.from('feedbacks').select(`
@@ -91,6 +148,9 @@ const FeedbackManagement = () => {
 
   const filteredFeedbacks = useMemo(() => {
     return feedbacks.filter(f => {
+      // Highlight edilen kart filtrelerden etkilenmesin
+      if (f.id === highlightedId || f.id === targetScrollId) return true;
+
       const cName = getCustomerData(f, 'name') || '';
       const cEmail = getCustomerData(f, 'email') || '';
       const query = searchQuery.toLowerCase();
@@ -121,6 +181,8 @@ const FeedbackManagement = () => {
       if (flagFilter === 'vip' && !isVip) return false;
       if (flagFilter === 'sensitive' && !isSensitive) return false;
 
+      if (dateFilter === 'all') return true;
+
       const feedbackDate = new Date(f.created_at);
       const today = new Date();
       let startDate, endDate;
@@ -138,15 +200,18 @@ const FeedbackManagement = () => {
 
       return true;
     });
-  }, [feedbacks, searchQuery, statusFilter, typeFilter, flagFilter, dateFilter, showNotesOnly, showUrgentOnly]);
+  }, [feedbacks, searchQuery, statusFilter, typeFilter, flagFilter, dateFilter, showNotesOnly, showUrgentOnly, highlightedId, targetScrollId]);
 
   const totalPages = Math.ceil(filteredFeedbacks.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedFeedbacks = filteredFeedbacks.slice(startIndex, endIndex);
 
+  // Filtre değişince sayfa 1'e döner (Bildirim işlemi yoksa)
   useEffect(() => {
-    setCurrentPage(1);
+    if (!targetScrollId && !highlightedId) {
+        setCurrentPage(1);
+    }
   }, [searchQuery, statusFilter, typeFilter, flagFilter, dateFilter, showNotesOnly, showUrgentOnly]);
 
   const hasUrgentFeedbacks = useMemo(() => feedbacks.some(f => f.status === 'escalated'), [feedbacks]);
@@ -214,7 +279,7 @@ const FeedbackManagement = () => {
 
   return (
     <>
-      <div className="pt-24 md:pt-0 space-y-6 relative">
+      <div className="mx-auto max-w-7xl px-4 pt-32 md:px-6 md:pt-0 lg:px-8 space-y-6 relative">
         {hasUrgentFeedbacks && (
           <div className="bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.3)] shrink-0">
             <div className="flex items-center gap-3"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
@@ -263,9 +328,21 @@ const FeedbackManagement = () => {
               const isEscalated = f.status === 'escalated';
               const hasManagerNote = !!f.manager_note;
               const hasComment = (f.message && f.message.trim().length > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
+              
+              const isHighlighted = highlightedId === f.id;
 
               return (
-                <div key={f.id} onClick={() => handleFeedbackClick(f)} className={cn("group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
+                <div 
+                    key={f.id} 
+                    ref={(el) => { if (el) itemRefs.current[f.id] = el; }}
+                    onClick={() => handleFeedbackClick(f)} 
+                    className={cn(
+                        "group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border duration-500 ease-in-out",
+                        isHighlighted 
+                            ? "bg-teal-900/30 border-teal-500 shadow-[0_0_20px_rgba(20,184,166,0.25)] scale-[1.01] z-10 ring-2 ring-teal-500/50" 
+                            : (isEscalated ? "bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")
+                    )}
+                >
                   <div className="flex flex-col md:flex-row gap-4 items-start">
                     <div className="flex-1 w-full min-w-0 pr-0 md:pr-4">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -294,7 +371,6 @@ const FeedbackManagement = () => {
                       </div>
                       
                       <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
-                        {/* 🟢 DÜZELTME: "Genel D." */}
                         {hasComment && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><FileText className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
                         {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
                         {hasManagerNote && (<div className="flex items-center justify-center w-6 h-6 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30"><StickyNote className="w-3.5 h-3.5 fill-current" /></div>)}

@@ -191,7 +191,7 @@ const AdminSidebar = () => {
         <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800 bg-[#111827]">
           <div className="flex items-center gap-3">
              <img 
-                src="https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/a394cb1bd41831c36846246fa8755c18.png" 
+                src="/faviconmain.png" 
                 alt="Vocalize Logo" 
                 className="h-10 w-10 object-contain shrink-0"
                 style={{ filter: 'brightness(0) saturate(100%) invert(64%) sepia(88%) saturate(402%) hue-rotate(132deg) brightness(95%) contrast(91%)' }}

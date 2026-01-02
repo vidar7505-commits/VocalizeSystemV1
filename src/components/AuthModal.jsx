@@ -12,8 +12,8 @@ import { Loader2, Lock, Mail, Phone, User, Building2, UserCheck, ArrowLeft, KeyR
 import { TERMS_CONTENT, KVKK_CONTENT } from '@/constants/legalTexts';
 
 // ✅ CDN LOGO LİNKLERİ
-const CUSTOMER_LOGO_URL = "https://horizons-cdn.hostinger.com/b40913c4-5edd-44d9-8d18-8065daa4eea8/0a0619d3f364e3caf7bb54245ea8f02d.png"; // Beyaz
-const ADMIN_LOGO_URL = "https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/3d6a29cc801b191db966e74d52e248ab.png";    // Koyu Turkuaz
+const CUSTOMER_LOGO_URL = "faviconbeyaz.png"; // Beyaz
+const ADMIN_LOGO_URL = "faviconmain.png";    // Koyu Turkuaz
 
 const translateError = (errorMsg) => {
 	if (!errorMsg) return "Bir hata oluştu.";

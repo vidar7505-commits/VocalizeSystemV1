@@ -449,7 +449,7 @@ export default function FeedbackForm() {
 
   if (isLoading) return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center"><Loader2 className="h-12 w-12 text-orange-500 animate-spin" /></div>;
 
-  const logoUrl = "https://horizons-cdn.hostinger.com/6258d61f-4dee-43f7-9fc1-2388b2f01b03/13d4a6d0cb60030e231821b7e8ea74ad.png";
+  const logoUrl = "faviconbeyaz.png";
   const formInfo = getFormInfo(feedbackType, t.titles);
 
   return (

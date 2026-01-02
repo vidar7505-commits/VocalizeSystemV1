@@ -157,8 +157,9 @@ const KpiCard = ({ title, value, previousValue, icon: Icon, colorClass, suffix =
   );
 };
 
+// --- MAIN COMPONENT ---
 const DetailedAnalytics = () => {
-  const { businessId, selectedBranchId } = useAdminContext();
+  const { businessId, selectedBranchId, businessCreatedAt } = useAdminContext(); // businessCreatedAt EKLENDİ
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
@@ -167,10 +168,18 @@ const DetailedAnalytics = () => {
   const [trafficStats, setTrafficStats] = useState({ visits: 0, conversionRate: 0, qrCount: 0, webCount: 0 });
   const [trendViewMode, setTrendViewMode] = useState('total');
   
-  // Varsayılan tarih: Tüm Zamanlar
+  // 🟢 DÜZELTME: Varsayılan tarih "Tüm Zamanlar" (2020 yerine businessCreatedAt bekleniyor)
   const [dateRange, setDateRange] = useState({ from: new Date(2020, 0, 1), to: new Date() });
   const [preset, setPreset] = useState('allTime');
 
+  // İşletme tarihi yüklendiğinde "allTime" aralığını güncelle
+  useEffect(() => {
+    if (businessCreatedAt && preset === 'allTime') {
+      setDateRange({ from: new Date(businessCreatedAt), to: new Date() });
+    }
+  }, [businessCreatedAt, preset]);
+
+  // --- VERİ ÇEKME ---
   const fetchData = useCallback(async () => {
     if (!businessId || !dateRange?.from || !dateRange?.to) return;
     setLoading(true);
@@ -214,6 +223,7 @@ const DetailedAnalytics = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // --- KPI HESAPLAMA ---
   const kpi = useMemo(() => {
     const calc = (data) => {
       const total = data.length;
@@ -232,6 +242,7 @@ const DetailedAnalytics = () => {
     return { curr: calc(feedbacks), prev: calc(prevFeedbacks) };
   }, [feedbacks, prevFeedbacks]);
 
+  // --- TREND VERİSİ ---
   const trendData = useMemo(() => {
     const dailyMap = {};
     let currentDate = new Date(dateRange.from);
@@ -252,6 +263,7 @@ const DetailedAnalytics = () => {
     return Object.values(dailyMap);
   }, [feedbacks, dateRange]);
 
+  // --- MARKA vs DENEYIM ---
   const loyaltyComparison = useMemo(() => {
     let iSum = 0, iCount = 0, gSum = 0, gCount = 0;
     feedbacks.forEach(f => {
@@ -263,6 +275,7 @@ const DetailedAnalytics = () => {
     return { instant, general };
   }, [feedbacks]);
 
+  // --- DUYGU ANALİZİ ---
   const sentimentData = useMemo(() => {
     const valid = feedbacks.filter(f => f.general_eval_rating || f.rating);
     const total = valid.length || 1;
@@ -282,6 +295,7 @@ const DetailedAnalytics = () => {
     { name: 'Web/Link', value: trafficStats.webCount, color: COLORS.primary }
   ].filter(i => i.value > 0), [trafficStats]);
 
+  // --- ŞUBE PERFORMANS ---
   const branchLeaderboard = useMemo(() => {
     if (selectedBranchId !== 'all') return null;
     const map = {};
@@ -330,6 +344,7 @@ const DetailedAnalytics = () => {
           </div>
         </div>
 
+        {/* KPI KARTLARI */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
           <KpiCard title="Toplam Bildirim" value={kpi.curr.total} previousValue={kpi.prev.total} icon={Activity} colorClass="text-sky-400" />
           <KpiCard title="Sadakat Skoru" value={kpi.curr.loyaltyScore} previousValue={kpi.prev.loyaltyScore} icon={Heart} colorClass="text-pink-400" suffix="/100" />
@@ -342,6 +357,7 @@ const DetailedAnalytics = () => {
         ) : (
           <div className="space-y-8">
             
+            {/* TREND & MARKA ALGISI */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6 shadow-lg">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -404,6 +420,7 @@ const DetailedAnalytics = () => {
               </div>
             </div>
 
+            {/* TRAFİK ANALİZİ */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex flex-col">
                 <div className="flex items-center justify-between mb-6 z-10 relative">
@@ -444,6 +461,7 @@ const DetailedAnalytics = () => {
               </div>
             </div>
 
+            {/* ŞUBE PERFORMANS (SCROLLABLE YAPILDI - TOOLTIP Z-INDEX DÜZELTİLDİ) */}
             {selectedBranchId === 'all' && branchLeaderboard && (
               <div className="bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6 relative overflow-visible z-0">
                 <div className="flex items-center gap-2 mb-6"><LayoutList className="w-5 h-5 text-green-400" /><div><h3 className="text-white font-bold text-lg">Şube Performans Karşılaştırması</h3><p className="text-slate-400 text-xs">Operasyonel karşılaştırma tablosu.</p></div></div>
@@ -467,12 +485,12 @@ const DetailedAnalytics = () => {
                         const StatusIcon = status.icon;
                         return (
                           <tr key={i} className="hover:bg-slate-800/60 transition-colors group">
-                            {/* Satır İçi Tooltip (YUKARI AÇILACAK - Varsayılan) */}
+                            {/* Satır İçi Tooltip (AŞAĞI AÇILACAK) */}
                             <td className="px-6 py-4 border-r border-slate-800/50 relative">
                                 <div className={`group/tooltip relative flex items-center gap-2 px-2.5 py-1.5 rounded-full w-fit ${status.bg} border border-white/5 transition-transform hover:scale-105 cursor-help z-10`}>
                                     <StatusIcon className={`w-4 h-4 ${status.color}`} />
                                     <span className={`text-xs font-bold ${status.color}`}>{status.label}</span>
-                                    {/* Buradaki tooltip'i de InfoTooltip bileşeniyle değiştirebiliriz veya mevcut manuel yapıyı z-index ile koruyabiliriz. Mevcut yapı güzel, sadece z-index ve position önemli. */}
+                                    {/* Tooltip kutucuğu */}
                                     <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 w-48 p-3 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-[9999] pointer-events-none">
                                         <p className="text-[11px] text-white font-medium leading-snug">{status.reason}</p>
                                         <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-1 border-4 border-transparent border-r-slate-700"></div>
