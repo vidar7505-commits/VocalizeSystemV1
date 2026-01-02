@@ -128,45 +128,51 @@ export default function CustomerPanel() {
 
   const lastLoggedRef = useRef({ business: null, branch: null });
 
-  // 🟢 ANALYTICS (GÜNCELLENDİ: QR Kaybını Önleyen Sıkı Mantık)
+  // 🟢 ANALYTICS (GÜNCELLENDİ: QR ve WEB AYRILDI)
   useEffect(() => {
     if (!businessParam) return;
     
     const sessionKey = `logged_${businessParam}_${branchParam || 'x'}`;
     const alreadyLogged = sessionStorage.getItem(sessionKey);
 
-    // React Router'ın searchParams'ı bazen gecikebilir, native URL'den kontrol edelim
     const urlParams = new URLSearchParams(window.location.search);
-    const isFromQr = urlParams.get('from_qr') === 'true';
+    const isFromQr = urlParams.get('from_qr') === 'true' || urlParams.get('qr');
 
-    // 1. Durum: QR ile gelindi (veya URL'de qr param var)
+    // 🟢 DURUM 1: QR İLE GELDİ
     if (isFromQr && !alreadyLogged) {
-        supabase.from('page_views').insert({
+        // ✅ SADECE qr_scans TABLOSUNA YAZ
+        supabase.from('qr_scans').insert({
             business_id: businessParam,
             branch_id: branchParam || null,
-            source: 'qr', // Kesinlikle QR yaz
-            user_agent: navigator.userAgent
+            qr_code: urlParams.get('qr') || 'unknown',
+            user_agent: navigator.userAgent,
+            created_at: new Date().toISOString()
         }).then(({ error }) => {
             if (!error) {
                 sessionStorage.setItem(sessionKey, 'true');
+                
                 // URL'i temizle
                 const newUrl = new URL(window.location.href);
                 newUrl.searchParams.delete('from_qr');
                 newUrl.searchParams.delete('qr');
-                newUrl.searchParams.delete('guest'); // Guest parametresi kafa karıştırmasın
+                newUrl.searchParams.delete('guest');
                 window.history.replaceState(null, '', newUrl.toString());
             }
         });
     } 
-    // 2. Durum: Normal Web girişi (QR parametresi YOKSA ve Loglanmamışsa)
-    else if (!alreadyLogged && !isFromQr && !qrParam) {
+    // 🟢 DURUM 2: NORMAL WEB GİRİŞİ (QR parametresi YOK)
+    else if (!alreadyLogged && !isFromQr) {
+         // ✅ SADECE page_views TABLOSUNA YAZ
          supabase.from('page_views').insert({
             business_id: businessParam,
             branch_id: branchParam || null,
             source: 'web',
-            user_agent: navigator.userAgent
-        }).then(() => {
-             sessionStorage.setItem(sessionKey, 'true');
+            user_agent: navigator.userAgent,
+            created_at: new Date().toISOString()
+        }).then(({ error }) => {
+             if (!error) {
+                 sessionStorage.setItem(sessionKey, 'true');
+             }
         });
     }
   }, [businessParam, branchParam, qrParam, location.pathname]); 
@@ -481,13 +487,10 @@ export default function CustomerPanel() {
       setIsLoading(true);
       try {
         const guestMode = localStorage.getItem('vocalize_guest_mode');
-        // Başlangıçta misafir mi?
         let isGuestUser = guestParam === 'true' || guestMode === 'true';
 
-        // 🟢 EĞER AUTH USER VARSA, GUEST USER ASLA OLAMAZ
         if (authUser) {
             isGuestUser = false;
-            // Temizlik: Giriş yapıldıysa misafir flag'lerini temizle
             if (guestMode) localStorage.removeItem('vocalize_guest_mode');
         }
 
@@ -516,7 +519,6 @@ export default function CustomerPanel() {
           setSupportEmail('');
         }
 
-        // --- HAFIZA OKUMA VE GERİ YÜKLEME MANTIĞI ---
         let targetBusinessId = businessParam;
         let targetBranchId = branchParam;
 
@@ -540,7 +542,6 @@ export default function CustomerPanel() {
           }
         } 
         
-        // --- URL BOŞSA BİLE STATE'İ VE URL'İ ZORLA DOLDUR ---
         if (targetBusinessId) {
              setSelectedBusiness(targetBusinessId);
              fetchBranches(targetBusinessId);
@@ -557,7 +558,6 @@ export default function CustomerPanel() {
              if (isGuestUser) newParams.set('guest', 'true');
 
              if (location.search !== `?${newParams.toString()}`) {
-                 // İlk yüklemede replace kullanıyoruz ki history şişmesin
                  navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
              }
         }
@@ -580,7 +580,7 @@ export default function CustomerPanel() {
       const localIds = visitedBusinessesJson ? JSON.parse(visitedBusinessesJson) : [];
       allBusinessIds = [...localIds];
       
-      if (authUser?.email && !isGuest) { // authUser kullanıldı
+      if (authUser?.email && !isGuest) {
         const { data: dbBusinesses, error } = await supabase
           .from('customer_visited_businesses')
           .select('business_id')
@@ -749,7 +749,6 @@ export default function CustomerPanel() {
     }
   }, [qrParam, businessParam, branchParam, persistQrScan]);
 
-  // --- URL DEĞİŞİKLİĞİNİ DİNLEYEN BLOK ---
   useEffect(() => {
     if (isLoading && (businessParam || branchParam)) return;
 
@@ -799,7 +798,6 @@ export default function CustomerPanel() {
     }
   }, [businessParam, branchParam, selectedBusiness, selectedBranch, businessName, isLoading]);
 
-  // --- URL SENKRONİZASYONU ---
   useEffect(() => {
     if (isLoading) return;
 
@@ -827,7 +825,6 @@ export default function CustomerPanel() {
   }, [selectedBusiness, selectedBranch, language, isGuest, searchParams, location.pathname, isLoading]);
 
   const fetchStats = useCallback(async () => {
-    // 🟢 DÜZELTME: user yerine authUser kullanıldı (context'ten gelen taze veri)
     const activeUser = authUser || user;
     if (!activeUser?.email) return;
     
@@ -892,7 +889,6 @@ export default function CustomerPanel() {
   }, [user, authUser, t]);
 
   const fetchFeedbacks = useCallback(async () => {
-    // 🟢 DÜZELTME: user yerine authUser kullanıldı
     const activeUser = authUser || user;
     if (!activeUser?.email) return;
 
@@ -911,7 +907,6 @@ export default function CustomerPanel() {
   }, [user, authUser]);
 
   useEffect(() => {
-    // 🟢 DÜZELTME: "authUser" önceliği ile veri çekme tetikleyicisi
     if (authUser || (!isGuest && user)) {
       if(currentView === 'stats') {
         fetchStats();
@@ -969,22 +964,18 @@ export default function CustomerPanel() {
   const handleBranchSelectForFeedback = async (branchId) => {
     setShowBranchSelector(false);
     
-    // State güncelle
     setSelectedBusiness(selectedBusinessForBranches);
     setSelectedBranch(branchId);
     
-    // Hafızayı güncelle
     localStorage.setItem('vocalize_last_business', selectedBusinessForBranches);
     localStorage.setItem('vocalize_last_branch', branchId);
     
-    // URL parametrelerini hazırla
     const params = new URLSearchParams(searchParams);
     params.set('business', selectedBusinessForBranches);
     params.set('branch', branchId);
     params.set('lang', language);
     if (isGuest) params.set('guest', 'true');
     
-    // 🟢 KRİTİK: Push navigation ile geçmişi koruyoruz (Geri tuşu düzeltmesi)
     navigate(`${location.pathname}?${params.toString()}`);
   };
 
@@ -1483,7 +1474,7 @@ export default function CustomerPanel() {
                               </div>
                             </div>
                             <p className="text-sm text-slate-400 mb-2 break-words">📍 {feedback.branches?.branch_name_tr || t.unknown}</p>
-                            {feedback.rating && <div className="flex items-center gap-1 mb-2">{[...Array(5)].map((_, i) => <Star key={i} className={`h-4 w-4 ${i < feedback.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-600'}`} />)}</div>}
+                            {feedback.rating && <div className="flex items-center gap-0.5 mb-2">{[...Array(5)].map((_, i) => <Star key={i} className={`h-4 w-4 ${i < feedback.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-600'}`} />)}</div>}
                             {feedback.message && <p className="text-slate-300 text-sm line-clamp-2 break-words">{feedback.message}</p>}
                           </div>
                         </div>

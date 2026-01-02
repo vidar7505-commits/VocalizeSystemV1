@@ -66,7 +66,6 @@ const InfoTooltip = ({ text, side = "top" }) => (
     <Info className="w-3.5 h-3.5 text-slate-500 hover:text-slate-300 cursor-help" />
     <div className={`absolute left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-950 border border-slate-700 rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] pointer-events-none ${side === "bottom" ? "top-full mt-2" : "bottom-full mb-2"}`}>
       <p className="text-[11px] text-slate-300 leading-relaxed text-center font-medium">{text}</p>
-      {/* Ok Yönü Ayarlaması */}
       <div className={`absolute left-1/2 -translate-x-1/2 border-4 border-transparent ${side === "bottom" ? "bottom-full border-b-slate-700" : "top-full border-t-slate-700"}`}></div>
     </div>
   </div>
@@ -159,7 +158,7 @@ const KpiCard = ({ title, value, previousValue, icon: Icon, colorClass, suffix =
 
 // --- MAIN COMPONENT ---
 const DetailedAnalytics = () => {
-  const { businessId, selectedBranchId, businessCreatedAt } = useAdminContext(); // businessCreatedAt EKLENDİ
+  const { businessId, selectedBranchId, businessCreatedAt } = useAdminContext();
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
@@ -168,18 +167,16 @@ const DetailedAnalytics = () => {
   const [trafficStats, setTrafficStats] = useState({ visits: 0, conversionRate: 0, qrCount: 0, webCount: 0 });
   const [trendViewMode, setTrendViewMode] = useState('total');
   
-  // 🟢 DÜZELTME: Varsayılan tarih "Tüm Zamanlar" (2020 yerine businessCreatedAt bekleniyor)
   const [dateRange, setDateRange] = useState({ from: new Date(2020, 0, 1), to: new Date() });
   const [preset, setPreset] = useState('allTime');
 
-  // İşletme tarihi yüklendiğinde "allTime" aralığını güncelle
   useEffect(() => {
     if (businessCreatedAt && preset === 'allTime') {
       setDateRange({ from: new Date(businessCreatedAt), to: new Date() });
     }
   }, [businessCreatedAt, preset]);
 
-  // --- VERİ ÇEKME ---
+  // --- VERİ ÇEKME (🟢 GÜNCELLEME: QR ve WEB AYRILDI) ---
   const fetchData = useCallback(async () => {
     if (!businessId || !dateRange?.from || !dateRange?.to) return;
     setLoading(true);
@@ -194,24 +191,53 @@ const DetailedAnalytics = () => {
       let queryPrev = supabase.from('feedbacks').select('id, rating, general_eval_rating, status, feedback_type').eq('business_id', businessId).gte('created_at', startOfDay(prevFrom).toISOString()).lte('created_at', endOfDay(prevTo).toISOString());
       if (selectedBranchId !== 'all') queryPrev = queryPrev.eq('branch_id', selectedBranchId);
 
-      let trafficQuery = supabase.from('page_views').select('id, source, branch_id', { count: 'exact' }).eq('business_id', businessId).gte('created_at', startOfDay(dateRange.from).toISOString()).lte('created_at', endOfDay(dateRange.to).toISOString());
-      if (selectedBranchId !== 'all') trafficQuery = trafficQuery.eq('branch_id', selectedBranchId);
+      // 🟢 QR TRAFİĞİ: qr_scans tablosundan
+      let qrTrafficQuery = supabase
+        .from('qr_scans')
+        .select('id, branch_id', { count: 'exact' })
+        .eq('business_id', businessId)
+        .gte('created_at', startOfDay(dateRange.from).toISOString())
+        .lte('created_at', endOfDay(dateRange.to).toISOString());
 
-      const [resCurr, resPrev, resTraffic] = await Promise.all([queryCurr, queryPrev, trafficQuery]);
+      // 🟢 WEB TRAFİĞİ: page_views tablosundan (source='web' olanlar)
+      let webTrafficQuery = supabase
+        .from('page_views')
+        .select('id, branch_id', { count: 'exact' })
+        .eq('business_id', businessId)
+        .eq('source', 'web')
+        .gte('created_at', startOfDay(dateRange.from).toISOString())
+        .lte('created_at', endOfDay(dateRange.to).toISOString());
+
+      if (selectedBranchId !== 'all') {
+        qrTrafficQuery = qrTrafficQuery.eq('branch_id', selectedBranchId);
+        webTrafficQuery = webTrafficQuery.eq('branch_id', selectedBranchId);
+      }
+
+      const [resCurr, resPrev, resQrTraffic, resWebTraffic] = await Promise.all([
+        queryCurr, 
+        queryPrev, 
+        qrTrafficQuery, 
+        webTrafficQuery
+      ]);
+
       if (resCurr.error) throw resCurr.error;
       
       const currData = resCurr.data || [];
       setFeedbacks(currData);
       setPrevFeedbacks(resPrev.data || []);
 
-      const trafficData = resTraffic.data || [];
-      const totalVisits = resTraffic.count || 0;
-      
-      const qrCount = trafficData.filter(t => t.source === 'qr').length;
-      const webCount = trafficData.filter(t => t.source !== 'qr').length;
+      // 🟢 TRAFİK VERİSİ HESAPLAMA
+      const qrCount = resQrTraffic.count || 0;
+      const webCount = resWebTraffic.count || 0;
+      const totalVisits = qrCount + webCount;
       const actionCount = currData.length;
 
-      setTrafficStats({ visits: totalVisits, qrCount, webCount, conversionRate: totalVisits > 0 ? ((actionCount / totalVisits) * 100).toFixed(1) : 0 });
+      setTrafficStats({ 
+        visits: totalVisits, 
+        qrCount, 
+        webCount, 
+        conversionRate: totalVisits > 0 ? ((actionCount / totalVisits) * 100).toFixed(1) : 0 
+      });
 
     } catch (err) {
       console.error(err);
@@ -465,14 +491,12 @@ const DetailedAnalytics = () => {
             {selectedBranchId === 'all' && branchLeaderboard && (
               <div className="bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6 relative overflow-visible z-0">
                 <div className="flex items-center gap-2 mb-6"><LayoutList className="w-5 h-5 text-green-400" /><div><h3 className="text-white font-bold text-lg">Şube Performans Karşılaştırması</h3><p className="text-slate-400 text-xs">Operasyonel karşılaştırma tablosu.</p></div></div>
-                {/* overflow-visible ile tooltip'in kesilmesini engelliyoruz */}
                 <div className="overflow-x-auto pb-4 relative z-0">
                   <table className="w-full min-w-[800px] text-left text-sm text-slate-400 border-collapse">
                     <thead className="bg-[#0f172a] text-xs uppercase font-bold text-slate-500 tracking-wider">
                       <tr>
                         <th className="px-6 py-4 rounded-l-lg border-r border-slate-800/50">Durum</th>
                         <th className="px-6 py-4 border-r border-slate-800/50">Şube Adı</th>
-                        {/* Header'da Tooltip (AŞAĞI AÇILACAK - side="bottom") */}
                         <th className="px-6 py-4 text-center border-r border-slate-800/50"><div className="flex items-center justify-center gap-1">Sadakat Skoru <InfoTooltip text="Yıldız ve genel değerlendirme puanlarının 100 üzerinden ağırlıklı ortalaması." side="bottom" /></div></th>
                         <th className="px-6 py-4 text-center w-56 border-r border-slate-800/50">Pozitif / Nötr / Negatif</th>
                         <th className="px-6 py-4 text-center border-r border-slate-800/50">Çözüm Oranı</th>
@@ -485,12 +509,10 @@ const DetailedAnalytics = () => {
                         const StatusIcon = status.icon;
                         return (
                           <tr key={i} className="hover:bg-slate-800/60 transition-colors group">
-                            {/* Satır İçi Tooltip (AŞAĞI AÇILACAK) */}
                             <td className="px-6 py-4 border-r border-slate-800/50 relative">
                                 <div className={`group/tooltip relative flex items-center gap-2 px-2.5 py-1.5 rounded-full w-fit ${status.bg} border border-white/5 transition-transform hover:scale-105 cursor-help z-10`}>
                                     <StatusIcon className={`w-4 h-4 ${status.color}`} />
                                     <span className={`text-xs font-bold ${status.color}`}>{status.label}</span>
-                                    {/* Tooltip kutucuğu */}
                                     <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 w-48 p-3 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-[9999] pointer-events-none">
                                         <p className="text-[11px] text-white font-medium leading-snug">{status.reason}</p>
                                         <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-1 border-4 border-transparent border-r-slate-700"></div>
