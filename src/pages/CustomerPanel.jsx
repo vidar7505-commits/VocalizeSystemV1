@@ -128,33 +128,38 @@ export default function CustomerPanel() {
 
   const lastLoggedRef = useRef({ business: null, branch: null });
 
-  // 🟢 ANALYTICS (DÜZELTİLDİ: Tekrar eden kayıtları engeller)
+  // 🟢 ANALYTICS (GÜNCELLENDİ: QR Kaybını Önleyen Sıkı Mantık)
   useEffect(() => {
     if (!businessParam) return;
     
-    // Session storage key to prevent duplicate logs on refresh
     const sessionKey = `logged_${businessParam}_${branchParam || 'x'}`;
     const alreadyLogged = sessionStorage.getItem(sessionKey);
 
-    if (fromQrParam === 'true' && !alreadyLogged) {
-        // QR ile gelindi, henüz loglanmadı
+    // React Router'ın searchParams'ı bazen gecikebilir, native URL'den kontrol edelim
+    const urlParams = new URLSearchParams(window.location.search);
+    const isFromQr = urlParams.get('from_qr') === 'true';
+
+    // 1. Durum: QR ile gelindi (veya URL'de qr param var)
+    if (isFromQr && !alreadyLogged) {
         supabase.from('page_views').insert({
             business_id: businessParam,
             branch_id: branchParam || null,
-            source: 'qr',
+            source: 'qr', // Kesinlikle QR yaz
             user_agent: navigator.userAgent
         }).then(({ error }) => {
             if (!error) {
                 sessionStorage.setItem(sessionKey, 'true');
-                // URL'i temizle (Refresh yapınca tekrar saymasın)
-                const newParams = new URLSearchParams(searchParams);
-                newParams.delete('from_qr');
-                newParams.delete('qr');
-                window.history.replaceState(null, '', `${location.pathname}?${newParams.toString()}`);
+                // URL'i temizle
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.delete('from_qr');
+                newUrl.searchParams.delete('qr');
+                newUrl.searchParams.delete('guest'); // Guest parametresi kafa karıştırmasın
+                window.history.replaceState(null, '', newUrl.toString());
             }
         });
-    } else if (!alreadyLogged && !fromQrParam && !qrParam) {
-        // Normal web girişi
+    } 
+    // 2. Durum: Normal Web girişi (QR parametresi YOKSA ve Loglanmamışsa)
+    else if (!alreadyLogged && !isFromQr && !qrParam) {
          supabase.from('page_views').insert({
             business_id: businessParam,
             branch_id: branchParam || null,
@@ -164,7 +169,7 @@ export default function CustomerPanel() {
              sessionStorage.setItem(sessionKey, 'true');
         });
     }
-  }, [businessParam, branchParam, qrParam, fromQrParam, location.pathname, searchParams]);
+  }, [businessParam, branchParam, qrParam, location.pathname]); 
 
   const texts = {
     tr: {

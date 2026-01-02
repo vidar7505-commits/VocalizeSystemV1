@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom'; // 🟢 useNavigate eklendi
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAdminContext } from '@/contexts/AdminContext';
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ const FeedbackManagement = () => {
   const { businessId, selectedBranchId } = useAdminContext();
   const { toast } = useToast();
   const location = useLocation();
-  const navigate = useNavigate(); // 🟢 React Router navigasyon kancası
+  const navigate = useNavigate();
 
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +55,6 @@ const FeedbackManagement = () => {
 
   // 🟢 ADIM 1: Veri Yüklendiğinde URL'den Gelen İsteği Algıla
   useEffect(() => {
-    // Sadece veri varsa ve state doluysa çalışır
     if (!loading && feedbacks.length > 0 && location.state?.openFeedbackId) {
       const targetId = location.state.openFeedbackId;
       const index = feedbacks.findIndex(f => f.id === targetId);
@@ -84,24 +83,24 @@ const FeedbackManagement = () => {
         setHighlightedId(targetId);
         setTargetScrollId(targetId);
 
-        // 5. 🟢 ÖNEMLİ: React Router State'ini Temizle
-        // Bu sayede "Yenile" butonuna basınca modal tekrar açılmaz.
+        // 5. State'i temizle
         navigate(location.pathname, { replace: true, state: {} });
       }
     }
   }, [loading, feedbacks, location.state, navigate, location.pathname]); 
 
-  // 🟢 ADIM 2: Scroll İşlemi (DOM Render Bekleyerek)
+  // 🟢 ADIM 2: Scroll İşlemi (MOBİL İÇİN SÜRE 1200ms YAPILDI)
   useEffect(() => {
     if (targetScrollId && itemRefs.current[targetScrollId]) {
       const element = itemRefs.current[targetScrollId];
+      
+      // Mobilde DOM render süresi uzayabilir, 1200ms bekle
       const timer = setTimeout(() => {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setTargetScrollId(null);
-      }, 300);
+      }, 1200);
 
-      // 4 saniye sonra vurguyu otomatik kaldır
-      const highlightTimer = setTimeout(() => setHighlightedId(null), 4000);
+      const highlightTimer = setTimeout(() => setHighlightedId(null), 5000);
 
       return () => {
         clearTimeout(timer);
@@ -113,7 +112,7 @@ const FeedbackManagement = () => {
   const fetchFeedbacks = async () => {
     if (!businessId) return;
     
-    // 🟢 "Yenile" butonuna basınca vurguyu manuel söndür
+    // Yenileme sırasında vurguyu kaldır
     setHighlightedId(null);
     setTargetScrollId(null);
     
@@ -207,7 +206,6 @@ const FeedbackManagement = () => {
   const endIndex = startIndex + itemsPerPage;
   const paginatedFeedbacks = filteredFeedbacks.slice(startIndex, endIndex);
 
-  // Filtre değişince sayfa 1'e döner (Bildirim işlemi yoksa)
   useEffect(() => {
     if (!targetScrollId && !highlightedId) {
         setCurrentPage(1);

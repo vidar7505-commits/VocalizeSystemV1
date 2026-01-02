@@ -326,7 +326,7 @@ const DetailedAnalytics = () => {
   }, [feedbacks, selectedBranchId]);
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-slate-200 pb-32 font-sans selection:bg-sky-500/30">
+    <div className="min-h-screen bg-[#0f172a] text-slate-200 pb-32 pt-24 lg:pt-0 font-sans selection:bg-sky-500/30">
       <div className="mx-auto max-w-7xl px-4 pt-8 lg:px-8">
         
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
