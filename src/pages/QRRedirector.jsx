@@ -57,7 +57,6 @@ const QRRedirector = () => {
         // 3. Kullanıcı Oturumunu Kontrol Et
         const { data: { session } } = await supabase.auth.getSession();
 
-        // LocalStorage İşlemleri (Ziyaret geçmişi için)
         try {
             const existing = JSON.parse(localStorage.getItem('vocalize_visited_businesses') || '[]');
             if (!existing.includes(business_id)) {
@@ -68,29 +67,26 @@ const QRRedirector = () => {
             localStorage.setItem('vocalize_last_branch', branch_id);
         } catch (e) { console.warn("Storage Error", e); }
 
-        // --- YÖNLENDİRME MANTIĞI (GÜNCELLENDİ) ---
-
         if (session) {
           const userType = session.user?.user_metadata?.user_type;
           
-          // DURUM A: YÖNETİCİ İSE -> Çıkış Yap -> Ana Sayfaya Git (Login Modalı Aç)
+          // 🟢 GÜNCELLEME: Mesaj Profesyonelleştirildi
           if (userType === 'manager') {
             await supabase.auth.signOut({ scope: 'local' });
             
             toast({ 
-                title: "Yönetici Çıkışı", 
-                description: "Müşteri akışını test etmek için çıkış yapıldı. Lütfen giriş yapın veya misafir olarak devam edin.",
+                title: "Oturum Sonlandırıldı", 
+                description: "Müşteri paneline yönlendirilmek üzere Yönetici hesabınızdan çıkış yapılmıştır.",
                 duration: 4000 
             });
 
-            // Ana sayfaya yönlendir ve Login Modal'ını açtır (Parametreleri taşıyoruz)
             setTimeout(() => {
                 navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
-            }, 500);
+            }, 800);
             return;
           }
           
-          // DURUM B: MÜŞTERİ İSE -> Direkt Panele Git
+          // Müşteri ise
           const user_id = session.user.id;
           await supabase.from('customer_qr_scans').upsert({ 
               user_id, 
@@ -105,9 +101,7 @@ const QRRedirector = () => {
           navigate(`/customer-panel?business=${business_id}&branch=${branch_id}&from_qr=true`, { replace: true });
 
         } else {
-          // DURUM C: GİRİŞ YAPMAMIŞ (MİSAFİR) -> Ana Sayfaya Git (Login Modalı Aç)
-          // Direkt panele gitmek yerine, Ana Sayfaya gidip Login/Register modalını açıyoruz.
-          // Kullanıcı oradan "Misafir Devam Et" diyebilir veya giriş yapabilir.
+          // Misafir ise
           navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
         }
 

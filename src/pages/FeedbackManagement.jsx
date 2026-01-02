@@ -62,11 +62,9 @@ const FeedbackManagement = () => {
       if (index !== -1) {
         const targetFeedback = feedbacks[index];
         
-        // 1. Modalı Aç
         setSelectedFeedback(targetFeedback);
         setIsDetailModalOpen(true);
 
-        // 2. Filtreleri TEMİZLE
         setStatusFilter('all');
         setTypeFilter('all');
         setFlagFilter('all');
@@ -75,30 +73,33 @@ const FeedbackManagement = () => {
         setShowUrgentOnly(false);
         setSearchQuery('');
 
-        // 3. Sayfayı Bul ve Git
         const targetPage = Math.ceil((index + 1) / itemsPerPage);
         setCurrentPage(targetPage);
 
-        // 4. Vurgula ve Kaydır
         setHighlightedId(targetId);
         setTargetScrollId(targetId);
 
-        // 5. State'i temizle
         navigate(location.pathname, { replace: true, state: {} });
       }
     }
   }, [loading, feedbacks, location.state, navigate, location.pathname]); 
 
-  // 🟢 ADIM 2: Scroll İşlemi (MOBİL İÇİN SÜRE 1200ms YAPILDI)
+  // 🟢 ADIM 2: Scroll İşlemi (GÜÇLENDİRİLDİ)
   useEffect(() => {
+    // Eğer hedef ID varsa ama ref henüz oluşmadıysa (sayfa render ediliyor),
+    // bu useEffect render bitince tekrar çalışacak ve scroll'u yapacaktır.
+    
     if (targetScrollId && itemRefs.current[targetScrollId]) {
       const element = itemRefs.current[targetScrollId];
       
-      // Mobilde DOM render süresi uzayabilir, 1200ms bekle
+      // Hızlı deneme
+      element.scrollIntoView({ behavior: 'auto', block: 'center' });
+
+      // Mobil render gecikmesi için 2. deneme
       const timer = setTimeout(() => {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTargetScrollId(null);
-      }, 1200);
+        setTargetScrollId(null); // İşlem tamam, hedefi temizle
+      }, 500);
 
       const highlightTimer = setTimeout(() => setHighlightedId(null), 5000);
 
@@ -107,12 +108,11 @@ const FeedbackManagement = () => {
         clearTimeout(highlightTimer);
       };
     }
-  }, [targetScrollId, currentPage, loading]);
+  }, [targetScrollId, currentPage, loading]); // currentPage değişince DOM yenilenir, bu tetiklenir
 
   const fetchFeedbacks = async () => {
     if (!businessId) return;
     
-    // Yenileme sırasında vurguyu kaldır
     setHighlightedId(null);
     setTargetScrollId(null);
     
@@ -147,7 +147,6 @@ const FeedbackManagement = () => {
 
   const filteredFeedbacks = useMemo(() => {
     return feedbacks.filter(f => {
-      // Highlight edilen kart filtrelerden etkilenmesin
       if (f.id === highlightedId || f.id === targetScrollId) return true;
 
       const cName = getCustomerData(f, 'name') || '';
@@ -334,8 +333,9 @@ const FeedbackManagement = () => {
                     key={f.id} 
                     ref={(el) => { if (el) itemRefs.current[f.id] = el; }}
                     onClick={() => handleFeedbackClick(f)} 
+                    // 🟢 Scroll Margin Top Eklendi (Header altında kalmaması için)
                     className={cn(
-                        "group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border duration-500 ease-in-out",
+                        "group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border duration-500 ease-in-out scroll-mt-32",
                         isHighlighted 
                             ? "bg-teal-900/30 border-teal-500 shadow-[0_0_20px_rgba(20,184,166,0.25)] scale-[1.01] z-10 ring-2 ring-teal-500/50" 
                             : (isEscalated ? "bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")
