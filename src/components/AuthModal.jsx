@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -19,10 +19,11 @@ const translateError = (errorMsg) => {
   if (errorMsg.includes("Invalid login credentials")) return "E-posta veya şifre hatalı.";
   if (errorMsg.includes("User already registered")) return "Bu e-posta adresi zaten kayıtlı.";
   if (errorMsg.includes("Password should be at least")) return "Şifre en az 6 karakter olmalıdır.";
+  if (errorMsg.includes("manager code")) return "Geçersiz veya kullanılmış yönetici kodu.";
   return "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.";
 };
 
-// ✅ FIX: Separate Legal Modal Component (No nesting conflict!)
+// ✅ Legal Modal Component
 function LegalModal({ open, onOpenChange, activeLegalTab, setActiveLegalTab, legalAccepted, setLegalAccepted }) {
   if (!open) return null;
 
@@ -184,6 +185,9 @@ export default function AuthModal({
     setIsLoading(true);
 
     try {
+      // --------------------------------------------------------
+      // GİRİŞ İŞLEMİ (LOGIN)
+      // --------------------------------------------------------
       if (activeTab === 'login') {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: formData.email,
@@ -206,7 +210,12 @@ export default function AuthModal({
             navigate('/customer-panel', { replace: true });
           }
         }, 300);
-      } else {
+      } 
+      // --------------------------------------------------------
+      // KAYIT İŞLEMİ (REGISTER)
+      // --------------------------------------------------------
+      else {
+        // Validasyonlar
         if (!legalAccepted) {
           toast({ title: "Hata", description: "Lütfen yasal metinleri onaylayınız.", variant: "destructive" });
           setIsLoading(false);
@@ -233,6 +242,8 @@ export default function AuthModal({
 
         const { first, last } = splitName(formData.fullName);
 
+        // Supabase Auth SignUp
+        // data.session dolu dönerse, email doğrulaması kapalıdır veya auto-confirm açıktır.
         const { data: signupData, error: signupError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -243,6 +254,7 @@ export default function AuthModal({
               last_name: last,
               phone: formData.phone,
               user_type: activeRole,
+              // Manager kodu varsa gönderiyoruz, trigger bunu yakalayıp işliyor.
               ...(activeRole === 'manager' && { manager_code: formData.managerCode })
             }
           }
@@ -250,22 +262,36 @@ export default function AuthModal({
 
         if (signupError) throw signupError;
 
-        if (activeRole === 'manager' && formData.managerCode) {
-          const { error: updateError } = await supabase
-            .from('businesses')
-            .update({ manager_email: formData.email })
-            .eq('manager_code', formData.managerCode);
+        // 🟢 DÜZELTME: 400 Hatasına sebep olan 'update businesses' bloğu SİLİNDİ.
+        // Veritabanı işlemleri artık SQL Trigger (handle_auth_user_signup) tarafından yapılıyor.
 
-          if (updateError) throw updateError;
+        // 🟢 DÜZELTME: Otomatik Giriş Kontrolü
+        if (signupData.session) {
+          // Eğer session varsa (oturum açıldıysa) direkt yönlendir
+          toast({ 
+            title: "Kayıt Başarılı", 
+            description: "Hesabınız oluşturuldu, yönlendiriliyorsunuz...",
+            className: "bg-teal-600 text-white border-none"
+          });
+
+          onClose();
+          
+          setTimeout(() => {
+            if (activeRole === 'manager') {
+              navigate('/admin-panel', { replace: true });
+            } else {
+              navigate('/customer-panel', { replace: true });
+            }
+          }, 800);
+        } else {
+          // Session yoksa (Supabase email doğrulaması zorunlu kılıyorsa)
+          toast({ 
+            title: "Kayıt Başarılı", 
+            description: "Lütfen e-posta adresinizi doğrulayın. Gelen kutunuzu kontrol edin.",
+            className: "bg-teal-600 text-white border-none"
+          });
+          onClose();
         }
-
-        toast({ 
-          title: "Kayıt Başarılı", 
-          description: "Lütfen e-posta adresinizi doğrulayın. Gelen kutunuzu kontrol edin.",
-          className: "bg-teal-600 text-white border-none"
-        });
-
-        onClose();
       }
     } catch (error) {
       toast({ title: "Hata", description: translateError(error.message), variant: "destructive" });
@@ -274,7 +300,6 @@ export default function AuthModal({
     }
   };
 
-  // ✅ Early return if modal is closed
   if (!isOpen) return null;
 
   return (
@@ -457,7 +482,6 @@ export default function AuthModal({
         </DialogContent>
       </Dialog>
 
-      {/* ✅ FIX: Legal Modal Rendered Separately (No nesting conflicts!) */}
       <LegalModal 
         open={showLegalModal}
         onOpenChange={setShowLegalModal}
