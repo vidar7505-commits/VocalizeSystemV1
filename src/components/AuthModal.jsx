@@ -114,9 +114,17 @@ export default function AuthModal({
 
   const validatePhone = (phone) => /^05\d{9}$/.test(phone.replace(/\s/g, ''));
 
+  const validateFullName = (fullName) => {
+    const parts = fullName.trim().split(' ').filter(p => p.length > 0);
+    return parts.length >= 2;
+  };
+
+  const validatePassword = (password) => {
+    return password.length >= 6 && password.length <= 12;
+  };
+
   const splitName = (fullName) => {
-    const parts = fullName.trim().split(' ');
-    if (parts.length === 1) return { first: parts[0], last: '' };
+    const parts = fullName.trim().split(' ').filter(p => p.length > 0);
     const last = parts.pop();
     const first = parts.join(' ');
     return { first, last };
@@ -205,8 +213,20 @@ export default function AuthModal({
           return;
         }
 
+        if (!validateFullName(formData.fullName)) {
+          toast({ title: "Hata", description: "Lütfen isim ve soyisim giriniz (örn: Emir Yılmaz).", variant: "destructive" });
+          setIsLoading(false);
+          return;
+        }
+
+        if (!validatePassword(formData.password)) {
+          toast({ title: "Hata", description: "Şifre 6-12 karakter arasında olmalıdır.", variant: "destructive" });
+          setIsLoading(false);
+          return;
+        }
+
         if (!validatePhone(formData.phone)) {
-          toast({ title: "Hata", description: "Geçerli bir telefon numarası giriniz.", variant: "destructive" });
+          toast({ title: "Hata", description: "Telefon numarası 05xxxxxxxxx formatında olmalıdır (11 haneli).", variant: "destructive" });
           setIsLoading(false);
           return;
         }
@@ -263,7 +283,7 @@ export default function AuthModal({
         <DialogContent className="bg-[#0f172a] border-slate-700 text-white sm:max-w-md p-0 overflow-hidden">
           <div className="relative">
             {/* Header */}
-            <div className="relative h-32 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center overflow-hidden">
+            <div className="relative h-40 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center overflow-hidden">
               <div className="absolute inset-0 opacity-20">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/20 rounded-full blur-2xl" />
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-teal-500/20 rounded-full blur-2xl" />
@@ -271,7 +291,10 @@ export default function AuthModal({
               <img 
                 src={activeRole === 'customer' ? CUSTOMER_LOGO_URL : ADMIN_LOGO_URL}
                 alt="Logo"
-                className="h-12 relative z-10"
+                className="h-20 relative z-10"
+                style={activeRole === 'manager' ? {
+                  filter: 'brightness(0) saturate(100%) invert(64%) sepia(88%) saturate(402%) hue-rotate(132deg) brightness(95%) contrast(91%)'
+                } : {}}
               />
             </div>
 
@@ -338,7 +361,7 @@ export default function AuthModal({
                         <div className="relative">
                           <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                           <Input 
-                            name="fullName" placeholder="İsim Soyisim" 
+                            name="fullName" placeholder="İsim Soyisim (örn: Emir Yılmaz)" 
                             className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`} 
                             value={formData.fullName} onChange={handleInputChange} required />
                         </div>
@@ -374,9 +397,9 @@ export default function AuthModal({
                       <div className="relative">
                         <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                         <Input 
-                          name="password" type="password" placeholder="Şifre" 
+                          name="password" type="password" placeholder="Şifre (6-12 karakter)" 
                           className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`} 
-                          value={formData.password} onChange={handleInputChange} required />
+                          value={formData.password} onChange={handleInputChange} required minLength="6" maxLength="12" />
                       </div>
                     </div>
 
