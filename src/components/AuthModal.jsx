@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,25 +11,71 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Lock, Mail, Phone, User, Building2, UserCheck, ArrowLeft, KeyRound } from 'lucide-react';
 import { TERMS_CONTENT, KVKK_CONTENT } from '@/constants/legalTexts';
 
-// ✅ CDN LOGO LİNKLERİ
-const CUSTOMER_LOGO_URL = "faviconbeyaz.png"; // Beyaz
-const ADMIN_LOGO_URL = "faviconmain.png";    // Koyu Turkuaz
+const CUSTOMER_LOGO_URL = "faviconbeyaz.png";
+const ADMIN_LOGO_URL = "faviconmain.png";
 
 const translateError = (errorMsg) => {
-	if (!errorMsg) return "Bir hata oluştu.";
-	if (errorMsg.includes("Invalid login credentials")) return "E-posta veya şifre hatalı.";
-	if (errorMsg.includes("User already registered")) return "Bu e-posta adresi zaten kayıtlı.";
-	if (errorMsg.includes("Password should be at least")) return "Şifre en az 6 karakter olmalıdır.";
-	return "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.";
+  if (!errorMsg) return "Bir hata oluştu.";
+  if (errorMsg.includes("Invalid login credentials")) return "E-posta veya şifre hatalı.";
+  if (errorMsg.includes("User already registered")) return "Bu e-posta adresi zaten kayıtlı.";
+  if (errorMsg.includes("Password should be at least")) return "Şifre en az 6 karakter olmalıdır.";
+  return "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.";
 };
 
+// ✅ FIX: Separate Legal Modal Component (No nesting conflict!)
+function LegalModal({ open, onOpenChange, activeLegalTab, setActiveLegalTab, legalAccepted, setLegalAccepted }) {
+  if (!open) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-[#0f172a] border-slate-700 text-white sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-white">Yasal Bilgilendirme</h3>
+        </div>
+        <Tabs value={activeLegalTab} onValueChange={setActiveLegalTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-slate-800">
+            <TabsTrigger value="terms" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+              Kullanım Koşulları
+            </TabsTrigger>
+            <TabsTrigger value="kvkk" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+              KVKK & Gizlilik
+            </TabsTrigger>
+          </TabsList>
+          <div className="mt-4 p-4 bg-slate-900/50 rounded-lg border border-slate-800 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap font-sans text-justify max-h-96 overflow-y-auto">
+            {activeLegalTab === 'terms' ? TERMS_CONTENT : KVKK_CONTENT}
+          </div>
+        </Tabs>
+        <div className="flex justify-end gap-2 mt-6">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)} 
+            className="border-slate-600 hover:bg-slate-800 text-white hover:text-white"
+          >
+            Kapat
+          </Button>
+          <Button 
+            onClick={() => {
+              setLegalAccepted(true);
+              onOpenChange(false);
+            }} 
+            className="bg-teal-600 hover:bg-teal-700 text-white"
+          >
+            Okudum, Onaylıyorum
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ✅ Main AuthModal
 export default function AuthModal({ 
   isOpen, 
   onClose, 
   defaultTab = "login", 
   defaultRole = "customer", 
   showGuestOption = false,
-  onGuestContinue // QRRedirector için eklendi
+  onGuestContinue
 }) {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [viewMode, setViewMode] = useState('auth');
@@ -83,11 +129,8 @@ export default function AuthModal({
 
   const handleGuestLogin = () => {
     if (onGuestContinue) {
-      // QRRedirector'dan çağrılıyorsa, kendi fonksiyonunu kullan
       onGuestContinue();
     } else {
-      // Normal kullanım (LandingPage veya başka yerlerden)
-      
       loginAsGuest();
       localStorage.setItem('vocalize_guest_mode', 'true');
       
@@ -97,12 +140,9 @@ export default function AuthModal({
         className: "bg-teal-600 text-white border-none"
       });
       
-      // Modal'ı kapat ve navigate yap
       onClose();
       
-      // Navigate'i biraz geciktir (modal kapanma animasyonu için)
       setTimeout(() => {
-        
         navigate('/customer-panel?guest=true', { replace: true });
       }, 300);
     }
@@ -116,7 +156,6 @@ export default function AuthModal({
     }
     setIsLoading(true);
     try {
-      // ✅ DÜZELTİLDİ: /reset-password -> /update-password
       const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
         redirectTo: window.location.origin + '/update-password',
       });
@@ -145,141 +184,68 @@ export default function AuthModal({
 
         if (error) throw error;
 
-        const userType = data.user.user_metadata.user_type;
-
-        if (activeRole === 'customer' && userType !== 'customer') {
-          await supabase.auth.signOut();
-          throw new Error("Bu bir Yönetici hesabıdır. Lütfen Yönetici Girişi yapınız.");
-        }
-        if (activeRole === 'manager' && userType !== 'manager') {
-          await supabase.auth.signOut();
-          throw new Error("Bu bir Müşteri hesabıdır. Lütfen Müşteri Girişi yapınız.");
-        }
-        
-        localStorage.removeItem('vocalize_guest_mode');
-
-        toast({
-          title: "Giriş Başarılı",
-          description: `Hoş geldiniz${data.user.user_metadata.first_name ? ', ' + data.user.user_metadata.first_name : ''}!`,
+        toast({ 
+          title: "Giriş Başarılı", 
+          description: "Hoş geldiniz! Yönlendiriliyorsunuz...",
           className: "bg-teal-600 text-white border-none"
         });
 
         onClose();
-
-        if (userType === 'customer') navigate('/customer-panel', { replace: true });
-        if (userType === 'manager') navigate('/admin-panel', { replace: true });
-
+        setTimeout(() => {
+          if (data.user?.user_metadata?.user_type === 'manager') {
+            navigate('/admin-panel', { replace: true });
+          } else {
+            navigate('/customer-panel', { replace: true });
+          }
+        }, 300);
       } else {
         if (!legalAccepted) {
-          toast({ title: "Hata", description: "Kullanım koşullarını ve KVKK metnini kabul etmelisiniz.", variant: "destructive" });
+          toast({ title: "Hata", description: "Lütfen yasal metinleri onaylayınız.", variant: "destructive" });
           setIsLoading(false);
           return;
         }
 
-        const phone = formData.phone.replace(/\s/g, '');
-        if (!validatePhone(phone)) {
-          toast({ title: "Hata", description: "Geçersiz telefon numarası. Format: 05XXXXXXXXX", variant: "destructive" });
+        if (!validatePhone(formData.phone)) {
+          toast({ title: "Hata", description: "Geçerli bir telefon numarası giriniz.", variant: "destructive" });
           setIsLoading(false);
           return;
         }
 
-        if (activeRole === 'manager') {
-          if (!formData.managerCode.startsWith('MGR_')) {
-            toast({ title: "Hata", description: "Geçersiz yönetici kodu formatı.", variant: "destructive" });
-            setIsLoading(false);
-            return;
-          }
+        const { first, last } = splitName(formData.fullName);
 
-          const { data: managerData, error: managerError } = await supabase
-            .from('managers')
-            .select('business_id, business_name')
-            .eq('manager_code', formData.managerCode)
-            .maybeSingle();
-
-          if (managerError || !managerData) {
-            toast({ title: "Hata", description: "Geçersiz yönetici kodu.", variant: "destructive" });
-            setIsLoading(false);
-            return;
-          }
-
-          const { first, last } = splitName(formData.fullName);
-
-          const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: formData.email,
-            password: formData.password,
-            options: {
-              data: {
-                first_name: first,
-                last_name: last,
-                phone: phone,
-                user_type: 'manager',
-                manager_code: formData.managerCode,
-                business_id: managerData.business_id
-              }
+        const { data: signupData, error: signupError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: formData.fullName,
+              first_name: first,
+              last_name: last,
+              phone: formData.phone,
+              user_type: activeRole,
+              ...(activeRole === 'manager' && { manager_code: formData.managerCode })
             }
-          });
+          }
+        });
 
-          if (authError) throw authError;
+        if (signupError) throw signupError;
 
-          const { error: profileError } = await supabase.from('manager_profiles').insert({
-            user_id: authData.user.id,
-            name: formData.fullName,
-            email: formData.email,
-            phone: phone,
-            manager_code: formData.managerCode,
-            business_id: managerData.business_id
-          });
+        if (activeRole === 'manager' && formData.managerCode) {
+          const { error: updateError } = await supabase
+            .from('businesses')
+            .update({ manager_email: formData.email })
+            .eq('manager_code', formData.managerCode);
 
-          if (profileError) console.warn('Profile creation warning:', profileError);
-
-          toast({
-            title: "Kayıt Başarılı",
-            description: "E-postanızı doğrulayın ve giriş yapın.",
-            className: "bg-teal-600 text-white border-none"
-          });
-
-          setActiveTab('login');
-          setFormData({ fullName: '', email: '', phone: '', password: '', managerCode: '' });
-          setLegalAccepted(false);
-
-        } else {
-          const { first, last } = splitName(formData.fullName);
-
-          const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: formData.email,
-            password: formData.password,
-            options: {
-              data: {
-                first_name: first,
-                last_name: last,
-                phone: phone,
-                user_type: 'customer'
-              }
-            }
-          });
-
-          if (authError) throw authError;
-
-          const { error: profileError } = await supabase.from('customer_profiles').insert({
-            user_id: authData.user.id,
-            name: formData.fullName,
-            email: formData.email,
-            phone: phone
-          });
-
-          if (profileError) console.warn('Profile creation warning:', profileError);
-
-          localStorage.removeItem('vocalize_guest_mode');
-
-          toast({
-            title: "Kayıt Başarılı",
-            description: `Hoş geldiniz ${first}! Yönlendiriliyorsunuz...`,
-            className: "bg-teal-600 text-white border-none"
-          });
-
-          onClose();
-          navigate('/customer-panel', { replace: true });
+          if (updateError) throw updateError;
         }
+
+        toast({ 
+          title: "Kayıt Başarılı", 
+          description: "Lütfen e-posta adresinizi doğrulayın. Gelen kutunuzu kontrol edin.",
+          className: "bg-teal-600 text-white border-none"
+        });
+
+        onClose();
       }
     } catch (error) {
       toast({ title: "Hata", description: translateError(error.message), variant: "destructive" });
@@ -288,43 +254,50 @@ export default function AuthModal({
     }
   };
 
+  // ✅ Early return if modal is closed
+  if (!isOpen) return null;
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-md bg-slate-900 border-slate-800 text-white max-h-[95vh] overflow-y-auto p-0">
-          <div className="p-6 md:p-8">
-            <div className="flex flex-col items-center mb-6 md:mb-8">
+        <DialogContent className="bg-[#0f172a] border-slate-700 text-white sm:max-w-md p-0 overflow-hidden">
+          <div className="relative">
+            {/* Header */}
+            <div className="relative h-32 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center overflow-hidden">
+              <div className="absolute inset-0 opacity-20">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/20 rounded-full blur-2xl" />
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-teal-500/20 rounded-full blur-2xl" />
+              </div>
               <img 
-                src={activeRole === 'customer' ? CUSTOMER_LOGO_URL : CUSTOMER_LOGO_URL} 
-                alt="Vocalize" 
-                className="h-12 md:h-16 w-auto mb-4 object-contain transition-all duration-300"
-                style={activeRole === 'manager' ? { filter: 'brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(152deg) brightness(97%) contrast(101%)' } : {}}
+                src={activeRole === 'customer' ? CUSTOMER_LOGO_URL : ADMIN_LOGO_URL}
+                alt="Logo"
+                className="h-12 relative z-10"
               />
             </div>
 
-            <div className="w-full">
+            {/* Content */}
+            <div className="p-6 space-y-4">
               {viewMode === 'forgot-password' ? (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <button type="button" onClick={() => setViewMode('auth')} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors mb-4">
-                    <ArrowLeft className="h-4 w-4" /> Geri Dön
+                  <button 
+                    type="button"
+                    onClick={() => setViewMode('auth')} 
+                    className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors mb-2"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Geri Dön
                   </button>
-                  <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-2">Şifremi Unuttum</h2>
-                  <p className="text-slate-400 text-sm text-center mb-6">E-posta adresinize şifre sıfırlama bağlantısı göndereceğiz.</p>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300 ml-1">E-posta Adresi</label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                      <Input 
-                        name="email" 
-                        type="email" 
-                        placeholder="ornek@email.com" 
-                        value={formData.email} 
-                        onChange={handleInputChange} 
-                        className="pl-10 h-11 bg-slate-800 border-slate-700 text-white focus-visible:ring-teal-500 transition-all" 
-                        required 
-                      />
-                    </div>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <Input 
+                      name="email" 
+                      type="email" 
+                      placeholder="E-posta Adresi" 
+                      value={formData.email} 
+                      onChange={handleInputChange} 
+                      className="pl-10 h-11 bg-slate-800 border-slate-700 text-white focus-visible:ring-teal-500 transition-all" 
+                      required 
+                    />
                   </div>
 
                   <Button 
@@ -332,7 +305,17 @@ export default function AuthModal({
                     disabled={isLoading} 
                     className="w-full h-11 bg-teal-600 hover:bg-teal-700 text-white font-bold transition-all"
                   >
-                    {isLoading ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" /> Gönderiliyor...</>) : (<><KeyRound className="h-4 w-4 mr-2" /> Sıfırlama Bağlantısı Gönder</>)}
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" /> 
+                        Gönderiliyor...
+                      </>
+                    ) : (
+                      <>
+                        <KeyRound className="h-4 w-4 mr-2" /> 
+                        Sıfırlama Bağlantısı Gönder
+                      </>
+                    )}
                   </Button>
                 </form>
               ) : (
@@ -417,7 +400,14 @@ export default function AuthModal({
                     )}
 
                     <Button type="submit" disabled={isLoading} className={`w-full h-11 text-white font-bold py-2 mt-6 transition-all duration-200 ${activeRole === 'customer' ? 'bg-orange-600 hover:bg-orange-700' : 'bg-teal-600 hover:bg-teal-700'}`}>
-                      {isLoading ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" />{activeTab === 'login' ? 'Giriş Yapılıyor...' : 'Hesap Oluşturuluyor...'}</>) : (activeTab === 'login' ? 'Giriş Yap' : 'Hesap Oluştur')}
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          {activeTab === 'login' ? 'Giriş Yapılıyor...' : 'Hesap Oluşturuluyor...'}
+                        </>
+                      ) : (
+                        activeTab === 'login' ? 'Giriş Yap' : 'Hesap Oluştur'
+                      )}
                     </Button>
 
                     {showGuestOption && activeRole === 'customer' && (
@@ -443,25 +433,16 @@ export default function AuthModal({
           </div>
         </DialogContent>
       </Dialog>
-      
-      <Dialog open={showLegalModal} onOpenChange={setShowLegalModal}>
-        <DialogContent className="bg-[#0f172a] border-slate-700 text-white sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
-           <div className="mb-4"><h3 className="text-xl font-bold text-white">Yasal Bilgilendirme</h3></div>
-           <Tabs value={activeLegalTab} onValueChange={setActiveLegalTab} className="w-full">
-             <TabsList className="grid w-full grid-cols-2 bg-slate-800">
-                <TabsTrigger value="terms" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">Kullanım Koşulları</TabsTrigger>
-                <TabsTrigger value="kvkk" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">KVKK & Gizlilik</TabsTrigger>
-             </TabsList>
-             <div className="mt-4 p-4 bg-slate-900/50 rounded-lg border border-slate-800 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap font-sans text-justify max-h-96 overflow-y-auto">
-               {activeLegalTab === 'terms' ? TERMS_CONTENT : KVKK_CONTENT}
-             </div>
-           </Tabs>
-           <div className="flex justify-end gap-2 mt-6">
-             <Button variant="outline" onClick={() => setShowLegalModal(false)} className="border-slate-600 hover:bg-slate-800 text-white hover:text-white">Kapat</Button>
-             <Button onClick={() => { setLegalAccepted(true); setShowLegalModal(false); }} className="bg-teal-600 hover:bg-teal-700 text-white">Okudum, Onaylıyorum</Button>
-           </div>
-        </DialogContent>
-      </Dialog>
+
+      {/* ✅ FIX: Legal Modal Rendered Separately (No nesting conflicts!) */}
+      <LegalModal 
+        open={showLegalModal}
+        onOpenChange={setShowLegalModal}
+        activeLegalTab={activeLegalTab}
+        setActiveLegalTab={setActiveLegalTab}
+        legalAccepted={legalAccepted}
+        setLegalAccepted={setLegalAccepted}
+      />
     </>
   );
 }
