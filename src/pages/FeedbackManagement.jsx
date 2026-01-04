@@ -147,11 +147,12 @@ const FeedbackManagement = () => {
     setTargetScrollId(null);
     setLoading(true);
     try {
+      // 1. Önce Feedbackleri Çek
       let query = supabase.from('feedbacks').select(`
           *,
           branches(id, branch_name_tr),
           customer_profiles(
-            id, name, email, phone, flag_vip_customer, flag_sensitive_customer, admin_note,
+            id, name, email, phone,
             users(first_name, last_name)
           ),
           manager_note_updater:manager_note_updated_by(first_name, last_name)
@@ -163,9 +164,44 @@ const FeedbackManagement = () => {
         query = query.eq('branch_id', selectedBranchId);
       }
 
-      const { data, error } = await query;
+      const { data: feedbacksData, error } = await query;
       if (error) throw error;
-      setFeedbacks(data || []);
+
+      // 2. Şimdi bu işletmeye özel müşteri flaglerini (business_customers) çek
+      const { data: bizCustomers, error: bizError } = await supabase
+        .from('business_customers')
+        .select('customer_profile_id, is_vip, is_sensitive, manager_notes')
+        .eq('business_id', businessId);
+
+      if (bizError) console.error("Business customers fetch error:", bizError);
+
+      // 3. Verileri Birleştir (Mapping)
+      const mergedFeedbacks = (feedbacksData || []).map(f => {
+        // İlgili işletme-müşteri kaydını bul
+        const bizData = bizCustomers?.find(bc => bc.customer_profile_id === f.customer_profile_id);
+        
+        // Eğer işletmeye özel veri varsa onu kullan, yoksa false/boş
+        const effectiveVip = bizData ? bizData.is_vip : false;
+        const effectiveSensitive = bizData ? bizData.is_sensitive : false;
+        const effectiveNote = bizData ? bizData.manager_notes : '';
+
+        return {
+          ...f,
+          // Ana objeye flagleri ekle (filtreleme için kolaylık olsun)
+          flag_vip_customer: effectiveVip,
+          flag_sensitive_customer: effectiveSensitive,
+          
+          // Customer profiles objesini de güncelle (UI buradan okuyorsa diye)
+          customer_profiles: {
+            ...(f.customer_profiles || {}),
+            flag_vip_customer: effectiveVip,
+            flag_sensitive_customer: effectiveSensitive,
+            admin_note: effectiveNote
+          }
+        };
+      });
+
+      setFeedbacks(mergedFeedbacks);
     } catch (error) {
       console.error(error);
       toast({ variant: "destructive", title: "Hata", description: "Veriler yüklenemedi." });
@@ -174,13 +210,10 @@ const FeedbackManagement = () => {
     }
   };
 
-  // 🟢 GÜVENLİ HALE GETİRİLMİŞ FLAGS UPDATE (Artık Çökmez!)
   const handleFlagsUpdate = (profileId, newFlags, relatedEmail) => {
     setFeedbacks(prev => prev.map(f => {
-      // 1. Güvenlik
       if (!f) return f;
 
-      // 2. Güvenli Erişim
       const currentProfileId = f.customer_profile_id || f.customer_profiles?.id;
       const currentEmail = f.customer_email || f.customer_profiles?.email;
 
@@ -191,7 +224,6 @@ const FeedbackManagement = () => {
         return {
           ...f,
           customer_profile_id: profileId || currentProfileId,
-          // 3. KRİTİK GÜVENLİK: customer_profiles null ise boş obje ile birleştir
           customer_profiles: { 
             ...(f.customer_profiles || {}), 
             id: profileId || currentProfileId,

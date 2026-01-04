@@ -260,6 +260,8 @@ const AdminPanel = () => {
         { name: 'Öneri', count: typeCounts.suggestion, fill: '#3b82f6' },
         { name: 'Değerlendirme', count: typeCounts.evaluation, fill: '#eab308' }
       ]);
+      
+      // 🟢 GÜNCELLENEN KISIM: Recent Feedbacks ve İşletme Verisi Birleştirme
       let recentQuery = supabase.from('feedbacks').select(`
             id, created_at, status, feedback_type, message, rating,
             customer_name, customer_email, customer_phone, customer_profile_id,
@@ -275,22 +277,30 @@ const AdminPanel = () => {
             ),
             manager_note_updater:manager_note_updated_by (first_name, last_name)
         `).eq('business_id', businessId).order('created_at', { ascending: false }).limit(20);
+      
       if (selectedBranchId !== 'all') recentQuery = recentQuery.eq('branch_id', selectedBranchId);
+      
       const { data: recentData } = await recentQuery;
-      if (recentData && recentData.length > 0) {
-          const unlinkedFeedbacks = recentData.filter(f => !f.customer_profiles && f.customer_email);
+      
+      let processedFeedbacks = recentData || [];
+
+      if (processedFeedbacks.length > 0) {
+          // 1. Unlinked feedbackleri bağla (Mevcut kod korundu)
+          const unlinkedFeedbacks = processedFeedbacks.filter(f => !f.customer_profiles && f.customer_email);
           const emailsToCheck = [...new Set(unlinkedFeedbacks.map(f => f.customer_email))];
           if (emailsToCheck.length > 0) {
               const { data: profiles } = await supabase
                   .from('customer_profiles')
-                  .select('id, name, email, flag_vip_customer, flag_sensitive_customer, admin_note, users(first_name, last_name)')
+                  .select('id, name, email')
                   .in('email', emailsToCheck);
               if (profiles && profiles.length > 0) {
                   const profileMap = {};
                   profiles.forEach(p => { profileMap[p.email] = p; });
-                  recentData.forEach(f => {
+                  processedFeedbacks.forEach(f => {
                       if (!f.customer_profiles && f.customer_email && profileMap[f.customer_email]) {
                           f.customer_profiles = profileMap[f.customer_email];
+                          f.customer_profile_id = profileMap[f.customer_email].id;
+                          // DB güncellemesini arka planda yap
                           supabase.from('feedbacks')
                               .update({ customer_profile_id: profileMap[f.customer_email].id })
                               .eq('id', f.id)
@@ -299,8 +309,40 @@ const AdminPanel = () => {
                   });
               }
           }
+
+          // 2. İşletmeye özel müşteri verilerini (business_customers) çek ve birleştir
+          const { data: bizCustomers } = await supabase
+            .from('business_customers')
+            .select('customer_profile_id, is_vip, is_sensitive, manager_notes')
+            .eq('business_id', businessId);
+
+          processedFeedbacks = processedFeedbacks.map(f => {
+            // İlgili işletme-müşteri kaydını bul
+            const bizData = bizCustomers?.find(bc => bc.customer_profile_id === f.customer_profile_id);
+            
+            // Eğer işletmeye özel veri varsa onu kullan, yoksa false/boş
+            const effectiveVip = bizData ? bizData.is_vip : false;
+            const effectiveSensitive = bizData ? bizData.is_sensitive : false;
+            const effectiveNote = bizData ? bizData.manager_notes : '';
+
+            return {
+              ...f,
+              // Ana objeye flagleri ekle (görünüm kolaylığı için)
+              flag_vip_customer: effectiveVip,
+              flag_sensitive_customer: effectiveSensitive,
+              
+              // Customer profiles objesini de güncelle
+              customer_profiles: {
+                ...(f.customer_profiles || {}),
+                flag_vip_customer: effectiveVip,
+                flag_sensitive_customer: effectiveSensitive,
+                admin_note: effectiveNote
+              }
+            };
+          });
       }
-      setRecentFeedbacks(recentData || []);
+      
+      setRecentFeedbacks(processedFeedbacks);
     } catch (error) {
       console.error("Dashboard data fetch error:", error);
       toast({ variant: "destructive", title: "Hata", description: "Veriler yüklenemedi." });

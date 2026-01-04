@@ -45,8 +45,6 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
     const hasBusinessId = !!businessId;
     const hasUser = !!user;
     
-    // Anonim kullanıcılarda ID veya Email olmayabilir, bu bir hata değil durumdur.
-    // O yüzden sadece Business ve User'ın hazır olması yeterli.
     return hasBusinessId && hasUser;
   }, [businessId, user]);
 
@@ -60,21 +58,16 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
       setShowNotesOnly(false);
       fetchAttemptRef.current = 0;
       
-      // İlk kontrol: Temel gereksinimler hazır mı?
       if (canFetchData) {
-        // ✅ Hazır, direkt fetch et
         fetchData();
       } else {
-        // ⏳ Eksik veriler var (BusinessId veya User henüz yüklenmemiş olabilir), 300ms bekle
         const timer = setTimeout(() => {
           const checkBusinessId = !!businessId;
           const checkUser = !!user;
 
           if (checkBusinessId && checkUser) {
-            // ✅ 300ms sonra hazır oldu, fetch et
             fetchData();
           } else {
-            // ❌ 300ms sonra hala BusinessID veya User yoksa hata ver
             setLoading(false);
             toast({
               variant: "destructive",
@@ -141,7 +134,7 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
         }
       }
 
-      // 3. Users tablosunda ara
+      // 3. Users tablosunda ara (Kayıtlı ama profili oluşmamışsa)
       if (!profileData && customerEmail) {
         const { data, error } = await supabase
           .from('users')
@@ -155,7 +148,7 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
         }
       }
 
-      // 4. Feedbacks çek
+      // 4. Feedbacks çek (Sadece bu işletmeye ait)
       let queryConditions = [];
       if (profileData?.id) queryConditions.push(`customer_profile_id.eq.${profileData.id}`);
       if (customerEmail) queryConditions.push(`customer_email.eq.${customerEmail}`);
@@ -169,7 +162,7 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
           .select(`
             *,
             branches (id, branch_name_tr),
-            customer_profiles (id, admin_note, flag_vip_customer, flag_sensitive_customer)
+            customer_profiles (id)
           `)
           .eq('business_id', businessId)
           .or(orString)
@@ -184,7 +177,20 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
 
       const phoneFromHistory = feedbackData?.find(f => f.customer_phone)?.customer_phone || null;
 
-      // 5. Profile state'i set et
+      // 5. İŞLETME ÖZEL VERİSİNİ ÇEK (Business Customers Tablosu)
+      let businessSpecificData = null;
+      if (profileData?.id && businessId) {
+        const { data: bData } = await supabase
+          .from('business_customers')
+          .select('*')
+          .eq('business_id', businessId)
+          .eq('customer_profile_id', profileData.id)
+          .maybeSingle();
+        
+        businessSpecificData = bData;
+      }
+
+      // 6. Profile state'i set et
       if (profileData) {
         const uFirst = profileData.users?.first_name || '';
         const uLast = profileData.users?.last_name || '';
@@ -196,10 +202,12 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
           phone: profileData.phone || phoneFromHistory || '-', 
           is_virtual: false 
         });
-        setNotes(profileData.admin_note || '');
+
+        // Verileri işletme tablosundan (business_customers) al, yoksa varsayılan boş.
+        setNotes(businessSpecificData?.manager_notes || '');
         setFlags({ 
-          vip: profileData.flag_vip_customer || false, 
-          sensitive: profileData.flag_sensitive_customer || false 
+          vip: businessSpecificData?.is_vip || false, 
+          sensitive: businessSpecificData?.is_sensitive || false 
         });
 
         if (profileData.flag_updated_by) {
@@ -242,7 +250,6 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
     } catch (error) {
       console.error('❌ fetchData kritik hata:', error);
       
-      // RETRY LOGIC
       if (fetchAttemptRef.current < maxRetries) {
         setRetrying(true);
         setTimeout(() => {
@@ -269,15 +276,7 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
       const now = new Date().toISOString();
       let targetProfileId = profile.id;
 
-      const baseData = {
-        admin_note: newNote,
-        flag_vip_customer: newFlags.vip,
-        flag_sensitive_customer: newFlags.sensitive,
-        flag_updated_by: user.id,
-        flag_updated_at: now,
-        updated_at: now
-      };
-
+      // 1. Eğer profil sanalsa (virtual), önce customer_profiles'a kaydet
       if (profile.is_virtual) {
         const { data: newProfile, error } = await supabase
           .from('customer_profiles')
@@ -286,7 +285,8 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
             email: profile.email,
             name: profile.name,
             phone: profile.phone === '-' ? null : profile.phone,
-            ...baseData
+            created_at: now,
+            updated_at: now
           })
           .select()
           .single();
@@ -296,6 +296,7 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
         targetProfileId = newProfile.id;
         setProfile(prev => ({ ...prev, ...newProfile, is_virtual: false }));
 
+        // Feedbackleri yeni profile bağla
         if (profile.email) {
           await supabase
             .from('feedbacks')
@@ -303,14 +304,22 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
             .eq('customer_email', profile.email)
             .eq('business_id', businessId);
         }
-      } else {
-        const { error } = await supabase
-          .from('customer_profiles')
-          .update(baseData)
-          .eq('id', targetProfileId);
-        
-        if (error) throw error;
       }
+
+      // 2. İşletmeye Özel Tabloya Kaydet (business_customers)
+      const { error: bizError } = await supabase
+        .from('business_customers')
+        .upsert({
+            business_id: businessId,
+            customer_profile_id: targetProfileId,
+            is_vip: newFlags.vip,
+            is_sensitive: newFlags.sensitive,
+            manager_notes: newNote,
+            last_interaction_at: now,
+            updated_at: now
+        }, { onConflict: 'business_id, customer_profile_id' });
+
+      if (bizError) throw bizError;
 
       toast({ 
         title: "Kaydedildi", 
@@ -472,7 +481,7 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
               </div>
             ) : (
               <>
-                {/* Profile Bilgileri */}
+                {/* Profil Bilgileri */}
                 <div className="bg-gradient-to-br from-indigo-900/30 to-purple-900/20 rounded-lg p-5 border border-indigo-700/40 grid md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <User className="w-5 h-5 text-indigo-400 shrink-0" />
@@ -541,13 +550,13 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
                   
                   <div className="md:col-span-2 bg-blue-900/20 rounded-lg p-4 border border-blue-500/30 flex flex-col">
                     <h3 className="text-sm font-semibold text-blue-400 uppercase mb-2 flex gap-2">
-                      <FileText className="w-4 h-4" /> Özel Notlar
+                      <FileText className="w-4 h-4" /> İşletme Özel Notu
                     </h3>
                     <Textarea 
                       value={notes} 
                       onChange={(e) => setNotes(e.target.value)} 
                       className="bg-slate-900/80 border-slate-700 flex-1 min-h-[80px] text-slate-200" 
-                      placeholder="Müşteri hakkında notlar..." 
+                      placeholder="Sadece bu işletme yöneticileri görebilir..." 
                     />
                     <div className="flex justify-end gap-2 mt-2">
                       {notes && (

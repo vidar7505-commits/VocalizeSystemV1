@@ -36,15 +36,14 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
   const [lightboxImages, setLightboxImages] = useState([]);
 
   const [liveProfileData, setLiveProfileData] = useState(null);
+  const [businessSpecificData, setBusinessSpecificData] = useState(null); 
   const notesSectionRef = useRef(null);
 
   // --- SÜZGEÇ (HATA ÖNLEYİCİ) ---
   const normalizeUrl = (u) => {
     if (!u) return null;
     const s = String(u).trim();
-    // Yerel yolları engelle
     if (/^[a-zA-Z]:\\/.test(s) || s.includes("\\")) return null; 
-    // Sadece web linklerini kabul et
     if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("blob:") || s.startsWith("data:")) return s;
     return null;
   };
@@ -53,11 +52,14 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
   const formattedName = formatCustomerName(activeName);
   const displayPhone = (liveProfileData?.phone && liveProfileData.phone.length > 3) ? liveProfileData.phone : (feedback.customer_phone || '-');
   const displayEmail = (liveProfileData?.email && liveProfileData.email.length > 3) ? liveProfileData.email : (feedback.customer_email || '-');
-  const isVip = liveProfileData?.flag_vip_customer || feedback?.customer_profiles?.flag_vip_customer || feedback?.flag_vip_customer || false;
-  const isSensitive = liveProfileData?.flag_sensitive_customer || feedback?.customer_profiles?.flag_sensitive_customer || feedback?.flag_sensitive_customer || false;
-  const customerProfileNote = liveProfileData?.admin_note || feedback?.customer_profiles?.admin_note || null;
+  
+  // 🔴 GÜNCELLEME: Sadece işletmeye özel veriyi kullan (Fallback yok!)
+  const isVip = businessSpecificData?.is_vip || false;
+  const isSensitive = businessSpecificData?.is_sensitive || false;
+  
+  // 🔴 GÜNCELLEME: Sadece işletmeye özel notu kullan (Global notu yoksay)
+  const customerProfileNote = businessSpecificData?.manager_notes || null;
 
-  // GÜVENLİ RESİM LİSTESİ
   const allImages = [
     ...(feedback?.feedback_images || []), 
     ...(feedback?.image_urls || []), 
@@ -75,6 +77,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
       setCurrentStatus(feedback.status);
       setManagerNote(feedback.manager_note || '');
       setLiveProfileData(null);
+      setBusinessSpecificData(null); // Reset
       fetchCustomerData();
       if (feedback.manager_note_updated_at && feedback.manager_note_updated_by) fetchUpdaterInfo(feedback.manager_note_updated_by, feedback.manager_note_updated_at);
     }
@@ -85,6 +88,8 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
     try {
       const cEmail = getCustomerData(feedback, 'email');
       const cProfileId = feedback.customer_profile_id;
+      
+      // 1. İstatistikleri Çek
       let statsQuery = supabase.from('feedbacks').select('feedback_type', { count: 'exact' }).eq('business_id', feedback.business_id);
       if (cProfileId) statsQuery = statsQuery.eq('customer_profile_id', cProfileId);
       else if (cEmail) statsQuery = statsQuery.eq('customer_email', cEmail);
@@ -100,6 +105,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
         });
       }
 
+      // 2. Profil Verisini Çek
       let profileData = null;
       if (cProfileId && cProfileId !== 'guest') {
         const { data } = await supabase.from('customer_profiles').select('*, users(first_name, last_name)').eq('id', cProfileId).maybeSingle();
@@ -108,7 +114,23 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
         const { data } = await supabase.from('customer_profiles').select('*, users(first_name, last_name)').eq('email', cEmail).maybeSingle();
         profileData = data;
       }
-      if (profileData) { setLiveProfileData(profileData); setCustomerJoinDate(profileData.created_at); }
+      
+      if (profileData) { 
+        setLiveProfileData(profileData); 
+        setCustomerJoinDate(profileData.created_at);
+
+        // 3. İşletmeye Özel Veriyi Çek (business_customers)
+        if (feedback.business_id) {
+          const { data: bizData } = await supabase
+            .from('business_customers')
+            .select('*')
+            .eq('business_id', feedback.business_id)
+            .eq('customer_profile_id', profileData.id)
+            .maybeSingle();
+          
+          if (bizData) setBusinessSpecificData(bizData);
+        }
+      }
     } catch (err) { console.error("Error", err); } finally { setStatsLoading(false); }
   }, [feedback]);
 
@@ -159,23 +181,9 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
     } catch (e) { toast({ variant: "destructive", title: "Hata" }); } finally { setIsSavingNote(false); }
   };
 
-  // --- LIGHTBOX İŞLEVLERİ ---
-  const handleNextImage = (e) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
-  };
-
-  const handlePrevImage = (e) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
-  };
-
-  // En Güvenli Yöntem: Yeni Sekmede Aç
-  const handleOpenImage = (e) => {
-    e.stopPropagation();
-    const url = allImages[currentImageIndex];
-    if (url) window.open(url, '_blank');
-  };
+  const handleNextImage = (e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % allImages.length); };
+  const handlePrevImage = (e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length); };
+  const handleOpenImage = (e) => { e.stopPropagation(); const url = allImages[currentImageIndex]; if (url) window.open(url, '_blank'); };
 
   const getStatusLabel = (s) => ({ new: 'Yeni', pending: 'Beklemede', in_progress: 'İşlemde', resolved: 'Çözüldü', escalated: 'Acil' }[s] || s);
   const getStatusColor = (s) => ({ new: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50', pending: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50', in_progress: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50', resolved: 'bg-green-500/20 text-green-400 border-green-500/50', escalated: 'bg-red-500/20 text-red-500 border-red-500 font-bold' }[s] || 'bg-slate-700');
@@ -245,7 +253,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
             {customerProfileNote && (
               <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 flex gap-3 overflow-hidden">
                 <FileText className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                <div className="overflow-hidden"><h4 className="text-sm font-bold text-blue-400 mb-1">Müşteri Hakkında Genel Not</h4><p className="text-sm text-slate-300 italic whitespace-pre-wrap break-words">{customerProfileNote}</p></div>
+                <div className="overflow-hidden"><h4 className="text-sm font-bold text-blue-400 mb-1">Müşteri Hakkında İşletme Notu</h4><p className="text-sm text-slate-300 italic whitespace-pre-wrap break-words">{customerProfileNote}</p></div>
               </div>
             )}
 
@@ -279,7 +287,6 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
               <div className="bg-slate-900/80 p-4 rounded-md border border-slate-700/50 min-h-[80px] overflow-hidden">
                 <p className="text-slate-200 whitespace-pre-wrap leading-relaxed text-sm md:text-base break-words">{feedback.message || <span className="text-slate-500 italic">Mesaj yok.</span>}</p>
                 
-                {/* ✅ DÜZELTİLDİ: ANA DEĞERLENDİRME PUANI EKLENDİ */}
                 {(feedback.rating || feedback.overall_rating) && (
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-700/30">
                     <span className="text-xs text-slate-400 font-medium">Puan:</span>
@@ -322,8 +329,8 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
             </div>
 
             <div ref={notesSectionRef} className="bg-amber-900/10 rounded-lg p-4 border border-amber-700/30 scroll-mt-20 overflow-hidden">
-              <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider flex items-center gap-2"><StickyNote className="w-4 h-4" /> Yönetici Notu</h3></div>
-              <textarea className="w-full bg-slate-900/80 border border-slate-700 rounded-md p-3 text-sm text-slate-200 min-h-[100px]" placeholder="Özel notlar..." value={managerNote} onChange={(e) => setManagerNote(e.target.value)} />
+              <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider flex items-center gap-2"><StickyNote className="w-4 h-4" /> Bildirim Notu</h3></div>
+              <textarea className="w-full bg-slate-900/80 border border-slate-700 rounded-md p-3 text-sm text-slate-200 min-h-[100px]" placeholder="Bu bildirime özel notlar..." value={managerNote} onChange={(e) => setManagerNote(e.target.value)} />
               <div className="flex justify-between items-center mt-3"><span className="text-xs text-slate-500 italic">{lastUpdatedInfo}</span>
                 <div className="flex gap-2">
                   <Button variant="destructive" size="sm" onClick={handleRemoveNote} disabled={isSavingNote || !managerNote} className="h-8 text-xs bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-900/50"><Trash2 className="w-3 h-3 mr-1" /> Sil</Button>
@@ -344,60 +351,37 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
         </DialogContent>
       </Dialog>
       
-      {/* --- LIGHTBOX (KESİN VE BASİT ÇÖZÜM) --- */}
       {lightboxOpen && (
-        <div 
-          className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/95 p-4 animate-in fade-in duration-300"
-          onClick={() => setLightboxOpen(false)}
-        >
-          {/* Kapat Butonu */}
-          <Button 
-            variant="ghost" 
-            className="absolute top-5 right-5 text-white hover:bg-white/20 rounded-full w-12 h-12 p-0 z-[100001]" 
-            onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
-          >
-            <X className="w-8 h-8" />
-          </Button>
-
-          {/* İçerik */}
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/95 p-4 animate-in fade-in duration-300" onClick={() => setLightboxOpen(false)}>
+          <Button variant="ghost" className="absolute top-5 right-5 text-white hover:bg-white/20 rounded-full w-12 h-12 p-0 z-[100001]" onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}><X className="w-8 h-8" /></Button>
           <div className="relative w-full h-full pointer-events-none flex flex-col items-center justify-center">
-            
-            {allImages.length > 1 && (
-              <Button variant="ghost" className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 text-white hover:bg-white/10 rounded-full w-16 h-16 p-0 z-[100001] pointer-events-auto" onClick={handlePrevImage}>
-                <ChevronLeft className="w-10 h-10" />
-              </Button>
-            )}
-
-            <img 
-              src={allImages[currentImageIndex]} 
-              className="relative z-[100000] max-w-[90vw] max-h-[80vh] object-contain rounded-lg shadow-2xl pointer-events-auto"
-              alt="Geri bildirim görseli" 
-            />
-
-            {allImages.length > 1 && (
-              <Button variant="ghost" className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 text-white hover:bg-white/10 rounded-full w-16 h-16 p-0 z-[100001] pointer-events-auto" onClick={handleNextImage}>
-                <ChevronRight className="w-10 h-10" />
-              </Button>
-            )}
-
+            {allImages.length > 1 && (<Button variant="ghost" className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 text-white hover:bg-white/10 rounded-full w-16 h-16 p-0 z-[100001] pointer-events-auto" onClick={handlePrevImage}><ChevronLeft className="w-10 h-10" /></Button>)}
+            <img src={allImages[currentImageIndex]} className="relative z-[100000] max-w-[90vw] max-h-[80vh] object-contain rounded-lg shadow-2xl pointer-events-auto" alt="Geri bildirim görseli" />
+            {allImages.length > 1 && (<Button variant="ghost" className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 text-white hover:bg-white/10 rounded-full w-16 h-16 p-0 z-[100001] pointer-events-auto" onClick={handleNextImage}><ChevronRight className="w-10 h-10" /></Button>)}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 z-[100001] pointer-events-auto bg-black/50 px-6 py-3 rounded-full backdrop-blur-sm">
               <span className="text-white/90 text-sm font-medium select-none">{currentImageIndex + 1} / {allImages.length}</span>
               <div className="h-4 w-px bg-white/30" />
-              {/* SADECE AÇMA BUTONU */}
-              <Button 
-                variant="ghost" 
-                className="text-white hover:bg-white/20 h-auto p-0 px-2 font-normal gap-2" 
-                onClick={handleOpenImage}
-              >
-                <ExternalLink className="w-4 h-4" /> 
-                <span className="hidden sm:inline">Görseli Aç</span>
-              </Button>
+              <Button variant="ghost" className="text-white hover:bg-white/20 h-auto p-0 px-2 font-normal gap-2" onClick={handleOpenImage}><ExternalLink className="w-4 h-4" /> <span className="hidden sm:inline">Görseli Aç</span></Button>
             </div>
           </div>
         </div>
       )}
 
-      {isProfileModalOpen && <CustomerProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} customerProfileId={feedback.customer_profile_id} customerEmail={displayEmail !== '-' ? displayEmail : null} businessId={feedback.business_id} onFlagsUpdate={(id, f, email) => { setLiveProfileData(prev => ({ ...prev, flag_vip_customer: f.vip, flag_sensitive_customer: f.sensitive, admin_note: f.admin_note })); if (onFeedbackUpdate) onFeedbackUpdate(feedback.id, { customer_profile_id: id }); }} />}
+      {isProfileModalOpen && (
+        <CustomerProfileModal 
+          isOpen={isProfileModalOpen} 
+          onClose={() => setIsProfileModalOpen(false)} 
+          customerProfileId={feedback.customer_profile_id} 
+          customerEmail={displayEmail !== '-' ? displayEmail : null} 
+          businessId={feedback.business_id} 
+          onFlagsUpdate={(id, f, email) => { 
+            // Profil modalı kapandığında detay modalındaki veriyi de güncelle
+            setLiveProfileData(prev => ({ ...prev, flag_vip_customer: f.vip, flag_sensitive_customer: f.sensitive, admin_note: f.admin_note })); 
+            setBusinessSpecificData(prev => ({ ...prev, is_vip: f.vip, is_sensitive: f.sensitive, manager_notes: f.admin_note }));
+            if (onFeedbackUpdate) onFeedbackUpdate(feedback.id, { customer_profile_id: id }); 
+          }} 
+        />
+      )}
     </>
   );
 };
