@@ -140,7 +140,6 @@ export default function CustomerPanel() {
 
     // 🟢 DURUM 1: QR İLE GELDİ
     if (isFromQr && !alreadyLogged) {
-        // ✅ SADECE qr_scans TABLOSUNA YAZ
         supabase.from('qr_scans').insert({
             business_id: businessParam,
             branch_id: branchParam || null,
@@ -151,7 +150,6 @@ export default function CustomerPanel() {
             if (!error) {
                 sessionStorage.setItem(sessionKey, 'true');
                 
-                // URL'i temizle
                 const newUrl = new URL(window.location.href);
                 newUrl.searchParams.delete('from_qr');
                 newUrl.searchParams.delete('qr');
@@ -162,7 +160,6 @@ export default function CustomerPanel() {
     } 
     // 🟢 DURUM 2: NORMAL WEB GİRİŞİ (QR parametresi YOK)
     else if (!alreadyLogged && !isFromQr) {
-         // ✅ SADECE page_views TABLOSUNA YAZ
          supabase.from('page_views').insert({
             business_id: businessParam,
             branch_id: branchParam || null,
@@ -637,9 +634,12 @@ export default function CustomerPanel() {
         localStorage.setItem('vocalize_visited_businesses', JSON.stringify(existingIds));
       }
       
-      if (user?.email) {
+      // 🟢 DÜZELTME: Doğrudan authUser'ı kullan (Race condition'ı önler)
+      const targetEmail = authUser?.email || user?.email;
+      
+      if (targetEmail) {
         await supabase.from('customer_visited_businesses').upsert({
-          customer_email: user.email,
+          customer_email: targetEmail,
           business_id: businessId,
           last_visit_at: new Date().toISOString()
         }, {
@@ -649,7 +649,7 @@ export default function CustomerPanel() {
     } catch (err) {
       console.error('Error persisting visited business:', err);
     }
-  }, [user]);
+  }, [user, authUser]); // authUser eklendi
 
   const persistQrScan = useCallback(async (businessId, branchId, qrCode) => {
     try {
@@ -664,9 +664,12 @@ export default function CustomerPanel() {
       
       localStorage.setItem(`vocalize_qr_${businessId}`, JSON.stringify(qrData));
       
-      if (user?.email) {
+      // 🟢 DÜZELTME: Doğrudan authUser'ı kullan (Race condition'ı önler)
+      const targetEmail = authUser?.email || user?.email;
+
+      if (targetEmail) {
         await supabase.from('customer_qr_scans').upsert({
-          customer_email: user.email,
+          customer_email: targetEmail,
           business_id: businessId,
           branch_id: branchId,
           qr_code: qrCode,
@@ -678,7 +681,7 @@ export default function CustomerPanel() {
     } catch (err) {
       console.error('Error persisting QR scan:', err);
     }
-  }, [user, persistVisitedBusiness]);
+  }, [user, authUser, persistVisitedBusiness]); // authUser eklendi
 
   const loadPersistedBusinesses = useCallback(async () => {
     if (!user?.email) return;
@@ -743,11 +746,13 @@ export default function CustomerPanel() {
     }
   }, [user, isGuest, loadPersistedBusinesses, loadPersistedQrs, fetchBusinesses]);
 
+  // 🟢 DÜZELTME: authLoading kontrolü eklendi. Kullanıcı verisi tam yüklenmeden çalışmayacak.
   useEffect(() => {
+    if (authLoading) return; // BEKLE!
     if (qrParam && businessParam && branchParam) {
       persistQrScan(businessParam, branchParam, qrParam);
     }
-  }, [qrParam, businessParam, branchParam, persistQrScan]);
+  }, [qrParam, businessParam, branchParam, persistQrScan, authLoading]);
 
   useEffect(() => {
     if (isLoading && (businessParam || branchParam)) return;
