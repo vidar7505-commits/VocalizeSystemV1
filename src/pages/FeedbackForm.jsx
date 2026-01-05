@@ -309,7 +309,7 @@ export default function FeedbackForm() {
           const parts = visitDate.split('-');
           if (parts.length >= 3) {
               const newDateString = `${MIN_YEAR}-${parts[1]}-${parts[2]}`;
-              if (new Date(newDateString) > now) {
+              if (newDateString > now) {
                   setVisitDate(getCurrentLocalISOString());
               } else {
                   setVisitDate(newDateString);
@@ -349,7 +349,6 @@ export default function FeedbackForm() {
     
     try {
       // 1. GÜVENLİ GOOGLE YÖNLENDİRME MANTIĞI
-      // Sadece şikayet DEĞİLSE ve puan 4 veya üzeriyse linki ayarla
       if (feedbackType !== 'complaint') {
           const effectiveRating = feedbackType === 'review' ? rating : generalRating;
           
@@ -412,19 +411,23 @@ export default function FeedbackForm() {
   };
 
   const handleSuccessClose = () => {
+    // 🟢 DÜZELTME: Modal kapanırken "insertBefore" hatası almamak için
+    // önce modalı kapatıp, DOM güncellendikten sonra yönlendirme yapıyoruz.
     setShowSuccessModal(false);
-    const params = new URLSearchParams();
-    if (businessParam) params.set('business', businessParam);
-    if (branchParam) params.set('branch', branchParam);
-    if (guestParam) params.set('guest', guestParam);
-    if (qrParam) params.set('qr', qrParam);
-    if (langParam) params.set('lang', langParam);
-    navigate(`/customer-panel?${params.toString()}`, { state: { showSuccessNotification: true, feedbackType } });
+    
+    setTimeout(() => {
+        const params = new URLSearchParams();
+        if (businessParam) params.set('business', businessParam);
+        if (branchParam) params.set('branch', branchParam);
+        if (guestParam) params.set('guest', guestParam);
+        if (qrParam) params.set('qr', qrParam);
+        if (langParam) params.set('lang', langParam);
+        navigate(`/customer-panel?${params.toString()}`, { state: { showSuccessNotification: true, feedbackType } });
+    }, 300); // 300ms gecikme eklendi
   };
 
   // --- GOOGLE SHARE LOGIC ---
   const handleGoogleShare = async () => {
-      // 1. Panoya Kopyala
       try {
           if (message) {
               await navigator.clipboard.writeText(message);
@@ -441,7 +444,6 @@ export default function FeedbackForm() {
           console.error("Clipboard error:", err);
       }
 
-      // 2. Yönlendir
       setTimeout(() => {
           window.location.href = googleRedirectUrl;
       }, 1000);

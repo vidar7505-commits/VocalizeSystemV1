@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Lock, Mail, Phone, User, Building2, UserCheck, ArrowLeft, KeyRound } from 'lucide-react';
+import { Loader2, Lock, Mail, Phone, User, Building2, UserCheck, ArrowLeft, KeyRound, ArrowRight } from 'lucide-react';
 import { TERMS_CONTENT, KVKK_CONTENT } from '@/constants/legalTexts';
 
 const CUSTOMER_LOGO_URL = "faviconbeyaz.png";
@@ -166,14 +166,22 @@ export default function AuthModal({
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: window.location.origin + '/update-password',
+        redirectTo: `${window.location.origin}/update-password`,
       });
+
       if (error) throw error;
-      toast({ title: "E-posta Gönderildi", description: "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi." });
+      
+      toast({ 
+        title: "E-posta Gönderildi", 
+        description: "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. Lütfen spam kutunuzu da kontrol edin.",
+        className: "bg-teal-600 text-white border-none"
+      });
+      
       setViewMode('auth');
       setActiveTab('login');
       setFormData(prev => ({ ...prev, email: '' }));
     } catch (error) {
+      console.error("Password reset error:", error);
       toast({ title: "Hata", description: translateError(error.message), variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -185,9 +193,6 @@ export default function AuthModal({
     setIsLoading(true);
 
     try {
-      // --------------------------------------------------------
-      // GİRİŞ İŞLEMİ (LOGIN)
-      // --------------------------------------------------------
       if (activeTab === 'login') {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: formData.email,
@@ -211,11 +216,7 @@ export default function AuthModal({
           }
         }, 300);
       } 
-      // --------------------------------------------------------
-      // KAYIT İŞLEMİ (REGISTER)
-      // --------------------------------------------------------
       else {
-        // Validasyonlar
         if (!legalAccepted) {
           toast({ title: "Hata", description: "Lütfen yasal metinleri onaylayınız.", variant: "destructive" });
           setIsLoading(false);
@@ -242,8 +243,6 @@ export default function AuthModal({
 
         const { first, last } = splitName(formData.fullName);
 
-        // Supabase Auth SignUp
-        // data.session dolu dönerse, email doğrulaması kapalıdır veya auto-confirm açıktır.
         const { data: signupData, error: signupError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -254,7 +253,6 @@ export default function AuthModal({
               last_name: last,
               phone: formData.phone,
               user_type: activeRole,
-              // Manager kodu varsa gönderiyoruz, trigger bunu yakalayıp işliyor.
               ...(activeRole === 'manager' && { manager_code: formData.managerCode })
             }
           }
@@ -262,12 +260,7 @@ export default function AuthModal({
 
         if (signupError) throw signupError;
 
-        // 🟢 DÜZELTME: 400 Hatasına sebep olan 'update businesses' bloğu SİLİNDİ.
-        // Veritabanı işlemleri artık SQL Trigger (handle_auth_user_signup) tarafından yapılıyor.
-
-        // 🟢 DÜZELTME: Otomatik Giriş Kontrolü
         if (signupData.session) {
-          // Eğer session varsa (oturum açıldıysa) direkt yönlendir
           toast({ 
             title: "Kayıt Başarılı", 
             description: "Hesabınız oluşturuldu, yönlendiriliyorsunuz...",
@@ -284,7 +277,6 @@ export default function AuthModal({
             }
           }, 800);
         } else {
-          // Session yoksa (Supabase email doğrulaması zorunlu kılıyorsa)
           toast({ 
             title: "Kayıt Başarılı", 
             description: "Lütfen e-posta adresinizi doğrulayın. Gelen kutunuzu kontrol edin.",
@@ -305,10 +297,10 @@ export default function AuthModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-[#0f172a] border-slate-700 text-white sm:max-w-md p-0 overflow-hidden">
-          <div className="relative">
-            {/* Header */}
-            <div className="relative h-40 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center overflow-hidden">
+        <DialogContent className="bg-[#0f172a] border-slate-700 text-white sm:max-w-md p-0 overflow-hidden max-h-[95vh] flex flex-col">
+          <div className="relative flex-shrink-0">
+            {/* Header: Mobilde Küçültüldü (h-28), Masaüstünde Normal (h-40) */}
+            <div className="relative h-28 md:h-40 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center overflow-hidden transition-all duration-300">
               <div className="absolute inset-0 opacity-20">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/20 rounded-full blur-2xl" />
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-teal-500/20 rounded-full blur-2xl" />
@@ -316,15 +308,15 @@ export default function AuthModal({
               <img 
                 src={activeRole === 'customer' ? CUSTOMER_LOGO_URL : ADMIN_LOGO_URL}
                 alt="Logo"
-                className="h-20 relative z-10"
+                className="h-16 md:h-20 relative z-10 transition-all duration-300"
                 style={activeRole === 'manager' ? {
                   filter: 'brightness(0) saturate(100%) invert(64%) sepia(88%) saturate(402%) hue-rotate(132deg) brightness(95%) contrast(91%)'
                 } : {}}
               />
             </div>
 
-            {/* Content */}
-            <div className="p-6 space-y-4">
+            {/* Content Container - Scrollable Area */}
+            <div className="p-5 md:p-6 space-y-4 overflow-y-auto max-h-[calc(85vh-7rem)]">
               {viewMode === 'forgot-password' ? (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <button 
@@ -368,19 +360,88 @@ export default function AuthModal({
                 </form>
               ) : (
                 <>
-                  <Tabs value={activeRole} onValueChange={setActiveRole} className="w-full mb-6">
+                  <Tabs value={activeRole} onValueChange={setActiveRole} className="w-full mb-4">
                     <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 p-1">
                       <TabsTrigger value="customer" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white transition-colors duration-300">Müşteri</TabsTrigger>
                       <TabsTrigger value="manager" className="data-[state=active]:bg-teal-600 data-[state=active]:text-white transition-colors duration-300">Yönetici</TabsTrigger>
                     </TabsList>
                   </Tabs>
 
-                  <div className="flex bg-slate-800 rounded-lg p-1 gap-1 mb-6">
+                  <div className="flex bg-slate-800 rounded-lg p-1 gap-1 mb-4">
                     <button onClick={() => setActiveTab('login')} className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors font-medium duration-200 ${activeTab === 'login' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Giriş</button>
                     <button onClick={() => setActiveTab('register')} className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors font-medium duration-200 ${activeTab === 'register' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Kayıt Ol</button>
                   </div>
 
                   <form onSubmit={handleAuth} className="space-y-4">
+                    
+                    {/* 🟢 GÜNCELLEME: Misafir Girişi Kutusu - GİRİŞ (LOGIN) SEKME İÇİN */}
+                    {activeTab === 'login' && showGuestOption && activeRole === 'customer' && (
+                      <div className="animate-in fade-in slide-in-from-top-2">
+                        <div className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700/60 rounded-xl p-4 shadow-lg mb-6 flex flex-col gap-3">
+                          {/* Üst Kısım: Soru ve Buton */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="text-sm text-slate-300 font-medium leading-tight">
+                              Üyelikle uğraşmak <br className="hidden sm:block"/> istemiyor musun?
+                            </div>
+                            <Button 
+                              type="button" 
+                              onClick={handleGuestLogin} 
+                              size="sm"
+                              className="bg-teal-600 hover:bg-teal-700 text-white font-semibold transition-all duration-200 whitespace-nowrap h-10 px-5 shadow-md shadow-teal-900/20 shrink-0"
+                            >
+                              Misafir Girişi <ArrowRight className="ml-1.5 h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          {/* Alt Kısım: Pasif Yasal Onay Metni */}
+                          <div className="border-t border-slate-700/50 pt-2">
+                            <p className="text-[10px] text-slate-500 text-center leading-relaxed">
+                              Devam ederek <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('terms'); }}>Kullanım Koşulları</span> ve <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('kvkk'); }}>KVKK Metni</span>'ni kabul etmiş sayılırsınız.
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="relative my-6">
+                          <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-700"></span></div>
+                          <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider"><span className="bg-[#0f172a] px-3 text-slate-500">Veya Giriş Yap</span></div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 🟢 GÜNCELLEME: Misafir Girişi Kutusu - KAYIT (REGISTER) SEKME İÇİN */}
+                    {activeTab === 'register' && showGuestOption && activeRole === 'customer' && (
+                      <div className="animate-in fade-in slide-in-from-top-2">
+                        <div className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700/60 rounded-xl p-4 shadow-lg mb-6 flex flex-col gap-3">
+                          {/* Üst Kısım: Soru ve Buton */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="text-sm text-slate-300 font-medium leading-tight">
+                              Üyelikle uğraşmak <br className="hidden sm:block"/> istemiyor musun?
+                            </div>
+                            <Button 
+                              type="button" 
+                              onClick={handleGuestLogin} 
+                              size="sm"
+                              className="bg-teal-600 hover:bg-teal-700 text-white font-semibold transition-all duration-200 whitespace-nowrap h-10 px-5 shadow-md shadow-teal-900/20 shrink-0"
+                            >
+                              Misafir Girişi <ArrowRight className="ml-1.5 h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          {/* Alt Kısım: Pasif Yasal Onay Metni */}
+                          <div className="border-t border-slate-700/50 pt-2">
+                            <p className="text-[10px] text-slate-500 text-center leading-relaxed">
+                              Devam ederek <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('terms'); }}>Kullanım Koşulları</span> ve <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('kvkk'); }}>KVKK Metni</span>'ni kabul etmiş sayılırsınız.
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="relative my-6">
+                          <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-700"></span></div>
+                          <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider"><span className="bg-[#0f172a] px-3 text-slate-500">Veya Kayıt Ol</span></div>
+                        </div>
+                      </div>
+                    )}
+
                     {activeTab === 'register' && (
                       <div className="space-y-3">
                         <div className="relative">
@@ -447,7 +508,7 @@ export default function AuthModal({
                       </div>
                     )}
 
-                    <Button type="submit" disabled={isLoading} className={`w-full h-11 text-white font-bold py-2 mt-6 transition-all duration-200 ${activeRole === 'customer' ? 'bg-orange-600 hover:bg-orange-700' : 'bg-teal-600 hover:bg-teal-700'}`}>
+                    <Button type="submit" disabled={isLoading} className={`w-full h-11 text-white font-bold py-2 mt-2 transition-all duration-200 ${activeRole === 'customer' ? 'bg-orange-600 hover:bg-orange-700' : 'bg-teal-600 hover:bg-teal-700'}`}>
                       {isLoading ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -457,23 +518,6 @@ export default function AuthModal({
                         activeTab === 'login' ? 'Giriş Yap' : 'Hesap Oluştur'
                       )}
                     </Button>
-
-                    {showGuestOption && activeRole === 'customer' && (
-                      <div className="pt-4">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="h-px bg-slate-700 flex-1" />
-                          <span className="text-slate-500 text-xs uppercase font-semibold">veya</span>
-                          <div className="h-px bg-slate-700 flex-1" />
-                        </div>
-                        <Button type="button" onClick={handleGuestLogin} className="w-full h-11 bg-slate-800 hover:bg-slate-700 rounded-lg font-semibold text-white border border-slate-700 transition-all duration-200">
-                          <UserCheck className="mr-2 h-5 w-5" />
-                          Misafir Olarak Devam Et
-                        </Button>
-                        <p className="text-xs text-slate-500 text-center italic mt-2 leading-relaxed">
-                          Misafir olarak devam ederek <span className="text-slate-400">Kullanım Koşulları</span> ve <span className="text-slate-400">KVKK Aydınlatma Metni</span>'ni kabul etmiş olursunuz.
-                        </p>
-                      </div>
-                    )}
                   </form>
                 </>
               )}

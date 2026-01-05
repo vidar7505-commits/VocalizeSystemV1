@@ -48,16 +48,15 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
     return null;
   };
 
-  const activeName = liveProfileData?.name || getCustomerData(feedback, 'name');
-  const formattedName = formatCustomerName(activeName);
+  const profileUser = liveProfileData?.users || feedback.customer_profiles?.users;
+  const rawName = profileUser ? `${profileUser.first_name} ${profileUser.last_name || ''}` : (liveProfileData?.name || feedback.customer_profiles?.name || feedback.customer_name);
+  const formattedName = formatCustomerName(rawName);
+
   const displayPhone = (liveProfileData?.phone && liveProfileData.phone.length > 3) ? liveProfileData.phone : (feedback.customer_phone || '-');
   const displayEmail = (liveProfileData?.email && liveProfileData.email.length > 3) ? liveProfileData.email : (feedback.customer_email || '-');
   
-  // 🔴 GÜNCELLEME: Sadece işletmeye özel veriyi kullan (Fallback yok!)
   const isVip = businessSpecificData?.is_vip || false;
   const isSensitive = businessSpecificData?.is_sensitive || false;
-  
-  // 🔴 GÜNCELLEME: Sadece işletmeye özel notu kullan (Global notu yoksay)
   const customerProfileNote = businessSpecificData?.manager_notes || null;
 
   const allImages = [
@@ -68,7 +67,11 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
     feedback?.receipt_url
   ].map(normalizeUrl).filter(Boolean);
 
-  const hasGeneralEval = feedback.general_eval_rating || feedback.general_eval_comment;
+  // 🟢 GÜNCEL VE KESİN ÇÖZÜM: Veriyi Sayıya Çevir ve Değişkeni Kullan
+  const generalRating = Number(feedback.general_eval_rating) || 0;
+  const generalComment = feedback.general_eval_comment;
+  // Eğer puan varsa VEYA yorum varsa bu alanı göster
+  const hasGeneralEval = generalRating > 0 || (generalComment && generalComment.trim().length > 0);
 
   useEffect(() => { if (isOpen && scrollToNotes && notesSectionRef.current) setTimeout(() => notesSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }, [isOpen, scrollToNotes]);
 
@@ -89,7 +92,6 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
       const cEmail = getCustomerData(feedback, 'email');
       const cProfileId = feedback.customer_profile_id;
       
-      // 1. İstatistikleri Çek
       let statsQuery = supabase.from('feedbacks').select('feedback_type', { count: 'exact' }).eq('business_id', feedback.business_id);
       if (cProfileId) statsQuery = statsQuery.eq('customer_profile_id', cProfileId);
       else if (cEmail) statsQuery = statsQuery.eq('customer_email', cEmail);
@@ -105,7 +107,6 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
         });
       }
 
-      // 2. Profil Verisini Çek
       let profileData = null;
       if (cProfileId && cProfileId !== 'guest') {
         const { data } = await supabase.from('customer_profiles').select('*, users(first_name, last_name)').eq('id', cProfileId).maybeSingle();
@@ -119,7 +120,6 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
         setLiveProfileData(profileData); 
         setCustomerJoinDate(profileData.created_at);
 
-        // 3. İşletmeye Özel Veriyi Çek (business_customers)
         if (feedback.business_id) {
           const { data: bizData } = await supabase
             .from('business_customers')
@@ -257,25 +257,26 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
               </div>
             )}
 
+            {/* 🟢 DÜZELTME: Hesaplanan generalRating değişkeni JSX içinde kullanıldı */}
             {hasGeneralEval && (
               <div className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-4 overflow-hidden">
                 <h4 className="text-xs font-semibold text-teal-400 uppercase mb-2 flex items-center gap-2">
                   <BarChart className="w-3.5 h-3.5" /> Genel Değerlendirme
                 </h4>
                 <div className="flex flex-col gap-2">
-                  {feedback.general_eval_rating && (
+                  {generalRating > 0 && (
                     <div className="flex items-center gap-2">
                       <div className="flex gap-0.5">
                         {[...Array(5)].map((_, i) => (
-                          <Star key={i} className={`w-4 h-4 ${i < feedback.general_eval_rating ? "fill-yellow-500 text-yellow-500" : "fill-none text-slate-600"}`} />
+                          <Star key={i} className={`w-4 h-4 ${i < generalRating ? "fill-yellow-500 text-yellow-500" : "fill-none text-slate-600"}`} />
                         ))}
                       </div>
-                      <span className="text-sm font-bold text-white ml-1">{feedback.general_eval_rating} / 5</span>
+                      <span className="text-sm font-bold text-white ml-1">{generalRating} / 5</span>
                     </div>
                   )}
-                  {feedback.general_eval_comment && (
+                  {generalComment && (
                     <div className="bg-slate-900/50 p-3 rounded-md border border-slate-700/30">
-                      <p className="text-sm text-slate-300 italic">"{feedback.general_eval_comment}"</p>
+                      <p className="text-sm text-slate-300 italic">"{generalComment}"</p>
                     </div>
                   )}
                 </div>

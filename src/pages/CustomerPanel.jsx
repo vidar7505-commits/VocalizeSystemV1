@@ -305,7 +305,7 @@ export default function CustomerPanel() {
         maxLevel: '🎉 Zaten en yüksek seviyedesin! Harika bir Elçisin!'
       },
       businessSuggestion: {
-        title: 'Want Vocalize Here?',
+        title: 'Vocalize Burada Olsun İster Misiniz?', // 🟢 DÜZELTME
         businessName: 'İşletme Adı',
         businessNamePlaceholder: 'Örn: Kahve Dükkanı',
         location: 'Konum',
@@ -319,7 +319,7 @@ export default function CustomerPanel() {
       startWithQR: 'QR kod okutarak başlayın ve geri bildirim gönderin',
       selectBranchForFeedback: 'Geri bildirim göndermek için şube seçin',
       loading: 'Yükleniyor...',
-      branchSelection: 'Şube Seçimi',
+      branchSelection: 'Branch Selection',
       sortBy: 'Sıralama'
     },
     en: {

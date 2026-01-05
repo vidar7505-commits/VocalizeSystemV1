@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Loader2, Search, RefreshCw, Calendar, MessageSquare, User, Star,
   Image as ImageIcon, Filter, AlertTriangle, Crown, Siren,
-  StickyNote, ChevronLeft, ChevronRight, FileText
+  StickyNote, ChevronLeft, ChevronRight, FileText, BarChart
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { subDays, startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay } from "date-fns";
@@ -196,7 +196,9 @@ const FeedbackManagement = () => {
             ...(f.customer_profiles || {}),
             flag_vip_customer: effectiveVip,
             flag_sensitive_customer: effectiveSensitive,
-            admin_note: effectiveNote
+            admin_note: effectiveNote,
+            // 🟢 User bilgisini koru
+            users: f.customer_profiles?.users
           }
         };
       });
@@ -394,7 +396,10 @@ const FeedbackManagement = () => {
               const hasImgs = hasImages(f);
               const isEscalated = f.status === 'escalated';
               const hasManagerNote = !!f.manager_note;
-              const hasComment = (f.message && f.message.trim().length > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
+              
+              // 🟢 DÜZELTME: Sadece gerçek genel değerlendirme varsa göster
+              // Eski kod "message" var diye bunu true yapıyordu.
+              const hasGeneralEval = (Number(f.general_eval_rating) > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
               
               const isHighlighted = highlightedId === f.id;
 
@@ -438,7 +443,9 @@ const FeedbackManagement = () => {
                       </div>
                       
                       <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
-                        {hasComment && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><FileText className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
+                        {/* 🟢 DÜZELTME: Artık sadece gerçek genel değerlendirme varsa görünür */}
+                        {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
+                        
                         {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
                         {hasManagerNote && (<div className="flex items-center justify-center w-6 h-6 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30"><StickyNote className="w-3.5 h-3.5 fill-current" /></div>)}
                         {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}

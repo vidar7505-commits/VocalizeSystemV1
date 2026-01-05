@@ -1,4 +1,3 @@
-// ... (Importlar aynı)
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -6,21 +5,20 @@ import { useAdminContext } from '@/contexts/AdminContext';
 import { 
   MessageSquare, Star, AlertTriangle, Calendar, Loader2, ChevronRight, 
   ArrowUpRight, ArrowDownRight, Minus, CheckCircle2, User, Phone, 
-  Image as ImageIcon, StickyNote, Crown, FileText, Siren
+  Image as ImageIcon, StickyNote, Crown, FileText, Siren, BarChart // 🟢 BarChart Eklendi
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList, AreaChart, Area } from 'recharts';
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList, AreaChart, Area } from 'recharts'; // İsim çakışması olmasın diye RechartsBarChart olarak değiştirdik
 import { subDays, startOfDay, endOfDay, subMonths, startOfMonth } from 'date-fns';
 import { cn, formatCustomerName, getCustomerData, calculateDelta } from "@/lib/utils";
 import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
 
 // ... (SparklineCard, getTypeBadge, getStatusBadge, hasImages aynı) ...
-// (Buraya yer kaplamasın diye önceki sub-component kodlarını aynen kopyalayabilirsiniz, değişmedi)
 const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass, sparkData, loading, isInverseMetric = false }) => {
   let sentimentColor = "bg-slate-800 text-slate-400 border-slate-700"; 
   let TrendIcon = Minus;
@@ -134,7 +132,6 @@ const AdminPanel = () => {
     ? "Ana Panel" 
     : branches.find(b => b.id === selectedBranchId)?.branch_name_tr || "Ana Panel";
 
-  // 🟢 DÜZELTME: Anahtarlar İngilizce yapıldı (AdminContext 'last7' ile eşleşmesi için)
   const dateOptions = { 
     'today': 'Bugün', 
     'last7': 'Son 7 Gün', 
@@ -145,7 +142,6 @@ const AdminPanel = () => {
   const getDateIntervals = useCallback(() => {
     const now = new Date();
     let currentStart, prevStart;
-    // AdminContext'teki anahtarlar ile uyumlu hale getirildi
     switch (dateRange) {
         case 'today': currentStart = startOfDay(now); prevStart = startOfDay(subDays(now, 1)); break;
         case 'last7': currentStart = subDays(now, 7); prevStart = subDays(now, 14); break;
@@ -156,7 +152,6 @@ const AdminPanel = () => {
     return { currentStart, prevStart };
   }, [dateRange]);
 
-  // ... (fetchData ve diğer useEffect'ler aynı mantıkla devam eder, buraya sığdırmak için sadece değişen yerleri vurguluyorum. Tüm kod bloğunu aşağıda vereceğim) ...
   const fetchData = useCallback(async () => {
     if (!businessId) return;
     setLoading(true);
@@ -261,7 +256,6 @@ const AdminPanel = () => {
         { name: 'Değerlendirme', count: typeCounts.evaluation, fill: '#eab308' }
       ]);
       
-      // 🟢 GÜNCELLENEN KISIM: Recent Feedbacks ve İşletme Verisi Birleştirme
       let recentQuery = supabase.from('feedbacks').select(`
             id, created_at, status, feedback_type, message, rating,
             customer_name, customer_email, customer_phone, customer_profile_id,
@@ -285,7 +279,6 @@ const AdminPanel = () => {
       let processedFeedbacks = recentData || [];
 
       if (processedFeedbacks.length > 0) {
-          // 1. Unlinked feedbackleri bağla (Mevcut kod korundu)
           const unlinkedFeedbacks = processedFeedbacks.filter(f => !f.customer_profiles && f.customer_email);
           const emailsToCheck = [...new Set(unlinkedFeedbacks.map(f => f.customer_email))];
           if (emailsToCheck.length > 0) {
@@ -300,7 +293,6 @@ const AdminPanel = () => {
                       if (!f.customer_profiles && f.customer_email && profileMap[f.customer_email]) {
                           f.customer_profiles = profileMap[f.customer_email];
                           f.customer_profile_id = profileMap[f.customer_email].id;
-                          // DB güncellemesini arka planda yap
                           supabase.from('feedbacks')
                               .update({ customer_profile_id: profileMap[f.customer_email].id })
                               .eq('id', f.id)
@@ -310,28 +302,21 @@ const AdminPanel = () => {
               }
           }
 
-          // 2. İşletmeye özel müşteri verilerini (business_customers) çek ve birleştir
           const { data: bizCustomers } = await supabase
             .from('business_customers')
             .select('customer_profile_id, is_vip, is_sensitive, manager_notes')
             .eq('business_id', businessId);
 
           processedFeedbacks = processedFeedbacks.map(f => {
-            // İlgili işletme-müşteri kaydını bul
             const bizData = bizCustomers?.find(bc => bc.customer_profile_id === f.customer_profile_id);
-            
-            // Eğer işletmeye özel veri varsa onu kullan, yoksa false/boş
             const effectiveVip = bizData ? bizData.is_vip : false;
             const effectiveSensitive = bizData ? bizData.is_sensitive : false;
             const effectiveNote = bizData ? bizData.manager_notes : '';
 
             return {
               ...f,
-              // Ana objeye flagleri ekle (görünüm kolaylığı için)
               flag_vip_customer: effectiveVip,
               flag_sensitive_customer: effectiveSensitive,
-              
-              // Customer profiles objesini de güncelle
               customer_profiles: {
                 ...(f.customer_profiles || {}),
                 flag_vip_customer: effectiveVip,
@@ -472,11 +457,7 @@ const AdminPanel = () => {
         {loadingFeedbacks ? (<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>) : recentFeedbacks.length === 0 ? (<div className="text-center py-8 text-slate-500">Henüz aktivite yok.</div>) : (
             <div className="space-y-3">
                 {recentFeedbacks.map((f) => {
-                   const profileFirstName = f.customer_profiles?.users?.first_name;
-                   const profileLastName = f.customer_profiles?.users?.last_name || '';
-                   const profileFullName = profileFirstName ? `${profileFirstName} ${profileLastName}` : f.customer_profiles?.name;
-                   
-                   const customerName = profileFullName || f.customer_name || 'İsimsiz';
+                   const customerName = getCustomerData(f, 'name');
                    const smartName = formatCustomerName(customerName);
 
                    const isVip = f.flag_vip_customer || f.customer_profiles?.flag_vip_customer;
@@ -486,8 +467,10 @@ const AdminPanel = () => {
                    const isEscalated = f.status === 'escalated';
                    const hasManagerNote = !!f.manager_note;
                    const hasCustomerProfileNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
-                   // 🟢 DÜZELTME: Mesaj veya Genel Yorum Kontrolü
                    const hasComment = (f.message && f.message.trim().length > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
+                   
+                   // 🟢 GÜNCELLENMİŞ KONTROL: Sadece gerçek genel değerlendirme varsa göster
+                   const hasGeneralEval = (Number(f.general_eval_rating) > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
 
                    return (
                     <div key={f.id} onClick={() => handleFeedbackClick(f)} className={cn("group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
@@ -514,8 +497,9 @@ const AdminPanel = () => {
                              </div>
                            </div>
                            <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
-                              {/* 🟢 DÜZELTME: "Genel D." Flag'i Eklendi */}
-                              {hasComment && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><FileText className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
+                              {/* 🟢 GÜNCEL KOD: Sadece gerçek genel değerlendirme varsa göster */}
+                              {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
+                              
                               {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
                               {hasManagerNote && (<div className="flex items-center justify-center w-6 h-6 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30"><StickyNote className="w-3.5 h-3.5 fill-current" /></div>)}
                               {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}
