@@ -23,6 +23,20 @@ const translateError = (errorMsg) => {
   return "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.";
 };
 
+// 🟢 Title Case Dönüştürücü Fonksiyonu - Türkçe Karakterleri Destekler
+const toTitleCase = (str) => {
+  if (!str) return '';
+  return str
+    .replace(/^\s+/, '') // Başındaki boşlukları kaldır
+    .toLowerCase()
+    .split(/\s+/) // Boşluklara göre böl
+    .map(word => {
+      if (!word) return word; // Boş string'i koru
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(' '); // Boşluklarla birleştir
+};
+
 // ✅ Legal Modal Component
 function LegalModal({ open, onOpenChange, activeLegalTab, setActiveLegalTab, legalAccepted, setLegalAccepted }) {
   if (!open) return null;
@@ -110,7 +124,19 @@ export default function AuthModal({
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    // 🟢 fullName için: yazarken Title Case göster
+    if (name === 'fullName') {
+      // Eğer son karakteri boşluk ise, otomatik formatla
+      if (value.endsWith(' ')) {
+        // Boşluk eklendiyse, önceki kelimeyi Title Case yap
+        const formatted = toTitleCase(value.slice(0, -1)); // Son boşluğu çıkar
+        setFormData(prev => ({ ...prev, [name]: formatted + ' ' })); // Tekrar boşluk ekle
+      } else {
+        setFormData(prev => ({ ...prev, [name]: value }));
+      }
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const validatePhone = (phone) => /^05\d{9}$/.test(phone.replace(/\s/g, ''));
@@ -242,13 +268,15 @@ export default function AuthModal({
         }
 
         const { first, last } = splitName(formData.fullName);
+        // 🟢 Formatlı adı gönder
+        const formattedFullName = toTitleCase(formData.fullName);
 
         const { data: signupData, error: signupError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
             data: {
-              full_name: formData.fullName,
+              full_name: formattedFullName,
               first_name: first,
               last_name: last,
               phone: formData.phone,
@@ -374,8 +402,10 @@ export default function AuthModal({
 
                   <form onSubmit={handleAuth} className="space-y-4">
                     
-                    {/* 🟢 GÜNCELLEME: Misafir Girişi Kutusu - GİRİŞ (LOGIN) SEKME İÇİN */}
-                    {activeTab === 'login' && showGuestOption && activeRole === 'customer' && (
+
+
+                    {/* 🟢 GÜNCELLEME: Misafir Girişi Kutusu - HEM LOGIN HEM REGISTER SEKMELERİNDE */}
+                    {showGuestOption && activeRole === 'customer' && (
                       <div className="animate-in fade-in slide-in-from-top-2">
                         <div className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700/60 rounded-xl p-4 shadow-lg mb-6 flex flex-col gap-3">
                           {/* Üst Kısım: Soru ve Buton */}
@@ -403,41 +433,12 @@ export default function AuthModal({
                         
                         <div className="relative my-6">
                           <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-700"></span></div>
-                          <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider"><span className="bg-[#0f172a] px-3 text-slate-500">Veya Giriş Yap</span></div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 🟢 GÜNCELLEME: Misafir Girişi Kutusu - KAYIT (REGISTER) SEKME İÇİN */}
-                    {activeTab === 'register' && showGuestOption && activeRole === 'customer' && (
-                      <div className="animate-in fade-in slide-in-from-top-2">
-                        <div className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700/60 rounded-xl p-4 shadow-lg mb-6 flex flex-col gap-3">
-                          {/* Üst Kısım: Soru ve Buton */}
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="text-sm text-slate-300 font-medium leading-tight">
-                              Üyelikle uğraşmak <br className="hidden sm:block"/> istemiyor musun?
-                            </div>
-                            <Button 
-                              type="button" 
-                              onClick={handleGuestLogin} 
-                              size="sm"
-                              className="bg-teal-600 hover:bg-teal-700 text-white font-semibold transition-all duration-200 whitespace-nowrap h-10 px-5 shadow-md shadow-teal-900/20 shrink-0"
-                            >
-                              Misafir Girişi <ArrowRight className="ml-1.5 h-4 w-4" />
-                            </Button>
+                          {/* 🟢 DINAMIK AYRAÇ: Aktif tabı belli et */}
+                          <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
+                            <span className="bg-[#0f172a] px-3 text-slate-500">
+                              {activeTab === 'login' ? 'Veya Kayıt Ol' : 'Veya Giriş Yap'}
+                            </span>
                           </div>
-
-                          {/* Alt Kısım: Pasif Yasal Onay Metni */}
-                          <div className="border-t border-slate-700/50 pt-2">
-                            <p className="text-[10px] text-slate-500 text-center leading-relaxed">
-                              Devam ederek <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('terms'); }}>Kullanım Koşulları</span> ve <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('kvkk'); }}>KVKK Metni</span>'ni kabul etmiş sayılırsınız.
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="relative my-6">
-                          <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-700"></span></div>
-                          <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider"><span className="bg-[#0f172a] px-3 text-slate-500">Veya Kayıt Ol</span></div>
                         </div>
                       </div>
                     )}
@@ -447,9 +448,16 @@ export default function AuthModal({
                         <div className="relative">
                           <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                           <Input 
-                            name="fullName" placeholder="İsim Soyisim (örn: Emir Yılmaz)" 
+                            name="fullName" placeholder="İsim Soyisim (örn: Arda Güngör)" 
                             className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`} 
-                            value={formData.fullName} onChange={handleInputChange} required />
+                            value={formData.fullName} 
+                            onChange={handleInputChange}
+                            onBlur={(e) => {
+                              // 🟢 Focus çıkarken tam Title Case formatla
+                              const formatted = toTitleCase(e.target.value);
+                              setFormData(prev => ({ ...prev, fullName: formatted }));
+                            }}
+                            required />
                         </div>
                         {activeRole === 'manager' && (
                           <div className="relative">

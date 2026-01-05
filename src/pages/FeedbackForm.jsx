@@ -381,6 +381,10 @@ export default function FeedbackForm() {
 
       const currentBusinessId = searchParams.get('business') || branches.find(b => b.id === selectedBranch)?.business_id;
 
+      // 🟢 İsim ve Telefon Garantisi: Metadata'dan ve state'den al
+      let finalCustomerName = isGuest ? 'Anonim' : (user?.user_metadata?.full_name || user?.user_metadata?.first_name || 'Müşteri');
+      let finalCustomerPhone = isGuest ? null : (user?.user_metadata?.phone || user?.phone || null);
+
       await supabase.from('feedbacks').insert({
         business_id: currentBusinessId,
         branch_id: selectedBranch,
@@ -395,8 +399,8 @@ export default function FeedbackForm() {
         general_eval_rating: generalRating > 0 ? generalRating : null,
         general_eval_comment: generalComment || null,
         customer_email: isGuest ? null : (user?.email || null),
-        customer_phone: isGuest ? null : (user?.phone || null),
-        customer_name: isGuest ? 'Anonim' : (user?.user_metadata?.first_name || 'Müşteri'),
+        customer_phone: finalCustomerPhone,
+        customer_name: finalCustomerName,
         status: 'new',
         created_at: new Date().toISOString(),
         lang: language
