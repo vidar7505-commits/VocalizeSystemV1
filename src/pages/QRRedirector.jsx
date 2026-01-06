@@ -17,6 +17,26 @@ const QRRedirector = () => {
   
   const processingRef = useRef(false);
 
+  // 🟢 YENİ: iOS'ta güvenli localStorage yazma
+  const writeToStorageAsync = async (key, value) => {
+    return new Promise((resolve) => {
+      try {
+        localStorage.setItem(key, value);
+        // iOS'ta yazmanın tamamlandığından emin ol
+        const written = localStorage.getItem(key);
+        if (written === value) {
+          resolve(true);
+        } else {
+          console.warn(`Storage verification failed for ${key}`);
+          resolve(false);
+        }
+      } catch (e) {
+        console.warn(`Storage write error for ${key}:`, e);
+        resolve(false);
+      }
+    });
+  };
+
   useEffect(() => {
     if (processingRef.current) return;
     processingRef.current = true;
@@ -41,7 +61,7 @@ const QRRedirector = () => {
 
         const { id: branch_id, business_id, branch_name_tr } = branchData;
 
-        // 2. Taramayı Logla
+        // 2. Taramayı Supabase'e Logla (Kritik)
         const logResult = await supabase.from('qr_scans').insert({
           branch_id,
           business_id,
@@ -51,27 +71,34 @@ const QRRedirector = () => {
         });
         
         if (logResult.error) {
-            console.error("QR Insert Error:", logResult.error);
+          console.error("QR Insert Error:", logResult.error);
         }
 
-        // 3. Kullanıcı Oturumunu Kontrol Et
-        const { data: { session } } = await supabase.auth.getSession();
-
-        // Ziyaret edilen işletmeleri tarayıcıya kaydetme (Senin mevcut kodun)
-        try {
-            const existing = JSON.parse(localStorage.getItem('vocalize_visited_businesses') || '[]');
-            if (!existing.includes(business_id)) {
+        // 3. 🟢 YENİ: localStorage'a yaz (PARALEL - ana akış bloke edilmez)
+        Promise.allSettled([
+          writeToStorageAsync('vocalize_last_business', business_id),
+          writeToStorageAsync('vocalize_last_branch', branch_id),
+          (async () => {
+            try {
+              const existing = JSON.parse(localStorage.getItem('vocalize_visited_businesses') || '[]');
+              if (!existing.includes(business_id)) {
                 existing.push(business_id);
-                localStorage.setItem('vocalize_visited_businesses', JSON.stringify(existing));
+                await writeToStorageAsync('vocalize_visited_businesses', JSON.stringify(existing));
+              }
+              return true;
+            } catch (e) {
+              console.warn('Error updating visited businesses:', e);
+              return false;
             }
-            localStorage.setItem('vocalize_last_business', business_id);
-            localStorage.setItem('vocalize_last_branch', branch_id);
-        } catch (e) { console.warn("Storage Error", e); }
+          })()
+        ]).catch(e => console.warn('Storage operations error:', e));
+
+        // 4. Kullanıcı Oturumunu Kontrol Et
+        const { data: { session } } = await supabase.auth.getSession();
 
         if (session) {
           const userType = session.user?.user_metadata?.user_type;
           
-          // YÖNETİCİ İSE (Mevcut yapı korundu, sadece pending kaydı eklendi)
           if (userType === 'manager') {
             await supabase.auth.signOut({ scope: 'local' });
             
@@ -81,22 +108,13 @@ const QRRedirector = () => {
                 duration: 4000 
             });
 
-            // 🔥 EKLENEN KISIM 1: Yönetici çıkış yapıp login'e giderken veri kaybolmasın
-            localStorage.setItem('vocalize_pending_qr', JSON.stringify({
-                business_id,
-                branch_id,
-                qr_code: qrCode,
-                timestamp: Date.now()
-            }));
-            // 🔥 BİTİŞ
-
             setTimeout(() => {
                 navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
             }, 800);
             return;
           }
           
-          // MÜŞTERİ İSE (Aynen korundu)
+          // Müşteri ise
           const user_id = session.user.id;
           await supabase.from('customer_qr_scans').upsert({ 
               user_id, 
@@ -111,17 +129,7 @@ const QRRedirector = () => {
           navigate(`/customer-panel?business=${business_id}&branch=${branch_id}&from_qr=true`, { replace: true });
 
         } else {
-          // GİRİŞ YAPMAMIŞ / MİSAFİR (Mevcut yapı korundu, sadece pending kaydı eklendi)
-          
-          // 🔥 EKLENEN KISIM 2: Giriş yapmaya veya misafir olmaya gidiyor. Veriyi cebe atalım.
-          localStorage.setItem('vocalize_pending_qr', JSON.stringify({
-            business_id,
-            branch_id,
-            qr_code: qrCode,
-            timestamp: Date.now()
-          }));
-          // 🔥 BİTİŞ
-
+          // Misafir ise
           navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
         }
 
