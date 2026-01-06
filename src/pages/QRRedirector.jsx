@@ -57,6 +57,7 @@ const QRRedirector = () => {
         // 3. Kullanıcı Oturumunu Kontrol Et
         const { data: { session } } = await supabase.auth.getSession();
 
+        // Ziyaret edilen işletmeleri tarayıcıya kaydetme (Senin mevcut kodun)
         try {
             const existing = JSON.parse(localStorage.getItem('vocalize_visited_businesses') || '[]');
             if (!existing.includes(business_id)) {
@@ -70,7 +71,7 @@ const QRRedirector = () => {
         if (session) {
           const userType = session.user?.user_metadata?.user_type;
           
-          // 🟢 GÜNCELLEME: Mesaj Profesyonelleştirildi
+          // YÖNETİCİ İSE (Mevcut yapı korundu, sadece pending kaydı eklendi)
           if (userType === 'manager') {
             await supabase.auth.signOut({ scope: 'local' });
             
@@ -80,13 +81,22 @@ const QRRedirector = () => {
                 duration: 4000 
             });
 
+            // 🔥 EKLENEN KISIM 1: Yönetici çıkış yapıp login'e giderken veri kaybolmasın
+            localStorage.setItem('vocalize_pending_qr', JSON.stringify({
+                business_id,
+                branch_id,
+                qr_code: qrCode,
+                timestamp: Date.now()
+            }));
+            // 🔥 BİTİŞ
+
             setTimeout(() => {
                 navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
             }, 800);
             return;
           }
           
-          // Müşteri ise
+          // MÜŞTERİ İSE (Aynen korundu)
           const user_id = session.user.id;
           await supabase.from('customer_qr_scans').upsert({ 
               user_id, 
@@ -101,7 +111,17 @@ const QRRedirector = () => {
           navigate(`/customer-panel?business=${business_id}&branch=${branch_id}&from_qr=true`, { replace: true });
 
         } else {
-          // Misafir ise
+          // GİRİŞ YAPMAMIŞ / MİSAFİR (Mevcut yapı korundu, sadece pending kaydı eklendi)
+          
+          // 🔥 EKLENEN KISIM 2: Giriş yapmaya veya misafir olmaya gidiyor. Veriyi cebe atalım.
+          localStorage.setItem('vocalize_pending_qr', JSON.stringify({
+            business_id,
+            branch_id,
+            qr_code: qrCode,
+            timestamp: Date.now()
+          }));
+          // 🔥 BİTİŞ
+
           navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
         }
 

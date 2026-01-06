@@ -128,7 +128,7 @@ export default function CustomerPanel() {
 
   const lastLoggedRef = useRef({ business: null, branch: null });
 
-  // 🟢 ANALYTICS (GÜNCELLENDİ: QR ve WEB AYRILDI)
+  // 🟢 ANALYTICS LOGIC (GÜNCELLENDİ)
   useEffect(() => {
     if (!businessParam) return;
     
@@ -138,7 +138,6 @@ export default function CustomerPanel() {
     const urlParams = new URLSearchParams(window.location.search);
     const isFromQr = urlParams.get('from_qr') === 'true' || urlParams.get('qr');
 
-    // 🟢 DURUM 1: QR İLE GELDİ
     if (isFromQr && !alreadyLogged) {
         supabase.from('qr_scans').insert({
             business_id: businessParam,
@@ -149,16 +148,10 @@ export default function CustomerPanel() {
         }).then(({ error }) => {
             if (!error) {
                 sessionStorage.setItem(sessionKey, 'true');
-                
-                const newUrl = new URL(window.location.href);
-                newUrl.searchParams.delete('from_qr');
-                newUrl.searchParams.delete('qr');
-                newUrl.searchParams.delete('guest');
-                window.history.replaceState(null, '', newUrl.toString());
+                // URL'i temizleme işlemi, persistQrScan'in çalışması için kaldırıldı veya ertelendi
             }
         });
     } 
-    // 🟢 DURUM 2: NORMAL WEB GİRİŞİ (QR parametresi YOK)
     else if (!alreadyLogged && !isFromQr) {
          supabase.from('page_views').insert({
             business_id: businessParam,
@@ -174,313 +167,12 @@ export default function CustomerPanel() {
     }
   }, [businessParam, branchParam, qrParam, location.pathname]); 
 
-  const texts = {
-    tr: {
-      welcome: 'Hoş Geldiniz',
-      guestWelcome: 'Deneyiminizi Paylaşın',
-      subtitle: 'Geri bildirimlerinizle işletmelerin gelişmesine yardımcı olun.',
-      qrAutoDetect1: 'İşletmeyi bir kez QR ile doğruladığınızda, sonraki girişlerinizde işletme ve şube bilgileri otomatik olarak açılır.',
-      qrAutoDetect2: 'Tekrar QR okutmanıza gerek kalmaz.',
-      qrAutoDetect3: 'Bu doğrulama yalnızca seçtiğiniz işletme için geçerlidir.',
-      sendFeedback: 'Geri Bildirim Gönderin',
-      complaint: 'Şikayet Et!',
-      suggestion: 'Öneride Bulun',
-      review: 'Değerlendir',
-      complaintDesc: 'Bir sorun mu yaşadınız? Hemen bildirin!',
-      suggestionDesc: 'Fikriniz var mı? Bize yazın!',
-      reviewDesc: 'Deneyiminizi puanlayın!',
-      myFeedbacks: 'Geri Bildirimlerim',
-      stats: 'İstatistiklerim',
-      selectBusiness: 'İşletme Seçin',
-      selectBranch: 'Şube Seçin',
-      selectPlaceholder: 'Seçiniz...',
-      qrScanned: 'QR Kod İle Doğrulandı',
-      qrInfo: (bName, brName) => `${bName} - ${brName}`,
-      changeInfo: 'Değiştir',
-      infoBox: 'Geri bildirimleriniz doğrudan işletme yöneticilerine anında iletilir ve aksiyon alınır.',
-      warningTitle: 'Önemli Not:',
-      warningText: 'Vocalize geri bildirimlerinizi anında yöneticilere iletir. Çözüm süreci ve nihai geri dönüş tamamen işletmeye bağlıdır.',
-      allFeedbacks: 'Yaptığınız Tüm Geri Bildirimlerinizi Burada Görüntüleyebilirsiniz',
-      allStats: 'Tüm Zamanların İstatistiklerine Ulaşabilirsiniz',
-      supportItem: 'Destek',
-      logout: 'Çıkış Yap',
-      total: 'Toplam Geri Bildirim Sayısı',
-      avgRating: 'Puanlama Ortalaması',
-      mostVisited: 'En Çok Geri Bildirim Yapılan İşletme',
-      feedbackTypes: 'Form Türleri',
-      complaintBadge: 'Şikayet',
-      suggestionBadge: 'Öneri',
-      reviewBadge: 'Değerlendirme',
-      noFeedbacks: 'Henüz geri bildirim göndermediniz',
-      sendFirstFeedback: 'İlk geri bildiriminizi gönderin ve deneyiminizi paylaşın!',
-      sendFeedbackBtn: 'Geri Bildirim Gönder',
-      all: 'Tümü',
-      newest: 'En Yeni',
-      oldest: 'En Eski',
-      delivered: 'İletildi',
-      reviewing: 'İnceleniyor',
-      resolved: 'İşlendi',
-      visits: 'ziyaret',
-      guest: 'Misafir',
-      register: 'Kayıt Ol',
-      guestTracking: 'Geri bildirimlerinizi takip edin',
-      guestTrackingDesc: 'Hesap oluşturarak gönderdiğiniz geri bildirimlerin durumunu takip edebilirsiniz.',
-      home: 'Ana Sayfa',
-      notifications: 'Bildirimler',
-      statistics: 'İstatistik',
-      filterAllBranches: 'Tüm Şubeler',
-      filterAllTypes: 'Tüm Türler',
-      filterAllStatuses: 'Tüm Durumlar',
-      changeEmail: 'E-posta Değiştir',
-      changePhone: 'Telefon Değiştir',
-      changePassword: 'Şifre Değiştir',
-      createSupportTicket: 'Destek Talebi Oluştur',
-      feedbackToVocalize: "Vocalize'a Geri Bildirim",
-      deleteAccount: 'Hesabı Sil',
-      deleteAccountTitle: 'Hesabı Silmek İstediğinize Emin misiniz?',
-      deleteAccountWarning: 'Bu işlem geri alınamaz. Tüm verileriniz kalıcı olarak silinecektir.',
-      deleteConfirm: 'Eminim, hesabımı silmek istiyorum',
-      confirm: 'Onaylıyorum',
-      cancel: 'İptal',
-      unknown: 'Bilinmiyor',
-      totalFeedbacksCount: 'Toplam geri bildirim',
-      advancedFilter: 'Gelişmiş Filtreleme',
-      formType: 'Form Biçimi',
-      branch: 'İşletme/Şube',
-      status: 'Durum',
-      feedbackDetail: 'Bildirim Detayı',
-      yourMessage: 'Mesajınız',
-      attachedImages: 'Ekli Görseller',
-      close: 'Kapat',
-      generalEval: 'Genel Değerlendirme',
-      guestCTA: {
-        feedbackTitle: "Tüm Geçmiş Geri Bildirimlerinizi görmek için Kayıt Olun",
-        statsTitle: "İstatistiklerinizi görmek için Kayıt Olun",
-        subtext: "Misafir verileri kaydedilmez. Geçmiş bildiriminize ve istatistiklerinize ulaşmak için üye girişi yapmalısınız.",
-        button: "Kayıt Ol"
-      },
-      guestWarning: {
-        title: "⚠️ Misafir olarak devam ediyorsunuz",
-        text: "Bu bildirim hesabınıza kaydedilmeyecek ve işletme size geri dönüş yapamayacaktır. Geri bildiriminizin takibi ve işletmenin sizinle iletişime geçebilmesi için Giriş Yaparak Gönderin.",
-        dontShow: "Daha sonra gösterme",
-        continueGuest: "Devam Et",
-        loginToSend: "Giriş Yaparak Gönder"
-      },
-      support: {
-        title: 'Destek Talebi Oluştur',
-        description: 'Sorununuzu veya önerinizi detaylı bir şekilde açıklayın...',
-        email: 'E-posta',
-        message: 'Mesajınız',
-        messagePlaceholder: 'Sorununuzu veya önerinizi detaylı bir şekilde açıklayın...',
-        images: 'Görsel Yükleme (Opsiyonel)',
-        upload: 'Görsel Yükle',
-        send: 'Gönder',
-        sending: 'Gönderiliyor...',
-        successTitle: 'Destek talebiniz gönderildi!',
-        successDesc: 'En kısa sürede dönüş yapacağız.',
-        errorTitle: 'Hata',
-        errorDesc: 'Bir hata oluştu, lütfen tekrar deneyin.',
-        errorEmpty: 'Lütfen mesajınızı yazın.',
-        errorEmail: 'Lütfen e-posta adresinizi girin.',
-        maxImages: 'En fazla 3 görsel ekleyebilirsiniz.',
-        imageUploaded: (count) => `${count} görsel yüklendi`
-      },
-      statsPage: {
-        feedbackBreakdown: 'Geri Bildirim Dağılımı',
-        ratingOverview: 'Puanlama Özeti',
-        noData: 'Henüz veri bulunmamaktadır'
-      },
-      userTitle: {
-        newVoice: 'Yeni Ses',
-        experiencedObserver: 'Deneyimli Gözlemci',
-        vocalizAmbassador: 'Vocalize Elçisi'
-      },
-      userTitleInfo: {
-        newVoiceDesc: 'Yeni başlayan bir ses olarak, görüşlerini paylaştığın için teşekkür ederiz.',
-        experiencedObserverDesc: 'Deneyimli gözlemci olarak, tutarlı geri bildirimler veriyorsun.',
-        vocalizAmbassadorDesc: 'Vocalize Elçisi olarak, işletmelerin gelişmesine büyük katkı sağlıyorsun!',
-        nextLevel: 'Bir Sonraki Seviye',
-        nextLevelNewVoice: '6 bildirim daha yaparsan "Deneyimli Gözlemci" olacaksın!',
-        nextLevelExperienced: '20 bildirim daha yaparsan "Vocalize Elçisi" olacaksın!',
-        maxLevel: '🎉 Zaten en yüksek seviyedesin! Harika bir Elçisin!'
-      },
-      businessSuggestion: {
-        title: 'Vocalize Burada Olsun İster Misiniz?', // 🟢 DÜZELTME
-        businessName: 'İşletme Adı',
-        businessNamePlaceholder: 'Örn: Kahve Dükkanı',
-        location: 'Konum',
-        locationPlaceholder: 'Örn: İstanbul, Beşiktaş',
-        suggest: 'Öner',
-        successMsg: 'Öneriniz başarıyla gönderildi!',
-        errorMsg: 'Lütfen tüm alanları doldurunuz.'
-      },
-      visitedBusinesses: 'Ziyaret Edilen İşletmeler',
-      noVisitedBusiness: 'Henüz bir işletme ziyaret etmediniz',
-      startWithQR: 'QR kod okutarak başlayın ve geri bildirim gönderin',
-      selectBranchForFeedback: 'Geri bildirim göndermek için şube seçin',
-      loading: 'Yükleniyor...',
-      branchSelection: 'Branch Selection',
-      sortBy: 'Sıralama'
-    },
-    en: {
-      welcome: 'Welcome',
-      guestWelcome: 'Share Your Experience',
-      subtitle: 'Help businesses improve with your feedback.',
-      qrAutoDetect1: 'Once verified via QR, business info is saved.',
-      qrAutoDetect2: 'No need to scan QR again.',
-      qrAutoDetect3: 'Valid for selected business only.',
-      sendFeedback: 'Send Feedback',
-      complaint: 'Report Issue',
-      suggestion: 'Suggest',
-      review: 'Rate',
-      complaintDesc: 'Experienced an issue? Report it now!',
-      suggestionDesc: 'Have an idea? Let us know!',
-      reviewDesc: 'Rate your experience!',
-      myFeedbacks: 'My Feedbacks',
-      stats: 'My Statistics',
-      selectBusiness: 'Select Business',
-      selectBranch: 'Select Branch',
-      selectPlaceholder: 'Select...',
-      qrScanned: 'Verified via QR Code',
-      qrInfo: (bName, brName) => `${bName} - ${brName}`,
-      changeInfo: 'Change',
-      infoBox: 'Your feedback is instantly delivered to business managers.',
-      warningTitle: 'Important Note:',
-      warningText: 'Vocalize instantly delivers your feedback to managers.',
-      allFeedbacks: 'All My Feedbacks',
-      allStats: 'View Statistics for All Time',
-      supportItem: 'Support',
-      logout: 'Logout',
-      total: 'Total Feedbacks',
-      avgRating: 'Average Rating',
-      mostVisited: 'Most Visited',
-      feedbackTypes: 'Form Types',
-      complaintBadge: 'Complaint',
-      suggestionBadge: 'Suggestion',
-      reviewBadge: 'Review',
-      noFeedbacks: 'No feedbacks yet',
-      sendFirstFeedback: 'Send your first feedback!',
-      sendFeedbackBtn: 'Send Feedback',
-      all: 'All',
-      newest: 'Newest',
-      oldest: 'Oldest',
-      delivered: 'Delivered',
-      reviewing: 'Reviewing',
-      resolved: 'Resolved',
-      visits: 'visits',
-      guest: 'Guest',
-      register: 'Sign Up',
-      guestTracking: 'Track your feedbacks',
-      guestTrackingDesc: 'Create an account to track feedbacks.',
-      home: 'Home',
-      notifications: 'Notifications',
-      statistics: 'Statistics',
-      filterAllBranches: 'All Branches',
-      filterAllTypes: 'All Types',
-      filterAllStatuses: 'All Statuses',
-      changeEmail: 'Change Email',
-      changePhone: 'Change Phone',
-      changePassword: 'Change Password',
-      createSupportTicket: 'Create Support Ticket',
-      feedbackToVocalize: "Feedback to Vocalize",
-      deleteAccount: 'Delete Account',
-      deleteAccountTitle: 'Are you sure?',
-      deleteAccountWarning: 'This action cannot be undone.',
-      deleteConfirm: 'I want to delete my account',
-      confirm: 'Confirm',
-      cancel: 'Cancel',
-      unknown: 'Unknown',
-      totalFeedbacksCount: 'Total feedbacks',
-      advancedFilter: 'Filter',
-      formType: 'Form Type',
-      branch: 'Branch',
-      status: 'Status',
-      feedbackDetail: 'Feedback Detail',
-      yourMessage: 'Your Message',
-      attachedImages: 'Attached Images',
-      close: 'Close',
-      generalEval: 'General Evaluation',
-      guestCTA: {
-        feedbackTitle: "Register to view past feedbacks",
-        statsTitle: "Register to view statistics",
-        subtext: "Guest data is not saved. Sign in to access history.",
-        button: "Sign Up"
-      },
-      guestWarning: {
-        title: "⚠️ Continuing as Guest",
-        text: "Guest feedbacks are not saved to your profile.",
-        dontShow: "Don't show again",
-        continueGuest: "Continue",
-        loginToSend: "Sign In"
-      },
-      support: {
-        title: 'Support Ticket',
-        description: 'Explain your issue...',
-        email: 'Email',
-        message: 'Message',
-        messagePlaceholder: 'Explain in detail...',
-        images: 'Images (Optional)',
-        upload: 'Upload',
-        send: 'Send',
-        sending: 'Sending...',
-        successTitle: 'Sent!',
-        successDesc: 'We will reply soon.',
-        errorTitle: 'Error',
-        errorDesc: 'Try again.',
-        errorEmpty: 'Message is empty.',
-        errorEmail: 'Email is required.',
-        maxImages: 'Max 3 images.',
-        imageUploaded: (count) => `${count} uploaded`
-      },
-      statsPage: {
-        feedbackBreakdown: 'Feedback Breakdown',
-        ratingOverview: 'Rating Overview',
-        noData: 'No data yet'
-      },
-      userTitle: {
-        newVoice: 'New Voice',
-        experiencedObserver: 'Experienced Observer',
-        vocalizAmbassador: 'Vocalize Ambassador'
-      },
-      userTitleInfo: {
-        newVoiceDesc: 'Thank you for sharing your voice as a newcomer.',
-        experiencedObserverDesc: 'As an experienced observer, you are providing consistent feedback.',
-        vocalizAmbassadorDesc: 'As a Vocalize Ambassador, you are making a huge impact!',
-        nextLevel: 'Next Level',
-        nextLevelNewVoice: '6 more feedbacks to become "Experienced Observer"!',
-        nextLevelExperienced: '20 more feedbacks to become "Vocalize Ambassador"!',
-        maxLevel: '🎉 You are already at the highest level! You are an amazing Ambassador!'
-      },
-      businessSuggestion: {
-        title: 'Want Vocalize Here?',
-        businessName: 'Business Name',
-        businessNamePlaceholder: 'E.g.: Coffee Shop',
-        location: 'Location',
-        locationPlaceholder: 'E.g.: Istanbul, Besiktash',
-        suggest: 'Suggest',
-        successMsg: 'Your suggestion has been sent!',
-        errorMsg: 'Please fill in all fields.'
-      },
-      visitedBusinesses: 'Visited Businesses',
-      noVisitedBusiness: 'No visited businesses yet',
-      startWithQR: 'Scan a QR code to get started and send feedback',
-      selectBranchForFeedback: 'Select a branch to send feedback',
-      loading: 'Loading...',
-      branchSelection: 'Branch Selection',
-      sortBy: 'Sort By'
-    }
-  };
-
-  const t = useMemo(() => texts[language] || texts.tr, [language]);
-
-  useEffect(() => {
-    localStorage.setItem('vocalize_lang', language);
-  }, [language]);
-
-  // --- INITIALIZATION ---
+  // --- INITIALIZATION START (GÜNCELLENDİ: Hafıza ve Kalıcı Kayıt Mantığı) ---
   useEffect(() => {
     const init = async () => {
+      // 1. Auth yüklenene kadar bekle (Veri güvenliği için kritik)
       if (authLoading) return;
+      
       setIsLoading(true);
       try {
         const guestMode = localStorage.getItem('vocalize_guest_mode');
@@ -516,8 +208,25 @@ export default function CustomerPanel() {
           setSupportEmail('');
         }
 
-        let targetBusinessId = businessParam;
-        let targetBranchId = branchParam;
+        // 2. HAFIZA KONTROLÜ (Bekleyen QR Verisi)
+        let pendingQR = null;
+        try {
+            const stored = localStorage.getItem('vocalize_pending_qr');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                // 15 Dakika süre tanı (Kayıt olma, mail onayı vb. için)
+                if (Date.now() - parsed.timestamp < 900000) { 
+                    pendingQR = parsed;
+                } else {
+                    localStorage.removeItem('vocalize_pending_qr'); // Süresi dolmuş veri temizlenir
+                }
+            }
+        } catch (e) { console.error(e); }
+
+        // 3. HEDEF BELİRLEME (Öncelik: URL > Pending > Last Visited)
+        let targetBusinessId = businessParam || pendingQR?.business_id;
+        let targetBranchId = branchParam || pendingQR?.branch_id;
+        let targetQrCode = qrParam || pendingQR?.qr_code;
 
         if (!targetBusinessId) {
             const lastBusiness = localStorage.getItem('vocalize_last_business');
@@ -529,16 +238,35 @@ export default function CustomerPanel() {
             if (lastBranch) targetBranchId = lastBranch;
         }
 
-        if (qrParam) {
+        // 4. VERİYİ İŞLEME VE KALICI HALE GETİRME
+        // Eğer elimizde bir QR kodu varsa (URL'den veya Pending'den), bunu işleyelim
+        if (targetQrCode) {
           setHasScannedQR(true);
-          if (branchParam) {
-            const { data: branchData } = await supabase.from('branches').select('branch_name_tr').eq('id', branchParam).single();
+          if (targetBranchId) {
+            const { data: branchData } = await supabase.from('branches').select('branch_name_tr').eq('id', targetBranchId).single();
             if (branchData) {
-              setQrInfo({ business_id: businessParam, branch_id: branchParam, qr_code: qrParam, branch_name: branchData.branch_name_tr });
+              setQrInfo({ 
+                  business_id: targetBusinessId, 
+                  branch_id: targetBranchId, 
+                  qr_code: targetQrCode, 
+                  branch_name: branchData.branch_name_tr 
+              });
+            }
+
+            // 🔥 KRİTİK: persistQrScan çağrılır
+            // Bu fonksiyon, Misafir için localStorage'a, Üye için DB'ye kayıt yapar.
+            if (targetBusinessId) {
+                await persistQrScan(targetBusinessId, targetBranchId, targetQrCode);
+                
+                // İşlem başarıyla yapıldıysa, pending veriyi temizle
+                if (pendingQR) {
+                    localStorage.removeItem('vocalize_pending_qr');
+                }
             }
           }
         } 
         
+        // 5. YÖNLENDİRME VE STATE GÜNCELLEME
         if (targetBusinessId) {
              setSelectedBusiness(targetBusinessId);
              fetchBranches(targetBusinessId);
@@ -549,6 +277,13 @@ export default function CustomerPanel() {
              if (targetBranchId) {
                  setSelectedBranch(targetBranchId);
                  newParams.set('branch', targetBranchId);
+             }
+             
+             // Eğer pending'den (cepten) geldiyse URL'e from_qr ekleyelim
+             if (pendingQR) {
+                 newParams.set('from_qr', 'true');
+                 // İstenirse QR kodu da URL'e geri eklenebilir:
+                 // if(targetQrCode) newParams.set('qr', targetQrCode);
              }
              
              if (language) newParams.set('lang', language);
@@ -568,7 +303,8 @@ export default function CustomerPanel() {
     };
 
     init();
-  }, [businessParam, branchParam, qrParam, guestParam, authUser, authLoading]);
+  }, [businessParam, branchParam, qrParam, guestParam, authUser, authLoading]); // Dependency array
+  // --- INITIALIZATION END ---
 
   const fetchBusinesses = useCallback(async () => {
     try {
@@ -634,7 +370,6 @@ export default function CustomerPanel() {
         localStorage.setItem('vocalize_visited_businesses', JSON.stringify(existingIds));
       }
       
-      // 🟢 DÜZELTME: Doğrudan authUser'ı kullan (Race condition'ı önler)
       const targetEmail = authUser?.email || user?.email;
       
       if (targetEmail) {
@@ -649,12 +384,13 @@ export default function CustomerPanel() {
     } catch (err) {
       console.error('Error persisting visited business:', err);
     }
-  }, [user, authUser]); // authUser eklendi
+  }, [user, authUser]); 
 
   const persistQrScan = useCallback(async (businessId, branchId, qrCode) => {
     try {
       await persistVisitedBusiness(businessId);
       
+      // Local Storage (Herkes için)
       const qrData = {
         business_id: businessId,
         branch_id: branchId,
@@ -664,24 +400,28 @@ export default function CustomerPanel() {
       
       localStorage.setItem(`vocalize_qr_${businessId}`, JSON.stringify(qrData));
       
-      // 🟢 DÜZELTME: Doğrudan authUser'ı kullan (Race condition'ı önler)
-      const targetEmail = authUser?.email || user?.email;
+      // DB Kayıt (Sadece Üyeler için)
+      const activeUser = authUser || user;
+      
+      if (activeUser?.email) {
+        // ID varsa ID ile, yoksa email ile garantiye alalım (gerçi authUser varsa ID vardır)
+        const userIdToUse = activeUser.id; 
 
-      if (targetEmail) {
         await supabase.from('customer_qr_scans').upsert({
-          customer_email: targetEmail,
+          user_id: userIdToUse, // ID kullanımı daha güvenli
+          customer_email: activeUser.email,
           business_id: businessId,
           branch_id: branchId,
           qr_code: qrCode,
           last_scan_at: new Date().toISOString()
         }, {
-          onConflict: 'customer_email,business_id,branch_id,qr_code'
+          onConflict: 'user_id,business_id,branch_id,qr_code'
         });
       }
     } catch (err) {
       console.error('Error persisting QR scan:', err);
     }
-  }, [user, authUser, persistVisitedBusiness]); // authUser eklendi
+  }, [user, authUser, persistVisitedBusiness]);
 
   const loadPersistedBusinesses = useCallback(async () => {
     if (!user?.email) return;
@@ -746,9 +486,9 @@ export default function CustomerPanel() {
     }
   }, [user, isGuest, loadPersistedBusinesses, loadPersistedQrs, fetchBusinesses]);
 
-  // 🟢 DÜZELTME: authLoading kontrolü eklendi. Kullanıcı verisi tam yüklenmeden çalışmayacak.
+  // Sayfa açıldığında URL'de QR varsa onu işle (Bu kısım Init içindeki logic ile örtüşse de yedek olarak kalabilir, authLoading kontrolü eklendi)
   useEffect(() => {
-    if (authLoading) return; // BEKLE!
+    if (authLoading) return;
     if (qrParam && businessParam && branchParam) {
       persistQrScan(businessParam, branchParam, qrParam);
     }
@@ -1209,6 +949,309 @@ export default function CustomerPanel() {
       </p>
     </div>
   );
+
+  const texts = {
+    tr: {
+      welcome: 'Hoş Geldiniz',
+      guestWelcome: 'Deneyiminizi Paylaşın',
+      subtitle: 'Geri bildirimlerinizle işletmelerin gelişmesine yardımcı olun.',
+      qrAutoDetect1: 'İşletmeyi bir kez QR ile doğruladığınızda, sonraki girişlerinizde işletme ve şube bilgileri otomatik olarak açılır.',
+      qrAutoDetect2: 'Tekrar QR okutmanıza gerek kalmaz.',
+      qrAutoDetect3: 'Bu doğrulama yalnızca seçtiğiniz işletme için geçerlidir.',
+      sendFeedback: 'Geri Bildirim Gönderin',
+      complaint: 'Şikayet Et!',
+      suggestion: 'Öneride Bulun',
+      review: 'Değerlendir',
+      complaintDesc: 'Bir sorun mu yaşadınız? Hemen bildirin!',
+      suggestionDesc: 'Fikriniz var mı? Bize yazın!',
+      reviewDesc: 'Deneyiminizi puanlayın!',
+      myFeedbacks: 'Geri Bildirimlerim',
+      stats: 'İstatistiklerim',
+      selectBusiness: 'İşletme Seçin',
+      selectBranch: 'Şube Seçin',
+      selectPlaceholder: 'Seçiniz...',
+      qrScanned: 'QR Kod İle Doğrulandı',
+      qrInfo: (bName, brName) => `${bName} - ${brName}`,
+      changeInfo: 'Değiştir',
+      infoBox: 'Geri bildirimleriniz doğrudan işletme yöneticilerine anında iletilir ve aksiyon alınır.',
+      warningTitle: 'Önemli Not:',
+      warningText: 'Vocalize geri bildirimlerinizi anında yöneticilere iletir. Çözüm süreci ve nihai geri dönüş tamamen işletmeye bağlıdır.',
+      allFeedbacks: 'Yaptığınız Tüm Geri Bildirimlerinizi Burada Görüntüleyebilirsiniz',
+      allStats: 'Tüm Zamanların İstatistiklerine Ulaşabilirsiniz',
+      supportItem: 'Destek',
+      logout: 'Çıkış Yap',
+      total: 'Toplam Geri Bildirim Sayısı',
+      avgRating: 'Puanlama Ortalaması',
+      mostVisited: 'En Çok Geri Bildirim Yapılan İşletme',
+      feedbackTypes: 'Form Türleri',
+      complaintBadge: 'Şikayet',
+      suggestionBadge: 'Öneri',
+      reviewBadge: 'Değerlendirme',
+      noFeedbacks: 'Henüz geri bildirim göndermediniz',
+      sendFirstFeedback: 'İlk geri bildiriminizi gönderin ve deneyiminizi paylaşın!',
+      sendFeedbackBtn: 'Geri Bildirim Gönder',
+      all: 'Tümü',
+      newest: 'En Yeni',
+      oldest: 'En Eski',
+      delivered: 'İletildi',
+      reviewing: 'İnceleniyor',
+      resolved: 'İşlendi',
+      visits: 'ziyaret',
+      guest: 'Misafir',
+      register: 'Kayıt Ol',
+      guestTracking: 'Geri bildirimlerinizi takip edin',
+      guestTrackingDesc: 'Hesap oluşturarak gönderdiğiniz geri bildirimlerin durumunu takip edebilirsiniz.',
+      home: 'Ana Sayfa',
+      notifications: 'Bildirimler',
+      statistics: 'İstatistik',
+      filterAllBranches: 'Tüm Şubeler',
+      filterAllTypes: 'Tüm Türler',
+      filterAllStatuses: 'Tüm Durumlar',
+      changeEmail: 'E-posta Değiştir',
+      changePhone: 'Telefon Değiştir',
+      changePassword: 'Şifre Değiştir',
+      createSupportTicket: 'Destek Talebi Oluştur',
+      feedbackToVocalize: "Vocalize'a Geri Bildirim",
+      deleteAccount: 'Hesabı Sil',
+      deleteAccountTitle: 'Hesabı Silmek İstediğinize Emin misiniz?',
+      deleteAccountWarning: 'Bu işlem geri alınamaz. Tüm verileriniz kalıcı olarak silinecektir.',
+      deleteConfirm: 'Eminim, hesabımı silmek istiyorum',
+      confirm: 'Onaylıyorum',
+      cancel: 'İptal',
+      unknown: 'Bilinmiyor',
+      totalFeedbacksCount: 'Toplam geri bildirim',
+      advancedFilter: 'Gelişmiş Filtreleme',
+      formType: 'Form Biçimi',
+      branch: 'İşletme/Şube',
+      status: 'Durum',
+      feedbackDetail: 'Bildirim Detayı',
+      yourMessage: 'Mesajınız',
+      attachedImages: 'Ekli Görseller',
+      close: 'Kapat',
+      generalEval: 'Genel Değerlendirme',
+      guestCTA: {
+        feedbackTitle: "Tüm Geçmiş Geri Bildirimlerinizi görmek için Kayıt Olun",
+        statsTitle: "İstatistiklerinizi görmek için Kayıt Olun",
+        subtext: "Misafir verileri kaydedilmez. Geçmiş bildiriminize ve istatistiklerinize ulaşmak için üye girişi yapmalısınız.",
+        button: "Kayıt Ol"
+      },
+      guestWarning: {
+        title: "⚠️ Misafir olarak devam ediyorsunuz",
+        text: "Bu bildirim hesabınıza kaydedilmeyecek ve işletme size geri dönüş yapamayacaktır. Geri bildiriminizin takibi ve işletmenin sizinle iletişime geçebilmesi için Giriş Yaparak Gönderin.",
+        dontShow: "Daha sonra gösterme",
+        continueGuest: "Devam Et",
+        loginToSend: "Giriş Yaparak Gönder"
+      },
+      support: {
+        title: 'Destek Talebi Oluştur',
+        description: 'Sorununuzu veya önerinizi detaylı bir şekilde açıklayın...',
+        email: 'E-posta',
+        message: 'Mesajınız',
+        messagePlaceholder: 'Sorununuzu veya önerinizi detaylı bir şekilde açıklayın...',
+        images: 'Görsel Yükleme (Opsiyonel)',
+        upload: 'Görsel Yükle',
+        send: 'Gönder',
+        sending: 'Gönderiliyor...',
+        successTitle: 'Destek talebiniz gönderildi!',
+        successDesc: 'En kısa sürede dönüş yapacağız.',
+        errorTitle: 'Hata',
+        errorDesc: 'Bir hata oluştu, lütfen tekrar deneyin.',
+        errorEmpty: 'Lütfen mesajınızı yazın.',
+        errorEmail: 'Lütfen e-posta adresinizi girin.',
+        maxImages: 'En fazla 3 görsel ekleyebilirsiniz.',
+        imageUploaded: (count) => `${count} görsel yüklendi`
+      },
+      statsPage: {
+        feedbackBreakdown: 'Geri Bildirim Dağılımı',
+        ratingOverview: 'Puanlama Özeti',
+        noData: 'Henüz veri bulunmamaktadır'
+      },
+      userTitle: {
+        newVoice: 'Yeni Ses',
+        experiencedObserver: 'Deneyimli Gözlemci',
+        vocalizAmbassador: 'Vocalize Elçisi'
+      },
+      userTitleInfo: {
+        newVoiceDesc: 'Yeni başlayan bir ses olarak, görüşlerini paylaştığın için teşekkür ederiz.',
+        experiencedObserverDesc: 'Deneyimli gözlemci olarak, tutarlı geri bildirimler veriyorsun.',
+        vocalizAmbassadorDesc: 'Vocalize Elçisi olarak, işletmelerin gelişmesine büyük katkı sağlıyorsun!',
+        nextLevel: 'Bir Sonraki Seviye',
+        nextLevelNewVoice: '6 bildirim daha yaparsan "Deneyimli Gözlemci" olacaksın!',
+        nextLevelExperienced: '20 bildirim daha yaparsan "Vocalize Elçisi" olacaksın!',
+        maxLevel: '🎉 Zaten en yüksek seviyedesin! Harika bir Elçisin!'
+      },
+      businessSuggestion: {
+        title: 'Vocalize Burada Olsun İster Misiniz?', // 🟢 DÜZELTME
+        businessName: 'İşletme Adı',
+        businessNamePlaceholder: 'Örn: Kahve Dükkanı',
+        location: 'Konum',
+        locationPlaceholder: 'Örn: İstanbul, Beşiktaş',
+        suggest: 'Öner',
+        successMsg: 'Öneriniz başarıyla gönderildi!',
+        errorMsg: 'Lütfen tüm alanları doldurunuz.'
+      },
+      visitedBusinesses: 'Ziyaret Edilen İşletmeler',
+      noVisitedBusiness: 'Henüz bir işletme ziyaret etmediniz',
+      startWithQR: 'QR kod okutarak başlayın ve geri bildirim gönderin',
+      selectBranchForFeedback: 'Geri bildirim göndermek için şube seçin',
+      loading: 'Yükleniyor...',
+      branchSelection: 'Branch Selection',
+      sortBy: 'Sıralama'
+    },
+    en: {
+      welcome: 'Welcome',
+      guestWelcome: 'Share Your Experience',
+      subtitle: 'Help businesses improve with your feedback.',
+      qrAutoDetect1: 'Once verified via QR, business info is saved.',
+      qrAutoDetect2: 'No need to scan QR again.',
+      qrAutoDetect3: 'Valid for selected business only.',
+      sendFeedback: 'Send Feedback',
+      complaint: 'Report Issue',
+      suggestion: 'Suggest',
+      review: 'Rate',
+      complaintDesc: 'Experienced an issue? Report it now!',
+      suggestionDesc: 'Have an idea? Let us know!',
+      reviewDesc: 'Rate your experience!',
+      myFeedbacks: 'My Feedbacks',
+      stats: 'My Statistics',
+      selectBusiness: 'Select Business',
+      selectBranch: 'Select Branch',
+      selectPlaceholder: 'Select...',
+      qrScanned: 'Verified via QR Code',
+      qrInfo: (bName, brName) => `${bName} - ${brName}`,
+      changeInfo: 'Change',
+      infoBox: 'Your feedback is instantly delivered to business managers.',
+      warningTitle: 'Important Note:',
+      warningText: 'Vocalize instantly delivers your feedback to managers.',
+      allFeedbacks: 'All My Feedbacks',
+      allStats: 'View Statistics for All Time',
+      supportItem: 'Support',
+      logout: 'Logout',
+      total: 'Total Feedbacks',
+      avgRating: 'Average Rating',
+      mostVisited: 'Most Visited',
+      feedbackTypes: 'Form Types',
+      complaintBadge: 'Complaint',
+      suggestionBadge: 'Suggestion',
+      reviewBadge: 'Review',
+      noFeedbacks: 'No feedbacks yet',
+      sendFirstFeedback: 'Send your first feedback!',
+      sendFeedbackBtn: 'Send Feedback',
+      all: 'All',
+      newest: 'Newest',
+      oldest: 'Oldest',
+      delivered: 'Delivered',
+      reviewing: 'Reviewing',
+      resolved: 'Resolved',
+      visits: 'visits',
+      guest: 'Guest',
+      register: 'Sign Up',
+      guestTracking: 'Track your feedbacks',
+      guestTrackingDesc: 'Create an account to track feedbacks.',
+      home: 'Home',
+      notifications: 'Notifications',
+      statistics: 'Statistics',
+      filterAllBranches: 'All Branches',
+      filterAllTypes: 'All Types',
+      filterAllStatuses: 'All Statuses',
+      changeEmail: 'Change Email',
+      changePhone: 'Change Phone',
+      changePassword: 'Change Password',
+      createSupportTicket: 'Create Support Ticket',
+      feedbackToVocalize: "Feedback to Vocalize",
+      deleteAccount: 'Delete Account',
+      deleteAccountTitle: 'Are you sure?',
+      deleteAccountWarning: 'This action cannot be undone.',
+      deleteConfirm: 'I want to delete my account',
+      confirm: 'Confirm',
+      cancel: 'Cancel',
+      unknown: 'Unknown',
+      totalFeedbacksCount: 'Total feedbacks',
+      advancedFilter: 'Filter',
+      formType: 'Form Type',
+      branch: 'Branch',
+      status: 'Status',
+      feedbackDetail: 'Feedback Detail',
+      yourMessage: 'Your Message',
+      attachedImages: 'Attached Images',
+      close: 'Close',
+      generalEval: 'General Evaluation',
+      guestCTA: {
+        feedbackTitle: "Register to view past feedbacks",
+        statsTitle: "Register to view statistics",
+        subtext: "Guest data is not saved. Sign in to access history.",
+        button: "Sign Up"
+      },
+      guestWarning: {
+        title: "⚠️ Continuing as Guest",
+        text: "Guest feedbacks are not saved to your profile.",
+        dontShow: "Don't show again",
+        continueGuest: "Continue",
+        loginToSend: "Sign In"
+      },
+      support: {
+        title: 'Support Ticket',
+        description: 'Explain your issue...',
+        email: 'Email',
+        message: 'Message',
+        messagePlaceholder: 'Explain in detail...',
+        images: 'Images (Optional)',
+        upload: 'Upload',
+        send: 'Send',
+        sending: 'Sending...',
+        successTitle: 'Sent!',
+        successDesc: 'We will reply soon.',
+        errorTitle: 'Error',
+        errorDesc: 'Try again.',
+        errorEmpty: 'Message is empty.',
+        errorEmail: 'Email is required.',
+        maxImages: 'Max 3 images.',
+        imageUploaded: (count) => `${count} uploaded`
+      },
+      statsPage: {
+        feedbackBreakdown: 'Feedback Breakdown',
+        ratingOverview: 'Rating Overview',
+        noData: 'No data yet'
+      },
+      userTitle: {
+        newVoice: 'New Voice',
+        experiencedObserver: 'Experienced Observer',
+        vocalizAmbassador: 'Vocalize Ambassador'
+      },
+      userTitleInfo: {
+        newVoiceDesc: 'Thank you for sharing your voice as a newcomer.',
+        experiencedObserverDesc: 'As an experienced observer, you are providing consistent feedback.',
+        vocalizAmbassadorDesc: 'As a Vocalize Ambassador, you are making a huge impact!',
+        nextLevel: 'Next Level',
+        nextLevelNewVoice: '6 more feedbacks to become "Experienced Observer"!',
+        nextLevelExperienced: '20 more feedbacks to become "Vocalize Ambassador"!',
+        maxLevel: '🎉 You are already at the highest level! You are an amazing Ambassador!'
+      },
+      businessSuggestion: {
+        title: 'Want Vocalize Here?',
+        businessName: 'Business Name',
+        businessNamePlaceholder: 'E.g.: Coffee Shop',
+        location: 'Location',
+        locationPlaceholder: 'E.g.: Istanbul, Besiktash',
+        suggest: 'Suggest',
+        successMsg: 'Your suggestion has been sent!',
+        errorMsg: 'Please fill in all fields.'
+      },
+      visitedBusinesses: 'Visited Businesses',
+      noVisitedBusiness: 'No visited businesses yet',
+      startWithQR: 'Scan a QR code to get started and send feedback',
+      selectBranchForFeedback: 'Select a branch to send feedback',
+      loading: 'Loading...',
+      branchSelection: 'Branch Selection',
+      sortBy: 'Sort By'
+    }
+  };
+
+  const t = useMemo(() => texts[language] || texts.tr, [language]);
+
+  useEffect(() => {
+    localStorage.setItem('vocalize_lang', language);
+  }, [language]);
 
   if (isLoading) {
     return (<div className="min-h-screen flex flex-col items-center justify-center bg-[#0f172a]"><Loader2 className="animate-spin h-10 w-10 text-teal-500 mb-4" /><p className="text-slate-400 font-medium">{language === 'tr' ? 'Yükleniyor...' : 'Loading...'}</p></div>);
