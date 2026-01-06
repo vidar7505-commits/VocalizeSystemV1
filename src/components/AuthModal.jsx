@@ -325,7 +325,7 @@ export default function AuthModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-[#0f172a] border-slate-700 text-white sm:max-w-md p-0 overflow-hidden max-h-[95vh] flex flex-col">
+        <DialogContent className="bg-[#0f172a] border-slate-700 text-white sm:max-w-md p-0 max-h-[95vh] flex flex-col">
           <div className="relative flex-shrink-0">
             {/* Header: Mobilde Küçültüldü (h-28), Masaüstünde Normal (h-40) */}
             <div className="relative h-28 md:h-40 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center overflow-hidden transition-all duration-300">
@@ -344,7 +344,7 @@ export default function AuthModal({
             </div>
 
             {/* Content Container - Scrollable Area */}
-            <div className="p-5 md:p-6 space-y-4 overflow-y-auto max-h-[calc(85vh-7rem)]">
+            <div className="flex-1 p-5 md:p-6 space-y-4 overflow-y-auto">
               {viewMode === 'forgot-password' ? (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <button 

@@ -56,7 +56,7 @@ class GlobalErrorBoundary extends React.Component {
   handleReport = () => {
     const subject = "Vocalize Hata Bildirimi";
     const body = `Hata: ${this.state.error?.toString()}%0D%0ASayfa: ${window.location.href}`;
-    window.location.href = `mailto:destek@vocalize.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:support@vocalize.global?subject=${subject}&body=${body}`;
   };
 
   render() {
