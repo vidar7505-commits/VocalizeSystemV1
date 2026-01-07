@@ -226,7 +226,8 @@ const AdminHeader = () => {
         icon: "⭐",
         badgeClassName: "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20",
         cardTitle: "⭐ Ayrıcalıklı Erken Erişim",
-        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli $79 olarak belirlenmiştir ve ömür boyu %20 indirim hakkı mühürlenmiştir.",
+        // DEĞİŞİKLİK BURADA: + KDV Eklendi
+        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli $79 + KDV olarak belirlenmiştir ve ömür boyu %20 indirim hakkı mühürlenmiştir.",
         cardBorderColor: "border-amber-500/50",
         cardTitleColor: "text-amber-400"
       };
@@ -236,7 +237,8 @@ const AdminHeader = () => {
         icon: "🚀",
         badgeClassName: "bg-teal-500/10 border-teal-500/30 text-teal-400 hover:bg-teal-500/20",
         cardTitle: "🚀 Kurumsal Esnek Paket",
-        cardDesc: `İşletmenizin ihtiyaçlarına özel olarak yapılandırılmış ödeme planıdır. Aylık kullanım bedeli $${fee} olarak tanımlanmıştır.`,
+        // DEĞİŞİKLİK BURADA: + KDV Eklendi
+        cardDesc: `İşletmenizin ihtiyaçlarına özel olarak yapılandırılmış ödeme planıdır. Aylık kullanım bedeli $${fee} + KDV olarak tanımlanmıştır.`,
         cardBorderColor: "border-teal-500/50",
         cardTitleColor: "text-teal-400"
       };

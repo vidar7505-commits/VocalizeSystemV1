@@ -717,8 +717,12 @@ const LandingPage = () => {
                {/* Market Card - Order switched: Mobile Bottom (order-2), Desktop Left (order-1) */}
                <div className="order-2 md:order-1 w-full md:w-[45%] bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex flex-col justify-center opacity-80 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-300">
                   <h3 className="text-slate-400 text-base font-bold mb-1">Piyasa Değeri</h3>
-                  <div className="text-xl font-bold text-slate-300 line-through mb-1">$299 Kurulum</div>
-                  <div className="text-lg text-slate-400 line-through">$99/ay</div>
+                  <div className="text-xl font-bold text-slate-300 line-through mb-1">
+                    $299 Kurulum <span className="text-xs font-normal no-underline opacity-60">+ KDV</span>
+                  </div>
+                  <div className="text-lg text-slate-400 line-through">
+                    $99/ay <span className="text-xs font-normal no-underline opacity-60">+ KDV</span>
+                  </div>
                </div>
                
                {/* Campaign Card - Order switched: Mobile Top (order-1), Desktop Right (order-2) */}
@@ -727,8 +731,19 @@ const LandingPage = () => {
                   <h3 className="text-orange-600 text-base font-bold uppercase mb-2 flex items-center justify-center gap-1">
                      <Zap className="w-4 h-4 fill-current" /> Kampanya Fiyatı
                   </h3>
-                  <div className="text-3xl font-extrabold mb-1 text-slate-900">$249 Kurulum</div>
-                  <div className="text-2xl font-bold text-slate-700 mb-2">$79/ay</div>
+                  
+                  {/* GÜNCELLENEN KISIM: Kurulum Fiyatı + KDV */}
+                  <div className="text-3xl font-extrabold mb-1 text-slate-900 flex items-baseline justify-center gap-1 flex-wrap">
+                    $249 Kurulum 
+                    <span className="text-sm font-semibold text-slate-400 tracking-normal">+ KDV</span>
+                  </div>
+
+                  {/* GÜNCELLENEN KISIM: Aylık Fiyat + KDV */}
+                  <div className="text-2xl font-bold text-slate-700 mb-2 flex items-baseline justify-center gap-1">
+                    $79/ay 
+                    <span className="text-sm font-semibold text-slate-400 tracking-normal">+ KDV</span>
+                  </div>
+
                   <div className="text-xs font-medium text-slate-500 bg-slate-100 py-1 px-2 rounded-full inline-block">
                     İlk aylık ödeme kurulumdan 30 gün sonra alınır.
                   </div>

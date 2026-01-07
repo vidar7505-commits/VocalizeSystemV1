@@ -45,7 +45,8 @@ const AdminSidebar = () => {
         icon: "⭐",
         badgeClassName: "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20",
         cardTitle: "⭐ Ayrıcalıklı Erken Erişim",
-        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli $79 olarak belirlenmiştir ve ömür boyu %20 indirim hakkı mühürlenmiştir.",
+        // DEĞİŞİKLİK BURADA: + KDV Eklendi
+        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli $79 + KDV olarak belirlenmiştir ve ömür boyu %20 indirim hakkı mühürlenmiştir.",
         cardBorderColor: "border-amber-500/50",
         cardTitleColor: "text-amber-400"
       };
@@ -55,7 +56,8 @@ const AdminSidebar = () => {
         icon: "🚀",
         badgeClassName: "bg-teal-500/10 border-teal-500/30 text-teal-400 hover:bg-teal-500/20",
         cardTitle: "🚀 Kurumsal Esnek Paket",
-        cardDesc: `İşletmenizin ihtiyaçlarına özel olarak yapılandırılmış ödeme planıdır. Aylık kullanım bedeli $${fee} olarak tanımlanmıştır.`,
+        // DEĞİŞİKLİK BURADA: + KDV Eklendi
+        cardDesc: `İşletmenizin ihtiyaçlarına özel olarak yapılandırılmış ödeme planıdır. Aylık kullanım bedeli $${fee} + KDV olarak tanımlanmıştır.`,
         cardBorderColor: "border-teal-500/50",
         cardTitleColor: "text-teal-400"
       };
@@ -131,10 +133,17 @@ const AdminSidebar = () => {
         imageUrls = await uploadImages();
       }
 
+      // 🟢 YÖNETİCİ BİLGİSİ HAZIRLA
+      const managerEmail = user.email || user.user_metadata?.email || '';
+      const managerName = user.user_metadata?.full_name || user.user_metadata?.first_name || 'Yönetici';
+
       const { error } = await supabase.from('vocalize_manager_feedbacks').insert({
         manager_id: user.id,
         message: feedbackMessage,
-        images: imageUrls
+        images: imageUrls,
+        email: managerEmail,
+        first_name: managerName,
+        business_name: businessName || 'İşletme'
       });
 
       if (error) throw error;
