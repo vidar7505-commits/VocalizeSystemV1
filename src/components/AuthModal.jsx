@@ -448,7 +448,7 @@ export default function AuthModal({
                         <div className="relative">
                           <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                           <Input 
-                            name="fullName" placeholder="İsim Soyisim (örn: Arda Güngör)" 
+                            name="fullName" placeholder="İsim Soyisim" 
                             className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`} 
                             value={formData.fullName} 
                             onChange={handleInputChange}
