@@ -321,10 +321,19 @@ export default function FeedbackForm() {
   // FORM VALIDATION
   const isFormValid = () => {
     if (!selectedBranch) return false;
+    
+    // Değerlendirme ise puan şart
     if (feedbackType === 'review' && rating === 0) return false;
+    
+    // Mesaj uzunluğu kontrolü (Şikayet ve Öneri için)
     if ((feedbackType === 'complaint' || feedbackType === 'suggestion') && message.length < 10) return false;
-    if (hasReceipt && !receiptFile) return false;
-    if (!hasReceipt && (feedbackType === 'complaint' || feedbackType === 'suggestion') && !visitDate) return false;
+    
+    // Fiş ve Tarih zorunluluğu ARTIK SADECE ŞİKAYET İÇİN
+    if (feedbackType === 'complaint') {
+        if (hasReceipt && !receiptFile) return false;
+        if (!hasReceipt && !visitDate) return false;
+    }
+    
     return true;
   };
 
@@ -494,7 +503,8 @@ export default function FeedbackForm() {
             </div>
           </div>
 
-          {(feedbackType === 'complaint' || feedbackType === 'suggestion') && (
+          {/* SADECE ŞİKAYET SEÇİLİRSE GÖSTER */}
+          {feedbackType === 'complaint' && (
             <div className="mb-8">
               <label className="block text-sm text-gray-400 mb-3 font-semibold uppercase tracking-wide">{t.receipt.label}</label>
               <div className="grid grid-cols-2 gap-4 mb-4">
