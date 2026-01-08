@@ -3,7 +3,13 @@ import { Helmet } from 'react-helmet';
 import { Link as ScrollLink, animateScroll as scroll, scroller } from 'react-scroll';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
-import { Menu, X, Zap, CheckCircle2, Timer, Send, Lightbulb, Heart, QrCode, Loader2, ArrowRight, TrendingUp, Target, RefreshCw, Cpu, BrainCircuit, Activity, Sparkles, MessageSquare as MessageSquareText, Info, AlertTriangle, Layers, Zap as ZapIcon, Network } from 'lucide-react';
+import { 
+  Menu, X, Zap, CheckCircle2, Timer, Send, Lightbulb, Heart, QrCode, Loader2, 
+  ArrowRight, TrendingUp, Target, RefreshCw, Cpu, BrainCircuit, Activity, Sparkles, 
+  MessageSquare as MessageSquareText, Info, AlertTriangle, Layers, Zap as ZapIcon, Network,
+  Instagram, // <-- YENİ EKLENDİ
+  Mail       // <-- YENİ EKLENDİ
+} from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
@@ -1105,12 +1111,31 @@ const LandingPage = () => {
               </span>
            </div>
 
-           <div className="flex justify-center gap-4">
-              <div className="w-6 h-6 text-slate-600 hover:text-white cursor-pointer flex items-center justify-center">
+           <div className="flex justify-center gap-6 items-center">
+              {/* Logo - Yukarı kaydırır */}
+              <div onClick={scrollToTop} className="w-6 h-6 text-slate-600 hover:text-white cursor-pointer flex items-center justify-center transition-colors">
                 <img src="faviconbeyaz.png" alt="Vocalize Logo Footer" className="h-full w-full object-contain brightness-200 grayscale-0" />
               </div>
-              <div className="w-4 h-4 text-slate-600 hover:text-white cursor-pointer"><span className="sr-only">LinkedIn</span>in</div>
-              <div className="w-4 h-4 text-slate-600 hover:text-white cursor-pointer"><span className="sr-only">Instagram</span>ig</div>
+
+              {/* Instagram Linki */}
+              <a 
+                href="https://www.instagram.com/vocalize.global/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-slate-500 hover:text-[#E1306C] transition-colors"
+                aria-label="Instagram"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
+
+              {/* Email Linki (Mailto) */}
+              <a 
+                href="mailto:support@vocalize.global" 
+                className="text-slate-500 hover:text-teal-400 transition-colors"
+                aria-label="E-posta Gönder"
+              >
+                <Mail className="w-5 h-5" />
+              </a>
            </div>
         </div>
       </footer>

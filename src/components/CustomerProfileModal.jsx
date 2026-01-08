@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import {
   User, Mail, Phone, Calendar, Star,
   AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
-  Image as ImageIcon, RefreshCw
+  Image as ImageIcon, RefreshCw, CheckSquare, Square, CheckCircle2, ListChecks // <-- ListChecks Eklendi
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCustomerName } from "@/lib/utils";
@@ -34,7 +34,8 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
   const [detailFeedback, setDetailFeedback] = useState(null);
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [showNotesOnly, setShowNotesOnly] = useState(false);
+  const [showNotesOnly, setShowNotesOnly] = useState(false); 
+  const [selectedIds, setSelectedIds] = useState([]);
 
   // RETRY LOGIC
   const fetchAttemptRef = useRef(0);
@@ -439,6 +440,30 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
     });
   }, [feedbacks, filterType, filterStatus, showNotesOnly]);
 
+  // SEÇİM VE GÜNCELLEME
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  // 🟢 YENİ: TÜMÜNÜ SEÇ (Listelenenler)
+  const handleSelectAll = () => {
+    if (selectedIds.length === filteredList.length) setSelectedIds([]);
+    else setSelectedIds(filteredList.map(f => f.id));
+  };
+
+  // 🟢 YENİ: ÇOKLU SEÇENEK GÜNCELLEME
+  const handleBulkUpdate = async (status) => {
+    if (selectedIds.length === 0) return;
+    const updates = { status, resolved_at: status === 'resolved' ? new Date().toISOString() : null };
+    
+    const { error } = await supabase.from('feedbacks').update(updates).in('id', selectedIds);
+    if (!error) {
+      toast({ title: "Başarılı", description: `${selectedIds.length} kayıt güncellendi.`, className: "bg-green-600 text-white border-none" });
+      setFeedbacks(prev => prev.map(f => selectedIds.includes(f.id) ? { ...f, ...updates } : f));
+      setSelectedIds([]);
+    } else { toast({ variant: "destructive", title: "Hata oluştu" }); }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -585,9 +610,15 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
                 {/* Feedback History */}
                 <div>
                   <div className="flex flex-col gap-3 mb-4">
-                    <h3 className="text-lg font-bold text-white">
-                      Geri Bildirim Geçmişi ({filteredList.length})
-                    </h3>
+                    <div className="flex justify-between items-center mb-2">
+                       <h3 className="text-lg font-bold text-white">Geri Bildirim Geçmişi ({filteredList.length})</h3>
+                       {filteredList.length > 0 && (
+                         <Button variant="ghost" size="sm" onClick={handleSelectAll} className="h-6 text-xs text-slate-400 hover:text-white">
+                           {selectedIds.length === filteredList.length ? 'Seçimi Kaldır' : 'Tümünü Seç'}
+                         </Button>
+                       )}
+                    </div>
+
                     <div className="flex flex-wrap gap-2 items-center w-full">
                       <Select value={filterType} onValueChange={setFilterType}>
                         <SelectTrigger className="w-[120px] h-8 text-xs bg-slate-800 border-slate-700">
@@ -642,6 +673,19 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
                     </div>
                   </div>
                   
+                  {selectedIds.length > 0 && (
+                      <div className="bg-indigo-900/40 border border-indigo-500/50 p-2 rounded-lg flex flex-col sm:flex-row items-center justify-between mb-3 animate-in fade-in slide-in-from-top-2 gap-2">
+                        <span className="text-sm text-indigo-200 font-medium ml-2">{selectedIds.length} seçildi</span>
+                        <div className="flex gap-2">
+                           <Button size="sm" onClick={() => handleBulkUpdate('pending')} variant="ghost" className="h-7 text-xs text-indigo-300 hover:text-white hover:bg-indigo-800">Bekle</Button>
+                           <Button size="sm" onClick={() => handleBulkUpdate('in_progress')} variant="ghost" className="h-7 text-xs text-yellow-300 hover:text-white hover:bg-yellow-800">İşlemde</Button>
+                           <Button size="sm" onClick={() => handleBulkUpdate('resolved')} className="h-7 bg-green-600 hover:bg-green-700 text-white border-none text-xs">
+                             <CheckCircle2 className="w-3 h-3 mr-1" /> Çözüldü
+                           </Button>
+                        </div>
+                      </div>
+                  )}
+
                   {filteredList.length === 0 ? (
                     <div className="text-center py-8 border border-dashed border-slate-700/50 rounded-lg">
                       <Filter className="w-8 h-8 text-slate-600 mx-auto mb-2 opacity-50" />
@@ -657,75 +701,90 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
                                           (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
 
                         return (
-                          <div 
-                            key={f.id} 
-                            onClick={() => setDetailFeedback(f)} 
-                            className="group bg-slate-800/40 p-3 rounded-lg border border-slate-700/50 hover:bg-slate-800/80 transition-colors cursor-pointer relative overflow-hidden"
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex items-center gap-2">
-                                {getTypeBadge(f.feedback_type)}
-                                <span className="text-xs text-slate-400">
-                                  {new Date(f.created_at).toLocaleDateString('tr-TR')}
-                                </span>
-                              </div>
-                              {getStatusBadge(f.status)}
-                            </div>
+                          // 1. YENİ DIŞ KAPSAYICI (WRAPPER)
+                          <div key={f.id} className="flex gap-3 items-start group/item">
                             
-                            <div className="flex gap-3 items-start">
-                              <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${
-                                f.feedback_type === 'complaint' ? 'bg-red-500' : 
-                                f.feedback_type === 'suggestion' ? 'bg-blue-500' : 'bg-yellow-500'
-                              }`} />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm text-slate-300 line-clamp-2 break-words">
-                                  {f.message || <span className="italic text-slate-600">Mesaj yok</span>}
-                                </p>
-                                
-                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-700/30">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <span className="text-xs text-slate-500 flex items-center gap-1 truncate">
-                                      <MapPin className="w-3 h-3 shrink-0" /> 
-                                      {f.branches?.branch_name_tr || 'Şube Yok'}
-                                    </span>
-                                    {rating > 0 && (
-                                      <div className="flex items-center gap-0.5 text-yellow-500 shrink-0">
-                                        {[...Array(5)].map((_, i) => (
-                                          <Star 
-                                            key={i} 
-                                            className={`w-3 h-3 ${
-                                              i < rating ? 'fill-current' : 'text-slate-700 fill-none'
-                                            }`} 
-                                          />
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
+                            {/* 2. CHECKBOX BUTONU (YENİ EKLENEN KISIM) */}
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); toggleSelect(f.id); }} 
+                              className="mt-3 text-slate-500 hover:text-indigo-400 transition-colors shrink-0"
+                            >
+                              {selectedIds.includes(f.id) 
+                                ? <CheckSquare className="w-5 h-5 text-indigo-500" /> 
+                                : <Square className="w-5 h-5" />}
+                            </button>
+
+                            {/* 3. SENİN ORİJİNAL KARTIN (Sadece flex-1 eklendi) */}
+                            <div 
+                              onClick={() => setDetailFeedback(f)} 
+                              className="flex-1 group bg-slate-800/40 p-3 rounded-lg border border-slate-700/50 hover:bg-slate-800/80 transition-colors cursor-pointer relative overflow-hidden"
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center gap-2">
+                                  {getTypeBadge(f.feedback_type)}
+                                  <span className="text-xs text-slate-400">
+                                    {new Date(f.created_at).toLocaleDateString('tr-TR')}
+                                  </span>
+                                </div>
+                                {getStatusBadge(f.status)}
+                              </div>
+                              
+                              {/* KARTIN GERİ KALAN İÇERİĞİ (MEVCUT KODUN DEVAMI) */}
+                              <div className="flex gap-3 items-start">
+                                <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${
+                                  f.feedback_type === 'complaint' ? 'bg-red-500' : 
+                                  f.feedback_type === 'suggestion' ? 'bg-blue-500' : 'bg-yellow-500'
+                                }`} />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-slate-300 line-clamp-2 break-words">
+                                    {f.message || <span className="italic text-slate-600">Mesaj yok</span>}
+                                  </p>
                                   
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                    {hasComment && (
-                                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-700/50 rounded text-[10px] text-blue-400 border border-slate-600/50">
-                                        <FileText className="w-3 h-3" /> 
-                                        <span className="hidden sm:inline">Genel D.</span>
-                                      </div>
-                                    )}
-                                    {hasImgs && (
-                                      <div 
-                                        className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-700/50 rounded text-[10px] text-teal-400 border border-slate-600/50" 
-                                        title="Görsel Var"
-                                      >
-                                        <ImageIcon className="w-3 h-3" /> 
-                                        <span className="hidden sm:inline">Görsel</span>
-                                      </div>
-                                    )}
-                                    {hasManagerNote && (
-                                      <div 
-                                        className="flex items-center justify-center w-5 h-5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30" 
-                                        title="Yönetici Notu Var"
-                                      >
-                                        <StickyNote className="w-3 h-3 fill-current" />
-                                      </div>
-                                    )}
+                                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-700/30">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="text-xs text-slate-500 flex items-center gap-1 truncate">
+                                        <MapPin className="w-3 h-3 shrink-0" /> 
+                                        {f.branches?.branch_name_tr || 'Şube Yok'}
+                                      </span>
+                                      {rating > 0 && (
+                                        <div className="flex items-center gap-0.5 text-yellow-500 shrink-0">
+                                          {[...Array(5)].map((_, i) => (
+                                            <Star 
+                                              key={i} 
+                                              className={`w-3 h-3 ${
+                                                i < rating ? 'fill-current' : 'text-slate-700 fill-none'
+                                              }`} 
+                                            />
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      {hasComment && (
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-700/50 rounded text-[10px] text-blue-400 border border-slate-600/50">
+                                          <FileText className="w-3 h-3" /> 
+                                          <span className="hidden sm:inline">Genel D.</span>
+                                        </div>
+                                      )}
+                                      {hasImgs && (
+                                        <div 
+                                          className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-700/50 rounded text-[10px] text-teal-400 border border-slate-600/50" 
+                                          title="Görsel Var"
+                                        >
+                                          <ImageIcon className="w-3 h-3" /> 
+                                          <span className="hidden sm:inline">Görsel</span>
+                                        </div>
+                                      )}
+                                      {hasManagerNote && (
+                                        <div 
+                                          className="flex items-center justify-center w-5 h-5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30" 
+                                          title="Yönetici Notu Var"
+                                        >
+                                          <StickyNote className="w-3 h-3 fill-current" />
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>

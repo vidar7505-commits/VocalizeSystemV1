@@ -67,10 +67,8 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
     feedback?.receipt_url
   ].map(normalizeUrl).filter(Boolean);
 
-  // 🟢 GÜNCEL VE KESİN ÇÖZÜM: Veriyi Sayıya Çevir ve Değişkeni Kullan
   const generalRating = Number(feedback.general_eval_rating) || 0;
   const generalComment = feedback.general_eval_comment;
-  // Eğer puan varsa VEYA yorum varsa bu alanı göster
   const hasGeneralEval = generalRating > 0 || (generalComment && generalComment.trim().length > 0);
 
   useEffect(() => { if (isOpen && scrollToNotes && notesSectionRef.current) setTimeout(() => notesSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }, [isOpen, scrollToNotes]);
@@ -80,7 +78,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
       setCurrentStatus(feedback.status);
       setManagerNote(feedback.manager_note || '');
       setLiveProfileData(null);
-      setBusinessSpecificData(null); // Reset
+      setBusinessSpecificData(null);
       fetchCustomerData();
       if (feedback.manager_note_updated_at && feedback.manager_note_updated_by) fetchUpdaterInfo(feedback.manager_note_updated_by, feedback.manager_note_updated_at);
     }
@@ -257,7 +255,6 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
               </div>
             )}
 
-            {/* 🟢 DÜZELTME: Hesaplanan generalRating değişkeni JSX içinde kullanıldı */}
             {hasGeneralEval && (
               <div className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-4 overflow-hidden">
                 <h4 className="text-xs font-semibold text-teal-400 uppercase mb-2 flex items-center gap-2">
@@ -343,7 +340,22 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
 
           <div className="px-6 py-4 border-t border-slate-800 flex-shrink-0 space-y-3">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {['pending', 'in_progress', 'resolved', 'escalated'].map(status => (<Button key={status} onClick={() => handleStatusUpdate(status)} disabled={isUpdating || currentStatus === status} variant="outline" className={`border-slate-700 text-xs md:text-sm ${currentStatus === status ? getStatusColor(status) : 'text-slate-400'}`}>{getStatusLabel(status)}</Button>))}
+              {['pending', 'in_progress', 'resolved', 'escalated']
+                .filter(status => {
+                   if (feedback.feedback_type !== 'complaint' && status === 'escalated') return false;
+                   return true;
+                })
+                .map(status => (
+                  <Button 
+                    key={status} 
+                    onClick={() => handleStatusUpdate(status)} 
+                    disabled={isUpdating || currentStatus === status} 
+                    variant="outline" 
+                    className={`border-slate-700 text-xs md:text-sm ${currentStatus === status ? getStatusColor(status) : 'text-slate-400'}`}
+                  >
+                    {getStatusLabel(status)}
+                  </Button>
+              ))}
             </div>
             <div className="flex justify-end">
               <Button variant="outline" onClick={onClose} className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white">Kapat</Button>
@@ -376,7 +388,6 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
           customerEmail={displayEmail !== '-' ? displayEmail : null} 
           businessId={feedback.business_id} 
           onFlagsUpdate={(id, f, email) => { 
-            // Profil modalı kapandığında detay modalındaki veriyi de güncelle
             setLiveProfileData(prev => ({ ...prev, flag_vip_customer: f.vip, flag_sensitive_customer: f.sensitive, admin_note: f.admin_note })); 
             setBusinessSpecificData(prev => ({ ...prev, is_vip: f.vip, is_sensitive: f.sensitive, manager_notes: f.admin_note }));
             if (onFeedbackUpdate) onFeedbackUpdate(feedback.id, { customer_profile_id: id }); 
