@@ -614,24 +614,36 @@ export default function FeedbackForm() {
                 <Button onClick={handleSuccessClose} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 h-auto text-base rounded-xl transition shadow-lg shadow-teal-900/20 hover:scale-[1.02]">{t.success.button}</Button>
             )}
             
-            {/* INSTAGRAM ALANI - YENİ ÖZELLİK 🚀 */}
-            {branches.find(b => b.id === selectedBranch)?.instagram_url && (
-                <div className={`mt-4 pt-4 border-t border-slate-700/50 ${googleRedirectUrl ? 'animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300' : ''}`}>
-                    {/* Eğer Google varsa daha sade bir buton, yoksa daha canlı bir buton */}
-                    <Button 
-                        onClick={() => window.open(branches.find(b => b.id === selectedBranch)?.instagram_url, '_blank')}
-                        variant={googleRedirectUrl ? "outline" : "default"}
-                        className={`w-full gap-2 font-bold py-6 h-auto text-base rounded-xl transition hover:scale-[1.02] group ${
-                            googleRedirectUrl 
-                            ? "border-slate-600 bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white hover:border-pink-500/50" 
-                            : "bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:from-purple-700 hover:to-orange-600 text-white shadow-lg shadow-pink-900/20"
-                        }`}
-                    >
-                        <Instagram className={`w-5 h-5 ${googleRedirectUrl ? "text-pink-500 group-hover:text-pink-400" : "text-white"}`} /> 
-                        {language === 'tr' ? 'Bizi Instagram\'da Takip Et' : 'Follow us on Instagram'}
-                    </Button>
-                </div>
-            )}
+            {/* INSTAGRAM ALANI - GÜVENLİ MOD (Sadece 4-5 Yıldız Verenlere) */}
+            {(() => {
+                const currentBranch = branches.find(b => b.id === selectedBranch);
+                // Müşterinin verdiği puanı al (Review ise 'rating', Öneri ise 'generalRating')
+                const effectiveRating = feedbackType === 'review' ? rating : generalRating;
+                
+                // KRİTİK KONTROL: Puan 4 üstü mü VE tip 'Şikayet' değil mi?
+                const isHappyCustomer = effectiveRating >= 4 && feedbackType !== 'complaint';
+
+                // Sadece link varsa VE müşteri mutluysa göster
+                if (currentBranch?.instagram_url && isHappyCustomer) {
+                    return (
+                        <div className={`mt-4 pt-4 border-t border-slate-700/50 ${googleRedirectUrl ? 'animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300' : ''}`}>
+                            <Button 
+                                onClick={() => window.open(currentBranch.instagram_url, '_blank')}
+                                variant={googleRedirectUrl ? "outline" : "default"}
+                                className={`w-full gap-2 font-bold py-6 h-auto text-base rounded-xl transition hover:scale-[1.02] group ${
+                                    googleRedirectUrl 
+                                    ? "border-slate-600 bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white hover:border-pink-500/50" 
+                                    : "bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:from-purple-700 hover:to-orange-600 text-white shadow-lg shadow-pink-900/20"
+                                }`}
+                            >
+                                <Instagram className={`w-5 h-5 ${googleRedirectUrl ? "text-pink-500 group-hover:text-pink-400" : "text-white"}`} /> 
+                                {language === 'tr' ? 'Bizi Instagram\'da Takip Et' : 'Follow us on Instagram'}
+                            </Button>
+                        </div>
+                    );
+                }
+                return null;
+            })()}
             
             <div className="mt-6 pt-3 border-t border-slate-700/50"><span className="text-slate-500 font-medium text-xs flex items-center justify-center gap-2 flex-wrap"><Star className="h-3 w-3 fill-slate-500 text-slate-500 shrink-0" /> {t.success.footer}</span></div>
           </div>
