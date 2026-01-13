@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Lock, Mail, Phone, User, Building2, UserCheck, ArrowLeft, KeyRound, ArrowRight } from 'lucide-react';
+import { Loader2, Lock, Mail, Phone, User, Building2, ArrowLeft, KeyRound, ArrowRight } from 'lucide-react';
 import { TERMS_CONTENT, KVKK_CONTENT } from '@/constants/legalTexts';
 
 const CUSTOMER_LOGO_URL = "faviconbeyaz.png";
@@ -20,6 +20,7 @@ const translateError = (errorMsg) => {
   if (errorMsg.includes("User already registered")) return "Bu e-posta adresi zaten kayıtlı.";
   if (errorMsg.includes("Password should be at least")) return "Şifre en az 6 karakter olmalıdır.";
   if (errorMsg.includes("manager code")) return "Geçersiz veya kullanılmış yönetici kodu.";
+  if (errorMsg.includes("Database error")) return "Sistem hatası. Lütfen yönetici kodunu kontrol edin."; // Veritabanı hatası çevirisi eklendi
   return "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.";
 };
 
@@ -268,7 +269,6 @@ export default function AuthModal({
         }
 
         const { first, last } = splitName(formData.fullName);
-        // 🟢 Formatlı adı gönder
         const formattedFullName = toTitleCase(formData.fullName);
 
         const { data: signupData, error: signupError } = await supabase.auth.signUp({
@@ -281,7 +281,8 @@ export default function AuthModal({
               last_name: last,
               phone: formData.phone,
               user_type: activeRole,
-              ...(activeRole === 'manager' && { manager_code: formData.managerCode })
+              // 🟢 DÜZELTME BURADA: 'manager_code' yerine 'invite_code' gönderiyoruz
+              ...(activeRole === 'manager' && { invite_code: formData.managerCode }) 
             }
           }
         });
@@ -314,6 +315,7 @@ export default function AuthModal({
         }
       }
     } catch (error) {
+      console.error("Auth error:", error);
       toast({ title: "Hata", description: translateError(error.message), variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -402,13 +404,10 @@ export default function AuthModal({
 
                   <form onSubmit={handleAuth} className="space-y-4">
                     
-
-
-                    {/* 🟢 GÜNCELLEME: Misafir Girişi Kutusu - HEM LOGIN HEM REGISTER SEKMELERİNDE */}
+                    {/* Misafir Girişi Kutusu */}
                     {showGuestOption && activeRole === 'customer' && (
                       <div className="animate-in fade-in slide-in-from-top-2">
                         <div className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700/60 rounded-xl p-4 shadow-lg mb-6 flex flex-col gap-3">
-                          {/* Üst Kısım: Soru ve Buton */}
                           <div className="flex items-center justify-between gap-2">
                             <div className="text-sm text-slate-300 font-medium leading-tight">
                               Üyelikle uğraşmak <br className="hidden sm:block"/> istemiyor musun?
@@ -422,8 +421,6 @@ export default function AuthModal({
                               Misafir Girişi <ArrowRight className="ml-1.5 h-4 w-4" />
                             </Button>
                           </div>
-
-                          {/* Alt Kısım: Pasif Yasal Onay Metni */}
                           <div className="border-t border-slate-700/50 pt-2">
                             <p className="text-[10px] text-slate-500 text-center leading-relaxed">
                               Devam ederek <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('terms'); }}>Kullanım Koşulları</span> ve <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('kvkk'); }}>KVKK Metni</span>'ni kabul etmiş sayılırsınız.
@@ -433,7 +430,6 @@ export default function AuthModal({
                         
                         <div className="relative my-6">
                           <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-700"></span></div>
-                          {/* 🟢 DINAMIK AYRAÇ: Aktif tabı belli et */}
                           <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
                             <span className="bg-[#0f172a] px-3 text-slate-500">
                               {activeTab === 'login' ? 'Veya Kayıt Ol' : 'Veya Giriş Yap'}
@@ -453,7 +449,6 @@ export default function AuthModal({
                             value={formData.fullName} 
                             onChange={handleInputChange}
                             onBlur={(e) => {
-                              // 🟢 Focus çıkarken tam Title Case formatla
                               const formatted = toTitleCase(e.target.value);
                               setFormData(prev => ({ ...prev, fullName: formatted }));
                             }}
