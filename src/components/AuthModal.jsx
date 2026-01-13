@@ -268,24 +268,23 @@ export default function AuthModal({
           return;
         }
 
-        const { first, last } = splitName(formData.fullName);
-        const formattedFullName = toTitleCase(formData.fullName);
+      // AuthModal.jsx içindeki signUp kısmını bu kesin haliyle güncelleyin:
+const { first, last } = splitName(formData.fullName); // fullName'den ayırıyoruz
 
-        const { data: signupData, error: signupError } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              full_name: formattedFullName,
-              first_name: first,
-              last_name: last,
-              phone: formData.phone,
-              user_type: activeRole,
-              // 🟢 DÜZELTME BURADA: 'manager_code' yerine 'invite_code' gönderiyoruz
-              ...(activeRole === 'manager' && { invite_code: formData.managerCode }) 
-            }
-          }
-        });
+const { data: signupData, error: signupError } = await supabase.auth.signUp({
+  email: formData.email,
+  password: formData.password,
+  options: {
+    data: {
+      first_name: first, // splitName'den gelen
+      last_name: last,   // splitName'den gelen
+      full_name: formData.fullName, 
+      phone: formData.phone,
+      user_type: activeRole, // "manager" olmalı
+      invite_code: formData.managerCode
+    }
+  }
+});
 
         if (signupError) throw signupError;
 

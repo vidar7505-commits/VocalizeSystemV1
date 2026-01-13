@@ -4,6 +4,15 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/main.png" />
     
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-eval' 'unsafe-inline';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      img-src 'self' data: blob: https:;
+      font-src 'self' data: https://fonts.gstatic.com;
+      connect-src 'self' https://tcyinufbeqrvnntmyydf.supabase.co wss://tcyinufbeqrvnntmyydf.supabase.co;
+    ">
+    
     <meta name="google" content="notranslate" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -19,7 +28,8 @@
 
     <meta property="og:title" content="Vocalize | Şikayetleri Fırsata Çevirin" />
     <meta property="og:description" content="Müşterileriniz şikayetlerini Google'a değil, doğrudan size iletsin. İşletmenizin dijital itibarını koruyun." />
-    <meta property="og:image" content="https://www.vocalize.global/og-image.jpg" /> <meta property="og:url" content="https://www.vocalize.global" />
+    <meta property="og:image" content="https://www.vocalize.global/og-image.jpg" /> 
+    <meta property="og:url" content="https://www.vocalize.global" />
     <meta property="og:type" content="website" />
 
     <meta name="twitter:card" content="summary_large_image" />
