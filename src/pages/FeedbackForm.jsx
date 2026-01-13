@@ -15,6 +15,9 @@ import {
 import { format } from 'date-fns';
 import { tr, enUS } from 'date-fns/locale';
 
+// 🟢 EKLENEN SATIR: cn fonksiyonu import edildi
+import { cn } from '@/lib/utils';
+
 // ============================================================================
 // STATIC DATA & HELPERS
 // ============================================================================
@@ -172,7 +175,7 @@ export default function FeedbackForm() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [googleRedirectUrl, setGoogleRedirectUrl] = useState(null);
 
-  // 🟢 YENİ EKLENEN STATE: Feedback ID takibi için
+  // 🟢 Feedback ID takibi için state
   const [currentFeedbackId, setCurrentFeedbackId] = useState(null);
 
   const t = TEXTS[language] || TEXTS.tr;
@@ -320,16 +323,32 @@ export default function FeedbackForm() {
       }
   };
 
-  // FORM VALIDATION
+ // 🟢 DOĞRULAMA KURALLARI
   const isFormValid = () => {
     if (!selectedBranch) return false;
-    if (feedbackType === 'review' && rating === 0) return false;
-    if ((feedbackType === 'complaint' || feedbackType === 'suggestion') && message.length < 10) return false;
-    if (feedbackType === 'complaint') {
-        if (hasReceipt && !receiptFile) return false;
-        if (!hasReceipt && !visitDate) return false;
+
+    // 1. DEĞERLENDİRME: Sadece yıldız zorunlu
+    if (feedbackType === 'review') {
+        return rating > 0;
     }
-    return true;
+
+    // 2. ÖNERİ: Metin zorunlu
+    if (feedbackType === 'suggestion') {
+        return message.trim().length >= 10;
+    }
+
+    // 3. ŞİKAYET: Metin + (Fiş Görseli veya Tarih) zorunlu
+    if (feedbackType === 'complaint') {
+        const hasMinMessage = message.trim().length >= 10;
+        if (!hasMinMessage) return false;
+
+        if (hasReceipt) {
+            return !!receiptFile; 
+        } else {
+            return !!visitDate;
+        }
+    }
+    return false;
   };
 
   // SUBMIT
@@ -355,76 +374,55 @@ const submitFeedback = async () => {
     setIsSubmitting(true);
     
     try {
-      // 1. İşletme ve Puan Değişkenlerini Tanımlıyoruz
       const currentBusinessId = businessParam || branches.find(b => b.id === selectedBranch)?.business_id;
-      const calculatedOverallRating = feedbackType === 'review' ? rating : generalRating;
+      
+      // 🟢 ANALİZ PUANI HESAPLAMA
+      const calculatedOverallRating = feedbackType === 'review' ? rating : (generalRating > 0 ? generalRating : 5);
       const currentBranch = branches.find(b => b.id === selectedBranch);
 
-      // 🟢 GOOGLE YÖNLENDİRME TESPİTİ
-      // Şikayet değilse, puan 4+ ise ve şubenin Google URL'si varsa aktifleştir
-      if (feedbackType !== 'complaint' && calculatedOverallRating >= 4 && currentBranch?.google_review_url) {
+      const isHappyCustomer = feedbackType !== 'complaint' && calculatedOverallRating >= 4;
+      if (isHappyCustomer && currentBranch?.google_review_url) {
           setGoogleRedirectUrl(currentBranch.google_review_url);
       } else {
           setGoogleRedirectUrl(null);
       }
 
-      // Dosya yükleme hazırlıkları
       let receiptUrl = null;
       let feedbackImageUrls = [];
-
       if (hasReceipt && receiptFile) {
         const urls = await uploadFiles([receiptFile]);
         receiptUrl = urls[0];
       }
-
       if (feedbackImages.length > 0) {
         const files = feedbackImages.map(img => img.file);
         feedbackImageUrls = await uploadFiles(files);
       }
 
-      let finalCustomerName = isGuest ? 'Anonim' : (user?.user_metadata?.full_name || user?.user_metadata?.first_name || 'Müşteri');
-      let finalCustomerPhone = isGuest ? null : (user?.user_metadata?.phone || user?.phone || null);
-
-      // 2. Veritabanına Kayıt
       const { data, error } = await supabase.from('feedbacks').insert({
         business_id: currentBusinessId,
         branch_id: selectedBranch,
-        qr_code: qrCode || null,
         feedback_type: feedbackType,
         rating: feedbackType === 'review' ? rating : null,
-        // 🚩 ÖNEMLİ: overall_rating analizler için calculatedOverallRating olmalı
-        overall_rating: calculatedOverallRating > 0 ? calculatedOverallRating : 5, 
-        message,
+        overall_rating: calculatedOverallRating,
+        message: message.trim() || null, 
         has_receipt: hasReceipt,
         receipt_images: receiptUrl ? [receiptUrl] : null,
         feedback_images: feedbackImageUrls,
         visit_datetime: new Date(visitDate).toISOString(),
         general_eval_rating: generalRating > 0 ? generalRating : null,
-        general_eval_comment: generalComment || null,
+        general_eval_comment: generalComment.trim() || null,
         customer_email: isGuest ? null : (user?.email || null),
-        customer_phone: finalCustomerPhone,
-        customer_name: finalCustomerName,
+        customer_name: isGuest ? 'Anonim' : (user?.user_metadata?.full_name || 'Müşteri'),
         status: 'new',
-        created_at: new Date().toISOString(),
-        lang: language,
-        redirected_to_google: false
-      })
-      .select()
-      .single();
+        lang: language
+      }).select().single();
 
       if (error) throw error;
-
-      if (data) {
-        setCurrentFeedbackId(data.id);
-      }
-
+      if (data) setCurrentFeedbackId(data.id);
       setShowSuccessModal(true);
+
     } catch (error) {
-      toast({ 
-        title: t.submit.error, 
-        description: error.message || "Bir hata oluştu.", 
-        variant: "destructive" 
-      });
+      toast({ title: t.submit.error, description: error.message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -443,28 +441,15 @@ const submitFeedback = async () => {
     }, 300);
   };
 
- // --- GOOGLE SHARE LOGIC (GÜNCELLENMİŞ VERSİYON) ---
   const handleGoogleShare = async () => {
-      // 1. Önce Veritabanı İşlemini Yap ve BEKLE (Await)
       if (currentFeedbackId) {
           try {
-            // RPC fonksiyonunu çağırıyoruz (SQL ile oluşturduğumuz)
-            const { error } = await supabase
-                .rpc('mark_google_redirect', { target_id: currentFeedbackId });
-                
-            if (error) {
-                console.error("Google click takibi başarısız (RPC):", error);
-            } else {
-                console.log("Google click başarıyla kaydedildi (True) ✅");
-            }
+            await supabase.rpc('mark_google_redirect', { target_id: currentFeedbackId });
           } catch (err) {
-            console.error("Google click hatası:", err);
+            console.error("Google click takibi başarısız:", err);
           }
-      } else {
-          console.warn("Feedback ID bulunamadı, kayıt yapılamadı.");
       }
 
-      // 2. Kopyalama İşlemi
       try {
           if (message) {
               await navigator.clipboard.writeText(message);
@@ -481,15 +466,9 @@ const submitFeedback = async () => {
           console.error("Clipboard error:", err);
       }
 
-      // 3. Yönlendirme (Veritabanı işlemi bittikten SONRA)
       if (googleRedirectUrl) {
-          // Kullanıcıyı bekletmemek için küçük bir gecikme ile yönlendir
           setTimeout(() => {
-             // Yeni sekmede açmak veri kaybını önler ve daha güvenlidir
              window.open(googleRedirectUrl, '_blank'); 
-             
-             // Eğer aynı pencerede açmak zorundaysanız:
-             // window.location.href = googleRedirectUrl;
           }, 500);
       }
   };
@@ -535,7 +514,6 @@ const submitFeedback = async () => {
             </div>
           </div>
 
-          {/* SADECE ŞİKAYET SEÇİLİRSE GÖSTER */}
           {feedbackType === 'complaint' && (
             <div className="mb-8">
               <label className="block text-sm text-gray-400 mb-3 font-semibold uppercase tracking-wide">{t.receipt.label}</label>
@@ -615,6 +593,7 @@ const submitFeedback = async () => {
         </div>
       )}
 
+      {/* BAŞARI MODALI 🟢 GÜNCELLENDİ */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-[#1a2847] rounded-2xl p-8 max-w-md w-full text-center animate-in zoom-in-95 fade-in duration-300 border border-slate-700 shadow-2xl relative overflow-hidden">
@@ -627,44 +606,48 @@ const submitFeedback = async () => {
 
             {/* GOOGLE REDIRECT SECTION */}
             {googleRedirectUrl && (
-                <div className="bg-gradient-to-r from-blue-900/50 to-indigo-900/50 rounded-xl p-5 mb-6 border border-blue-700/50 shadow-lg">
+                <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 rounded-xl p-5 mb-4 border border-blue-700/30 shadow-lg">
                     <h3 className="text-blue-100 font-bold text-lg mb-2">{t.google.title}</h3>
-                    <p className="text-blue-200/80 text-sm mb-4 leading-snug">{t.google.desc}</p>
-                    <div className="flex flex-col gap-3">
-                         <Button onClick={handleGoogleShare} className="w-full bg-white text-blue-900 hover:bg-blue-50 font-bold py-5 h-auto text-base rounded-xl transition shadow-lg shadow-white/10 hover:scale-[1.02] flex items-center justify-center gap-2">
-                            <span className="text-xl">⭐</span> {t.google.yesButton} <Copy className="w-4 h-4 ml-1 opacity-60" />
+                    <p className="text-blue-200/70 text-sm mb-4 leading-snug">{t.google.desc}</p>
+                    <div className="flex flex-col gap-2">
+                         <Button onClick={handleGoogleShare} className="w-full bg-white text-blue-900 hover:bg-blue-50 font-bold py-5 h-auto text-base rounded-xl transition shadow-lg shadow-white/10 active:scale-95 flex items-center justify-center gap-2">
+                            <span className="text-xl">⭐</span> {t.google.yesButton}
                          </Button>
-                         <Button variant="ghost" onClick={handleSuccessClose} className="w-full text-blue-300 hover:text-white hover:bg-blue-800/30">
+                         
+                         {/* 🚩 Hayır Teşekkürler Butonu: Google kartı içine eklendi */}
+                         <Button 
+                            onClick={handleSuccessClose} 
+                            variant="ghost" 
+                            className="w-full text-slate-400 hover:text-slate-300 hover:bg-transparent text-sm font-medium py-2"
+                         >
                             {t.google.noButton}
                          </Button>
                     </div>
                 </div>
             )}
-            
-            {/* Sadece Google yoksa normal kapatma butonu göster */}
-            {!googleRedirectUrl && (
-                <Button onClick={handleSuccessClose} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 h-auto text-base rounded-xl transition shadow-lg shadow-teal-900/20 hover:scale-[1.02]">{t.success.button}</Button>
-            )}
-            
-            {/* INSTAGRAM ALANI - GÜVENLİ MOD */}
+
+            {/* INSTAGRAM ALANI */}
             {(() => {
                 const currentBranch = branches.find(b => b.id === selectedBranch);
-                const effectiveRating = feedbackType === 'review' ? rating : generalRating;
-                const isHappyCustomer = effectiveRating >= 4 && feedbackType !== 'complaint';
+                const calculatedOverallRating = feedbackType === 'review' ? rating : generalRating;
+                
+                const shouldShowInstagram = feedbackType !== 'complaint' && calculatedOverallRating >= 4 && currentBranch?.instagram_url;
 
-                if (currentBranch?.instagram_url && isHappyCustomer) {
+                if (shouldShowInstagram) {
                     return (
-                        <div className={`mt-4 pt-4 border-t border-slate-700/50 ${googleRedirectUrl ? 'animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300' : ''}`}>
+                        <div className={`mt-2 ${googleRedirectUrl ? 'animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300' : ''}`}>
                             <Button 
                                 onClick={() => window.open(currentBranch.instagram_url, '_blank')}
-                                variant={googleRedirectUrl ? "outline" : "default"}
-                                className={`w-full gap-2 font-bold py-6 h-auto text-base rounded-xl transition hover:scale-[1.02] group ${
+                                variant="outline"
+                                className={cn(
+                                    "w-full gap-2 font-bold py-5 h-auto text-sm rounded-xl transition border-slate-700",
+                                    // 🚩 DÜZELTME: Hover dolgusu kaldırıldı, renk tonu mobilde görünür yapıldı
                                     googleRedirectUrl 
-                                    ? "border-slate-600 bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white hover:border-pink-500/50" 
-                                    : "bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:from-purple-700 hover:to-orange-600 text-white shadow-lg shadow-pink-900/20"
-                                }`}
+                                    ? "bg-transparent text-slate-300 border-slate-700/50 hover:bg-transparent active:bg-slate-800/30" 
+                                    : "bg-gradient-to-r from-purple-600/10 to-pink-600/10 text-pink-400 border-pink-500/20 hover:bg-transparent"
+                                )}
                             >
-                                <Instagram className={`w-5 h-5 ${googleRedirectUrl ? "text-pink-500 group-hover:text-pink-400" : "text-white"}`} /> 
+                                <Instagram className={cn("w-4 h-4", googleRedirectUrl ? "text-slate-400" : "text-pink-500")} /> 
                                 {language === 'tr' ? 'Bizi Instagram\'da Takip Et' : 'Follow us on Instagram'}
                             </Button>
                         </div>
@@ -672,6 +655,11 @@ const submitFeedback = async () => {
                 }
                 return null;
             })()}
+
+            {/* KAPATMA BUTONU: Google yoksa ana buton olur */}
+            {!googleRedirectUrl && (
+                <Button onClick={handleSuccessClose} className="w-full mt-4 bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 h-auto text-base rounded-xl transition shadow-lg shadow-teal-900/20 active:scale-95">{t.success.button}</Button>
+            )}
             
             <div className="mt-6 pt-3 border-t border-slate-700/50"><span className="text-slate-500 font-medium text-xs flex items-center justify-center gap-2 flex-wrap"><Star className="h-3 w-3 fill-slate-500 text-slate-500 shrink-0" /> {t.success.footer}</span></div>
           </div>
