@@ -10,7 +10,7 @@ import {
   Loader2, Search, RefreshCw, Calendar, MessageSquare, User, Star,
   Image as ImageIcon, Filter, AlertTriangle, Crown, Siren,
   StickyNote, ChevronLeft, ChevronRight, FileText, BarChart,
-  CheckSquare, Square, CheckCircle2, ListChecks // <-- ListChecks eklendi
+  CheckSquare, Square, CheckCircle2, ListChecks
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { subDays, startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay } from "date-fns";
@@ -53,13 +53,42 @@ const FeedbackManagement = () => {
   const [pendingFeedbackId, setPendingFeedbackId] = useState(null);
   const [modalOpenAttempts, setModalOpenAttempts] = useState(0);
   
-  // 🟢 SEÇİM STATE'LERİ
+  // SEÇİM STATE'LERİ
   const [selectedIds, setSelectedIds] = useState([]);
   
   const itemRefs = useRef({});
   const pendingTimeoutRef = useRef(null);
 
-  useEffect(() => { if (businessId) fetchFeedbacks(); }, [businessId, selectedBranchId]);
+  // 🟢 GÜNCELLEME BURADA: REALTIME ABONELİĞİ EKLENDİ
+  useEffect(() => {
+    if (!businessId) return;
+
+    // 1. İlk Yükleme
+    fetchFeedbacks();
+
+    // 2. Canlı Dinleme (Insert, Update, Delete)
+    const channel = supabase.channel('feedback_list_realtime')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', // Her türlü değişikliği dinle (Ekleme, Düzenleme, Silme)
+          schema: 'public', 
+          table: 'feedbacks', 
+          filter: `business_id=eq.${businessId}` 
+        },
+        (payload) => {
+          // Değişiklik olduğunda listeyi yenile (Müşteri bilgileri join ile geleceği için fetch şart)
+          // console.log("Canlı veri değişimi algılandı:", payload); // Debug için açılabilir
+          fetchFeedbacks();
+        }
+      )
+      .subscribe();
+
+    // 3. Temizlik
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [businessId, selectedBranchId]); // selectedBranchId değişirse de yeniden kurar
 
   // URL/localStorage ID yakalama
   useEffect(() => {
@@ -147,9 +176,13 @@ const FeedbackManagement = () => {
 
   const fetchFeedbacks = async () => {
     if (!businessId) return;
-    setHighlightedId(null);
-    setTargetScrollId(null);
-    setLoading(true);
+    // Highlight ve scroll sıfırlamayı kaldırdık ki realtime update sırasında sayfa zıplamasın
+    // setHighlightedId(null); 
+    // setTargetScrollId(null);
+    
+    // Loading'i sadece ilk açılışta true yapıyoruz, realtime güncellemede ekranı karartmıyoruz
+    if (feedbacks.length === 0) setLoading(true);
+    
     try {
       let query = supabase.from('feedbacks').select(`
           *,
@@ -235,28 +268,23 @@ const FeedbackManagement = () => {
 
   const getStatusLabel = (s) => ({ new: 'Yeni', pending: 'Beklemede', in_progress: 'İşlemde', resolved: 'Çözüldü', escalated: 'Acil' }[s] || s);
 
-  // 🟢 YENİ: TEKİL SEÇİM
+  // TEKİL SEÇİM
   const toggleSelect = (id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  // 🟢 YENİ: TÜMÜNÜ SEÇ (SAYFA BAZLI)
+  // TÜMÜNÜ SEÇ (SAYFA BAZLI)
   const handleSelectAll = () => {
-    // Mevcut sayfadaki tüm öğeler seçili mi?
     const allSelected = paginatedFeedbacks.length > 0 && paginatedFeedbacks.every(f => selectedIds.includes(f.id));
-    
     if (allSelected) {
-      // Hepsini çıkar (sadece bu sayfadakileri veya komple temizle)
       setSelectedIds([]); 
     } else {
-      // Bu sayfadakileri ekle
       const pageIds = paginatedFeedbacks.map(f => f.id);
-      // Set kullanılarak unique ID'ler birleştirilir
       setSelectedIds(prev => [...new Set([...prev, ...pageIds])]);
     }
   };
 
-  // 🟢 YENİ: TOPLU GÜNCELLEME (Status parametreli)
+  // TOPLU GÜNCELLEME
   const handleBulkUpdate = async (targetStatus) => {
     if (selectedIds.length === 0) return;
     setLoading(true);
@@ -274,6 +302,7 @@ const FeedbackManagement = () => {
         description: `${selectedIds.length} bildirim "${getStatusLabel(targetStatus)}" olarak güncellendi.`, 
         className: "bg-green-600 text-white border-none" 
       });
+      // Realtime zaten güncelleyecek ama hızlı tepki için state'i de güncelliyoruz
       setFeedbacks(prev => prev.map(f => selectedIds.includes(f.id) ? { ...f, ...updates } : f));
       setSelectedIds([]);
     } else { 
@@ -414,11 +443,9 @@ const FeedbackManagement = () => {
             </div>
          </div>
          <div className="flex items-center gap-6 pt-1 border-t border-slate-800/50">
-            {/* 🟢 YENİ: TÜMÜNÜ SEÇ CHECKBOX */}
             <div className="flex items-center space-x-2 border-r border-slate-700/50 pr-6 mr-2">
                 <Checkbox 
                   id="select-all" 
-                  // Eğer sayfada veri varsa ve hepsi seçiliyse checked true
                   checked={paginatedFeedbacks.length > 0 && paginatedFeedbacks.every(f => selectedIds.includes(f.id))}
                   onCheckedChange={handleSelectAll}
                   className="border-slate-500 data-[state=checked]:bg-indigo-500 w-4 h-4"
@@ -435,7 +462,6 @@ const FeedbackManagement = () => {
 
       <div className="mt-4">
         {selectedIds.length > 0 && (
-          // 🟢 GÜNCELLENMİŞ STICKY ACTION BAR
           <div className="bg-indigo-900/30 border border-indigo-500/50 p-3 rounded-xl flex flex-col sm:flex-row items-center justify-between animate-in fade-in slide-in-from-top-2 mb-4 shadow-lg sticky top-20 z-20 backdrop-blur-md gap-3">
             <div className="flex items-center gap-3">
               <div className="bg-indigo-600 p-2 rounded-full"><CheckSquare className="w-5 h-5 text-white" /></div>

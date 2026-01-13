@@ -1,24 +1,25 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAdminContext } from '@/contexts/AdminContext';
 import { 
   MessageSquare, Star, AlertTriangle, Calendar, Loader2, ChevronRight, 
-  ArrowUpRight, ArrowDownRight, Minus, CheckCircle2, User, Phone, 
-  Image as ImageIcon, StickyNote, Crown, FileText, Siren, BarChart // 🟢 BarChart Eklendi
+  ArrowUpRight, ArrowDownRight, Minus, CheckCircle2, User, 
+  Image as ImageIcon, StickyNote, Crown, Siren, BarChart
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList, AreaChart, Area } from 'recharts'; // İsim çakışması olmasın diye RechartsBarChart olarak değiştirdik
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList, AreaChart, Area } from 'recharts';
 import { subDays, startOfDay, endOfDay, subMonths, startOfMonth } from 'date-fns';
 import { cn, formatCustomerName, getCustomerData, calculateDelta } from "@/lib/utils";
 import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
 
-// ... (SparklineCard, getTypeBadge, getStatusBadge, hasImages aynı) ...
+// --- HELPER COMPONENTS (Korundu) ---
+
 const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass, sparkData, loading, isInverseMetric = false }) => {
   let sentimentColor = "bg-slate-800 text-slate-400 border-slate-700"; 
   let TrendIcon = Minus;
@@ -77,22 +78,33 @@ const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass,
     </div>
   );
 };
+
 const getTypeBadge = (type) => {
   const styles = { complaint: "text-red-400 bg-red-900/20 border-red-900/30", suggestion: "text-blue-400 bg-blue-900/20 border-blue-900/30", evaluation: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", review: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", rating: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30" };
   const labels = { complaint: "Şikayet", suggestion: "Öneri", evaluation: "Değerlendirme", review: "Değerlendirme", rating: "Değerlendirme" };
   return <Badge variant="secondary" className={`text-xs px-2.5 py-1 ${styles[type] || "text-slate-400"}`}>{labels[type] || type}</Badge>;
 };
+
 const getStatusBadge = (status) => {
   const styles = { new: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20", pending: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", in_progress: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20", resolved: "bg-green-500/10 text-green-500 border-green-500/20", escalated: "bg-red-500/10 text-red-500 border-red-500/20" };
   const labels = { new: "Yeni", pending: "Beklemede", in_progress: "İşlemde", resolved: "Çözüldü", escalated: "Acil" };
   return <Badge variant="outline" className={`text-[10px] h-5 px-1.5 whitespace-nowrap transition-colors ${styles[status] || "bg-slate-500/10 text-slate-500"}`}>{labels[status] || status}</Badge>;
 };
+
 const hasImages = (f) => {
   return ((f.feedback_images && f.feedback_images.length > 0) || (f.image_urls && f.image_urls.length > 0) || (f.receipt_images && f.receipt_images.length > 0) || f.receipt_url || f.product_image_url);
 };
 
+// --- MAIN COMPONENT ---
+
 const AdminPanel = () => {
-  const { businessId, selectedBranchId, branches, dateRange, setDateRange } = useAdminContext();
+  const { 
+    businessId, 
+    selectedBranchId, 
+    branches, 
+    dateRange, 
+    setDateRange
+  } = useAdminContext();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -337,8 +349,9 @@ const AdminPanel = () => {
     }
   }, [businessId, selectedBranchId, dateRange, getDateIntervals, toast]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // Realtime
   useEffect(() => {
+    fetchData(); 
     if (!businessId) return;
     const channel = supabase.channel('admin-dashboard-realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks', filter: `business_id=eq.${businessId}` }, () => fetchData())
@@ -380,12 +393,14 @@ const AdminPanel = () => {
       }));
   };
 
+  const hasUrgentFeedbacks = useMemo(() => recentFeedbacks.some(f => f.status === 'escalated'), [recentFeedbacks]);
+
   return (
     <div className="mx-auto max-w-7xl pb-10 px-4 pt-20 md:px-6 md:pt-0 lg:px-8">
       <div className="mt-4 flex flex-col justify-between gap-6 md:mt-0 md:flex-row md:items-start mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">{displayTitle}</h1>
-          <p className="text-slate-400 text-sm">İşletmenizin performansını ve müşteri geri bildirimlerini anında takip edin</p>
+          <p className="text-slate-400 text-sm">İşletmenizin anlık performansını ve son aktiviteleri takip edin</p>
         </div>
         <div className="w-full md:w-48 shrink-0">
           <Select value={dateRange} onValueChange={setDateRange}>
@@ -395,6 +410,14 @@ const AdminPanel = () => {
         </div>
       </div>
 
+      {hasUrgentFeedbacks && (
+          <div className="bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.3)] mb-6">
+            <div className="flex items-center gap-3"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
+            <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg" onClick={() => navigate('/admin-panel/feedbacks', { state: { filter: 'urgent' } })}>İncele</Button>
+          </div>
+      )}
+
+      {/* 1. KPI KARTLARI (EN ÜSTTE) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <SparklineCard title="Toplam Bildirim" value={`${metrics.total.value}`} delta={metrics.total.delta} deltaType={metrics.total.type} icon={MessageSquare} colorClass="bg-blue-500" sparkData={sparklineData.total} loading={loading}/>
         <SparklineCard title="Bekleyen Şikayet" value={`${metrics.complaints.value}`} delta={metrics.complaints.delta} deltaType={metrics.complaints.type} icon={AlertTriangle} colorClass="bg-red-500" sparkData={sparklineData.complaints} loading={loading} isInverseMetric={true}/>
@@ -402,10 +425,11 @@ const AdminPanel = () => {
         <SparklineCard title="Ort. Puan" value={metrics.rating.value} delta={metrics.rating.delta} deltaType={metrics.rating.type} icon={Star} colorClass="bg-yellow-500" sparkData={sparklineData.rating} loading={loading}/>
       </div>
 
+      {/* 2. GRAFİKLER (ORTADA) */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8">
         <Tabs defaultValue="stars" className="w-full">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div><h2 className="text-white font-bold text-xl mb-1">Analiz Grafikleri</h2><p className="text-slate-400 text-sm">Müşteri geri bildirimlerinin detaylı dağılımı</p></div>
+            <div><h2 className="text-white font-bold text-xl mb-1">Hızlı Bakış</h2><p className="text-slate-400 text-sm">Gelen bildirimlerin dağılımı</p></div>
             <TabsList className="bg-slate-800 border-slate-700 w-full grid grid-cols-2 h-auto p-1 sm:w-auto sm:flex sm:h-10">
               <TabsTrigger value="stars" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm"><Star className="w-4 h-4 mr-2" />Yıldız Dağılımı</TabsTrigger>
               <TabsTrigger value="types" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm"><MessageSquare className="w-4 h-4 mr-2" />Form Türleri</TabsTrigger>
@@ -448,6 +472,7 @@ const AdminPanel = () => {
         </Tabs>
       </div>
 
+      {/* 3. SON AKTİVİTELER (EN ALTTA) */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">Son Aktiviteler</h2>
@@ -468,8 +493,6 @@ const AdminPanel = () => {
                    const hasManagerNote = !!f.manager_note;
                    const hasCustomerProfileNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
                    const hasComment = (f.message && f.message.trim().length > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
-                   
-                   // 🟢 GÜNCELLENMİŞ KONTROL: Sadece gerçek genel değerlendirme varsa göster
                    const hasGeneralEval = (Number(f.general_eval_rating) > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
 
                    return (
@@ -497,9 +520,7 @@ const AdminPanel = () => {
                              </div>
                            </div>
                            <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
-                              {/* 🟢 GÜNCEL KOD: Sadece gerçek genel değerlendirme varsa göster */}
                               {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
-                              
                               {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
                               {hasManagerNote && (<div className="flex items-center justify-center w-6 h-6 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30"><StickyNote className="w-3.5 h-3.5 fill-current" /></div>)}
                               {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}

@@ -172,13 +172,15 @@ export default function FeedbackForm() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [googleRedirectUrl, setGoogleRedirectUrl] = useState(null);
 
+  // 🟢 YENİ EKLENEN STATE: Feedback ID takibi için
+  const [currentFeedbackId, setCurrentFeedbackId] = useState(null);
+
   const t = TEXTS[language] || TEXTS.tr;
 
   // INITIALIZATION
   useEffect(() => {
     const init = async () => {
       try {
-        // Language initialization
         const storedLang = localStorage.getItem('vocalize_lang');
         if (langParam && (langParam === 'tr' || langParam === 'en')) {
           setLanguage(langParam);
@@ -244,7 +246,7 @@ export default function FeedbackForm() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [imageModalOpen, showSuccessModal]);
 
-  // NAVIGATION FIX (Formdan çıkışta parametreleri koru)
+  // NAVIGATION
   const handleBackNavigation = () => {
     const params = new URLSearchParams();
     if (businessParam) params.set('business', businessParam);
@@ -321,19 +323,12 @@ export default function FeedbackForm() {
   // FORM VALIDATION
   const isFormValid = () => {
     if (!selectedBranch) return false;
-    
-    // Değerlendirme ise puan şart
     if (feedbackType === 'review' && rating === 0) return false;
-    
-    // Mesaj uzunluğu kontrolü (Şikayet ve Öneri için)
     if ((feedbackType === 'complaint' || feedbackType === 'suggestion') && message.length < 10) return false;
-    
-    // Fiş ve Tarih zorunluluğu ARTIK SADECE ŞİKAYET İÇİN
     if (feedbackType === 'complaint') {
         if (hasReceipt && !receiptFile) return false;
         if (!hasReceipt && !visitDate) return false;
     }
-    
     return true;
   };
 
@@ -357,7 +352,7 @@ export default function FeedbackForm() {
     setIsSubmitting(true);
     
     try {
-      // 1. GÜVENLİ GOOGLE YÖNLENDİRME MANTIĞI
+      // GOOGLE REDIRECT LOGIC
       if (feedbackType !== 'complaint') {
           const effectiveRating = feedbackType === 'review' ? rating : generalRating;
           
@@ -389,12 +384,11 @@ export default function FeedbackForm() {
       }
 
       const currentBusinessId = searchParams.get('business') || branches.find(b => b.id === selectedBranch)?.business_id;
-
-      // 🟢 İsim ve Telefon Garantisi: Metadata'dan ve state'den al
       let finalCustomerName = isGuest ? 'Anonim' : (user?.user_metadata?.full_name || user?.user_metadata?.first_name || 'Müşteri');
       let finalCustomerPhone = isGuest ? null : (user?.user_metadata?.phone || user?.phone || null);
 
-      await supabase.from('feedbacks').insert({
+      // 🟢 GÜNCELLEME: .select().single() ile eklenen veriyi geri alıyoruz
+      const { data, error } = await supabase.from('feedbacks').insert({
         business_id: currentBusinessId,
         branch_id: selectedBranch,
         qr_code: qrCode || null,
@@ -412,8 +406,18 @@ export default function FeedbackForm() {
         customer_name: finalCustomerName,
         status: 'new',
         created_at: new Date().toISOString(),
-        lang: language
-      });
+        lang: language,
+        redirected_to_google: false // Başlangıçta false
+      })
+      .select()
+      .single();
+
+      if (error) throw error;
+
+      // 🟢 ID'yi state'e kaydet
+      if (data) {
+        setCurrentFeedbackId(data.id);
+      }
 
       setShowSuccessModal(true);
     } catch (error) {
@@ -424,10 +428,7 @@ export default function FeedbackForm() {
   };
 
   const handleSuccessClose = () => {
-    // 🟢 DÜZELTME: Modal kapanırken "insertBefore" hatası almamak için
-    // önce modalı kapatıp, DOM güncellendikten sonra yönlendirme yapıyoruz.
     setShowSuccessModal(false);
-    
     setTimeout(() => {
         const params = new URLSearchParams();
         if (businessParam) params.set('business', businessParam);
@@ -436,11 +437,31 @@ export default function FeedbackForm() {
         if (qrParam) params.set('qr', qrParam);
         if (langParam) params.set('lang', langParam);
         navigate(`/customer-panel?${params.toString()}`, { state: { showSuccessNotification: true, feedbackType } });
-    }, 300); // 300ms gecikme eklendi
+    }, 300);
   };
 
-  // --- GOOGLE SHARE LOGIC ---
+ // --- GOOGLE SHARE LOGIC (GÜNCELLENMİŞ VERSİYON) ---
   const handleGoogleShare = async () => {
+      // 1. Önce Veritabanı İşlemini Yap ve BEKLE (Await)
+      if (currentFeedbackId) {
+          try {
+            // RPC fonksiyonunu çağırıyoruz (SQL ile oluşturduğumuz)
+            const { error } = await supabase
+                .rpc('mark_google_redirect', { target_id: currentFeedbackId });
+                
+            if (error) {
+                console.error("Google click takibi başarısız (RPC):", error);
+            } else {
+                console.log("Google click başarıyla kaydedildi (True) ✅");
+            }
+          } catch (err) {
+            console.error("Google click hatası:", err);
+          }
+      } else {
+          console.warn("Feedback ID bulunamadı, kayıt yapılamadı.");
+      }
+
+      // 2. Kopyalama İşlemi
       try {
           if (message) {
               await navigator.clipboard.writeText(message);
@@ -457,9 +478,17 @@ export default function FeedbackForm() {
           console.error("Clipboard error:", err);
       }
 
-      setTimeout(() => {
-          window.location.href = googleRedirectUrl;
-      }, 1000);
+      // 3. Yönlendirme (Veritabanı işlemi bittikten SONRA)
+      if (googleRedirectUrl) {
+          // Kullanıcıyı bekletmemek için küçük bir gecikme ile yönlendir
+          setTimeout(() => {
+             // Yeni sekmede açmak veri kaybını önler ve daha güvenlidir
+             window.open(googleRedirectUrl, '_blank'); 
+             
+             // Eğer aynı pencerede açmak zorundaysanız:
+             // window.location.href = googleRedirectUrl;
+          }, 500);
+      }
   };
 
   if (isLoading) return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center"><Loader2 className="h-12 w-12 text-orange-500 animate-spin" /></div>;
@@ -614,16 +643,12 @@ export default function FeedbackForm() {
                 <Button onClick={handleSuccessClose} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 h-auto text-base rounded-xl transition shadow-lg shadow-teal-900/20 hover:scale-[1.02]">{t.success.button}</Button>
             )}
             
-            {/* INSTAGRAM ALANI - GÜVENLİ MOD (Sadece 4-5 Yıldız Verenlere) */}
+            {/* INSTAGRAM ALANI - GÜVENLİ MOD */}
             {(() => {
                 const currentBranch = branches.find(b => b.id === selectedBranch);
-                // Müşterinin verdiği puanı al (Review ise 'rating', Öneri ise 'generalRating')
                 const effectiveRating = feedbackType === 'review' ? rating : generalRating;
-                
-                // KRİTİK KONTROL: Puan 4 üstü mü VE tip 'Şikayet' değil mi?
                 const isHappyCustomer = effectiveRating >= 4 && feedbackType !== 'complaint';
 
-                // Sadece link varsa VE müşteri mutluysa göster
                 if (currentBranch?.instagram_url && isHappyCustomer) {
                     return (
                         <div className={`mt-4 pt-4 border-t border-slate-700/50 ${googleRedirectUrl ? 'animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300' : ''}`}>
