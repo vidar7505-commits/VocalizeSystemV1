@@ -347,7 +347,7 @@ export default function FeedbackForm() {
     return uploadedUrls;
   };
 
-  const submitFeedback = async () => {
+const submitFeedback = async () => {
     if (!isFormValid()) { 
       toast({ title: "Uyarı", description: t.submit.errorValidation, variant: "destructive" }); 
       return; 
@@ -355,27 +355,23 @@ export default function FeedbackForm() {
     setIsSubmitting(true);
     
     try {
-      // 1. İşletme ve Puan Hazırlığı
+      // 1. İşletme ve Puan Değişkenlerini Tanımlıyoruz
       const currentBusinessId = businessParam || branches.find(b => b.id === selectedBranch)?.business_id;
       const calculatedOverallRating = feedbackType === 'review' ? rating : generalRating;
+      const currentBranch = branches.find(b => b.id === selectedBranch);
 
-      // 🟢 GOOGLE YÖNLENDİRME MANTIĞI (GERİ GETİRİLDİ)
-      // Şikayet değilse ve puan 4 veya üzeriyse yönlendirme URL'sini hazırla
-      if (feedbackType !== 'complaint' && calculatedOverallRating >= 4) {
-          const currentBranch = branches.find(b => b.id === selectedBranch);
-          if (currentBranch && currentBranch.google_review_url) {
-            setGoogleRedirectUrl(currentBranch.google_review_url);
-          } else {
-            setGoogleRedirectUrl(null);
-          }
+      // 🟢 GOOGLE YÖNLENDİRME TESPİTİ
+      // Şikayet değilse, puan 4+ ise ve şubenin Google URL'si varsa aktifleştir
+      if (feedbackType !== 'complaint' && calculatedOverallRating >= 4 && currentBranch?.google_review_url) {
+          setGoogleRedirectUrl(currentBranch.google_review_url);
       } else {
           setGoogleRedirectUrl(null);
       }
 
+      // Dosya yükleme hazırlıkları
       let receiptUrl = null;
       let feedbackImageUrls = [];
 
-      // Dosya yükleme işlemleri
       if (hasReceipt && receiptFile) {
         const urls = await uploadFiles([receiptFile]);
         receiptUrl = urls[0];
@@ -396,6 +392,7 @@ export default function FeedbackForm() {
         qr_code: qrCode || null,
         feedback_type: feedbackType,
         rating: feedbackType === 'review' ? rating : null,
+        // 🚩 ÖNEMLİ: overall_rating analizler için calculatedOverallRating olmalı
         overall_rating: calculatedOverallRating > 0 ? calculatedOverallRating : 5, 
         message,
         has_receipt: hasReceipt,
@@ -417,7 +414,6 @@ export default function FeedbackForm() {
 
       if (error) throw error;
 
-      // 3. ID'yi ve Başarı Modalını Set Et
       if (data) {
         setCurrentFeedbackId(data.id);
       }
@@ -426,7 +422,7 @@ export default function FeedbackForm() {
     } catch (error) {
       toast({ 
         title: t.submit.error, 
-        description: error.message || "İşlem sırasında bir hata oluştu.", 
+        description: error.message || "Bir hata oluştu.", 
         variant: "destructive" 
       });
     } finally {
