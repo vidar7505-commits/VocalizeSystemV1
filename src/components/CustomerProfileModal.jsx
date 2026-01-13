@@ -156,25 +156,26 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
 
       let feedbackData = [];
 
-      if (queryConditions.length > 0) {
-        const orString = queryConditions.join(',');
-        const { data, error } = await supabase
-          .from('feedbacks')
-          .select(`
-            *,
-            branches (id, branch_name_tr),
-            customer_profiles (id)
-          `)
-          .eq('business_id', businessId)
-          .or(orString)
-          .order('created_at', { ascending: false });
-        
-        if (!error) {
-          feedbackData = data || [];
-        }
-      }
+      // CustomerProfileModal.jsx - fetchData içindeki feedbacks sorgusunu (satır 152-166) bu hale getirin:
 
-      setFeedbacks(feedbackData);
+// fetchData fonksiyonu içindeki feedback sorgusunu bulun:
+// fetchData içindeki feedback sorgusunu şu kesin yapıyla güncelleyin:
+if (queryConditions.length > 0) {
+  const { data, error } = await supabase
+    .from('feedbacks')
+    .select(`
+      *,
+      branches (id, branch_name_tr),
+      customer_profiles (id, admin_note)
+    `)
+    .eq('business_id', businessId) // 🚩 Sadece bu işletme
+    .ilike('customer_email', customerEmail) // 🚩 Email eşleşmesi (Duyarsız)
+    .order('created_at', { ascending: false });
+
+  if (!error) {
+    setFeedbacks(data || []);
+  }
+}
 
       const phoneFromHistory = feedbackData?.find(f => f.customer_phone)?.customer_phone || null;
 

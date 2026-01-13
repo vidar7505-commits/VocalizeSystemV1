@@ -47,7 +47,9 @@ const AdminHeader = () => {
   const { 
     businessId, businessName, branches, selectedBranchId, setSelectedBranchId,
     qrCount, loading, dateRange,
-    isSpecialOffer, monthlyFeeOverride
+    isSpecialOffer, monthlyFeeOverride,
+    // 🟢 YENİ: Context'ten rolleri alıyoruz
+    userRole, assignedBranchId, isBranchManager 
   } = useAdminContext();
   
   const { user, signOut } = useAuth();
@@ -70,52 +72,66 @@ const AdminHeader = () => {
   const checkEscalatedStatus = useCallback(async () => {
     if (!businessId) return;
     try {
-      const { count } = await supabase.from('feedbacks')
+      let query = supabase.from('feedbacks')
         .select('*', { count: 'exact', head: true })
         .eq('business_id', businessId)
         .eq('status', 'escalated');
       
+      // 🚩 MÜDÜR FİLTRESİ: Sadece kendi şubesindeki acilleri sayar
+      if (isBranchManager && assignedBranchId) {
+        query = query.eq('branch_id', assignedBranchId);
+      }
+
+      const { count } = await query;
       setEscalatedCount(count || 0);
     } catch (e) {
       console.error('Error checking escalated status:', e);
     }
-  }, [businessId]);
+  }, [businessId, isBranchManager, assignedBranchId]);
 
+  // 1. Bildirimleri Çeken Fonksiyon (TAMAMLANDI)
   const fetchNotifications = useCallback(async () => {
-    if (!user) return;
-    const { data, error } = await supabase
+    if (!user || !businessId) return;
+    
+    let query = supabase
       .from('notifications')
-      .select('*', { count: 'exact' })
+      .select('*')
       .eq('user_id', user.id)
+      .eq('business_id', businessId);
+
+    // 🚩 KRİTİK FİLTRE: Eğer kullanıcı müdürse sadece kendi şubesini görsün
+    if (isBranchManager && assignedBranchId) {
+      query = query.eq('branch_id', assignedBranchId);
+    }
+
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .limit(10);
 
     if (error) {
-      console.error("Error fetching notifications", error);
+      console.error("Bildirim çekme hatası:", error);
     } else {
+      // 🟢 DÜZELTME: Veriyi state'e yazıyoruz
       setNotifications(data || []);
       setUnreadCount((data || []).filter(n => !n.is_read).length);
     }
-  }, [user]);
+  }, [user, businessId, isBranchManager, assignedBranchId]);
 
+  // 2. İlk Yükleme
   useEffect(() => {
-    fetchNotifications();
-    checkEscalatedStatus();
-    
-    const handleClickOutside = (event) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-        setNotificationOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [fetchNotifications, checkEscalatedStatus]);
+    if (user && businessId) {
+      fetchNotifications();
+      checkEscalatedStatus();
+    }
+  }, [user, businessId, fetchNotifications, checkEscalatedStatus]);
 
+  // 3. Canlı Dinleme (Realtime)
   useEffect(() => {
-    if (!user) return;
+    if (!user || !businessId) return;
 
+    // Bildirimler tablosunu dinle
     const channel = supabase
-      .channel('public:notifications')
+      .channel('header-notifications')
       .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',
@@ -124,22 +140,36 @@ const AdminHeader = () => {
         },
         (payload) => {
           const newNotification = payload.new;
-          setNotifications(prev => [newNotification, ...prev.slice(0, 9)]);
-          setUnreadCount(prev => prev + 1);
-          toast({
-            title: `Yeni geri bildirim`,
-            description: 'Bir müşteriden yeni bildirim aldınız.',
-          });
+
+          // 🚩 Şube kontrolü: Eğer müdürse sadece kendi şubesine aitse ekrana bas
+          const isRelevant = isBranchManager 
+            ? newNotification.branch_id === assignedBranchId 
+            : newNotification.business_id === businessId;
+
+          if (isRelevant) {
+            setNotifications(prev => [newNotification, ...prev.slice(0, 9)]);
+            setUnreadCount(prev => prev + 1);
+            toast({
+              title: `Yeni Geri Bildirim`,
+              description: newNotification.message || 'Yeni bir bildirim aldınız.',
+            });
+          }
         }
       )
       .subscribe();
       
-    // Subscribe to feedbacks to update escalated count in real-time
+    // Geri bildirimler tablosunu dinle (Acil sayacı için)
     const feedbackChannel = supabase
       .channel('header-feedback-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks', filter: `business_id=eq.${businessId}` }, 
+      .on('postgres_changes', { 
+          event: '*', // 🚩 UPDATE dahil tüm değişiklikleri yakalar (Acil -> Çözüldü geçişi için)
+          schema: 'public', 
+          table: 'feedbacks', 
+          filter: `business_id=eq.${businessId}` 
+      }, 
         () => {
-           checkEscalatedStatus();
+           checkEscalatedStatus(); // Sayacı anında yeniler
+           fetchNotifications();   // Listeyi de taze tutar
         }
       )
       .subscribe();
@@ -148,12 +178,11 @@ const AdminHeader = () => {
        supabase.removeChannel(channel);
        supabase.removeChannel(feedbackChannel);
     };
-  }, [user, toast, businessId, checkEscalatedStatus]);
+  }, [user, businessId, toast, isBranchManager, assignedBranchId, checkEscalatedStatus, fetchNotifications]);
 
   // 🟢 DÜZELTİLEN FONKSİYON: Artık fetch yapmaz, direkt yönlendirir.
   const handleNotificationClick = async (notification) => {
     // 1. Hedef ID'yi güvenli şekilde al (Farklı isimlendirmelere karşı önlem)
-    // Supabase tablonuzda sütun adı 'related_id' veya 'feedback_id' olabilir.
     const targetId = notification.related_id || notification.feedback_id;
 
     if (!targetId) {
@@ -174,7 +203,6 @@ const AdminHeader = () => {
     }
 
     // 4. SAYFAYA YÖNLENDİR (State ile ID taşıyoruz)
-    // Bu state FeedbackManagement.jsx tarafından yakalanıp scroll/highlight yapılacak.
     navigate('/admin-panel/feedbacks', {
         state: { openFeedbackId: targetId }
     });
@@ -226,7 +254,6 @@ const AdminHeader = () => {
         icon: "⭐",
         badgeClassName: "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20",
         cardTitle: "⭐ Ayrıcalıklı Erken Erişim",
-        // DEĞİŞİKLİK BURADA: + KDV Eklendi
         cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli $79 + KDV olarak belirlenmiştir ve ömür boyu %20 indirim hakkı mühürlenmiştir.",
         cardBorderColor: "border-amber-500/50",
         cardTitleColor: "text-amber-400"
@@ -237,7 +264,6 @@ const AdminHeader = () => {
         icon: "🚀",
         badgeClassName: "bg-teal-500/10 border-teal-500/30 text-teal-400 hover:bg-teal-500/20",
         cardTitle: "🚀 Kurumsal Esnek Paket",
-        // DEĞİŞİKLİK BURADA: + KDV Eklendi
         cardDesc: `İşletmenizin ihtiyaçlarına özel olarak yapılandırılmış ödeme planıdır. Aylık kullanım bedeli $${fee} + KDV olarak tanımlanmıştır.`,
         cardBorderColor: "border-teal-500/50",
         cardTitleColor: "text-teal-400"
@@ -383,9 +409,6 @@ const AdminHeader = () => {
           </DropdownMenu>
         </div>
       </header>
-      {/* NOT: Burada modal açan kodlar kalabilir ama handleNotificationClick artık bunları kullanmıyor.
-         Sayfaya yönlendirme yaptığı için bu kısım pasif kalacak, sorun yaratmaz.
-      */}
       {isModalOpen && selectedFeedback && (
         <FeedbackDetailModal 
           isOpen={isModalOpen} 

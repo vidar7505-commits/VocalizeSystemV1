@@ -348,31 +348,27 @@ export default function FeedbackForm() {
   };
 
   const submitFeedback = async () => {
-    if (!isFormValid()) { toast({ title: "Uyarı", description: t.submit.errorValidation, variant: "destructive" }); return; }
+    if (!isFormValid()) { 
+      toast({ title: "Uyarı", description: t.submit.errorValidation, variant: "destructive" }); 
+      return; 
+    }
     setIsSubmitting(true);
     
     try {
-      // GOOGLE REDIRECT LOGIC
-      if (feedbackType !== 'complaint') {
-          const effectiveRating = feedbackType === 'review' ? rating : generalRating;
-          
-          if (effectiveRating >= 4) {
-            const currentBranch = branches.find(b => b.id === selectedBranch);
-            if (currentBranch && currentBranch.google_review_url) {
-              setGoogleRedirectUrl(currentBranch.google_review_url);
-            } else {
-              setGoogleRedirectUrl(null);
-            }
-          } else {
-            setGoogleRedirectUrl(null);
-          }
-      } else {
-          setGoogleRedirectUrl(null);
+      // 🟢 DÜZELTME 1: currentBusinessId değişkenini burada tanımlıyoruz
+      const currentBusinessId = businessParam || branches.find(b => b.id === selectedBranch)?.business_id;
+
+      if (!currentBusinessId) {
+          throw new Error("İşletme bilgisi bulunamadı. Lütfen sayfayı yenileyip tekrar deneyin.");
       }
+
+      // 🟢 DÜZELTME 2: overall_rating hesaplaması
+      const calculatedOverallRating = feedbackType === 'review' ? rating : generalRating;
 
       let receiptUrl = null;
       let feedbackImageUrls = [];
 
+      // Dosya yükleme işlemleri
       if (hasReceipt && receiptFile) {
         const urls = await uploadFiles([receiptFile]);
         receiptUrl = urls[0];
@@ -383,17 +379,17 @@ export default function FeedbackForm() {
         feedbackImageUrls = await uploadFiles(files);
       }
 
-      const currentBusinessId = searchParams.get('business') || branches.find(b => b.id === selectedBranch)?.business_id;
       let finalCustomerName = isGuest ? 'Anonim' : (user?.user_metadata?.full_name || user?.user_metadata?.first_name || 'Müşteri');
       let finalCustomerPhone = isGuest ? null : (user?.user_metadata?.phone || user?.phone || null);
 
-      // 🟢 GÜNCELLEME: .select().single() ile eklenen veriyi geri alıyoruz
+      // Veritabanına kayıt
       const { data, error } = await supabase.from('feedbacks').insert({
         business_id: currentBusinessId,
         branch_id: selectedBranch,
         qr_code: qrCode || null,
         feedback_type: feedbackType,
         rating: feedbackType === 'review' ? rating : null,
+        overall_rating: calculatedOverallRating > 0 ? calculatedOverallRating : 5, // KPI'lar için zorunlu
         message,
         has_receipt: hasReceipt,
         receipt_images: receiptUrl ? [receiptUrl] : null,
@@ -407,21 +403,28 @@ export default function FeedbackForm() {
         status: 'new',
         created_at: new Date().toISOString(),
         lang: language,
-        redirected_to_google: false // Başlangıçta false
+        redirected_to_google: false
       })
-      .select()
+      .select() // Kayıt sonrası ID'yi almak için gerekli
       .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Geri Bildirim Hatası:", error);
+        throw error;
+      }
 
-      // 🟢 ID'yi state'e kaydet
+      // Başarılı kayıttan sonra ID'yi set et
       if (data) {
         setCurrentFeedbackId(data.id);
       }
 
       setShowSuccessModal(true);
     } catch (error) {
-      toast({ title: t.submit.error, variant: "destructive" });
+      toast({ 
+        title: t.submit.error, 
+        description: error.message || "İşlem sırasında bir hata oluştu.", 
+        variant: "destructive" 
+      });
     } finally {
       setIsSubmitting(false);
     }
