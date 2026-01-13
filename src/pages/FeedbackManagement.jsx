@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Loader2, Search, RefreshCw, Calendar, MessageSquare, User, Star,
-  Image as ImageIcon, Filter, AlertTriangle, Crown, Siren,
+  ImageIcon, Filter, AlertTriangle, Crown, Siren,
   StickyNote, ChevronLeft, ChevronRight, FileText, BarChart,
   CheckSquare, Square, CheckCircle2, ListChecks
 } from 'lucide-react';
@@ -77,9 +77,10 @@ const FeedbackManagement = () => {
           filter: `business_id=eq.${businessId}` 
         },
         (payload) => {
-          // Değişiklik olduğunda listeyi yenile (Müşteri bilgileri join ile geleceği için fetch şart)
-          // console.log("Canlı veri değişimi algılandı:", payload); // Debug için açılabilir
-          fetchFeedbacks();
+          // 🟢 DÜZELTME: Veritabanı tetikleyicilerinin tamamlanması için 500ms bekle
+          setTimeout(() => {
+            fetchFeedbacks();
+          }, 500);
         }
       )
       .subscribe();
@@ -442,7 +443,7 @@ const FeedbackManagement = () => {
                <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('all'); setTypeFilter('all'); setFlagFilter('all'); setDateFilter('last30'); setSearchQuery(''); setShowNotesOnly(false); setShowUrgentOnly(false); }} className="h-10 px-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"><Filter className="w-3.5 h-3.5 mr-1.5" />Temizle</Button>
             </div>
          </div>
-         <div className="flex items-center gap-6 pt-1 border-t border-slate-800/50">
+         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1 border-t border-slate-800/50">
             <div className="flex items-center space-x-2 border-r border-slate-700/50 pr-6 mr-2">
                 <Checkbox 
                   id="select-all" 
@@ -455,8 +456,8 @@ const FeedbackManagement = () => {
                 </label>
             </div>
 
-            <div className="flex items-center space-x-2"><Checkbox id="notes-filter" checked={showNotesOnly} onCheckedChange={setShowNotesOnly} className="border-slate-600 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600" /><label htmlFor="notes-filter" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-300 flex items-center gap-1.5 cursor-pointer"><StickyNote className="w-3.5 h-3.5 text-amber-400" />Notlu Geri Bildirimler</label></div>
-            <div className="flex items-center space-x-2"><Checkbox id="urgent-filter" checked={showUrgentOnly} onCheckedChange={setShowUrgentOnly} className="border-slate-600 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600" /><label htmlFor="urgent-filter" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-300 flex items-center gap-1.5 cursor-pointer"><AlertTriangle className="w-3.5 h-3.5 text-red-500" />Acil Geri Bildirimler</label></div>
+            <div className="flex items-center space-x-2"><Checkbox id="notes-filter" checked={showNotesOnly} onCheckedChange={setShowNotesOnly} className="border-slate-600 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600" /><label htmlFor="notes-filter" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-300 flex items-center gap-1.5 cursor-pointer"><StickyNote className="w-3.5 h-3.5 text-amber-400" /><span className="whitespace-nowrap">Notlular</span></label></div>
+            <div className="flex items-center space-x-2"><Checkbox id="urgent-filter" checked={showUrgentOnly} onCheckedChange={setShowUrgentOnly} className="border-slate-600 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600" /><label htmlFor="urgent-filter" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-300 flex items-center gap-1.5 cursor-pointer"><AlertTriangle className="w-3.5 h-3.5 text-red-500" /><span className="whitespace-nowrap">Acil Olanlar</span></label></div>
          </div>
       </div>
 
