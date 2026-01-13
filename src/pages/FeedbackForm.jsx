@@ -355,15 +355,22 @@ export default function FeedbackForm() {
     setIsSubmitting(true);
     
     try {
-      // 🟢 DÜZELTME 1: currentBusinessId değişkenini burada tanımlıyoruz
+      // 1. İşletme ve Puan Hazırlığı
       const currentBusinessId = businessParam || branches.find(b => b.id === selectedBranch)?.business_id;
-
-      if (!currentBusinessId) {
-          throw new Error("İşletme bilgisi bulunamadı. Lütfen sayfayı yenileyip tekrar deneyin.");
-      }
-
-      // 🟢 DÜZELTME 2: overall_rating hesaplaması
       const calculatedOverallRating = feedbackType === 'review' ? rating : generalRating;
+
+      // 🟢 GOOGLE YÖNLENDİRME MANTIĞI (GERİ GETİRİLDİ)
+      // Şikayet değilse ve puan 4 veya üzeriyse yönlendirme URL'sini hazırla
+      if (feedbackType !== 'complaint' && calculatedOverallRating >= 4) {
+          const currentBranch = branches.find(b => b.id === selectedBranch);
+          if (currentBranch && currentBranch.google_review_url) {
+            setGoogleRedirectUrl(currentBranch.google_review_url);
+          } else {
+            setGoogleRedirectUrl(null);
+          }
+      } else {
+          setGoogleRedirectUrl(null);
+      }
 
       let receiptUrl = null;
       let feedbackImageUrls = [];
@@ -382,14 +389,14 @@ export default function FeedbackForm() {
       let finalCustomerName = isGuest ? 'Anonim' : (user?.user_metadata?.full_name || user?.user_metadata?.first_name || 'Müşteri');
       let finalCustomerPhone = isGuest ? null : (user?.user_metadata?.phone || user?.phone || null);
 
-      // Veritabanına kayıt
+      // 2. Veritabanına Kayıt
       const { data, error } = await supabase.from('feedbacks').insert({
         business_id: currentBusinessId,
         branch_id: selectedBranch,
         qr_code: qrCode || null,
         feedback_type: feedbackType,
         rating: feedbackType === 'review' ? rating : null,
-        overall_rating: calculatedOverallRating > 0 ? calculatedOverallRating : 5, // KPI'lar için zorunlu
+        overall_rating: calculatedOverallRating > 0 ? calculatedOverallRating : 5, 
         message,
         has_receipt: hasReceipt,
         receipt_images: receiptUrl ? [receiptUrl] : null,
@@ -405,15 +412,12 @@ export default function FeedbackForm() {
         lang: language,
         redirected_to_google: false
       })
-      .select() // Kayıt sonrası ID'yi almak için gerekli
+      .select()
       .single();
 
-      if (error) {
-        console.error("Geri Bildirim Hatası:", error);
-        throw error;
-      }
+      if (error) throw error;
 
-      // Başarılı kayıttan sonra ID'yi set et
+      // 3. ID'yi ve Başarı Modalını Set Et
       if (data) {
         setCurrentFeedbackId(data.id);
       }
