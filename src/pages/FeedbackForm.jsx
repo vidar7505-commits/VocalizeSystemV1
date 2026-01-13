@@ -14,9 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { format } from 'date-fns';
 import { tr, enUS } from 'date-fns/locale';
-
-// 🟢 EKLENEN SATIR: cn fonksiyonu import edildi
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'; // 🟢 cn fonksiyonu import edildi
 
 // ============================================================================
 // STATIC DATA & HELPERS
@@ -375,13 +373,15 @@ const submitFeedback = async () => {
     
     try {
       const currentBusinessId = businessParam || branches.find(b => b.id === selectedBranch)?.business_id;
+      const currentBranch = branches.find(b => b.id === selectedBranch);
       
       // 🟢 ANALİZ PUANI HESAPLAMA
       const calculatedOverallRating = feedbackType === 'review' ? rating : (generalRating > 0 ? generalRating : 5);
-      const currentBranch = branches.find(b => b.id === selectedBranch);
-
-      const isHappyCustomer = feedbackType !== 'complaint' && calculatedOverallRating >= 4;
-      if (isHappyCustomer && currentBranch?.google_review_url) {
+      
+      // 🚩 GOOGLE PUAN TESPİTİ: Sadece Puana Dayalı (Şikayet Hariç, 4/5 Yıldız)
+      const actualRating = feedbackType === 'review' ? rating : generalRating;
+      
+      if (feedbackType !== 'complaint' && actualRating >= 4 && currentBranch?.google_review_url) {
           setGoogleRedirectUrl(currentBranch.google_review_url);
       } else {
           setGoogleRedirectUrl(null);
@@ -403,7 +403,7 @@ const submitFeedback = async () => {
         branch_id: selectedBranch,
         feedback_type: feedbackType,
         rating: feedbackType === 'review' ? rating : null,
-        overall_rating: calculatedOverallRating,
+        overall_rating: calculatedOverallRating, // KPI Raporları için
         message: message.trim() || null, 
         has_receipt: hasReceipt,
         receipt_images: receiptUrl ? [receiptUrl] : null,
@@ -604,50 +604,53 @@ const submitFeedback = async () => {
                 <p className="text-slate-300 leading-relaxed text-sm break-words">{t.success.desc(businessName || t.businessLabel)}</p>
             </div>
 
-            {/* GOOGLE REDIRECT SECTION */}
+            {/* GOOGLE REDIRECT SECTION - 4/5 Yıldız Şartı (Şikayet Hariç) */}
             {googleRedirectUrl && (
-                <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 rounded-xl p-5 mb-4 border border-blue-700/30 shadow-lg">
+                <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 rounded-xl p-5 mb-4 border border-blue-700/30 shadow-lg animate-in fade-in zoom-in duration-500">
                     <h3 className="text-blue-100 font-bold text-lg mb-2">{t.google.title}</h3>
                     <p className="text-blue-200/70 text-sm mb-4 leading-snug">{t.google.desc}</p>
                     <div className="flex flex-col gap-2">
                          <Button onClick={handleGoogleShare} className="w-full bg-white text-blue-900 hover:bg-blue-50 font-bold py-5 h-auto text-base rounded-xl transition shadow-lg shadow-white/10 active:scale-95 flex items-center justify-center gap-2">
                             <span className="text-xl">⭐</span> {t.google.yesButton}
                          </Button>
-                         
-                         {/* 🚩 Hayır Teşekkürler Butonu: Google kartı içine eklendi */}
-                         <Button 
-                            onClick={handleSuccessClose} 
-                            variant="ghost" 
-                            className="w-full text-slate-400 hover:text-slate-300 hover:bg-transparent text-sm font-medium py-2"
-                         >
+                         <Button onClick={handleSuccessClose} variant="ghost" className="w-full text-slate-400 hover:text-slate-300 hover:bg-transparent text-sm font-medium py-2">
                             {t.google.noButton}
                          </Button>
                     </div>
                 </div>
             )}
 
-            {/* INSTAGRAM ALANI */}
+            {/* INSTAGRAM ALANI - Dinamik Parlama ve Yeni Kurallar */}
             {(() => {
                 const currentBranch = branches.find(b => b.id === selectedBranch);
-                const calculatedOverallRating = feedbackType === 'review' ? rating : generalRating;
+                const actualRating = feedbackType === 'review' ? rating : generalRating;
                 
-                const shouldShowInstagram = feedbackType !== 'complaint' && calculatedOverallRating >= 4 && currentBranch?.instagram_url;
+                // 🚩 MANTIK: 
+                // 1. Şikayet ise asla gösterme.
+                // 2. Öneri ise: Puan yoksa (0) her daim göster. Puan varsa 3 ve üzeri ise göster.
+                // 3. Değerlendirme ise: 3 yıldız ve üzeri ise göster.
+                let shouldShowInstagram = false;
+                if (feedbackType === 'suggestion') {
+                    shouldShowInstagram = (actualRating === 0 || actualRating >= 3);
+                } else if (feedbackType === 'review') {
+                    shouldShowInstagram = (actualRating >= 3);
+                }
 
-                if (shouldShowInstagram) {
+                if (shouldShowInstagram && currentBranch?.instagram_url) {
                     return (
-                        <div className={`mt-2 ${googleRedirectUrl ? 'animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300' : ''}`}>
+                        <div className={`mt-2 ${googleRedirectUrl ? 'animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300' : 'animate-in fade-in zoom-in duration-500'}`}>
                             <Button 
                                 onClick={() => window.open(currentBranch.instagram_url, '_blank')}
                                 variant="outline"
                                 className={cn(
                                     "w-full gap-2 font-bold py-5 h-auto text-sm rounded-xl transition border-slate-700",
-                                    // 🚩 DÜZELTME: Hover dolgusu kaldırıldı, renk tonu mobilde görünür yapıldı
-                                    googleRedirectUrl 
-                                    ? "bg-transparent text-slate-300 border-slate-700/50 hover:bg-transparent active:bg-slate-800/30" 
-                                    : "bg-gradient-to-r from-purple-600/10 to-pink-600/10 text-pink-400 border-pink-500/20 hover:bg-transparent"
+                                    // 🚩 HİYERARŞİ: Google yoksa parlar (gradient), varsa sönüktür (slate)
+                                    !googleRedirectUrl 
+                                    ? "bg-gradient-to-r from-purple-600/20 to-pink-600/20 text-pink-400 border-pink-500/30 hover:bg-transparent shadow-lg shadow-pink-900/10" 
+                                    : "bg-transparent text-slate-400 border-slate-700/50 hover:bg-transparent active:bg-slate-800/30"
                                 )}
                             >
-                                <Instagram className={cn("w-4 h-4", googleRedirectUrl ? "text-slate-400" : "text-pink-500")} /> 
+                                <Instagram className={cn("w-4 h-4", !googleRedirectUrl ? "text-pink-500" : "text-slate-400")} /> 
                                 {language === 'tr' ? 'Bizi Instagram\'da Takip Et' : 'Follow us on Instagram'}
                             </Button>
                         </div>
