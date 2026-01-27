@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, MessageSquare, BarChart3, Settings, 
-  Menu, X, LogOut, Send, Loader2, Image as ImageIcon, Upload
+  Menu, X, LogOut, Send, Loader2, Image as ImageIcon, Upload,
+  Sun, Moon
 } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useAdminContext } from '@/contexts/AdminContext';
@@ -21,6 +22,29 @@ const AdminSidebar = () => {
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Tema yönetimi (AdminHeader ile aynı mantık)
+  const [theme, setTheme] = useState(localStorage.getItem('acta_theme') || 'dark');
+
+  useEffect(() => {
+    const root = window.document.body;
+    root.classList.remove('light-theme', 'dark-theme');
+
+    if (theme === 'light') {
+      root.classList.add('light-theme');
+    } else {
+      root.classList.add('dark-theme');
+    }
+    localStorage.setItem('acta_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
 
   // Modal State
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
@@ -270,6 +294,24 @@ const AdminSidebar = () => {
               <p className="text-xs text-slate-500 truncate">Yönetici</p>
             </div>
           </div>
+
+          {/* Tema Değiştir - Sadece Mobil */}
+          <button
+            onClick={toggleTheme}
+            className="md:hidden flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-700/70 border border-slate-700/70 text-xs font-medium"
+          >
+            {theme === 'dark' ? (
+              <>
+                <Moon className="w-4 h-4" />
+                <span>Koyu Tema</span>
+              </>
+            ) : (
+              <>
+                <Sun className="w-4 h-4 text-yellow-400" />
+                <span>Açık Tema</span>
+              </>
+            )}
+          </button>
 
           <Button 
             onClick={handleLogout} 
