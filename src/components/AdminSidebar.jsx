@@ -262,7 +262,7 @@ const AdminSidebar = () => {
           </Button>
 
           <div className="relative flex items-center gap-3 px-2 py-2 rounded-lg bg-slate-800/30 transition-colors hover:bg-slate-800/50">
-            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
+            <div className="profile-avatar w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
               {businessName ? businessName.substring(0, 2).toUpperCase() : 'AD'}
             </div>
             <div className="flex-1 min-w-0">
@@ -274,7 +274,7 @@ const AdminSidebar = () => {
           <Button 
             onClick={handleLogout} 
             variant="outline" 
-            className="w-full border-slate-700 bg-slate-800/50 text-slate-300 hover:text-white hover:bg-red-900/20 hover:border-red-800/50 group h-9"
+            className="logout-sidebar-btn w-full border-slate-700 bg-slate-800/50 text-slate-300 hover:text-white hover:bg-red-900/20 hover:border-red-800/50 group h-9"
           >
             <LogOut className="w-4 h-4 mr-2 group-hover:text-red-400 transition-colors" />
             <span className="group-hover:text-red-300 transition-colors text-xs">Çıkış Yap</span>

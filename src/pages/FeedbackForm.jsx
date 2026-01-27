@@ -1,20 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { 
-  QrCode, ArrowLeft, ImagePlus, X, CheckCircle2, Send, Loader2, Star, 
-  AlertTriangle, Lightbulb, Info, Building2, AlertCircle, MapPin, 
-  Calendar as CalendarIcon, Trash2, Maximize2, Clock, Copy, ExternalLink, Instagram 
+  ArrowLeft, ImagePlus, X, CheckCircle2, Send, Loader2, Star, 
+  AlertTriangle, Lightbulb, Building2, MapPin, 
+  Calendar as CalendarIcon, Trash2, Maximize2, ChevronRight, Camera, Clock, PenLine, Instagram, Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { tr, enUS } from 'date-fns/locale';
-import { cn } from '@/lib/utils'; // 🟢 cn fonksiyonu import edildi
 
 // ============================================================================
 // STATIC DATA & HELPERS
@@ -22,18 +19,29 @@ import { cn } from '@/lib/utils'; // 🟢 cn fonksiyonu import edildi
 
 const getEmojiForRating = (rating, emojis) => emojis[rating] || '';
 
+const getReactionMessage = (rating, t) => {
+    if (rating === 1) return t.reactions.oneStar;
+    if (rating === 2) return t.reactions.twoStar;
+    if (rating === 3) return t.reactions.threeStar;
+    if (rating >= 4) return t.reactions.highStar;
+    return "";
+};
+
 const getFormInfo = (feedbackType, titles) => {
   if (feedbackType === 'complaint') return { 
     title: titles.complaint, subtitle: titles.complaintSub,
-    icon: <AlertTriangle className="h-12 w-12 md:h-16 md:w-16 text-red-500 shrink-0" />, gradient: "from-red-400 to-red-600"
+    icon: <AlertTriangle className="h-8 w-8 text-red-500" />, gradient: "from-red-400 to-red-600",
+    step1Title: "Olay Detayları", step2Title: "Ne Yaşadınız?", step3Title: "Kanıt ve Sonuç"
   };
   if (feedbackType === 'suggestion') return { 
     title: titles.suggestion, subtitle: titles.suggestionSub,
-    icon: <Lightbulb className="h-12 w-12 md:h-16 md:w-16 text-blue-500 shrink-0" />, gradient: "from-blue-400 to-blue-600"
+    icon: <Lightbulb className="h-8 w-8 text-blue-500" />, gradient: "from-blue-400 to-blue-600",
+    step1Title: "Fikriniz Nedir?", step2Title: "Detaylar", step3Title: "Tamamla"
   };
   if (feedbackType === 'review') return { 
     title: titles.review, subtitle: titles.reviewSub,
-    icon: <Star className="h-12 w-12 md:h-16 md:w-16 text-yellow-500 shrink-0" />, gradient: "from-yellow-400 to-orange-500"
+    icon: <Star className="h-8 w-8 text-yellow-500" />, gradient: "from-yellow-400 to-orange-500",
+    step1Title: "Puanlama", step2Title: "Yorumunuz", step3Title: "Tamamla"
   };
   return { title: titles.default, subtitle: titles.defaultSub, icon: null, gradient: "from-slate-400 to-slate-600" };
 };
@@ -44,9 +52,6 @@ const getCurrentLocalISOString = () => {
     return localDate.toISOString().slice(0, 16);
 };
 
-const MIN_YEAR = 2025;
-const MIN_DATE_STRING = "2025-01-01T00:00";
-
 const TEXTS = {
   tr: {
     errorLoad: "Veri yüklenirken sorun oluştu.",
@@ -54,7 +59,8 @@ const TEXTS = {
     limitDesc: (remaining) => `En fazla 3 görsel yükleyebilirsiniz.`,
     fileTooLarge: "Dosya Çok Büyük",
     fileTooLargeDesc: (name) => `${name} 5MB'dan küçük olmalıdır.`,
-    back: "Geri Dön",
+    back: "Geri",
+    next: "İleri",
     titles: {
       complaint: "Şikayet Bildir", complaintSub: "Sorunu çözelim.",
       suggestion: "Öneride Bulun", suggestionSub: "Fikirleriniz değerli.",
@@ -62,36 +68,51 @@ const TEXTS = {
       default: "Geri Bildirim", defaultSub: "Görüşlerinizi paylaşın"
     },
     infoBanner: "Geri bildiriminiz anında yöneticiye iletilir.",
-    businessLabel: "İşletme", qrLabel: "✅ QR Doğrulama",
+    businessLabel: "İşletme", 
     branch: { label: "Şube Seçin", placeholder: "Şube Seçiniz", auto: "QR ile otomatik seçildi" },
     receipt: {
-      label: "Fiş Durumu", noReceipt: "Fişim Yok", hasReceipt: "Fişim Var",
-      uploadLabel: "Fiş Görseli", placeholder: "Yükle", uploaded: "Yüklendi",
-      dateLabel: "Tahmini Ziyaret Zamanı", selectDateTitle: "Ziyaret Zamanı Seçiniz",
-      confirmDate: "ZAMANI ONAYLA", changeDate: "Zamanı Değiştir"
+      label: "Alışveriş Fişiniz Var mı?", noReceipt: "Fişim Yok", hasReceipt: "Fişim Var",
+      uploadLabel: "Fiş Görseli", placeholder: "Fiş Fotoğrafı Yükle", uploaded: "Yüklendi",
+      dateLabel: "Ne Zaman Ziyaret Ettiniz?",
     },
-    message: { label: "Açıklama", placeholder: "Detayları yazın...", minChars: "Min 10 karakter" },
-    rating: { label: "Puanlayın", emojis: { 1: '😞 Çok Kötü', 2: '😟 Kötü', 3: '😐 Orta', 4: '😊 İyi', 5: '😍 Mükemmel' } },
-    general: { title: "Genel Değerlendirme", satisfaction: "Memnuniyet", placeholder: "Eklemek istedikleriniz..." },
-    images: { label: "Görseller", placeholder: "Fotoğraf Ekle", sub: "Max 3 adet", uploaded: "yüklendi" },
-    submit: { sending: "Gönderiliyor...", send: "Gönder", error: "Hata oluştu.", errorValidation: "Eksik alanlar var." },
-    disclaimer: "Geri dönüş süreci işletmeye bağlıdır.",
-    success: { title: "Teşekkürler!", desc: (name) => `Bildiriminiz ${name} yöneticisine iletildi.`, footer: "Bizi tercih ettiğiniz için teşekkürler.", button: "Kapat" },
+    message: { label: "Açıklama", placeholder: "Lütfen detayları buraya yazın...", minChars: "En az 10 karakter" },
+    rating: { label: "Memnuniyetiniz", emojis: { 1: '😞 Çok Kötü', 2: '😟 Kötü', 3: '😐 İdare Eder', 4: '😊 Memnun Kaldım', 5: '🤩 Harikaydı!' } },
+    reactions: {
+        oneStar: "Çok üzgünüz 😔 Bunu telafi etmek için derhal incelemeye alacağız.",
+        twoStar: "Beklentinizin altında kaldığımız için üzgünüz. Kendimizi geliştireceğiz.",
+        threeStar: "Daha iyisini yapabiliriz. Geri bildiriminizle büyüyoruz.",
+        highStar: "Harika! Bunu duyduğumuza sevindik 🎉"
+    },
+    general: { 
+        title: "İşletme Hakkındaki Genel Deneyiminiz", 
+        satisfaction: "Memnuniyet", 
+        placeholder: "Mekan, hizmet veya atmosfer hakkında eklemek istedikleriniz..." 
+    },
+    images: { label: "Ek Görseller (Opsiyonel)", placeholder: "Fotoğraf Ekle", sub: "Max 3 adet", uploaded: "görsel seçildi" },
+    submit: { sending: "Gönderiliyor...", send: "Gönder", error: "Hata oluştu.", errorValidation: "Lütfen gerekli alanları doldurun." },
+    success: { title: "Teşekkürler!", desc: (name) => `Bildiriminiz ${name} yönetimine iletildi.`, footer: "Bizi tercih ettiğiniz için teşekkürler.", button: "Kapat" },
+    
+    // 🟢 GÜNCELLENMİŞ PSİKOLOJİK GOOGLE METİNLERİ
     google: {
-        title: "Deneyimini Paylaşır mısın?",
-        desc: "Yorumunu kopyaladık! Google'da paylaşarak bize destek olabilirsin.",
+        title: "Harikasınız! 🤩", 
+        copyAlert: "Yorumunuzu sizin için kopyaladık! 📋",
+        desc: "Bu güzel deneyiminizi Google'da paylaşarak diğer müşterilere de ilham vermek ister misiniz? Yapıştırmanız yeterli.",
         yesButton: "Google'da Paylaş",
         noButton: "Hayır, Teşekkürler",
-        copiedToast: "Yorumunuz kopyalandı! Google sayfasına yönlendiriliyorsunuz..."
-    }
+        instaButton: "Bizi Instagram'da Takip Et",
+        copiedToast: "Yorum kopyalandı! Google'a yönlendiriliyorsunuz..."
+    },
+    steps: "Adım"
   },
   en: {
+    // ... English texts ...
     errorLoad: "Error loading data.",
     limitExceeded: "Limit Exceeded",
     limitDesc: (remaining) => `Max 3 images allowed.`,
     fileTooLarge: "File Too Large",
     fileTooLargeDesc: (name) => `${name} must be smaller than 5MB.`,
-    back: "Go Back",
+    back: "Back",
+    next: "Next",
     titles: {
       complaint: "Report Issue", complaintSub: "Let's fix it.",
       suggestion: "Make Suggestion", suggestionSub: "Your ideas matter.",
@@ -99,35 +120,42 @@ const TEXTS = {
       default: "Feedback", defaultSub: "Share your thoughts"
     },
     infoBanner: "Sent instantly to the manager.",
-    businessLabel: "Business", qrLabel: "✅ QR Verified",
+    businessLabel: "Business",
     branch: { label: "Select Branch", placeholder: "Select Branch", auto: "Auto-selected via QR" },
     receipt: {
-      label: "Receipt Status", noReceipt: "No Receipt", hasReceipt: "Have Receipt",
-      uploadLabel: "Upload Receipt Image", placeholder: "Click to select image",
+      label: "Do you have a receipt?", noReceipt: "No Receipt", hasReceipt: "Have Receipt",
+      uploadLabel: "Receipt Image", placeholder: "Upload Receipt",
       uploaded: "Uploaded",
-      dateLabel: "Estimated Visit Time", selectDateTitle: "Select Visit Time",
-      confirmDate: "CONFIRM TIME", changeDate: "Change Time"
+      dateLabel: "When did you visit?",
     },
-    message: { label: "Description", placeholder: "Details...", minChars: "Min 10 chars" },
-    rating: { label: "Rate", emojis: { 1: '😞 Very Bad', 2: '😟 Bad', 3: '😐 Average', 4: '😊 Good', 5: '😍 Excellent' } },
-    general: { title: "General", satisfaction: "Satisfaction", placeholder: "Additional comments..." },
-    images: { label: "Images", placeholder: "Add Photo", sub: "Max 3 images", uploaded: "images uploaded" },
-    submit: { sending: "Sending...", send: "Send", error: "Error occurred.", errorValidation: "Missing fields." },
-    disclaimer: "Response depends on the business.",
+    message: { label: "Description", placeholder: "Please provide details...", minChars: "Min 10 chars" },
+    rating: { label: "Satisfaction", emojis: { 1: '😞 Very Bad', 2: '😟 Bad', 3: '😐 Average', 4: '😊 Good', 5: '😍 Excellent' } },
+    reactions: {
+        oneStar: "We are very sorry 😔 We will investigate immediately to make it right.",
+        twoStar: "Sorry we fell below expectations. We will improve.",
+        threeStar: "We can do better. We grow with your feedback.",
+        highStar: "Awesome! We are glad to hear that 🎉"
+    },
+    general: { 
+        title: "Your General Experience", 
+        satisfaction: "Satisfaction", 
+        placeholder: "Anything else you'd like to add..." 
+    },
+    images: { label: "Images (Optional)", placeholder: "Add Photo", sub: "Max 3 images", uploaded: "images selected" },
+    submit: { sending: "Sending...", send: "Send", error: "Error occurred.", errorValidation: "Please fill required fields." },
     success: { title: "Thank You!", desc: (name) => `Sent to ${name} manager.`, footer: "Thanks for choosing us.", button: "Close" },
     google: {
-        title: "Share Your Experience?",
-        desc: "We copied your feedback! You can support us by sharing it on Google.",
+        title: "You're Awesome! 🤩",
+        copyAlert: "We copied your feedback! 📋",
+        desc: "Would you like to inspire others by sharing this on Google? Just paste it.",
         yesButton: "Share on Google",
         noButton: "No, Thanks",
-        copiedToast: "Feedback copied! Redirecting to Google..."
-    }
+        instaButton: "Follow on Instagram",
+        copiedToast: "Copied! Redirecting..."
+    },
+    steps: "Step"
   }
 };
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
 
 export default function FeedbackForm() {
   const navigate = useNavigate();
@@ -143,18 +171,17 @@ export default function FeedbackForm() {
   const langParam = searchParams.get('lang');
   const guestParam = searchParams.get('guest');
 
-  // STATE MANAGEMENT
+  // STATE
   const [language, setLanguage] = useState('tr');
   const [feedbackType, setFeedbackType] = useState('complaint');
-  
-  // Data State
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 3;
+
   const [businessName, setBusinessName] = useState('');
   const [branches, setBranches] = useState([]); 
   const [selectedBranch, setSelectedBranch] = useState(branchParam || '');
-  const [qrCode, setQrCode] = useState(qrParam || null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Form Data
   const [hasReceipt, setHasReceipt] = useState(false);
   const [receiptFile, setReceiptFile] = useState(null);
   const [receiptPreview, setReceiptPreview] = useState(null); 
@@ -166,26 +193,26 @@ export default function FeedbackForm() {
   const [generalComment, setGeneralComment] = useState('');
   const [feedbackImages, setFeedbackImages] = useState([]);
   
-  // UI States
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [imageModalSrc, setImageModalSrc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [googleRedirectUrl, setGoogleRedirectUrl] = useState(null);
-
-  // 🟢 Feedback ID takibi için state
+  const [instagramRedirectUrl, setInstagramRedirectUrl] = useState(null);
   const [currentFeedbackId, setCurrentFeedbackId] = useState(null);
+
+  const [animatingStar, setAnimatingStar] = useState(null);
 
   const t = TEXTS[language] || TEXTS.tr;
 
-  // INITIALIZATION
+  // --- INITIALIZATION ---
   useEffect(() => {
     const init = async () => {
       try {
         const storedLang = localStorage.getItem('vocalize_lang');
         if (langParam && (langParam === 'tr' || langParam === 'en')) {
           setLanguage(langParam);
-        } else if (storedLang && (storedLang === 'tr' || storedLang === 'en')) {
+        } else if (storedLang) {
           setLanguage(storedLang);
         }
 
@@ -193,15 +220,14 @@ export default function FeedbackForm() {
         setFeedbackType(validTypes.includes(typeParam) ? typeParam : 'complaint');
 
         let targetBusinessId = businessParam;
-
         if (!targetBusinessId && branchParam) {
-           const { data: branchData } = await supabase.from('branches').select('business_id').eq('id', branchParam).single();
-           if (branchData) targetBusinessId = branchData.business_id;
+           const { data } = await supabase.from('branches').select('business_id').eq('id', branchParam).single();
+           if (data) targetBusinessId = data.business_id;
         }
 
         if (targetBusinessId) {
-            const { data: bizData } = await supabase.from('businesses').select('business_name').eq('id', targetBusinessId).single();
-            if (bizData) setBusinessName(bizData.business_name);
+            const { data: biz } = await supabase.from('businesses').select('business_name').eq('id', targetBusinessId).single();
+            if (biz) setBusinessName(biz.business_name);
 
             const { data: allBranches } = await supabase
               .from('branches')
@@ -219,142 +245,91 @@ export default function FeedbackForm() {
             }
         }
       } catch (error) {
-        console.error('Error initializing feedback form:', error);
-        toast({ title: "Hata", description: "Veri yüklenemedi", variant: "destructive" });
+        console.error('Init error:', error);
       } finally {
         setIsLoading(false);
       }
     };
     init();
-  }, [typeParam, businessParam, branchParam, qrParam, langParam]);
+  }, [typeParam, businessParam, branchParam, langParam]);
 
-  // MOBILE BACK BUTTON HANDLER
-  useEffect(() => {
-    const handlePopState = (event) => {
-      if (imageModalOpen) {
-        event.preventDefault();
-        setImageModalOpen(false);
-        setImageModalSrc('');
-        return;
-      }
-      if (showSuccessModal) {
-        event.preventDefault();
-        handleSuccessClose();
-        return;
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [imageModalOpen, showSuccessModal]);
-
-  // NAVIGATION
-  const handleBackNavigation = () => {
-    const params = new URLSearchParams();
-    if (businessParam) params.set('business', businessParam);
-    if (branchParam) params.set('branch', branchParam);
-    if (guestParam) params.set('guest', guestParam);
-    if (qrParam) params.set('qr', qrParam);
-    if (langParam) params.set('lang', langParam);
-    
-    if (!branchParam) {
-        const lastBranch = localStorage.getItem('vocalize_last_branch');
-        if (lastBranch) params.set('branch', lastBranch);
+  // --- HANDLERS ---
+  const handleStarClick = (starValue, isGeneral = false) => {
+    if (starValue >= 3) {
+        setAnimatingStar(starValue);
+        setTimeout(() => setAnimatingStar(null), 400);
     }
-    navigate(`/customer-panel?${params.toString()}`);
+
+    if (isGeneral) {
+        setGeneralRating(starValue);
+    } else {
+        setRating(starValue);
+    }
   };
 
-  // IMAGE HANDLERS
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files || []);
-    const remainingSlots = 3 - feedbackImages.length;
-    if (files.length > remainingSlots) {
-      toast({ title: t.limitExceeded, description: t.limitDesc(remainingSlots), variant: "destructive" });
+    if (files.length + feedbackImages.length > 3) {
+      toast({ title: t.limitExceeded, description: t.limitDesc(3), variant: "destructive" });
       return;
     }
     files.forEach(file => {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ title: t.fileTooLarge, description: t.fileTooLargeDesc(file.name), variant: "destructive" });
-        return;
-      }
-      const preview = URL.createObjectURL(file);
-      setFeedbackImages(prev => [...prev, { file, preview }]);
+      if (file.size > 5 * 1024 * 1024) return toast({ title: t.fileTooLarge, variant: "destructive" });
+      setFeedbackImages(prev => [...prev, { file, preview: URL.createObjectURL(file) }]);
     });
   };
 
   const handleReceiptUpload = (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ title: t.fileTooLarge, description: t.fileTooLargeDesc(file.name), variant: "destructive" });
-        return;
-      }
+      if (file.size > 5 * 1024 * 1024) return toast({ title: t.fileTooLarge, variant: "destructive" });
       setReceiptFile(file);
       setReceiptPreview(URL.createObjectURL(file));
   };
 
-  const removeReceipt = () => { setReceiptFile(null); setReceiptPreview(null); };
-  const removeImage = (index) => { setFeedbackImages(prev => prev.filter((_, i) => i !== index)); };
-  const openImageModal = (src) => { setImageModalSrc(src); setImageModalOpen(true); };
-  
-  // DATE HANDLERS
-  const handleDateChange = (e) => setVisitDate(e.target.value);
-  const handleDateBlur = () => {
-      if (!visitDate) return;
-      const inputDate = new Date(visitDate);
-      const now = new Date();
-      if (inputDate > now) {
-         setVisitDate(getCurrentLocalISOString());
-         toast({ title: "Geçersiz Tarih", description: "Gelecek bir tarih seçemezsiniz.", variant: "destructive" });
-         return;
-      }
-      const inputYear = inputDate.getFullYear();
-      if (inputYear < MIN_YEAR) {
-          const parts = visitDate.split('-');
-          if (parts.length >= 3) {
-              const newDateString = `${MIN_YEAR}-${parts[1]}-${parts[2]}`;
-              if (newDateString > now) {
-                  setVisitDate(getCurrentLocalISOString());
-              } else {
-                  setVisitDate(newDateString);
-              }
-          }
-      }
-  };
-
- // 🟢 DOĞRULAMA KURALLARI
-  const isFormValid = () => {
+  const isStepValid = () => {
     if (!selectedBranch) return false;
 
-    // 1. DEĞERLENDİRME: Sadece yıldız zorunlu
-    if (feedbackType === 'review') {
-        return rating > 0;
-    }
-
-    // 2. ÖNERİ: Metin zorunlu
-    if (feedbackType === 'suggestion') {
-        return message.trim().length >= 10;
-    }
-
-    // 3. ŞİKAYET: Metin + (Fiş Görseli veya Tarih) zorunlu
     if (feedbackType === 'complaint') {
-        const hasMinMessage = message.trim().length >= 10;
-        if (!hasMinMessage) return false;
-
-        if (hasReceipt) {
-            return !!receiptFile; 
-        } else {
-            return !!visitDate;
-        }
+        if (currentStep === 1) return hasReceipt ? !!receiptFile : !!visitDate;
+        if (currentStep === 2) return message.trim().length >= 10;
+        return true; 
     }
-    return false;
+    
+    if (feedbackType === 'suggestion') {
+        if (currentStep === 1) return message.trim().length >= 10;
+        return true;
+    }
+
+    if (feedbackType === 'review') {
+        if (currentStep === 1) return rating > 0;
+        return true;
+    }
+    return true;
   };
 
-  // SUBMIT
+  const handleNext = () => {
+    if (isStepValid()) setCurrentStep(prev => Math.min(prev + 1, totalSteps));
+    else toast({ title: "Eksik Bilgi", description: t.submit.errorValidation, variant: "destructive", className: "top-10" });
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) setCurrentStep(prev => prev - 1);
+    else {
+        const params = new URLSearchParams();
+        if (businessParam) params.set('business', businessParam);
+        if (branchParam) params.set('branch', branchParam);
+        if (guestParam) params.set('guest', guestParam);
+        if (qrParam) params.set('qr', qrParam);
+        if (langParam) params.set('lang', langParam);
+        navigate(`/customer-panel?${params.toString()}`);
+    }
+  };
+
   const uploadFiles = async (files) => {
     const uploadedUrls = [];
     for (const file of files) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random()}.${fileExt}`;
+      const fileName = `${Date.now()}_${Math.random()}.${file.name.split('.').pop()}`;
       const { error } = await supabase.storage.from('feedback-images').upload(fileName, file);
       if (!error) {
         const { data } = supabase.storage.from('feedback-images').getPublicUrl(fileName);
@@ -364,27 +339,29 @@ export default function FeedbackForm() {
     return uploadedUrls;
   };
 
-const submitFeedback = async () => {
-    if (!isFormValid()) { 
-      toast({ title: "Uyarı", description: t.submit.errorValidation, variant: "destructive" }); 
-      return; 
-    }
+  const submitFeedback = async () => {
+    if (!isStepValid()) return;
     setIsSubmitting(true);
     
     try {
       const currentBusinessId = businessParam || branches.find(b => b.id === selectedBranch)?.business_id;
       const currentBranch = branches.find(b => b.id === selectedBranch);
       
-      // 🟢 ANALİZ PUANI HESAPLAMA
       const calculatedOverallRating = feedbackType === 'review' ? rating : (generalRating > 0 ? generalRating : 5);
-      
-      // 🚩 GOOGLE PUAN TESPİTİ: Sadece Puana Dayalı (Şikayet Hariç, 4/5 Yıldız)
       const actualRating = feedbackType === 'review' ? rating : generalRating;
       
-      if (feedbackType !== 'complaint' && actualRating >= 4 && currentBranch?.google_review_url) {
-          setGoogleRedirectUrl(currentBranch.google_review_url);
-      } else {
-          setGoogleRedirectUrl(null);
+      // 🟢 GOOGLE VE INSTAGRAM YÖNLENDİRME MANTIĞI (Vizyon Revizesi)
+      // Şikayetlerde ASLA yönlendirme yok.
+      // Google: Sadece 4 ve 5 yıldız.
+      // Instagram: 3 ve üzeri yıldız.
+      
+      if (feedbackType !== 'complaint') {
+          if (actualRating >= 4 && currentBranch?.google_review_url) {
+              setGoogleRedirectUrl(currentBranch.google_review_url);
+          }
+          if (actualRating >= 3 && currentBranch?.instagram_url) {
+              setInstagramRedirectUrl(currentBranch.instagram_url);
+          }
       }
 
       let receiptUrl = null;
@@ -403,7 +380,7 @@ const submitFeedback = async () => {
         branch_id: selectedBranch,
         feedback_type: feedbackType,
         rating: feedbackType === 'review' ? rating : null,
-        overall_rating: calculatedOverallRating, // KPI Raporları için
+        overall_rating: calculatedOverallRating,
         message: message.trim() || null, 
         has_receipt: hasReceipt,
         receipt_images: receiptUrl ? [receiptUrl] : null,
@@ -418,7 +395,7 @@ const submitFeedback = async () => {
       }).select().single();
 
       if (error) throw error;
-      if (data) setCurrentFeedbackId(data.id);
+      setCurrentFeedbackId(data.id);
       setShowSuccessModal(true);
 
     } catch (error) {
@@ -428,246 +405,405 @@ const submitFeedback = async () => {
     }
   };
 
-  const handleSuccessClose = () => {
-    setShowSuccessModal(false);
-    setTimeout(() => {
-        const params = new URLSearchParams();
-        if (businessParam) params.set('business', businessParam);
-        if (branchParam) params.set('branch', branchParam);
-        if (guestParam) params.set('guest', guestParam);
-        if (qrParam) params.set('qr', qrParam);
-        if (langParam) params.set('lang', langParam);
-        navigate(`/customer-panel?${params.toString()}`, { state: { showSuccessNotification: true, feedbackType } });
-    }, 300);
-  };
-
-  const handleGoogleShare = async () => {
-      if (currentFeedbackId) {
-          try {
-            await supabase.rpc('mark_google_redirect', { target_id: currentFeedbackId });
-          } catch (err) {
-            console.error("Google click takibi başarısız:", err);
-          }
-      }
-
-      try {
-          if (message) {
-              await navigator.clipboard.writeText(message);
-          } else if (generalComment) {
-              await navigator.clipboard.writeText(generalComment);
-          }
-          
-          toast({ 
-              title: "Kopyalandı!", 
-              description: t.google.copiedToast,
-              className: "bg-green-600 text-white border-none"
-          });
-      } catch (err) {
-          console.error("Clipboard error:", err);
-      }
-
-      if (googleRedirectUrl) {
-          setTimeout(() => {
-             window.open(googleRedirectUrl, '_blank'); 
-          }, 500);
-      }
-  };
-
-  if (isLoading) return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center"><Loader2 className="h-12 w-12 text-orange-500 animate-spin" /></div>;
-
-  const logoUrl = "faviconbeyaz.png";
   const formInfo = getFormInfo(feedbackType, t.titles);
 
+  const handleGoogleShare = async () => {
+    let textToCopy = "";
+    if (feedbackType === 'review') {
+        textToCopy = message;
+    } else {
+        textToCopy = generalComment;
+    }
+
+    try {
+        if (textToCopy) {
+            await navigator.clipboard.writeText(textToCopy);
+            toast({ 
+                title: "Kopyalandı!", 
+                description: t.google.copiedToast,
+                className: "bg-green-600 text-white border-none"
+            });
+        }
+    } catch (err) {
+        console.error("Clipboard error:", err);
+    }
+
+    if (googleRedirectUrl) {
+        setTimeout(() => {
+           window.open(googleRedirectUrl, '_blank'); 
+        }, 500);
+    }
+  };
+
+  const renderStepIndicator = () => (
+    <div className="flex justify-center gap-2 mb-6">
+      {[1, 2, 3].map(step => (
+        <div key={step} className={`h-1.5 rounded-full transition-all duration-300 ${step <= currentStep ? (step === currentStep ? 'w-8 bg-teal-500' : 'w-4 bg-teal-800') : 'w-2 bg-slate-700'}`} />
+      ))}
+    </div>
+  );
+
+  if (isLoading) return <div className="h-dvh bg-[#0f172a] flex items-center justify-center"><Loader2 className="h-10 w-10 text-teal-500 animate-spin" /></div>;
+
   return (
-    <div className="min-h-screen bg-[#0f172a] px-4 py-8 md:px-8 md:py-12 font-sans text-white overflow-x-hidden">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <button onClick={handleBackNavigation} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors duration-200 group">
-            <div className="bg-slate-800 p-2 rounded-full group-hover:bg-slate-700 transition-colors"><ArrowLeft className="h-5 w-5" /></div>
-            <span className="text-sm font-medium hidden sm:inline">{t.back}</span>
+    <div className="h-dvh w-full bg-[#0f172a] text-white flex flex-col overflow-hidden relative">
+      
+      {/* 1. HEADER */}
+      <div className="flex-none pt-safe px-4 pb-2 bg-[#0f172a] z-10">
+        <div className="flex justify-between items-center py-3">
+          <button onClick={handleBack} className="p-2 -ml-2 text-slate-300 hover:text-white rounded-full hover:bg-slate-800 transition-colors">
+            <ArrowLeft className="h-6 w-6" />
           </button>
-          <img src={logoUrl} alt="Logo" className="h-10 w-10 md:h-12 md:w-12 object-contain" />
+          <span className="font-semibold text-lg">{formInfo.title}</span>
+          <div className="w-10" /> 
         </div>
+        {renderStepIndicator()}
+      </div>
 
-        <div className="text-center mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4 px-4 md:px-8 lg:px-12 py-6 md:py-8 lg:py-10 rounded-2xl">
-            {formInfo.icon}
-            <h1 className={`text-4xl md:text-5xl lg:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r ${formInfo.gradient} leading-tight break-words text-center py-2`}>{formInfo.title}</h1>
-          </div>
-          <p className="text-slate-400 text-base md:text-lg font-medium mb-8 max-w-xl mx-auto px-4">{formInfo.subtitle}</p>
-          <div className="bg-teal-500/10 border-l-4 border-teal-500 p-4 rounded-lg text-left max-w-xl mx-auto flex items-start gap-3"><Info className="h-5 w-5 text-teal-400 flex-shrink-0 mt-0.5" /><p className="text-teal-300 text-sm leading-relaxed break-words">{t.infoBanner}</p></div>
-        </div>
-
-        <div className="bg-[#1a2847] border border-slate-700 rounded-xl p-4 md:p-8 shadow-lg">
-          <div className="mb-6 rounded-xl bg-slate-800 border-l-4 border-teal-500 p-4 flex items-start gap-4">
-            <div className="bg-teal-500/20 p-2 rounded-full shrink-0"><Building2 className="h-6 w-6 text-teal-500" /></div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-slate-500 font-bold uppercase mb-1">{t.businessLabel}</p>
-              <h3 className="font-bold text-lg text-white truncate mb-2">{businessName}</h3>
-              <div className="relative">
-                <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg py-2 pl-3 pr-8 focus:ring-1 focus:ring-teal-500 focus:border-teal-500 appearance-none transition-colors">
-                  <option value="" disabled>{t.branch.placeholder}</option>
-                  {branches.map(branch => (<option key={branch.id} value={branch.id}>{branch.branch_name_tr}</option>))}
-                </select>
-                <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+      {/* 2. SCROLLABLE CONTENT */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="max-w-md mx-auto h-full flex flex-col justify-center min-h-[400px]">
+          
+          {/* STEP 1: COMPLAINT */}
+          {feedbackType === 'complaint' && currentStep === 1 && (
+            <div className="step-content space-y-6">
+              <div className="text-center space-y-2 mb-8">
+                <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                    <CalendarIcon className="h-8 w-8 text-red-500" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Kanıt & Zaman</h2>
+                <p className="text-slate-400">İşleminizi hızlandırmak için detay verin.</p>
               </div>
-            </div>
-          </div>
 
-          {feedbackType === 'complaint' && (
-            <div className="mb-8">
-              <label className="block text-sm text-gray-400 mb-3 font-semibold uppercase tracking-wide">{t.receipt.label}</label>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <button type="button" onClick={() => { setHasReceipt(false); setReceiptFile(null); setReceiptPreview(null); }} className={`py-3 px-4 rounded-lg font-medium border-2 transition-all duration-200 flex items-center justify-center gap-2 ${!hasReceipt ? 'bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-900/20' : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600 hover:bg-slate-700'}`}><X className="h-4 w-4" /> {t.receipt.noReceipt}</button>
-                <button type="button" onClick={() => setHasReceipt(true)} className={`py-3 px-4 rounded-lg font-medium border-2 transition-all duration-200 flex items-center justify-center gap-2 ${hasReceipt ? 'bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-900/20' : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600 hover:bg-slate-700'}`}><CheckCircle2 className="h-4 w-4" /> {t.receipt.hasReceipt}</button>
-              </div>
-              
-              {hasReceipt && (
-                <div className="animate-in fade-in slide-in-from-top-2 bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
-                  <label className="block text-sm text-gray-300 mb-3 font-medium">{t.receipt.uploadLabel} <span className="text-red-500">*</span></label>
-                  {receiptPreview ? (
-                    <div className="relative h-32 w-full sm:w-48 rounded-lg overflow-hidden border border-slate-600 bg-black/40 group shrink-0 mx-auto sm:mx-0">
-                      <img src={receiptPreview} alt="Receipt Preview" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity cursor-zoom-in" onClick={() => openImageModal(receiptPreview)} />
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"><Maximize2 className="w-6 h-6 text-white/80 drop-shadow-md" /></div>
-                      <button onClick={removeReceipt} className="absolute top-1 right-1 bg-red-600/90 text-white p-1.5 rounded-full shadow-md hover:bg-red-700 transition-colors z-10"><Trash2 className="h-3.5 w-3.5" /></button>
+              {/* Branch Selector */}
+              {branches.length > 1 && (
+                <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                    <label className="text-xs text-slate-400 mb-1 block pl-1">Şube</label>
+                    <div className="relative">
+                        <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg py-3 px-3 appearance-none focus:ring-1 focus:ring-teal-500">
+                            {branches.map(b => <option key={b.id} value={b.id}>{b.branch_name_tr}</option>)}
+                        </select>
+                        <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                     </div>
-                  ) : (
-                    <div className="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center hover:border-teal-500 hover:bg-slate-800/50 transition-all group cursor-pointer relative">
-                      <input type="file" accept="image/*" onChange={handleReceiptUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                      <ImagePlus className="h-8 w-8 text-slate-500 mx-auto mb-2 group-hover:text-teal-500 transition-colors" />
-                      <p className="text-slate-400 text-sm font-medium group-hover:text-white break-words">{t.receipt.placeholder}</p>
-                    </div>
-                  )}
                 </div>
               )}
-              
-              {!hasReceipt && (
-                <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                  <label className="block text-sm text-gray-400 mb-2 font-semibold">{t.receipt.dateLabel} <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                      <input type="datetime-local" value={visitDate} onChange={handleDateChange} onBlur={handleDateBlur} min={MIN_DATE_STRING} max={getCurrentLocalISOString()} lang={language === 'tr' ? 'tr-TR' : 'en-US'} className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-3 pl-10 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition [color-scheme:dark]" />
-                      <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 h-5 w-5 pointer-events-none" />
-                  </div>
+
+              <div className="space-y-4">
+                <label className="text-sm font-medium text-slate-300 ml-1">{t.receipt.label}</label>
+                <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => { setHasReceipt(false); setReceiptFile(null); }} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${!hasReceipt ? 'bg-red-500/10 border-red-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                        <X className="h-6 w-6" />
+                        <span className="font-medium">{t.receipt.noReceipt}</span>
+                    </button>
+                    <button onClick={() => setHasReceipt(true)} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${hasReceipt ? 'bg-teal-500/10 border-teal-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                        <CheckCircle2 className="h-6 w-6" />
+                        <span className="font-medium">{t.receipt.hasReceipt}</span>
+                    </button>
+                </div>
+              </div>
+
+              {hasReceipt ? (
+                <div className="animate-in fade-in zoom-in-95 duration-200">
+                    <label className="block bg-slate-800 border-2 border-dashed border-slate-600 hover:border-teal-500 rounded-xl p-8 text-center cursor-pointer transition-colors group">
+                        <input type="file" className="hidden" accept="image/*" onChange={handleReceiptUpload} />
+                        {receiptPreview ? (
+                            <div className="relative">
+                                <img src={receiptPreview} className="h-48 w-full object-contain rounded-lg mx-auto" />
+                                <button onClick={(e) => { e.preventDefault(); setReceiptFile(null); setReceiptPreview(null); }} className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"><X className="h-4 w-4 text-white" /></button>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <Camera className="h-10 w-10 text-slate-400 mx-auto group-hover:text-teal-400 transition-colors" />
+                                <p className="text-sm text-slate-400 font-medium">{t.receipt.placeholder}</p>
+                            </div>
+                        )}
+                    </label>
+                </div>
+              ) : (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-200 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <label className="text-sm text-slate-400 mb-2 block">{t.receipt.dateLabel}</label>
+                    <div className="relative">
+                        <input 
+                            type="datetime-local" 
+                            lang={language === 'tr' ? 'tr-TR' : 'en-US'}
+                            value={visitDate} 
+                            onChange={(e) => setVisitDate(e.target.value)} 
+                            max={getCurrentLocalISOString()} 
+                            className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white [color-scheme:dark] focus:border-teal-500 outline-none" 
+                        />
+                        <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 pointer-events-none" />
+                    </div>
+                    {/* 🟢 TÜRKÇE FORMATLANMIŞ TARİH */}
+                    {visitDate && (
+                        <div className="mt-3 flex items-center gap-2 text-teal-400 text-sm font-medium bg-teal-500/10 p-3 rounded-lg border border-teal-500/20">
+                            <Clock className="w-4 h-4 shrink-0" />
+                            {format(new Date(visitDate), 'd MMMM yyyy, EEEE - HH:mm', { locale: language === 'tr' ? tr : enUS })}
+                        </div>
+                    )}
                 </div>
               )}
             </div>
           )}
 
-          <div className="mb-8">
-            <label className="block text-sm text-gray-400 mb-2 font-semibold uppercase tracking-wide">{t.message.label} <span className="text-red-500">*</span></label>
-            <textarea value={message} onChange={(e) => setMessage(e.target.value.slice(0, 1000))} placeholder={t.message.placeholder} className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-4 placeholder-slate-500 focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-base" rows={5} maxLength={1000} />
-            <div className="flex justify-between items-center mt-2"><p className={`text-xs font-medium ${message.length > 0 && message.length < 10 ? 'text-red-400' : 'text-slate-500'}`}>{t.message.minChars}</p><p className="text-xs text-slate-500">{message.length}/1000</p></div>
-          </div>
-
-          {feedbackType === 'review' && (
-            <div className="mb-8 bg-slate-900/30 p-6 rounded-xl border border-slate-700/50">
-              <label className="block text-sm text-gray-300 mb-4 font-semibold text-center uppercase tracking-wide">{t.rating.label} <span className="text-red-500">*</span></label>
-              <div className="flex justify-center gap-2 md:gap-4 mb-2 flex-wrap">{[1, 2, 3, 4, 5].map((star) => (<button key={star} type="button" onClick={() => setRating(star)} className="transition-all duration-200 hover:scale-110 focus:outline-none group"><Star className={`h-8 w-8 md:h-12 md:w-12 transition-colors ${star <= rating ? 'text-yellow-500 fill-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]' : 'text-slate-600 group-hover:text-yellow-500/50'}`} /></button>))}</div>
-              {rating > 0 && <p className="text-center text-yellow-400 font-bold text-lg animate-in fade-in slide-in-from-bottom-2 mt-2">{getEmojiForRating(rating, t.rating.emojis)}</p>}
+          {/* STEP 2: COMPLAINT / STEP 1: SUGGESTION */}
+          {((feedbackType === 'complaint' && currentStep === 2) || (feedbackType === 'suggestion' && currentStep === 1)) && (
+            <div className="step-content space-y-6 h-full flex flex-col">
+               <div className="text-center space-y-2 flex-shrink-0">
+                <h2 className="text-2xl font-bold text-white">{feedbackType === 'complaint' ? 'Sorun Nedir?' : 'Öneriniz Nedir?'}</h2>
+                <p className="text-slate-400">Lütfen detaylıca açıklayınız.</p>
+              </div>
+              <div className="flex-1 min-h-[200px]">
+                <div className="relative h-full bg-slate-800/30 border border-slate-700 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-transparent transition-all">
+                    <div className="absolute top-4 left-4 text-slate-500 pointer-events-none">
+                        <PenLine className="w-5 h-5" />
+                    </div>
+                    <textarea 
+                        value={message} 
+                        onChange={(e) => setMessage(e.target.value)} 
+                        placeholder={t.message.placeholder} 
+                        className="w-full h-full bg-transparent p-4 pl-12 text-base text-white placeholder:text-slate-500 resize-none outline-none"
+                        autoFocus
+                    />
+                </div>
+              </div>
+              <p className={`text-xs text-right ${message.length < 10 ? 'text-red-400' : 'text-teal-500'}`}>{message.length}/1000 (Min 10)</p>
             </div>
           )}
 
-          {(feedbackType === 'complaint' || feedbackType === 'suggestion') && (
-            <div className="mb-8 bg-slate-900/30 p-6 rounded-xl border border-slate-700/50">
-              <div className="flex items-center gap-2 mb-4"><Info className="h-5 w-5 text-teal-500 shrink-0" /><h3 className="text-white font-semibold">{t.general.title}</h3></div>
-              <div className="mb-4"><label className="block text-xs text-slate-400 mb-2 font-medium">{t.general.satisfaction}</label><div className="flex gap-2 flex-wrap">{[1, 2, 3, 4, 5].map((star) => (<button key={star} type="button" onClick={() => setGeneralRating(star)} className="transition-all duration-150 hover:scale-110 focus:outline-none"><Star className={`h-8 w-8 md:h-9 md:w-9 ${star <= generalRating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-600 hover:text-yellow-500'}`} /></button>))}</div>{generalRating > 0 && <p className="text-xs text-yellow-400 mt-1 font-medium">{getEmojiForRating(generalRating, t.rating.emojis)}</p>}</div>
-              <div><textarea value={generalComment} onChange={(e) => setGeneralComment(e.target.value.slice(0, 500))} placeholder={t.general.placeholder} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none text-sm" rows={3} maxLength={500} /><p className="text-xs text-slate-500 text-right mt-1">{generalComment.length}/500</p></div>
+          {/* STEP 1: REVIEW (Rating) */}
+          {feedbackType === 'review' && currentStep === 1 && (
+            <div className="step-content flex flex-col items-center justify-center space-y-8 py-10">
+                <div className="text-center space-y-2">
+                    <h2 className="text-3xl font-bold text-white">Puanlayın</h2>
+                    <p className="text-slate-400">Hizmetimizden ne kadar memnun kaldınız?</p>
+                </div>
+                
+                <div className="flex gap-3">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                        <button 
+                            key={star} 
+                            onClick={() => handleStarClick(star)} 
+                            className={`group transition-transform focus:outline-none ${animatingStar === star && star >= 3 ? 'animate-star-pop' : 'hover:scale-110 active:scale-95'}`}
+                        >
+                            <Star className={cn(
+                                "w-12 h-12 transition-colors duration-300",
+                                star <= rating 
+                                ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" 
+                                : "text-slate-700"
+                            )} />
+                        </button>
+                    ))}
+                </div>
+                
+                <div className="h-10 flex items-center justify-center">
+                    {rating > 0 && (
+                        <div className="text-center animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <p className={`text-xl font-bold ${rating >= 4 ? 'text-green-400' : rating === 3 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                {getEmojiForRating(rating, t.rating.emojis)}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1">{getReactionMessage(rating, t)}</p>
+                        </div>
+                    )}
+                </div>
             </div>
           )}
 
-          <div className="mb-8">
-            <label className="block text-sm text-gray-400 mb-3 font-semibold uppercase tracking-wide">{t.images.label}</label>
-            {feedbackImages.length < 3 && (<div className="border-2 border-dashed border-slate-700 rounded-lg p-6 text-center hover:border-slate-500 hover:bg-slate-800/50 transition-all group relative cursor-pointer"><input type="file" accept="image/*" multiple onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" id="imageUpload" /><ImagePlus className="h-10 w-10 text-slate-500 mx-auto mb-2 group-hover:text-orange-500 transition-colors" /><p className="text-slate-400 text-sm font-medium group-hover:text-white">{t.images.placeholder}</p><p className="text-slate-500 text-xs mt-1">{t.images.sub}</p></div>)}
-            {feedbackImages.length > 0 && (<div className="mt-4"><div className="flex justify-between items-center mb-2"><span className="text-xs text-slate-400 font-medium">{feedbackImages.length} {t.images.uploaded}</span></div><div className="grid grid-cols-3 sm:grid-cols-4 gap-3">{feedbackImages.map((img, index) => (<div key={index} className="relative aspect-square group bg-slate-800 rounded-lg overflow-hidden border border-slate-700"><img src={img.preview} alt={`Görsel`} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition" onClick={() => openImageModal(img.preview)} /><button type="button" onClick={() => removeImage(index)} className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full p-1.5 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all"><X className="h-3 w-3" /></button></div>))}</div></div>)}
-          </div>
+          {/* FINAL STEP: EXTRAS */}
+          {((feedbackType === 'complaint' && currentStep === 3) || (feedbackType === 'suggestion' && currentStep === 2) || (feedbackType === 'review' && currentStep === 2)) && (
+            <div className="step-content space-y-6">
+                <div className="text-center mb-4">
+                    <h2 className="text-2xl font-bold text-white">Son Dokunuşlar</h2>
+                    <p className="text-slate-400">Eklemek istedikleriniz var mı?</p>
+                </div>
 
-          <Button type="submit" onClick={submitFeedback} disabled={!isFormValid() || isSubmitting} className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 disabled:from-slate-700 disabled:to-slate-800 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-4 h-auto text-lg rounded-xl transition-all duration-300 shadow-lg hover:shadow-orange-900/30 hover:scale-[1.01]">{isSubmitting ? <><Loader2 className="h-5 w-5 animate-spin mr-2" />{t.submit.sending}</> : <><Send className="h-5 w-5 mr-2" />{t.submit.send}</>}</Button>
-          <div className="mt-6 bg-red-500/10 border-l-4 border-red-500 p-4 rounded-lg flex items-start gap-3"><AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" /><p className="text-red-300 text-sm leading-relaxed break-words">{t.disclaimer}</p></div>
+                {/* Optional General Rating & Comment */}
+                {feedbackType !== 'review' && (
+                    <div 
+                        className={cn(
+                            "bg-slate-800/30 p-5 rounded-2xl border transition-all duration-500 space-y-4 shadow-sm",
+                            generalRating >= 4 ? "border-yellow-500/50 glow-success bg-slate-800/60" : 
+                            generalRating === 3 ? "border-orange-400/40" : 
+                            generalRating > 0 ? "border-red-500/40 bg-red-500/5" : 
+                            "border-slate-700"
+                        )}
+                    >
+                        <div className="text-center">
+                            <label className="text-sm text-slate-300 mb-3 block font-medium">{t.general.title} (Opsiyonel)</label>
+                            <div className="flex justify-center gap-4">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <button 
+                                        key={star} 
+                                        onClick={() => handleStarClick(star, true)}
+                                        className={animatingStar === star && star >= 3 ? 'animate-star-pop' : 'transition-transform duration-200 active:scale-95'}
+                                    >
+                                        <Star className={cn(
+                                            "w-9 h-9 transition-colors duration-300",
+                                            star <= generalRating 
+                                                ? (generalRating >= 4 ? "fill-yellow-400 text-yellow-400" : 
+                                                   generalRating === 3 ? "fill-orange-400 text-orange-400" : 
+                                                   "fill-red-500 text-red-500") 
+                                                : "text-slate-700"
+                                        )} />
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            {generalRating > 0 && (
+                                <div className="animate-in fade-in slide-in-from-top-1 duration-500">
+                                    <p className={cn(
+                                        "text-xs mt-3 font-medium px-3 py-1.5 rounded-full inline-block border",
+                                        generalRating >= 4 ? "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" :
+                                        generalRating === 3 ? "text-orange-300 bg-orange-400/10 border-orange-400/20" :
+                                        "text-red-300 bg-red-500/10 border-red-500/20"
+                                    )}>
+                                        {getReactionMessage(generalRating, t)}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="relative group">
+                            <div className="absolute top-3 left-3 text-slate-500 group-focus-within:text-teal-500 transition-colors pointer-events-none">
+                                <PenLine className="w-4 h-4" />
+                            </div>
+                            <textarea
+                                value={generalComment}
+                                onChange={(e) => setGeneralComment(e.target.value)}
+                                placeholder={t.general.placeholder}
+                                className="w-full bg-slate-950/50 border border-slate-600/50 rounded-xl p-3 pl-10 text-sm text-white resize-none focus:ring-1 focus:ring-teal-500/50 focus:border-teal-500 transition-all placeholder:text-slate-600"
+                                rows={3}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Optional Message (For Review) */}
+                {feedbackType === 'review' && (
+                    <div className="relative h-32 bg-slate-800/30 border border-slate-700 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-transparent transition-all">
+                        <div className="absolute top-4 left-4 text-slate-500 pointer-events-none">
+                            <PenLine className="w-5 h-5" />
+                        </div>
+                        <textarea 
+                            value={message} 
+                            onChange={(e) => setMessage(e.target.value)} 
+                            placeholder="Deneyiminizi anlatın (Opsiyonel)..." 
+                            className="w-full h-full bg-transparent p-4 pl-12 text-white resize-none outline-none placeholder:text-slate-500"
+                        />
+                    </div>
+                )}
+
+                {/* Photo Upload */}
+                <div>
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm font-medium text-slate-300">Ek Görseller</label>
+                        <span className="text-xs text-slate-500">{feedbackImages.length}/3</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                        {feedbackImages.map((img, i) => (
+                            <div key={i} className="relative aspect-square bg-black rounded-lg overflow-hidden border border-slate-700 group">
+                                <img src={img.preview} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                <button onClick={() => setFeedbackImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-0 right-0 bg-red-500 p-1"><X className="w-3 h-3 text-white" /></button>
+                            </div>
+                        ))}
+                        {feedbackImages.length < 3 && (
+                            <label className="aspect-square bg-slate-800/50 border border-dashed border-slate-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800 hover:border-teal-500/50 transition-all group">
+                                <ImagePlus className="w-6 h-6 text-slate-500 group-hover:text-teal-500 transition-colors" />
+                                <span className="text-[10px] text-slate-500 mt-1 group-hover:text-slate-300">Ekle</span>
+                                <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageUpload} />
+                            </label>
+                        )}
+                    </div>
+                </div>
+            </div>
+          )}
+
         </div>
       </div>
 
-      {imageModalOpen && (
-        <div className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200 backdrop-blur-sm" onClick={() => setImageModalOpen(false)}>
-          <button className="absolute top-4 right-4 text-white hover:text-red-500 transition bg-slate-800/50 p-2 rounded-full" onClick={(e) => { e.stopPropagation(); setImageModalOpen(false); }}><X className="h-8 w-8" /></button>
-          <img src={imageModalSrc} className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
-        </div>
-      )}
+      {/* 3. FOOTER */}
+      <div className="flex-none p-4 pb-safe bg-[#0f172a] border-t border-slate-800 z-20">
+        <Button 
+            onClick={currentStep === totalSteps || (feedbackType === 'suggestion' && currentStep === 2) || (feedbackType === 'review' && currentStep === 2) ? submitFeedback : handleNext}
+            disabled={!isStepValid() || isSubmitting}
+            className={cn(
+                "w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all active:scale-95",
+                "bg-gradient-to-r hover:opacity-90",
+                formInfo.gradient
+            )}
+        >
+            {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : 
+             ((currentStep === totalSteps) || (feedbackType !== 'complaint' && currentStep === 2)) ? 
+             <span className="flex items-center gap-2">Gönder <Send className="w-5 h-5" /></span> : 
+             <span className="flex items-center gap-2">Devam Et <ChevronRight className="w-5 h-5" /></span>
+            }
+        </Button>
+      </div>
 
-      {/* BAŞARI MODALI 🟢 GÜNCELLENDİ */}
+      {/* SUCCESS MODAL (YENİLENMİŞ) */}
       {showSuccessModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-          <div className="bg-[#1a2847] rounded-2xl p-8 max-w-md w-full text-center animate-in zoom-in-95 fade-in duration-300 border border-slate-700 shadow-2xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-green-500/5 to-transparent pointer-events-none"></div>
-            <div className="bg-green-500/20 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.2)]"><CheckCircle2 className="h-12 w-12 text-green-500" /></div>
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 tracking-tight break-words">{t.success.title}</h2>
-            <div className="bg-slate-800/50 rounded-xl p-4 mb-6 border border-slate-700/50">
-                <p className="text-slate-300 leading-relaxed text-sm break-words">{t.success.desc(businessName || t.businessLabel)}</p>
-            </div>
-
-            {/* GOOGLE REDIRECT SECTION - 4/5 Yıldız Şartı (Şikayet Hariç) */}
-            {googleRedirectUrl && (
-                <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 rounded-xl p-5 mb-4 border border-blue-700/30 shadow-lg animate-in fade-in zoom-in duration-500">
-                    <h3 className="text-blue-100 font-bold text-lg mb-2">{t.google.title}</h3>
-                    <p className="text-blue-200/70 text-sm mb-4 leading-snug">{t.google.desc}</p>
-                    <div className="flex flex-col gap-2">
-                         <Button onClick={handleGoogleShare} className="w-full bg-white text-blue-900 hover:bg-blue-50 font-bold py-5 h-auto text-base rounded-xl transition shadow-lg shadow-white/10 active:scale-95 flex items-center justify-center gap-2">
-                            <span className="text-xl">⭐</span> {t.google.yesButton}
-                         </Button>
-                         <Button onClick={handleSuccessClose} variant="ghost" className="w-full text-slate-400 hover:text-slate-300 hover:bg-transparent text-sm font-medium py-2">
-                            {t.google.noButton}
-                         </Button>
-                    </div>
-                </div>
-            )}
-
-            {/* INSTAGRAM ALANI - Dinamik Parlama ve Yeni Kurallar */}
-            {(() => {
-                const currentBranch = branches.find(b => b.id === selectedBranch);
-                const actualRating = feedbackType === 'review' ? rating : generalRating;
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="bg-[#1e293b] w-full max-w-sm rounded-3xl p-8 text-center border border-slate-700 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-gradient-to-b from-green-500/20 to-transparent pointer-events-none" />
                 
-                // 🚩 MANTIK: 
-                // 1. Şikayet ise asla gösterme.
-                // 2. Öneri ise: Puan yoksa (0) her daim göster. Puan varsa 3 ve üzeri ise göster.
-                // 3. Değerlendirme ise: 3 yıldız ve üzeri ise göster.
-                let shouldShowInstagram = false;
-                if (feedbackType === 'suggestion') {
-                    shouldShowInstagram = (actualRating === 0 || actualRating >= 3);
-                } else if (feedbackType === 'review') {
-                    shouldShowInstagram = (actualRating >= 3);
-                }
+                <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(34,197,94,0.4)] animate-in zoom-in duration-500">
+                    <CheckCircle2 className="w-10 h-10 text-white" />
+                </div>
+                
+                <h2 className="text-3xl font-bold text-white mb-2">
+                    {googleRedirectUrl ? t.google.title : t.success.title}
+                </h2>
+                
+                <p className="text-slate-400 mb-8 text-lg">
+                    {googleRedirectUrl ? t.google.desc : t.success.desc(businessName || "yöneticiye")}
+                </p>
 
-                if (shouldShowInstagram && currentBranch?.instagram_url) {
-                    return (
-                        <div className={`mt-2 ${googleRedirectUrl ? 'animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300' : 'animate-in fade-in zoom-in duration-500'}`}>
-                            <Button 
-                                onClick={() => window.open(currentBranch.instagram_url, '_blank')}
-                                variant="outline"
-                                className={cn(
-                                    "w-full gap-2 font-bold py-5 h-auto text-sm rounded-xl transition border-slate-700",
-                                    // 🚩 HİYERARŞİ: Google yoksa parlar (gradient), varsa sönüktür (slate)
-                                    !googleRedirectUrl 
-                                    ? "bg-gradient-to-r from-purple-600/20 to-pink-600/20 text-pink-400 border-pink-500/30 hover:bg-transparent shadow-lg shadow-pink-900/10" 
-                                    : "bg-transparent text-slate-400 border-slate-700/50 hover:bg-transparent active:bg-slate-800/30"
-                                )}
-                            >
-                                <Instagram className={cn("w-4 h-4", !googleRedirectUrl ? "text-pink-500" : "text-slate-400")} /> 
-                                {language === 'tr' ? 'Bizi Instagram\'da Takip Et' : 'Follow us on Instagram'}
-                            </Button>
+                {/* 🟢 GOOGLE MODU (4-5 Yıldız) */}
+                {googleRedirectUrl && (
+                    <div className="space-y-4">
+                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center animate-in zoom-in duration-500">
+                            <p className="text-blue-300 font-bold text-sm flex items-center justify-center gap-2">
+                                <Copy className="w-4 h-4" /> {t.google.copyAlert}
+                            </p>
                         </div>
-                    );
-                }
-                return null;
-            })()}
+                        <Button onClick={handleGoogleShare} className="w-full bg-white text-slate-900 hover:bg-slate-200 h-14 rounded-xl font-bold text-lg animate-pulse shadow-xl shadow-white/10">
+                            {t.google.yesButton}
+                        </Button>
+                        
+                        {/* Google varsa, Instagram onun altında belirir */}
+                        {instagramRedirectUrl && (
+                            <Button onClick={() => window.open(instagramRedirectUrl, '_blank')} variant="outline" className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white h-12 rounded-xl">
+                                <Instagram className="w-4 h-4 mr-2" /> {t.google.instaButton}
+                            </Button>
+                        )}
 
-            {/* KAPATMA BUTONU: Google yoksa ana buton olur */}
-            {!googleRedirectUrl && (
-                <Button onClick={handleSuccessClose} className="w-full mt-4 bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 h-auto text-base rounded-xl transition shadow-lg shadow-teal-900/20 active:scale-95">{t.success.button}</Button>
-            )}
-            
-            <div className="mt-6 pt-3 border-t border-slate-700/50"><span className="text-slate-500 font-medium text-xs flex items-center justify-center gap-2 flex-wrap"><Star className="h-3 w-3 fill-slate-500 text-slate-500 shrink-0" /> {t.success.footer}</span></div>
-          </div>
+                        <button onClick={() => navigate('/customer-panel')} className="text-slate-500 text-sm font-medium p-2 hover:text-white transition-colors">
+                            {t.google.noButton}
+                        </button>
+                    </div>
+                )}
+
+                {/* 🟢 SADECE INSTAGRAM MODU (3 Yıldız / Google Yoksa) */}
+                {!googleRedirectUrl && instagramRedirectUrl && (
+                    <div className="space-y-4">
+                        <Button onClick={() => window.open(instagramRedirectUrl, '_blank')} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white h-14 rounded-xl font-bold text-lg shadow-xl shadow-pink-900/20">
+                            <Instagram className="w-5 h-5 mr-2" /> {t.google.instaButton}
+                        </Button>
+                        <Button onClick={() => navigate('/customer-panel')} variant="ghost" className="w-full text-slate-400 hover:text-white">
+                            Ana Sayfaya Dön
+                        </Button>
+                    </div>
+                )}
+
+                {/* 🟢 STANDART MOD (Hiçbiri Yoksa / Şikayet / Düşük Puan) */}
+                {!googleRedirectUrl && !instagramRedirectUrl && (
+                    <Button onClick={() => navigate('/customer-panel')} className="w-full bg-slate-700 hover:bg-slate-600 h-12 rounded-xl text-white font-bold">
+                        Ana Sayfaya Dön
+                    </Button>
+                )}
+            </div>
         </div>
       )}
+
     </div>
   );
 }

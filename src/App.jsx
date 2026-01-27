@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react'; // useEffect eklendi
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'; // useLocation eklendi
 import LandingPage from '@/pages/LandingPage';
 import CustomerPanel from '@/pages/CustomerPanel';
 import AdminPanel from '@/pages/AdminPanel';
@@ -14,13 +14,41 @@ import { Toaster } from '@/components/ui/toaster';
 import AdminLayout from '@/layouts/AdminLayout';
 import NotificationHistory from '@/pages/NotificationHistory';
 import CustomerDetail from '@/pages/CustomerDetail';
-// 👇 YENİ EKLENEN IMPORT
 import UpdatePassword from '@/pages/UpdatePassword';
+
+// 👇 YENİ BİLEŞEN: Tema Kontrolcüsü
+// Bu bileşen sayfa her değiştiğinde çalışır ve temayı ayarlar.
+const ThemeController = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Eğer bulunduğumuz sayfa '/admin-panel' ile başlıyorsa (Yönetici Paneli içindeysek)
+    if (location.pathname.startsWith('/admin-panel')) {
+      // Kullanıcının kaydettiği tercihi hatırla ve uygula
+      const savedTheme = localStorage.getItem('acta_theme');
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+      } else {
+        document.body.classList.remove('light-theme');
+      }
+    } 
+    // Eğer Yönetici Paneli DIŞINDAYSAK (Landing, Feedback Form, Login vb.)
+    else {
+      // Aydınlık temayı ZORLA KAPAT (Orijinal koyu temaya dön)
+      document.body.classList.remove('light-theme');
+    }
+  }, [location]); // Her URL değişiminde tetiklenir
+
+  return null; // Görüntülenecek bir şeyi yok, sadece mantık çalıştırır.
+};
 
 function App() {
   return (
     <AuthProvider>
       <Router>
+        {/* 👇 ThemeController Router'ın içine eklendi */}
+        <ThemeController />
+        
         <Routes>
           <Route path="/" element={<LandingPage />} />
           
@@ -28,7 +56,6 @@ function App() {
           
           <Route path="/feedback" element={<FeedbackForm />} />
 
-          {/* 👇 YENİ EKLENEN ROTA: Şifre Sıfırlama Sayfası */}
           <Route path="/update-password" element={<UpdatePassword />} />
           
           <Route element={<ProtectedRoute allowedRole="customer" />}>

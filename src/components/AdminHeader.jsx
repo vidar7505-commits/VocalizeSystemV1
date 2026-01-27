@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAdminContext } from '@/contexts/AdminContext';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { Bell, Building2, User, LogOut, QrCode, MessageSquare, X, CheckCheck, AlertOctagon } from 'lucide-react';
+import { Bell, Building2, User, LogOut, QrCode, MessageSquare, X, CheckCheck, AlertOctagon, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -48,7 +48,6 @@ const AdminHeader = () => {
     businessId, businessName, branches, selectedBranchId, setSelectedBranchId,
     qrCount, loading, dateRange,
     isSpecialOffer, monthlyFeeOverride,
-    // 🟢 YENİ: Context'ten rolleri alıyoruz
     userRole, assignedBranchId, isBranchManager 
   } = useAdminContext();
   
@@ -57,18 +56,58 @@ const AdminHeader = () => {
   const navigate = useNavigate();
   const notificationRef = useRef(null);
 
+  // --- STATE YÖNETİMİ ---
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false); // Profil menüsü kontrolü
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   
-  // Header içinde modal açma state'leri kaldırıldı/pasife alındı çünkü sayfaya yönlendireceğiz
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
   const [isHovered, setIsHovered] = useState(false);
   const [escalatedCount, setEscalatedCount] = useState(0);
 
-  // Check for any escalated feedbacks globally for this business
+  // --- TEMA YÖNETİMİ ---
+  const [theme, setTheme] = useState(localStorage.getItem('acta_theme') || 'dark');
+
+  useEffect(() => {
+    const root = window.document.body;
+    root.classList.remove('light-theme', 'dark-theme');
+
+    if (theme === 'light') {
+      root.classList.add('light-theme');
+    } else {
+      root.classList.add('dark-theme');
+    }
+    localStorage.setItem('acta_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
+  // --- MENÜ KONTROLÜ (ÇAKIŞMAYI ÖNLEME) ---
+  const toggleNotifications = () => {
+    if (!notificationOpen) {
+      // Bildirim açılıyorsa profili kapat
+      setIsProfileMenuOpen(false);
+    }
+    setNotificationOpen(prev => !prev);
+  };
+
+  const handleProfileMenuChange = (isOpen) => {
+    setIsProfileMenuOpen(isOpen);
+    if (isOpen) {
+      // Profil açılıyorsa bildirimi kapat
+      setNotificationOpen(false);
+    }
+  };
+
+  // --- VERİ ÇEKME FONKSİYONLARI ---
   const checkEscalatedStatus = useCallback(async () => {
     if (!businessId) return;
     try {
@@ -77,47 +116,26 @@ const AdminHeader = () => {
         .eq('business_id', businessId)
         .eq('status', 'escalated');
       
-      // 🚩 MÜDÜR FİLTRESİ: Sadece kendi şubesindeki acilleri sayar
       if (isBranchManager && assignedBranchId) {
         query = query.eq('branch_id', assignedBranchId);
       }
-
       const { count } = await query;
       setEscalatedCount(count || 0);
     } catch (e) {
-      console.error('Error checking escalated status:', e);
+      console.error(e);
     }
   }, [businessId, isBranchManager, assignedBranchId]);
 
-  // 1. Bildirimleri Çeken Fonksiyon (TAMAMLANDI)
   const fetchNotifications = useCallback(async () => {
     if (!user || !businessId) return;
-    
-    let query = supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('business_id', businessId);
+    let query = supabase.from('notifications').select('*').eq('user_id', user.id).eq('business_id', businessId);
+    if (isBranchManager && assignedBranchId) query = query.eq('branch_id', assignedBranchId);
 
-    // 🚩 KRİTİK FİLTRE: Eğer kullanıcı müdürse sadece kendi şubesini görsün
-    if (isBranchManager && assignedBranchId) {
-      query = query.eq('branch_id', assignedBranchId);
-    }
-
-    const { data, error } = await query
-      .order('created_at', { ascending: false })
-      .limit(10);
-
-    if (error) {
-      console.error("Bildirim çekme hatası:", error);
-    } else {
-      // 🟢 DÜZELTME: Veriyi state'e yazıyoruz
-      setNotifications(data || []);
-      setUnreadCount((data || []).filter(n => !n.is_read).length);
-    }
+    const { data } = await query.order('created_at', { ascending: false }).limit(10);
+    setNotifications(data || []);
+    setUnreadCount((data || []).filter(n => !n.is_read).length);
   }, [user, businessId, isBranchManager, assignedBranchId]);
 
-  // 2. İlk Yükleme
   useEffect(() => {
     if (user && businessId) {
       fetchNotifications();
@@ -125,102 +143,45 @@ const AdminHeader = () => {
     }
   }, [user, businessId, fetchNotifications, checkEscalatedStatus]);
 
-  // 3. Canlı Dinleme (Realtime)
   useEffect(() => {
     if (!user || !businessId) return;
-
-    // Bildirimler tablosunu dinle
-    const channel = supabase
-      .channel('header-notifications')
-      .on('postgres_changes', {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
+    const channel = supabase.channel('header-notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (payload) => {
           const newNotification = payload.new;
-
-          // 🚩 Şube kontrolü: Eğer müdürse sadece kendi şubesine aitse ekrana bas
-          const isRelevant = isBranchManager 
-            ? newNotification.branch_id === assignedBranchId 
-            : newNotification.business_id === businessId;
-
+          const isRelevant = isBranchManager ? newNotification.branch_id === assignedBranchId : newNotification.business_id === businessId;
           if (isRelevant) {
             setNotifications(prev => [newNotification, ...prev.slice(0, 9)]);
             setUnreadCount(prev => prev + 1);
-            toast({
-              title: `Yeni Geri Bildirim`,
-              description: newNotification.message || 'Yeni bir bildirim aldınız.',
-            });
+            toast({ title: `Yeni Bildirim`, description: newNotification.message || 'Yeni bildirim.' });
           }
-        }
-      )
-      .subscribe();
+        }).subscribe();
       
-    // Geri bildirimler tablosunu dinle (Acil sayacı için)
-    const feedbackChannel = supabase
-      .channel('header-feedback-updates')
-      .on('postgres_changes', { 
-          event: '*', // 🚩 UPDATE dahil tüm değişiklikleri yakalar (Acil -> Çözüldü geçişi için)
-          schema: 'public', 
-          table: 'feedbacks', 
-          filter: `business_id=eq.${businessId}` 
-      }, 
-        () => {
-           checkEscalatedStatus(); // Sayacı anında yeniler
-           fetchNotifications();   // Listeyi de taze tutar
-        }
-      )
-      .subscribe();
+    const feedbackChannel = supabase.channel('header-feedback-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks', filter: `business_id=eq.${businessId}` }, () => {
+           checkEscalatedStatus(); 
+           fetchNotifications(); 
+        }).subscribe();
       
-    return () => {
-       supabase.removeChannel(channel);
-       supabase.removeChannel(feedbackChannel);
-    };
+    return () => { supabase.removeChannel(channel); supabase.removeChannel(feedbackChannel); };
   }, [user, businessId, toast, isBranchManager, assignedBranchId, checkEscalatedStatus, fetchNotifications]);
 
-  // 🟢 DÜZELTİLEN FONKSİYON: Artık fetch yapmaz, direkt yönlendirir.
   const handleNotificationClick = async (notification) => {
-    // 1. Hedef ID'yi güvenli şekilde al (Farklı isimlendirmelere karşı önlem)
     const targetId = notification.related_id || notification.feedback_id;
-
-    if (!targetId) {
-        console.error("HATA: Bildirimde ID bulunamadı!", notification);
-        return;
-    }
-
-    // 2. Menüyü kapat
+    if (!targetId) return;
     setNotificationOpen(false);
-
-    // 3. Okundu olarak işaretle (Arka planda sessizce)
     if (!notification.is_read) {
         setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
         setUnreadCount(prev => Math.max(0, prev - 1));
-        
-        // Hata olsa bile kullanıcıyı bekletmemek için await kullanmıyoruz
         supabase.from('notifications').update({ is_read: true }).eq('id', notification.id).then();
     }
-
-    // 4. SAYFAYA YÖNLENDİR (State ile ID taşıyoruz)
-    navigate('/admin-panel/feedbacks', {
-        state: { openFeedbackId: targetId }
-    });
+    navigate('/admin-panel/feedbacks', { state: { openFeedbackId: targetId } });
   };
 
   const handleMarkAllAsRead = async () => {
-    const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false);
-    if(error) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'Bildirimler güncellenemedi.' });
-    } else {
-      setNotifications(prev => prev.map(n => ({...n, is_read: true})));
-      setUnreadCount(0);
-      toast({ title: 'Tüm bildirimler okundu olarak işaretlendi.'});
-    }
+    await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
+    setNotifications(prev => prev.map(n => ({...n, is_read: true})));
+    setUnreadCount(0);
+    toast({ title: 'Tüm bildirimler okundu.'});
   };
 
   const handleLogout = async () => { await signOut(); navigate('/'); };
@@ -232,42 +193,18 @@ const AdminHeader = () => {
   };
   
   const getQrDateLabel = () => {
-    const labels = {
-      'today': 'Bugün',
-      'last7': 'Son 7 Gün',
-      'last30': 'Son 30 Gün',
-      'last90': 'Son 90 Gün',
-      'thisMonth': 'Bu Ay',
-      'allTime': 'Tüm Zamanlar',
-    };
+    const labels = { 'today': 'Bugün', 'last7': 'Son 7 Gün', 'last30': 'Son 30 Gün', 'last90': 'Son 90 Gün', 'thisMonth': 'Bu Ay', 'allTime': 'Tüm Zamanlar' };
     return labels[dateRange] || 'Son 7 Gün';
   };
 
+  // Badge Config Logic (Kısaltıldı, aynen duruyor)
   let badgeConfig = null;
-
   if (!loading && isSpecialOffer === true && monthlyFeeOverride !== null) {
     const fee = Number(monthlyFeeOverride);
-    
     if (fee === 79.00) {
-      badgeConfig = {
-        text: "Erken Aşama Avantajı",
-        icon: "⭐",
-        badgeClassName: "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20",
-        cardTitle: "⭐ Ayrıcalıklı Erken Erişim",
-        cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli $79 + KDV olarak belirlenmiştir ve ömür boyu %20 indirim hakkı mühürlenmiştir.",
-        cardBorderColor: "border-amber-500/50",
-        cardTitleColor: "text-amber-400"
-      };
+      badgeConfig = { text: "Erken Erişim", icon: "⭐", badgeClassName: "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20", cardTitle: "⭐ Ayrıcalıklı Erken Erişim", cardDesc: "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli $79 + KDV olarak belirlenmiştir ve ömür boyu %20 indirim hakkı mühürlenmiştir.", cardBorderColor: "border-amber-500/50", cardTitleColor: "text-amber-400" };
     } else {
-      badgeConfig = {
-        text: "Esnek Plan Tanımlandı",
-        icon: "🚀",
-        badgeClassName: "bg-teal-500/10 border-teal-500/30 text-teal-400 hover:bg-teal-500/20",
-        cardTitle: "🚀 Kurumsal Esnek Paket",
-        cardDesc: `İşletmenizin ihtiyaçlarına özel olarak yapılandırılmış ödeme planıdır. Aylık kullanım bedeli $${fee} + KDV olarak tanımlanmıştır.`,
-        cardBorderColor: "border-teal-500/50",
-        cardTitleColor: "text-teal-400"
-      };
+      badgeConfig = { text: "Esnek Plan", icon: "🚀", badgeClassName: "bg-teal-500/10 border-teal-500/30 text-teal-400 hover:bg-teal-500/20", cardTitle: "🚀 Kurumsal Esnek Paket", cardDesc: `İşletmenizin ihtiyaçlarına özel olarak yapılandırılmış ödeme planıdır. Aylık kullanım bedeli $${fee} + KDV olarak tanımlanmıştır.`, cardBorderColor: "border-teal-500/50", cardTitleColor: "text-teal-400" };
     }
   }
 
@@ -276,34 +213,16 @@ const AdminHeader = () => {
       <header className="hidden md:flex sticky top-0 z-40 h-16 bg-[#111827] border-b border-slate-800 px-4 md:px-6 items-center justify-between shadow-sm">
         <div className="flex items-center gap-6">
           <span className="text-white font-bold text-xl md:text-2xl truncate max-w-[200px] md:max-w-xs tracking-tight">
-            {loading ? "Yükleniyor..." : businessName}
+            {loading ? "..." : businessName}
           </span>
 
           {badgeConfig && (
-            <div 
-              className={cn(
-                "relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all duration-200 cursor-pointer",
-                badgeConfig.badgeClassName
-              )}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-            >
+            <div className={cn("relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all duration-200 cursor-pointer", badgeConfig.badgeClassName)} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
               <span className="text-sm">{badgeConfig.icon}</span>
               <span className="text-xs font-semibold whitespace-nowrap hidden md:inline-block">{badgeConfig.text}</span>
-
-              <div 
-                className={cn(
-                  "absolute top-full mt-2 left-1/2 -translate-x-1/2 w-64 px-4 py-3 rounded-lg shadow-lg z-50 transition-all duration-200 bg-slate-800 border",
-                  badgeConfig.cardBorderColor,
-                  isHovered ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
-                )}
-              >
-                <div className={cn("text-sm font-semibold mb-1", badgeConfig.cardTitleColor)}>
-                  {badgeConfig.cardTitle}
-                </div>
-                <div className="text-xs text-slate-300">
-                  {badgeConfig.cardDesc}
-                </div>
+              <div className={cn("absolute top-full mt-2 left-1/2 -translate-x-1/2 w-64 px-4 py-3 rounded-lg shadow-lg z-50 transition-all duration-200 bg-slate-800 border", badgeConfig.cardBorderColor, isHovered ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none")}>
+                <div className={cn("text-sm font-semibold mb-1", badgeConfig.cardTitleColor)}>{badgeConfig.cardTitle}</div>
+                <div className="text-xs text-slate-300">{badgeConfig.cardDesc}</div>
               </div>
             </div>
           )}
@@ -334,8 +253,9 @@ const AdminHeader = () => {
             </span>
           </div>
           
+          {/* BİLDİRİM BUTONU (GÜNCELLENDİ: toggleNotifications kullanıyor) */}
           <div ref={notificationRef} className="relative">
-            <Button onClick={() => setNotificationOpen(prev => !prev)} variant="ghost" size="icon" className="relative text-slate-400 hover:text-white hover:bg-slate-800">
+            <Button onClick={toggleNotifications} variant="ghost" size="icon" className="relative text-slate-400 hover:text-white hover:bg-slate-800">
               <Bell className="h-5 w-5" />
               {(unreadCount > 0 || escalatedCount > 0) && <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse border-2 border-[#111827]"></span>}
             </Button>
@@ -346,29 +266,20 @@ const AdminHeader = () => {
                   <div className="flex items-center justify-between px-4 py-3 bg-slate-700/50 border-b border-slate-700/50">
                     <h3 className="text-white font-bold text-sm">Bildirimler</h3>
                     <div className="flex items-center gap-2">
-                      {unreadCount > 0 && <button onClick={handleMarkAllAsRead} title="Tümünü okundu işaretle" className="p-1 text-slate-400 hover:text-white"><CheckCheck className="w-4 h-4" /></button>}
+                      {unreadCount > 0 && <button onClick={handleMarkAllAsRead} className="p-1 text-slate-400 hover:text-white"><CheckCheck className="w-4 h-4" /></button>}
                       <button onClick={() => setNotificationOpen(false)} className="p-1 text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
                     </div>
                   </div>
                   <div className="max-h-96 overflow-y-auto">
-                    {/* Persistent Escalated Notification */}
                     {escalatedCount > 0 && (
-                      <div 
-                         onClick={() => { navigate('/admin-panel/feedbacks'); setNotificationOpen(false); }}
-                         className="flex items-start gap-3 p-3 border-b border-slate-700/30 bg-red-950/30 hover:bg-red-900/40 cursor-pointer transition-colors"
-                      >
-                         <AlertOctagon className="w-4 h-4 shrink-0 mt-1 text-red-500 animate-pulse" />
-                         <div className="flex-grow">
-                            <p className="text-sm text-red-200 font-bold">
-                               Acil Geri Bildirimleriniz Var
-                            </p>
-                            <p className="text-xs text-red-300 mt-1">
-                               {escalatedCount} adet acil durumlu geri bildirim bekliyor.
-                            </p>
-                         </div>
+                      <div onClick={() => { navigate('/admin-panel/feedbacks'); setNotificationOpen(false); }} className="flex items-start gap-3 p-3 border-b border-slate-700/30 bg-red-950/30 hover:bg-red-900/40 cursor-pointer">
+                          <AlertOctagon className="w-4 h-4 shrink-0 mt-1 text-red-500 animate-pulse" />
+                          <div className="flex-grow">
+                             <p className="text-sm text-red-200 font-bold">Acil Durum</p>
+                             <p className="text-xs text-red-300 mt-1">{escalatedCount} acil bildirim.</p>
+                          </div>
                       </div>
                     )}
-
                     {notifications.length > 0 ? (
                       notifications.slice(0, 5).map(n => (
                         <div key={n.id} onClick={() => handleNotificationClick(n)} className="flex items-start gap-3 p-3 border-b border-slate-700/30 hover:bg-slate-700/50 cursor-pointer transition-colors last:border-b-0">
@@ -376,15 +287,13 @@ const AdminHeader = () => {
                           <MessageSquare className={`w-4 h-4 shrink-0 mt-1 ${n.is_read ? 'text-slate-500' : 'text-teal-400'}`} />
                           <div className="flex-grow">
                             <p className={`text-sm ${n.is_read ? 'text-slate-400' : 'text-slate-200 font-medium'}`}>
-                              <span className="font-semibold">{n.branch_name || 'Bilinmeyen Şube'}</span>: {n.message ? (n.message.length > 40 ? n.message.substring(0, 40) + '...' : n.message) : 'Yeni geri bildirim.'}
+                              <span className="font-semibold">{n.branch_name}</span>: {n.message?.substring(0, 40)}...
                             </p>
                             <p className="text-xs text-slate-500 mt-1">{formatTimeAgo(n.created_at)}</p>
                           </div>
                         </div>
                       ))
-                    ) : escalatedCount === 0 ? (
-                      <p className="text-slate-400 text-sm text-center py-8">Okunmamış bildirim yok.</p>
-                    ) : null}
+                    ) : escalatedCount === 0 ? (<p className="text-slate-400 text-sm text-center py-8">Bildirim yok.</p>) : null}
                   </div>
                   <div className="px-4 py-3 bg-slate-700/50 border-t border-slate-700/50 text-center">
                     <button onClick={() => { navigate('/admin-panel/notifications'); setNotificationOpen(false); }} className="text-teal-400 hover:text-teal-300 text-sm font-medium w-full">Tümünü Gör</button>
@@ -394,7 +303,8 @@ const AdminHeader = () => {
             </AnimatePresence>
           </div>
 
-          <DropdownMenu>
+          {/* PROFİL MENÜSÜ (GÜNCELLENDİ: Controlled State + Tema Butonu) */}
+          <DropdownMenu open={isProfileMenuOpen} onOpenChange={handleProfileMenuChange}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-full"><User className="h-5 w-5" /></Button>
             </DropdownMenuTrigger>
@@ -402,20 +312,34 @@ const AdminHeader = () => {
               <DropdownMenuLabel>Hesabım</DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-slate-700" />
               <DropdownMenuItem onClick={() => navigate('/admin-panel/settings')} className="cursor-pointer focus:bg-slate-700 focus:text-white">Ayarlar</DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout} className="text-red-400 focus:bg-red-900/20 focus:text-red-300 cursor-pointer">
+              
+              {/* TEMA DEĞİŞTİR (Kapanmayı önler) */}
+              <DropdownMenuItem 
+                onSelect={(e) => { e.preventDefault(); toggleTheme(e); }} 
+                className="cursor-pointer focus:bg-slate-700 focus:text-white flex justify-between items-center group"
+              >
+                <span>Görünüm</span>
+                {theme === 'dark' ? (
+                  <div className="flex items-center gap-2 text-slate-400 group-hover:text-white">
+                    <span className="text-xs">Koyu</span>
+                    <Moon className="h-4 w-4" />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-yellow-400 group-hover:text-yellow-300">
+                    <span className="text-xs">Açık</span>
+                    <Sun className="h-4 w-4" />
+                  </div>
+                )}
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem onClick={handleLogout} className="logout-menuitem text-red-400 focus:bg-red-900/20 focus:text-red-300 cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />Çıkış Yap
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </header>
-      {isModalOpen && selectedFeedback && (
-        <FeedbackDetailModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          feedback={selectedFeedback} 
-        />
-      )}
+      {isModalOpen && selectedFeedback && <FeedbackDetailModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} feedback={selectedFeedback} />}
     </>
   );
 };

@@ -95,6 +95,25 @@ const hasImages = (f) => {
   return ((f.feedback_images && f.feedback_images.length > 0) || (f.image_urls && f.image_urls.length > 0) || (f.receipt_images && f.receipt_images.length > 0) || f.receipt_url || f.product_image_url);
 };
 
+/** Grafik tooltip – tema duyarlı, "Adet: X" formatı */
+const ChartTooltip = ({ active, payload, formatter = (v) => [v, 'Adet'] }) => {
+  if (!active || !payload?.length) return null;
+  const item = payload[0];
+  const [displayValue, suffix] = formatter(item.value);
+  return (
+    <div
+      className="chart-tooltip px-3 py-2 rounded-lg shadow-lg border text-sm font-medium"
+      style={{
+        backgroundColor: 'var(--bg-card)',
+        color: 'var(--text-main)',
+        borderColor: 'var(--border-color)',
+      }}
+    >
+      {suffix}: {displayValue}
+    </div>
+  );
+};
+
 // --- MAIN COMPONENT ---
 
 const AdminPanel = () => {
@@ -411,7 +430,7 @@ const AdminPanel = () => {
       </div>
 
       {hasUrgentFeedbacks && (
-          <div className="bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.3)] mb-6">
+          <div className="acil-durum-box bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.3)] mb-6">
             <div className="flex items-center gap-3"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
             <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg" onClick={() => navigate('/admin-panel/feedbacks', { state: { filter: 'urgent' } })}>İncele</Button>
           </div>
@@ -445,7 +464,7 @@ const AdminPanel = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
                     <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} domain={[0, 'auto']} />
                     <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={60} />
-                    <Tooltip formatter={(value) => [value, 'Adet']} labelFormatter={() => ''} contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} cursor={{ fill: '#ffffff10' }} />
+                    <Tooltip content={<ChartTooltip formatter={(v) => [v, 'Adet']} />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
                     <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={32}>{ratingDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}<LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={12} /></Bar>
                   </RechartsBarChart>
                 </ResponsiveContainer>
@@ -462,7 +481,7 @@ const AdminPanel = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} strokeOpacity={0.3} />
                     <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                     <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={85} />
-                    <Tooltip formatter={(value) => [value, 'Adet']} labelFormatter={() => ''} contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '0.5rem', color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} cursor={{ fill: '#ffffff10' }} />
+                    <Tooltip content={<ChartTooltip formatter={(v) => [v, 'Adet']} />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
                     <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={40}>{feedbackTypeDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}<LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={12} /></Bar>
                   </RechartsBarChart>
                 </ResponsiveContainer>
@@ -496,7 +515,7 @@ const AdminPanel = () => {
                    const hasGeneralEval = (Number(f.general_eval_rating) > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
 
                    return (
-                    <div key={f.id} onClick={() => handleFeedbackClick(f)} className={cn("group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
+                    <div key={f.id} onClick={() => handleFeedbackClick(f)} className={cn("feedback-activity-card group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "feedback-row-escalated bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
                       <div className="flex flex-col md:flex-row gap-4 items-start">
                         <div className="flex-1 w-full min-w-0 pr-0 md:pr-4"> 
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
