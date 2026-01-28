@@ -39,78 +39,92 @@ const getWeightedScore = (rating, general) => {
   return 0;
 };
 
-// 🧠 GELİŞMİŞ AKILLI TEŞHİS MOTORU (Logic v2.0)
+// 🧠 GELİŞMİŞ AKILLI TEŞHİS MOTORU – İş Danışmanı Mantığı
 const getSmartInsight = (branch) => {
-  const score = Number(branch.vocalizeScore);
-  const ops = Number(branch.operationScore);
-  const google = branch.googleClicks;
-  const volume = branch.total; // Hacim verisi
-  const gap = Number(branch.brandPerception) - Number(branch.instantExperience);
+  const score = Number(branch.vocalizeScore) || 0;
+  const ops = Number(branch.operationScore) || 0;
+  const google = Number(branch.googleClicks) || 0;
+  const volume = Number(branch.total) || 0;
+  const brandPerception = Number(branch.brandPerception) || 0;
+  const instantExperience = Number(branch.instantExperience) || 0;
+  const complaints = Number(branch.complaints) || 0;
+  const gap = brandPerception - instantExperience;
 
-  // 1. YETERSİZ VERİ KORUMASI (Eşik: 5)
+  // Şikayet oranı: complaints / total
+  const complaintRatio = volume > 0 ? complaints / volume : 0;
+  const complaintPercent = (complaintRatio * 100).toFixed(1);
+
+  // Case 1: Low Data (volume < 5)
   if (volume < 5) {
     return {
       title: "⏳ Veri Toplanıyor...",
-      desc: "Şube analizi için veri akışı başladı. 5 işleme ulaşıldığında yapay zeka destekli performans analizi burada aktif olacak. Şu an QR kullanımını teşvik edebilirsiniz.",
+      desc: "Analiz motorunun devreye girmesi için minimum veri eşiği (5 işlem) henüz sağlanmadı. Şu anki verilerle stratejik karar almak yanıltıcı olabilir.",
+      suggestion: "Masalarda QR yönlendirmesini artırarak veri akışını hızlandırmayı hedefleyebilirsiniz.",
       color: "text-slate-400 border-slate-700 bg-slate-800/50",
       icon: Activity
     };
   }
 
-  // 2. YILDIZ PERFORMANS
-  if (score >= 85 && ops >= 90) {
-    return {
-      title: "🏆 Rol Model Şube",
-      desc: "Mükemmel! Bu şube yoğunluk altında bile kaliteyi koruyor. Ekibin bu performansını takdir etmek, motivasyonu daha da artırabilir.",
-      color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
-      icon: Trophy
-    };
-  }
-
-  // 3. OPERASYONEL DARBOĞAZ
-  if (volume >= 15 && ops < 60) {
-    return {
-      title: "🚨 Operasyonel Darboğaz",
-      desc: "Şube müşteri çekiyor ancak talepleri karşılamakta zorlanıyor (Çözüm Hızı Düşük). Personel yetersizliği veya eğitim eksiği olabilir. Müdahale önerilir.",
-      color: "text-red-400 border-red-500/30 bg-red-500/10",
-      icon: AlertTriangle
-    };
-  }
-
-  // 4. BEKLENTİ KIRIKLIĞI
-  if (gap > 15) {
-    return {
-      title: "⚠️ Beklenti Karşılanamıyor",
-      desc: "Müşteriler markanızı seviyor (Algı Yüksek) ancak bu şubedeki hizmetten tatmin olmuyorlar. Hizmet standartlarını gözden geçirin.",
-      color: "text-orange-400 border-orange-500/30 bg-orange-500/10",
-      icon: Zap
-    };
-  }
-
-  // 5. GİZLİ CEVHER
-  if (score > 85 && volume < 15) {
-    return {
-      title: "💎 Gizli Cevher",
-      desc: "Gelen az sayıda müşteri çok memnun ayrılıyor. Hizmet kalitesi harika, tek eksik 'Trafik'. Yerel tanıtımla ciro artırılabilir.",
-      color: "text-blue-400 border-blue-500/30 bg-blue-500/10",
-      icon: Sparkles
-    };
-  }
-
-  // 6. DİJİTAL MOTOR
-  if (google > 10) {
+  // Case 2: Digital Engine (google > 10 & score > 80)
+  if (google > 10 && score > 80) {
     return {
       title: "🚀 Dijital Büyüme Motoru",
-      desc: `Bu şube dijital görünürlüğünüze büyük katkı sağlıyor (${google} yönlendirme). Dijital stratejiniz burada kusursuz işliyor.`,
+      desc: "Harika performans! Müşterileriniz sadece mutlu ayrılmıyor, aynı zamanda bu mutluluğu dijitale taşıyor (" + google + " Google tıklaması).",
+      suggestion: "Bu şubedeki 'mutlu müşteriyi yönlendirme' stratejisini diğer şubelere de uygulamayı değerlendirebilirsiniz.",
       color: "text-purple-400 border-purple-500/30 bg-purple-500/10",
       icon: MapPin
     };
   }
 
-  // VARSAYILAN
+  // Case 3: Silent Satisfaction (score > 85 & volume < 15)
+  if (score > 85 && volume < 15) {
+    return {
+      title: "💎 Sessiz Memnuniyet (Gizli Potansiyel)",
+      desc: "Analiz: Müşterileriniz hizmetten çok memnun (Puan: " + score + ") ancak sisteme katılım düşük. Yani içerideki kalite, dijital vitrine yeterince yansımıyor.",
+      suggestion: "Garsonlarınızı, memnun kalan müşterilere QR hatırlatması yapmaları konusunda teşvik edebilirsiniz.",
+      color: "text-blue-400 border-blue-500/30 bg-blue-500/10",
+      icon: Sparkles
+    };
+  }
+
+  // Case 4: Critical Operational Alarm (complaintRatio > 10% & ops < 60)
+  if (complaintRatio > 0.1 && ops < 60) {
+    return {
+      title: "🚨 Kritik Operasyonel Alarm",
+      desc: "Dikkat: Müşterilerin %" + complaintPercent + "'u şikayet iletti ve bunların sadece %" + ops.toFixed(0) + "'si çözüme kavuşturuldu. Bu durum müşteri kaybı riski yaratabilir.",
+      suggestion: "Operasyonel sorunları yerinde incelemeniz ve şikayet takibini panele yansıtmanız faydalı olacaktır.",
+      color: "text-red-400 border-red-500/30 bg-red-500/10",
+      icon: AlertTriangle
+    };
+  }
+
+  // Case 5: Brand Risk (gap > 15)
+  if (gap > 15) {
+    return {
+      title: "⚠️ Beklenti - Deneyim Uyuşmazlığı",
+      desc: "Kritik Tespit: Müşteriler markanızı seviyor (Genel Algı Yüksek) ancak bu şubedeki son deneyimleri beklentinin altında kalmış. Marka kredinizi tüketiyor olabilirsiniz.",
+      suggestion: "Ürün standartlarını ve personel ilgisini denetlemeniz önerilir.",
+      color: "text-orange-400 border-orange-500/30 bg-orange-500/10",
+      icon: Zap
+    };
+  }
+
+  // Case 6: Role Model (score > 85 & ops > 90)
+  if (score > 85 && ops > 90) {
+    return {
+      title: "🏆 Rol Model Performans",
+      desc: "Kusursuz! Hem müşteri memnuniyeti zirvede hem de panel kullanımı çok disiplinli. Bu şube, hem operasyonel hem de dijital açıdan örnek teşkil ediyor.",
+      suggestion: "Şube yöneticisini ve ekibini tebrik edebilir, bu başarıyı motivasyonu artırmak için ekiple paylaşabilirsiniz.",
+      color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+      icon: Trophy
+    };
+  }
+
+  // Default Case: Stabil Performans
   return {
     title: "📊 Stabil Performans",
-    desc: "Veriler dengeli seyrediyor. Performansı artırmak için önce 'Çözüm Oranı'na, ardından QR kullanımını teşvik etmeye odaklanabilirsiniz.",
+    desc: "Veriler dengeli seyrediyor.",
+    suggestion: "Performansı bir üst seviyeye taşımak için önce 'Çözüm Oranı'na (Operasyonel Disiplin), ardından QR kullanımını teşvik etmeye (Veri Hacmi) odaklanabilirsiniz.",
     color: "text-slate-300 border-slate-700 bg-slate-800/50",
     icon: Target
   };
@@ -242,7 +256,13 @@ const BranchDetailModal = ({ isOpen, onClose, branch }) => {
                 </div>
                 <div>
                    <h3 className="font-bold text-lg mb-1.5">Vocalize Analizi: {insight.title}</h3>
-                   <p className="text-sm opacity-90 leading-relaxed font-medium">{insight.desc}</p>
+                   <p className="text-sm opacity-90 leading-relaxed font-medium mb-2">{insight.desc}</p>
+                   {insight.suggestion && (
+                     <p className="text-sm leading-relaxed font-semibold text-emerald-300">
+                       <span className="font-bold">Öneri: </span>
+                       {insight.suggestion}
+                     </p>
+                   )}
                 </div>
              </div>
              <div className="absolute -right-6 -top-6 w-32 h-32 bg-current opacity-10 blur-3xl rounded-full"></div>
@@ -588,6 +608,72 @@ const DetailedAnalytics = () => {
     }).sort((a, b) => b.vocalizeScore - a.vocalizeScore);
   }, [feedbacks, selectedBranchId]);
 
+  // Tek şube / tek satır durumunda akıllı analiz için özet nesne
+  const singleBranchSummary = useMemo(() => {
+    if (!feedbacks.length) return null;
+
+    // Tüm şubeler görünümünde sadece 1 satır varsa, doğrudan o satırı kullan
+    if (selectedBranchId === 'all') {
+      if (!leaderboardData || leaderboardData.length !== 1) return null;
+      return leaderboardData[0];
+    }
+
+    const base = {
+      name: feedbacks[0].branches?.branch_name_tr || 'Seçili Şube',
+      total: 0,
+      complaints: 0,
+      resolved: 0,
+      googleClicks: 0,
+      scoreSum: 0,
+      scoreCount: 0,
+      ratingSum: 0,
+      ratingCount: 0,
+      generalSum: 0,
+      generalCount: 0
+    };
+
+    const agg = feedbacks.reduce((acc, f) => {
+      acc.total += 1;
+      if (f.redirected_to_google) acc.googleClicks += 1;
+      if (f.feedback_type === 'complaint') acc.complaints += 1;
+      if (f.status === 'resolved' && f.feedback_type === 'complaint') acc.resolved += 1;
+
+      const s = getWeightedScore(f.rating, f.general_eval_rating);
+      if (s > 0 || f.rating || f.general_eval_rating) {
+        acc.scoreSum += s;
+        acc.scoreCount += 1;
+
+        if (f.rating) {
+          acc.ratingSum += (f.rating - 1) * 25;
+          acc.ratingCount += 1;
+        }
+        if (f.general_eval_rating) {
+          acc.generalSum += (f.general_eval_rating - 1) * 25;
+          acc.generalCount += 1;
+        }
+      }
+      return acc;
+    }, base);
+
+    const qualityScore = agg.scoreCount ? (agg.scoreSum / agg.scoreCount) : 0;
+    const operationScore = agg.complaints > 0 ? (agg.resolved / agg.complaints) * 100 : 100;
+    const trafficScore = 100; // tek şube görünümünde referans olarak %100
+    const vocalizeScore = (qualityScore * 0.4) + (operationScore * 0.3) + (trafficScore * 0.3);
+
+    const instantExperience = agg.ratingCount > 0 ? (agg.ratingSum / agg.ratingCount).toFixed(0) : qualityScore.toFixed(0);
+    const brandPerception = agg.generalCount > 0 ? (agg.generalSum / agg.generalCount).toFixed(0) : qualityScore.toFixed(0);
+
+    return {
+      ...agg,
+      qualityScore: qualityScore.toFixed(0),
+      operationScore: operationScore.toFixed(0),
+      trafficScore: trafficScore.toFixed(0),
+      vocalizeScore: vocalizeScore.toFixed(0),
+      instantExperience,
+      brandPerception
+    };
+  }, [feedbacks, selectedBranchId, leaderboardData]);
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 pb-32 pt-24 lg:pt-0 font-sans selection:bg-sky-500/30">
       <div className="mx-auto max-w-7xl px-4 pt-8 lg:px-8">
@@ -724,14 +810,37 @@ const DetailedAnalytics = () => {
                       </div>
                     </div>
 
-                    <div className="flex flex-col md:flex-row gap-6">
+                    <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
                       {/* Pasta Grafik */}
-                      <div className="relative w-40 h-40 shrink-0 mx-auto md:mx-0">
+                      <div className="relative w-52 h-52 shrink-0 flex items-center justify-center mx-auto md:mx-0">
                           <ResponsiveContainer width="100%" height="100%">
                             <PieChart className="detail-analytics-pie">
-                                <Pie data={sourceData} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={5} dataKey="value" stroke="rgba(255,255,255,0.15)" strokeWidth={1.5}>
-                                  {sourceData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} stroke="rgba(0,0,0,0.06)" strokeWidth={1} />))}
+                                <Pie
+                                  data={sourceData}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={60}
+                                  outerRadius={80}
+                                  paddingAngle={5}
+                                  dataKey="value"
+                                  stroke="rgba(255,255,255,0.15)"
+                                  strokeWidth={1.5}
+                                >
+                                  {sourceData.map((entry, index) => (
+                                    <Cell
+                                      key={`cell-${index}`}
+                                      fill={entry.color}
+                                      stroke="rgba(0,0,0,0.06)"
+                                      strokeWidth={1}
+                                    />
+                                  ))}
                                 </Pie>
+                                <Tooltip
+                                  formatter={(value, name) => [
+                                    value,
+                                    name === 'QR Kod' ? 'QR Kod' : 'Web/Link'
+                                  ]}
+                                />
                             </PieChart>
                           </ResponsiveContainer>
                           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -792,7 +901,7 @@ const DetailedAnalytics = () => {
             </div>
 
             {/* 🏆 ŞUBE LİDERLİK TABLOSU (GÜNCELLENMİŞ LEJANT İLE) */}
-            {selectedBranchId === 'all' && leaderboardData && (
+            {selectedBranchId === 'all' && leaderboardData && leaderboardData.length > 1 && (
               <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 relative overflow-visible z-0 mb-8 shadow-lg">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
                    <div className="flex items-center gap-2">
@@ -894,6 +1003,40 @@ const DetailedAnalytics = () => {
                 </div>
               </div>
             )}
+
+            {( (selectedBranchId !== 'all') || (leaderboardData && leaderboardData.length <= 1) ) && singleBranchSummary && (() => {
+              const insight = getSmartInsight(singleBranchSummary);
+              const InsightIcon = insight.icon;
+              return (
+                <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 mb-8 shadow-lg">
+                  <div className={`p-5 rounded-xl border ${insight.color} relative overflow-hidden`}>
+                    <div className="flex items-start gap-4 relative z-10">
+                      <div className="p-2.5 rounded-lg bg-white/10 shrink-0 border border-white/10">
+                        <InsightIcon className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg mb-1.5">
+                          Seçili Şube Analizi: {singleBranchSummary.name}
+                        </h3>
+                        <p className="text-sm text-slate-200 font-semibold mb-1.5">
+                          Vocalize Değerlendirmesi: {insight.title}
+                        </p>
+                        <p className="text-sm opacity-90 leading-relaxed text-slate-200 mb-2">
+                          {insight.desc}
+                        </p>
+                        {insight.suggestion && (
+                          <p className="text-sm leading-relaxed font-semibold text-emerald-300">
+                            <span className="font-bold">Öneri: </span>
+                            {insight.suggestion}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-current opacity-10 blur-3xl rounded-full" />
+                  </div>
+                </div>
+              );
+            })()}
 
           </div>
         )}

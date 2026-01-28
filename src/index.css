@@ -816,6 +816,12 @@ body.light-theme .detail-analytics-pie .recharts-pie-sector {
     stroke-width: 1.5px !important;
 }
 
+/* Aydınlık tema – tablo satır hover görünürlüğü */
+body.light-theme tr:hover td {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
 /* Şube performans ligi – aydınlık temada satır/hover koyu karışmasın (sadece lig tablosu) */
 body.light-theme .branch-league-table thead.bg-\[\#0f172a\],
 body.light-theme .branch-league-table thead[class*="0f172a"] {

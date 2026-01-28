@@ -63,43 +63,33 @@ const FeedbackManagement = () => {
   const pendingTimeoutRef = useRef(null);
   const feedbackListRef = useRef(null);
 
-  // 🟢 GÜNCELLEME BURADA: REALTIME ABONELİĞİ EKLENDİ
+  // Realtime Aboneliği
   useEffect(() => {
     if (!businessId) return;
-
-    // 1. İlk Yükleme
     fetchFeedbacks();
-
-    // 2. Canlı Dinleme (Insert, Update, Delete)
     const channel = supabase.channel('feedback_list_realtime')
       .on(
         'postgres_changes',
-        { 
-          event: '*', // Her türlü değişikliği dinle (Ekleme, Düzenleme, Silme)
-          schema: 'public', 
-          table: 'feedbacks', 
-          filter: `business_id=eq.${businessId}` 
-        },
+        { event: '*', schema: 'public', table: 'feedbacks', filter: `business_id=eq.${businessId}` },
         (payload) => {
-          // 🟢 DÜZELTME: Veritabanı tetikleyicilerinin tamamlanması için 500ms bekle
-          setTimeout(() => {
-            fetchFeedbacks();
-          }, 500);
+          setTimeout(() => { fetchFeedbacks(); }, 500);
         }
       )
       .subscribe();
-
-    // 3. Temizlik
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [businessId, selectedBranchId]); // selectedBranchId değişirse de yeniden kurar
+    return () => { supabase.removeChannel(channel); };
+  }, [businessId, selectedBranchId]); 
 
   // URL state: urgent filtresi veya openFeedbackId
   useEffect(() => {
     if (location.state?.filter === 'urgent') {
       setShowUrgentOnly(true);
       if (typeof window !== 'undefined' && window.innerWidth < 768) setMobileScrollToList(true);
+      
+      // Sayfa yüklendiğinde de çalışsın
+      setTimeout(() => {
+         feedbackListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 500);
+
       navigate(location.pathname, { replace: true, state: {} });
       return;
     }
@@ -119,7 +109,7 @@ const FeedbackManagement = () => {
     }
   }, [location.state, navigate, location.pathname, pendingFeedbackId]);
 
-  // Mobilde acil filtresiyle gelindiğinde listeyi görünür yap (filtrelerin altına kaydır)
+  // Mobilde acil filtresiyle gelindiğinde listeyi görünür yap
   useEffect(() => {
     if (mobileScrollToList && !loading && feedbacks.length >= 0 && feedbackListRef.current) {
       const t = setTimeout(() => {
@@ -288,13 +278,23 @@ const FeedbackManagement = () => {
   };
 
   const getStatusLabel = (s) => ({ new: 'Yeni', pending: 'Beklemede', in_progress: 'İşlemde', resolved: 'Çözüldü', escalated: 'Acil' }[s] || s);
-
-  // TEKİL SEÇİM
-  const toggleSelect = (id) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  
+  const getTypeBadge = (type) => {
+    const styles = { complaint: "text-red-400 bg-red-900/20 border-red-900/30", suggestion: "text-blue-400 bg-blue-900/20 border-blue-900/30", evaluation: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", review: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", rating: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30" };
+    const labels = { complaint: "Şikayet", suggestion: "Öneri", evaluation: "Değerlendirme", review: "Değerlendirme", rating: "Değerlendirme" };
+    return <Badge variant="secondary" className={`text-xs px-2.5 py-1 ${styles[type] || "text-slate-400"}`}>{labels[type] || type}</Badge>;
   };
 
-  // TÜMÜNÜ SEÇ (SAYFA BAZLI)
+  const getStatusBadge = (status) => {
+    const styles = { new: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20", pending: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", in_progress: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20", resolved: "bg-green-500/10 text-green-500 border-green-500/20", escalated: "bg-red-500/10 text-red-500 border-red-500/20" };
+    const labels = { new: "Yeni", pending: "Beklemede", in_progress: "İşlemde", resolved: "Çözüldü", escalated: "Acil" };
+    return <Badge variant="outline" className={`text-[10px] h-5 px-1.5 whitespace-nowrap transition-colors ${styles[status] || "bg-slate-500/10 text-slate-500"}`}>{labels[status] || status}</Badge>;
+  };
+
+  const hasImages = (f) => ((f.feedback_images && f.feedback_images.length > 0) || (f.receipt_images && f.receipt_images.length > 0));
+
+  const toggleSelect = (id) => { setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]); };
+  
   const handleSelectAll = () => {
     const allSelected = paginatedFeedbacks.length > 0 && paginatedFeedbacks.every(f => selectedIds.includes(f.id));
     if (allSelected) {
@@ -305,7 +305,6 @@ const FeedbackManagement = () => {
     }
   };
 
-  // TOPLU GÜNCELLEME
   const handleBulkUpdate = async (targetStatus) => {
     if (selectedIds.length === 0) return;
     setLoading(true);
@@ -323,7 +322,6 @@ const FeedbackManagement = () => {
         description: `${selectedIds.length} bildirim "${getStatusLabel(targetStatus)}" olarak güncellendi.`, 
         className: "bg-green-600 text-white border-none" 
       });
-      // Realtime zaten güncelleyecek ama hızlı tepki için state'i de güncelliyoruz
       setFeedbacks(prev => prev.map(f => selectedIds.includes(f.id) ? { ...f, ...updates } : f));
       setSelectedIds([]);
     } else { 
@@ -400,42 +398,17 @@ const FeedbackManagement = () => {
 
   const hasUrgentFeedbacks = useMemo(() => feedbacks.some(f => f.status === 'escalated'), [feedbacks]);
 
-  const handleFeedbackClick = (feedback) => {
-    setSelectedFeedback(feedback);
-    setIsDetailModalOpen(true);
+  // 🟢 ACİL SCROLL İŞLEMİ (Buton Tıklaması)
+  const handleUrgentClick = () => {
+    setShowUrgentOnly(true);
+    setIsRefreshing(true); // Dikkat çekmek için flulaştır
+    
+    setTimeout(() => {
+        setIsRefreshing(false);
+        // Listeye yumuşakça kaydır
+        feedbackListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 600);
   };
-
-  const handleOpenCustomerProfile = (e, feedback) => {
-    e.stopPropagation();
-    setSelectedCustomer({ 
-        id: feedback.customer_profile_id, 
-        email: getCustomerData(feedback, 'email') 
-    });
-    setCustomerModalOpen(true);
-  };
-
-  const handleFeedbackUpdate = (feedbackId, updates) => {
-    setFeedbacks(prev => prev.map(f => {
-      if (f.id === feedbackId) {
-        return { ...f, ...updates };
-      }
-      return f;
-    }));
-  };
-
-  const getTypeBadge = (type) => {
-    const styles = { complaint: "text-red-400 bg-red-900/20 border-red-900/30", suggestion: "text-blue-400 bg-blue-900/20 border-blue-900/30", evaluation: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", review: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", rating: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30" };
-    const labels = { complaint: "Şikayet", suggestion: "Öneri", evaluation: "Değerlendirme", review: "Değerlendirme", rating: "Değerlendirme" };
-    return <Badge variant="secondary" className={`text-xs px-2.5 py-1 ${styles[type] || "text-slate-400"}`}>{labels[type] || type}</Badge>;
-  };
-
-  const getStatusBadge = (status) => {
-    const styles = { new: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20", pending: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", in_progress: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20", resolved: "bg-green-500/10 text-green-500 border-green-500/20", escalated: "bg-red-500/10 text-red-500 border-red-500/20" };
-    const labels = { new: "Yeni", pending: "Beklemede", in_progress: "İşlemde", resolved: "Çözüldü", escalated: "Acil" };
-    return <Badge variant="outline" className={`text-[10px] h-5 px-1.5 whitespace-nowrap transition-colors ${styles[status] || "bg-slate-500/10 text-slate-500"}`}>{labels[status] || status}</Badge>;
-  };
-
-  const hasImages = (f) => ((f.feedback_images && f.feedback_images.length > 0) || (f.receipt_images && f.receipt_images.length > 0));
 
   return (
     <>
@@ -443,7 +416,7 @@ const FeedbackManagement = () => {
         {hasUrgentFeedbacks && (
           <div className="acil-durum-box bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between shadow-[0_0_15px_rgba(220,38,38,0.3)] shrink-0">
             <div className="flex items-center gap-3 animate-pulse"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
-            <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shrink-0" onClick={() => setShowUrgentOnly(true)}>İncele</Button>
+            <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shrink-0" onClick={handleUrgentClick}>İncele</Button>
           </div>
         )}
 
@@ -453,16 +426,25 @@ const FeedbackManagement = () => {
         </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-5 shrink-0 shadow-sm relative z-10">
-         <div className="flex flex-col xl:flex-row gap-5">
-            <div className="relative flex-1 min-w-[240px]"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" /><Input placeholder="Mesaj, isim, email veya telefon..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 bg-[#111827] border-slate-700 focus:border-indigo-500/50 focus:ring-indigo-500/20 h-10 transition-all rounded-lg text-slate-200 placeholder:text-slate-500" /></div>
-            <div className="flex flex-wrap gap-3 items-center">
-               <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-[140px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">Durum:</span>{statusFilter === 'all' ? 'Tümü' : statusFilter === 'new' ? 'Yeni' : statusFilter === 'pending' ? 'Beklemede' : statusFilter === 'in_progress' ? 'İşlemde' : 'Çözüldü'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Durumlar</SelectItem><SelectItem value="new">Yeni</SelectItem><SelectItem value="pending">Beklemede</SelectItem><SelectItem value="in_progress">İşlemde</SelectItem><SelectItem value="resolved">Çözüldü</SelectItem></SelectContent></Select>
-               <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-[140px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">Tip:</span>{typeFilter === 'all' ? 'Tümü' : typeFilter === 'complaint' ? 'Şikayet' : typeFilter === 'suggestion' ? 'Öneri' : 'Değerlendirme'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Tipler</SelectItem><SelectItem value="complaint">Şikayet</SelectItem><SelectItem value="suggestion">Öneri</SelectItem><SelectItem value="evaluation">Değerlendirme</SelectItem></SelectContent></Select>
-               <Select value={flagFilter} onValueChange={setFlagFilter}><SelectTrigger className="w-[130px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">Bayrak:</span>{flagFilter === 'all' ? 'Tümü' : flagFilter === 'vip' ? 'VIP' : 'Hassas'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm (Bayrak)</SelectItem><SelectItem value="vip">VIP Müşteri</SelectItem><SelectItem value="sensitive">Hassas Müşteri</SelectItem></SelectContent></Select>
-               <Select value={dateFilter} onValueChange={setDateFilter}><SelectTrigger className="w-[150px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><Calendar className="w-3.5 h-3.5 mr-2 text-indigo-400" /><span className="truncate">Tarih</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Zamanlar</SelectItem><SelectItem value="today">Bugün</SelectItem><SelectItem value="last7">Son 7 Gün</SelectItem><SelectItem value="last30">Son 30 Gün</SelectItem><SelectItem value="last90">Son 90 Gün</SelectItem><SelectItem value="thisMonth">Bu Ay</SelectItem><SelectItem value="lastMonth">Geçen Ay</SelectItem></SelectContent></Select>
-               <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('all'); setTypeFilter('all'); setFlagFilter('all'); setDateFilter('last30'); setSearchQuery(''); setShowNotesOnly(false); setShowUrgentOnly(false); }} className="h-10 px-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"><Filter className="w-3.5 h-3.5 mr-1.5" />Temizle</Button>
+         {/* 🟢 MOBİL GÖRÜNÜM: Grid (2 sütun), Masaüstü: Flex */}
+         <div className="grid grid-cols-2 gap-2 md:flex md:flex-row md:flex-wrap md:gap-3 xl:flex-nowrap">
+            
+            {/* Arama Inputu: Mobilde col-span-2 (Tam genişlik) */}
+            <div className="relative col-span-2 md:flex-1 md:min-w-[240px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Input placeholder="Mesaj, isim, email veya telefon..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 bg-[#111827] border-slate-700 focus:border-indigo-500/50 focus:ring-indigo-500/20 h-10 transition-all rounded-lg text-slate-200 placeholder:text-slate-500 w-full" />
             </div>
+            
+            {/* Selects: Mobilde yan yana 2'li (varsayılan col-span-1), Masaüstünde esnek */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-full md:w-[140px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">Durum:</span>{statusFilter === 'all' ? 'Tümü' : statusFilter === 'new' ? 'Yeni' : statusFilter === 'pending' ? 'Beklemede' : statusFilter === 'in_progress' ? 'İşlemde' : 'Çözüldü'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Durumlar</SelectItem><SelectItem value="new">Yeni</SelectItem><SelectItem value="pending">Beklemede</SelectItem><SelectItem value="in_progress">İşlemde</SelectItem><SelectItem value="resolved">Çözüldü</SelectItem></SelectContent></Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-full md:w-[140px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">Tip:</span>{typeFilter === 'all' ? 'Tümü' : typeFilter === 'complaint' ? 'Şikayet' : typeFilter === 'suggestion' ? 'Öneri' : 'Değerlendirme'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Tipler</SelectItem><SelectItem value="complaint">Şikayet</SelectItem><SelectItem value="suggestion">Öneri</SelectItem><SelectItem value="evaluation">Değerlendirme</SelectItem></SelectContent></Select>
+            <Select value={flagFilter} onValueChange={setFlagFilter}><SelectTrigger className="w-full md:w-[130px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">Bayrak:</span>{flagFilter === 'all' ? 'Tümü' : flagFilter === 'vip' ? 'VIP' : 'Hassas'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm (Bayrak)</SelectItem><SelectItem value="vip">VIP Müşteri</SelectItem><SelectItem value="sensitive">Hassas Müşteri</SelectItem></SelectContent></Select>
+            <Select value={dateFilter} onValueChange={setDateFilter}><SelectTrigger className="w-full md:w-[150px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><Calendar className="w-3.5 h-3.5 mr-2 text-indigo-400 shrink-0" /><span className="truncate">Tarih</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Zamanlar</SelectItem><SelectItem value="today">Bugün</SelectItem><SelectItem value="last7">Son 7 Gün</SelectItem><SelectItem value="last30">Son 30 Gün</SelectItem><SelectItem value="last90">Son 90 Gün</SelectItem><SelectItem value="thisMonth">Bu Ay</SelectItem><SelectItem value="lastMonth">Geçen Ay</SelectItem></SelectContent></Select>
+            
+            {/* Temizle Butonu: Mobilde tam satır (col-span-2) */}
+            <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('all'); setTypeFilter('all'); setFlagFilter('all'); setDateFilter('last30'); setSearchQuery(''); setShowNotesOnly(false); setShowUrgentOnly(false); }} className="col-span-2 md:col-span-1 h-10 px-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg justify-center"><Filter className="w-3.5 h-3.5 mr-1.5" />Temizle</Button>
          </div>
+
          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1 border-t border-slate-800/50">
             <div className="flex items-center space-x-2 border-r border-slate-700/50 pr-6 mr-2">
                 <Checkbox 
@@ -671,7 +653,7 @@ const FeedbackManagement = () => {
         )}
       </div>
 
-      {selectedFeedback && <FeedbackDetailModal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} feedback={selectedFeedback} onFeedbackUpdate={handleFeedbackUpdate} onFlagsUpdate={handleFlagsUpdate} />}
+      {selectedFeedback && <FeedbackDetailModal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} feedback={selectedFeedback} onFeedbackUpdate={(id, u) => setFeedbacks(p => p.map(f => f.id === id ? { ...f, ...u } : f))} onFlagsUpdate={handleFlagsUpdate} />}
       
       {customerModalOpen && <CustomerProfileModal isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} customerProfileId={selectedCustomer?.id} customerEmail={selectedCustomer?.email} businessId={businessId} onFlagsUpdate={handleFlagsUpdate} />}
       </div>
