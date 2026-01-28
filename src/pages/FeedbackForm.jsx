@@ -23,25 +23,30 @@ const getReactionMessage = (rating, t) => {
     if (rating === 1) return t.reactions.oneStar;
     if (rating === 2) return t.reactions.twoStar;
     if (rating === 3) return t.reactions.threeStar;
-    if (rating >= 4) return t.reactions.highStar;
+    if (rating === 4) return t.reactions.fourStar;
+    if (rating === 5) return t.reactions.fiveStar;
     return "";
+};
+
+const getDynamicPlaceholder = (rating, t) => {
+    if (rating === 0) return t.general.placeholder;
+    if (rating <= 2) return t.general.placeholderLow;
+    if (rating === 3) return t.general.placeholderMid;
+    return t.general.placeholderHigh;
 };
 
 const getFormInfo = (feedbackType, titles) => {
   if (feedbackType === 'complaint') return { 
     title: titles.complaint, subtitle: titles.complaintSub,
-    icon: <AlertTriangle className="h-8 w-8 text-red-500" />, gradient: "from-red-400 to-red-600",
-    step1Title: "Olay Detayları", step2Title: "Ne Yaşadınız?", step3Title: "Kanıt ve Sonuç"
+    icon: <AlertTriangle className="h-8 w-8 text-red-500" />, gradient: "from-red-400 to-red-600"
   };
   if (feedbackType === 'suggestion') return { 
     title: titles.suggestion, subtitle: titles.suggestionSub,
-    icon: <Lightbulb className="h-8 w-8 text-blue-500" />, gradient: "from-blue-400 to-blue-600",
-    step1Title: "Fikriniz Nedir?", step2Title: "Detaylar", step3Title: "Tamamla"
+    icon: <Lightbulb className="h-8 w-8 text-blue-500" />, gradient: "from-blue-400 to-blue-600"
   };
   if (feedbackType === 'review') return { 
     title: titles.review, subtitle: titles.reviewSub,
-    icon: <Star className="h-8 w-8 text-yellow-500" />, gradient: "from-yellow-400 to-orange-500",
-    step1Title: "Puanlama", step2Title: "Yorumunuz", step3Title: "Tamamla"
+    icon: <Star className="h-8 w-8 text-yellow-500" />, gradient: "from-yellow-400 to-orange-500"
   };
   return { title: titles.default, subtitle: titles.defaultSub, icon: null, gradient: "from-slate-400 to-slate-600" };
 };
@@ -67,6 +72,23 @@ const TEXTS = {
       review: "Değerlendir", reviewSub: "Deneyiminizi puanlayın.",
       default: "Geri Bildirim", defaultSub: "Görüşlerinizi paylaşın"
     },
+    
+    // 🟢 ADIM BAŞLIKLARI VE AÇIKLAMALARI (YENİ EKLENDİ)
+    stepsUI: {
+        evidenceTitle: "Kanıt & Zaman",
+        evidenceDesc: "İşleminizi hızlandırmak için detay verin.",
+        problemTitle: "Sorun Nedir?",
+        suggestionTitle: "Öneriniz Nedir?",
+        problemDesc: "Lütfen detaylıca açıklayınız.",
+        rateTitle: "Puanlayın",
+        rateDesc: "Hizmetimizden ne kadar memnun kaldınız?",
+        finalTitle: "Son Dokunuşlar",
+        finalDesc: "Eklemek istedikleriniz var mı?",
+        branchLabel: "Şube",
+        addPhoto: "Ekle",
+        extraImages: "Ek Görseller"
+    },
+
     infoBanner: "Geri bildiriminiz anında yöneticiye iletilir.",
     businessLabel: "İşletme", 
     branch: { label: "Şube Seçin", placeholder: "Şube Seçiniz", auto: "QR ile otomatik seçildi" },
@@ -81,18 +103,27 @@ const TEXTS = {
         oneStar: "Çok üzgünüz 😔 Bunu telafi etmek için derhal incelemeye alacağız.",
         twoStar: "Beklentinizin altında kaldığımız için üzgünüz. Kendimizi geliştireceğiz.",
         threeStar: "Daha iyisini yapabiliriz. Geri bildiriminizle büyüyoruz.",
-        highStar: "Harika! Bunu duyduğumuza sevindik 🎉"
+        fourStar: "Teşekkürler! Mükemmele ulaşmak için çalışmaya devam edeceğiz. 💪",
+        fiveStar: "Muhteşemsiniz! Günümüzü güzelleştirdiniz, desteğiniz için teşekkürler! 🌟"
     },
     general: { 
         title: "İşletme Hakkındaki Genel Deneyiminiz", 
-        satisfaction: "Memnuniyet", 
-        placeholder: "Mekan, hizmet veya atmosfer hakkında eklemek istedikleriniz..." 
+        placeholder: "Mekan, hizmet veya atmosfer hakkında eklemek istedikleriniz...",
+        placeholderLow: "Lütfen nerede hata yaptığımızı bize anlatın, düzeltmek istiyoruz...",
+        placeholderMid: "Sizce neyi daha iyi yapabilirdik?",
+        placeholderHigh: "En çok neyi beğendiğinizi anlatın (Hizmet, Lezzet, Ortam?)..."
     },
     images: { label: "Ek Görseller (Opsiyonel)", placeholder: "Fotoğraf Ekle", sub: "Max 3 adet", uploaded: "görsel seçildi" },
     submit: { sending: "Gönderiliyor...", send: "Gönder", error: "Hata oluştu.", errorValidation: "Lütfen gerekli alanları doldurun." },
-    success: { title: "Teşekkürler!", desc: (name) => `Bildiriminiz ${name} yönetimine iletildi.`, footer: "Bizi tercih ettiğiniz için teşekkürler.", button: "Kapat" },
-    
-    // 🟢 GÜNCELLENMİŞ PSİKOLOJİK GOOGLE METİNLERİ
+    success: { 
+        title: "Teşekkürler!", 
+        defaultTitle: "Harika!",
+        desc: (name) => `Bildiriminiz ${name} yönetimine iletildi.`, 
+        defaultDesc: "Geri bildiriminiz başarıyla iletildi.",
+        footer: "Bizi tercih ettiğiniz için teşekkürler.", 
+        button: "Kapat",
+        homeButton: "Ana Sayfaya Dön"
+    },
     google: {
         title: "Harikasınız! 🤩", 
         copyAlert: "Yorumunuzu sizin için kopyaladık! 📋",
@@ -105,7 +136,6 @@ const TEXTS = {
     steps: "Adım"
   },
   en: {
-    // ... English texts ...
     errorLoad: "Error loading data.",
     limitExceeded: "Limit Exceeded",
     limitDesc: (remaining) => `Max 3 images allowed.`,
@@ -116,9 +146,26 @@ const TEXTS = {
     titles: {
       complaint: "Report Issue", complaintSub: "Let's fix it.",
       suggestion: "Make Suggestion", suggestionSub: "Your ideas matter.",
-      review: "Rate Us", reviewSub: "Rate your experience.",
+      review: "Rate Experience", reviewSub: "Rate your experience.",
       default: "Feedback", defaultSub: "Share your thoughts"
     },
+    
+    // 🟢 ENGLISH STEP UI TEXTS (TRANSLATED)
+    stepsUI: {
+        evidenceTitle: "Evidence & Time",
+        evidenceDesc: "Provide details to speed up the process.",
+        problemTitle: "What is the issue?",
+        suggestionTitle: "What is your suggestion?",
+        problemDesc: "Please explain in detail.",
+        rateTitle: "Rate Us",
+        rateDesc: "How satisfied were you with our service?",
+        finalTitle: "Final Touches",
+        finalDesc: "Anything else you'd like to add?",
+        branchLabel: "Branch",
+        addPhoto: "Add",
+        extraImages: "Additional Images"
+    },
+
     infoBanner: "Sent instantly to the manager.",
     businessLabel: "Business",
     branch: { label: "Select Branch", placeholder: "Select Branch", auto: "Auto-selected via QR" },
@@ -132,25 +179,36 @@ const TEXTS = {
     rating: { label: "Satisfaction", emojis: { 1: '😞 Very Bad', 2: '😟 Bad', 3: '😐 Average', 4: '😊 Good', 5: '😍 Excellent' } },
     reactions: {
         oneStar: "We are very sorry 😔 We will investigate immediately to make it right.",
-        twoStar: "Sorry we fell below expectations. We will improve.",
+        twoStar: "We apologize for falling below expectations. We will improve ourselves.",
         threeStar: "We can do better. We grow with your feedback.",
-        highStar: "Awesome! We are glad to hear that 🎉"
+        fourStar: "Thank you! We will continue working to reach perfection. 💪",
+        fiveStar: "You are awesome! You made our day, thank you for your support! 🌟"
     },
     general: { 
-        title: "Your General Experience", 
-        satisfaction: "Satisfaction", 
-        placeholder: "Anything else you'd like to add..." 
+        title: "Your General Experience with the Business", 
+        placeholder: "Anything you'd like to add about the venue, service, or atmosphere...",
+        placeholderLow: "Please tell us where we went wrong, we want to fix it...",
+        placeholderMid: "What could we have done better?",
+        placeholderHigh: "Tell us what you liked best (Service, Taste, Ambiance?)..."
     },
     images: { label: "Images (Optional)", placeholder: "Add Photo", sub: "Max 3 images", uploaded: "images selected" },
     submit: { sending: "Sending...", send: "Send", error: "Error occurred.", errorValidation: "Please fill required fields." },
-    success: { title: "Thank You!", desc: (name) => `Sent to ${name} manager.`, footer: "Thanks for choosing us.", button: "Close" },
+    success: { 
+        title: "Thank You!", 
+        defaultTitle: "Awesome!",
+        desc: (name) => `Sent to ${name} management.`, 
+        defaultDesc: "Your feedback has been sent successfully.",
+        footer: "Thanks for choosing us.", 
+        button: "Close",
+        homeButton: "Return to Home"
+    },
     google: {
         title: "You're Awesome! 🤩",
-        copyAlert: "We copied your feedback! 📋",
-        desc: "Would you like to inspire others by sharing this on Google? Just paste it.",
+        copyAlert: "We copied your feedback for you! 📋",
+        desc: "Would you like to empower us by sharing this great experience with others on Google? Just paste it.",
         yesButton: "Share on Google",
         noButton: "No, Thanks",
-        instaButton: "Follow on Instagram",
+        instaButton: "Follow us on Instagram",
         copiedToast: "Copied! Redirecting..."
     },
     steps: "Step"
@@ -350,11 +408,7 @@ export default function FeedbackForm() {
       const calculatedOverallRating = feedbackType === 'review' ? rating : (generalRating > 0 ? generalRating : 5);
       const actualRating = feedbackType === 'review' ? rating : generalRating;
       
-      // 🟢 GOOGLE VE INSTAGRAM YÖNLENDİRME MANTIĞI (Vizyon Revizesi)
-      // Şikayetlerde ASLA yönlendirme yok.
-      // Google: Sadece 4 ve 5 yıldız.
-      // Instagram: 3 ve üzeri yıldız.
-      
+      // 🟢 GOOGLE VE INSTAGRAM YÖNLENDİRME
       if (feedbackType !== 'complaint') {
           if (actualRating >= 4 && currentBranch?.google_review_url) {
               setGoogleRedirectUrl(currentBranch.google_review_url);
@@ -448,7 +502,7 @@ export default function FeedbackForm() {
   return (
     <div className="h-dvh w-full bg-[#0f172a] text-white flex flex-col overflow-hidden relative">
       
-      {/* 1. HEADER */}
+      {/* 1. HEADER (Fixed) */}
       <div className="flex-none pt-safe px-4 pb-2 bg-[#0f172a] z-10">
         <div className="flex justify-between items-center py-3">
           <button onClick={handleBack} className="p-2 -ml-2 text-slate-300 hover:text-white rounded-full hover:bg-slate-800 transition-colors">
@@ -460,25 +514,26 @@ export default function FeedbackForm() {
         {renderStepIndicator()}
       </div>
 
-      {/* 2. SCROLLABLE CONTENT */}
+      {/* 2. SCROLLABLE CONTENT AREA (Flex-1) */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <div className="max-w-md mx-auto h-full flex flex-col justify-center min-h-[400px]">
+        <div className="max-w-md mx-auto h-full flex flex-col pt-6 md:justify-center min-h-[400px]">
           
-          {/* STEP 1: COMPLAINT */}
+          {/* STEP 1: COMPLAINT (Evidence) */}
           {feedbackType === 'complaint' && currentStep === 1 && (
             <div className="step-content space-y-6">
               <div className="text-center space-y-2 mb-8">
                 <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
                     <CalendarIcon className="h-8 w-8 text-red-500" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Kanıt & Zaman</h2>
-                <p className="text-slate-400">İşleminizi hızlandırmak için detay verin.</p>
+                {/* 🟢 DİNAMİK METİNLER */}
+                <h2 className="text-2xl font-bold text-white">{t.stepsUI.evidenceTitle}</h2>
+                <p className="text-slate-400">{t.stepsUI.evidenceDesc}</p>
               </div>
 
               {/* Branch Selector */}
               {branches.length > 1 && (
                 <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                    <label className="text-xs text-slate-400 mb-1 block pl-1">Şube</label>
+                    <label className="text-xs text-slate-400 mb-1 block pl-1">{t.stepsUI.branchLabel}</label>
                     <div className="relative">
                         <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg py-3 px-3 appearance-none focus:ring-1 focus:ring-teal-500">
                             {branches.map(b => <option key={b.id} value={b.id}>{b.branch_name_tr}</option>)}
@@ -549,8 +604,10 @@ export default function FeedbackForm() {
           {((feedbackType === 'complaint' && currentStep === 2) || (feedbackType === 'suggestion' && currentStep === 1)) && (
             <div className="step-content space-y-6 h-full flex flex-col">
                <div className="text-center space-y-2 flex-shrink-0">
-                <h2 className="text-2xl font-bold text-white">{feedbackType === 'complaint' ? 'Sorun Nedir?' : 'Öneriniz Nedir?'}</h2>
-                <p className="text-slate-400">Lütfen detaylıca açıklayınız.</p>
+                <h2 className="text-2xl font-bold text-white">
+                    {feedbackType === 'complaint' ? t.stepsUI.problemTitle : t.stepsUI.suggestionTitle}
+                </h2>
+                <p className="text-slate-400">{t.stepsUI.problemDesc}</p>
               </div>
               <div className="flex-1 min-h-[200px]">
                 <div className="relative h-full bg-slate-800/30 border border-slate-700 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-transparent transition-all">
@@ -574,8 +631,8 @@ export default function FeedbackForm() {
           {feedbackType === 'review' && currentStep === 1 && (
             <div className="step-content flex flex-col items-center justify-center space-y-8 py-10">
                 <div className="text-center space-y-2">
-                    <h2 className="text-3xl font-bold text-white">Puanlayın</h2>
-                    <p className="text-slate-400">Hizmetimizden ne kadar memnun kaldınız?</p>
+                    <h2 className="text-3xl font-bold text-white">{t.stepsUI.rateTitle}</h2>
+                    <p className="text-slate-400">{t.stepsUI.rateDesc}</p>
                 </div>
                 
                 <div className="flex gap-3">
@@ -612,8 +669,8 @@ export default function FeedbackForm() {
           {((feedbackType === 'complaint' && currentStep === 3) || (feedbackType === 'suggestion' && currentStep === 2) || (feedbackType === 'review' && currentStep === 2)) && (
             <div className="step-content space-y-6">
                 <div className="text-center mb-4">
-                    <h2 className="text-2xl font-bold text-white">Son Dokunuşlar</h2>
-                    <p className="text-slate-400">Eklemek istedikleriniz var mı?</p>
+                    <h2 className="text-2xl font-bold text-white">{t.stepsUI.finalTitle}</h2>
+                    <p className="text-slate-400">{t.stepsUI.finalDesc}</p>
                 </div>
 
                 {/* Optional General Rating & Comment */}
@@ -669,7 +726,7 @@ export default function FeedbackForm() {
                             <textarea
                                 value={generalComment}
                                 onChange={(e) => setGeneralComment(e.target.value)}
-                                placeholder={t.general.placeholder}
+                                placeholder={getDynamicPlaceholder(generalRating, t)}
                                 className="w-full bg-slate-950/50 border border-slate-600/50 rounded-xl p-3 pl-10 text-sm text-white resize-none focus:ring-1 focus:ring-teal-500/50 focus:border-teal-500 transition-all placeholder:text-slate-600"
                                 rows={3}
                             />
@@ -686,7 +743,7 @@ export default function FeedbackForm() {
                         <textarea 
                             value={message} 
                             onChange={(e) => setMessage(e.target.value)} 
-                            placeholder="Deneyiminizi anlatın (Opsiyonel)..." 
+                            placeholder={t.message.placeholder} 
                             className="w-full h-full bg-transparent p-4 pl-12 text-white resize-none outline-none placeholder:text-slate-500"
                         />
                     </div>
@@ -695,7 +752,7 @@ export default function FeedbackForm() {
                 {/* Photo Upload */}
                 <div>
                     <div className="flex justify-between items-center mb-2">
-                        <label className="text-sm font-medium text-slate-300">Ek Görseller</label>
+                        <label className="text-sm font-medium text-slate-300">{t.stepsUI.extraImages}</label>
                         <span className="text-xs text-slate-500">{feedbackImages.length}/3</span>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
@@ -708,7 +765,7 @@ export default function FeedbackForm() {
                         {feedbackImages.length < 3 && (
                             <label className="aspect-square bg-slate-800/50 border border-dashed border-slate-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800 hover:border-teal-500/50 transition-all group">
                                 <ImagePlus className="w-6 h-6 text-slate-500 group-hover:text-teal-500 transition-colors" />
-                                <span className="text-[10px] text-slate-500 mt-1 group-hover:text-slate-300">Ekle</span>
+                                <span className="text-[10px] text-slate-500 mt-1 group-hover:text-slate-300">{t.stepsUI.addPhoto}</span>
                                 <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageUpload} />
                             </label>
                         )}
@@ -733,13 +790,13 @@ export default function FeedbackForm() {
         >
             {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : 
              ((currentStep === totalSteps) || (feedbackType !== 'complaint' && currentStep === 2)) ? 
-             <span className="flex items-center gap-2">Gönder <Send className="w-5 h-5" /></span> : 
-             <span className="flex items-center gap-2">Devam Et <ChevronRight className="w-5 h-5" /></span>
+             <span className="flex items-center gap-2">{t.submit.send} <Send className="w-5 h-5" /></span> : 
+             <span className="flex items-center gap-2">{t.next} <ChevronRight className="w-5 h-5" /></span>
             }
         </Button>
       </div>
 
-      {/* SUCCESS MODAL (YENİLENMİŞ) */}
+      {/* SUCCESS MODAL */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
             <div className="bg-[#1e293b] w-full max-w-sm rounded-3xl p-8 text-center border border-slate-700 shadow-2xl relative overflow-hidden">
@@ -750,11 +807,11 @@ export default function FeedbackForm() {
                 </div>
                 
                 <h2 className="text-3xl font-bold text-white mb-2">
-                    {googleRedirectUrl ? t.google.title : t.success.title}
+                    {googleRedirectUrl ? t.google.title : (googleRedirectUrl ? t.success.defaultTitle : t.success.title)}
                 </h2>
                 
                 <p className="text-slate-400 mb-8 text-lg">
-                    {googleRedirectUrl ? t.google.desc : t.success.desc(businessName || "yöneticiye")}
+                    {googleRedirectUrl ? t.google.desc : (googleRedirectUrl ? t.success.defaultDesc : t.success.desc(businessName || "management"))}
                 </p>
 
                 {/* 🟢 GOOGLE MODU (4-5 Yıldız) */}
@@ -789,7 +846,7 @@ export default function FeedbackForm() {
                             <Instagram className="w-5 h-5 mr-2" /> {t.google.instaButton}
                         </Button>
                         <Button onClick={() => navigate('/customer-panel')} variant="ghost" className="w-full text-slate-400 hover:text-white">
-                            Ana Sayfaya Dön
+                            {t.success.homeButton}
                         </Button>
                     </div>
                 )}
@@ -797,7 +854,7 @@ export default function FeedbackForm() {
                 {/* 🟢 STANDART MOD (Hiçbiri Yoksa / Şikayet / Düşük Puan) */}
                 {!googleRedirectUrl && !instagramRedirectUrl && (
                     <Button onClick={() => navigate('/customer-panel')} className="w-full bg-slate-700 hover:bg-slate-600 h-12 rounded-xl text-white font-bold">
-                        Ana Sayfaya Dön
+                        {t.success.homeButton}
                     </Button>
                 )}
             </div>

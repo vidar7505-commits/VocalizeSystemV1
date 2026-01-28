@@ -202,7 +202,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
                   {currentStatus === 'escalated' ? 'ACİL MÜDAHALE GEREKLİ' : `${getTypeLabel(feedback.feedback_type)} Detayı`}
                 </span>
               </DialogTitle>
-              <div className="flex items-center gap-2 mt-1 flex-shrink-0">
+              <div className="flex items-center gap-2 mt-1 flex-shrink-0 mr-10">
                  {isVip && <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-500/10 rounded text-[10px] text-purple-300 border border-purple-500/30 font-medium whitespace-nowrap"><Crown className="w-3 h-3" /><span>VIP</span></div>}
                  {isSensitive && <div className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 rounded text-[10px] text-orange-300 border border-orange-500/30 font-medium whitespace-nowrap"><AlertTriangle className="w-3 h-3" /><span>Hassas</span></div>}
                  <Badge className={`${getStatusColor(currentStatus)} px-3 py-1 text-sm whitespace-nowrap`}>{getStatusLabel(currentStatus)}</Badge>
@@ -328,7 +328,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
 
             <div ref={notesSectionRef} className="bg-amber-900/10 rounded-lg p-4 border border-amber-700/30 scroll-mt-20 overflow-hidden">
               <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider flex items-center gap-2"><StickyNote className="w-4 h-4" /> Bildirim Notu</h3></div>
-              <textarea className="w-full bg-slate-900/80 border border-slate-700 rounded-md p-3 text-sm text-slate-200 min-h-[100px]" placeholder="Bu bildirime özel notlar..." value={managerNote} onChange={(e) => setManagerNote(e.target.value)} />
+              <textarea className="w-full bg-slate-900/80 border border-slate-700 rounded-md p-3 text-sm text-slate-200 min-h-[100px] resize-none" placeholder="Bu bildirime özel notlar..." value={managerNote} onChange={(e) => setManagerNote(e.target.value)} />
               <div className="flex justify-between items-center mt-3"><span className="text-xs text-slate-500 italic">{lastUpdatedInfo}</span>
                 <div className="flex gap-2">
                   <Button variant="destructive" size="sm" onClick={handleRemoveNote} disabled={isSavingNote || !managerNote} className="h-8 text-xs bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-900/50"><Trash2 className="w-3 h-3 mr-1" /> Sil</Button>

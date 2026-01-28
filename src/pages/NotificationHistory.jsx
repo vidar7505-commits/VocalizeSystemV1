@@ -47,24 +47,32 @@ const NotificationHistory = () => {
         setLoading(true);
         setError(null);
         try {
+            const from = (page - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
             let query = supabase
                 .from('notifications')
-                .select('*', { count: 'exact' })
+                .select('*, feedbacks(feedback_type)', { count: 'exact' })
                 .eq('user_id', user.id);
 
             if (filter === 'read') query = query.eq('is_read', true);
             if (filter === 'unread') query = query.eq('is_read', false);
 
-            const from = (page - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
-
             query = query.order('created_at', { ascending: false }).range(from, to);
 
-            const { data, count, error: fetchError } = await query;
-            if (fetchError) throw fetchError;
+            let res = await query;
+            if (res.error) {
+                // Join hatası olabilir (örn. feedback_id/related_id FK farklıysa); join olmadan dene
+                let fallback = supabase.from('notifications').select('*', { count: 'exact' }).eq('user_id', user.id);
+                if (filter === 'read') fallback = fallback.eq('is_read', true);
+                if (filter === 'unread') fallback = fallback.eq('is_read', false);
+                fallback = fallback.order('created_at', { ascending: false }).range(from, to);
+                res = await fallback;
+            }
+            if (res.error) throw res.error;
 
-            setNotifications(data || []);
-            setTotalCount(count || 0);
+            setNotifications(res.data || []);
+            setTotalCount(res.count ?? 0);
 
         } catch (e) {
             console.error("Error fetching notification history:", e);
@@ -75,6 +83,14 @@ const NotificationHistory = () => {
             setSelected([]);
         }
     }, [user, toast, filter, page, itemsPerPage]);
+
+    const getNotificationLabel = (n) => {
+        const type = n.feedbacks?.feedback_type || n.feedback_type;
+        if (type === 'complaint') return 'Yeni bir şikayetiniz var';
+        if (type === 'suggestion') return 'Yeni bir öneriniz var';
+        if (type === 'evaluation' || type === 'review' || type === 'rating') return 'Yeni bir değerlendirmeniz var';
+        return n.message || 'Yeni bildirim';
+    };
 
     useEffect(() => {
         fetchNotifications();
@@ -100,7 +116,8 @@ const NotificationHistory = () => {
     };
     
     const handleNotificationClick = async (notification) => {
-        if (!notification.feedback_id) return;
+        const feedbackId = notification.related_id || notification.feedback_id;
+        if (!feedbackId) return;
         
         // Mark as read immediately if unread
         if (!notification.is_read) {
@@ -144,7 +161,7 @@ const NotificationHistory = () => {
                     last_name
                   )
                 `)
-                .eq('id', notification.feedback_id)
+                .eq('id', feedbackId)
                 .single();
             
             if (error) throw error;
@@ -180,9 +197,9 @@ const NotificationHistory = () => {
                     <p className="text-slate-400 text-sm">Tüm geri bildirim uyarılarınızı buradan yönetin.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant={filter === 'all' ? 'default' : 'outline'} onClick={() => setFilter('all')} size="sm" className="bg-slate-700 hover:bg-slate-600 border-slate-600">Tümü</Button>
-                    <Button variant={filter === 'unread' ? 'default' : 'outline'} onClick={() => setFilter('unread')} size="sm" className="bg-slate-700 hover:bg-slate-600 border-slate-600">Okunmamış</Button>
-                    <Button variant={filter === 'read' ? 'default' : 'outline'} onClick={() => setFilter('read')} size="sm" className="bg-slate-700 hover:bg-slate-600 border-slate-600">Okunmuş</Button>
+                    <Button variant={filter === 'all' ? 'default' : 'outline'} onClick={() => { setFilter('all'); setPage(1); }} size="sm" className="bg-slate-700 hover:bg-slate-600 border-slate-600">Tümü</Button>
+                    <Button variant={filter === 'unread' ? 'default' : 'outline'} onClick={() => { setFilter('unread'); setPage(1); }} size="sm" className="bg-slate-700 hover:bg-slate-600 border-slate-600">Okunmamış</Button>
+                    <Button variant={filter === 'read' ? 'default' : 'outline'} onClick={() => { setFilter('read'); setPage(1); }} size="sm" className="bg-slate-700 hover:bg-slate-600 border-slate-600">Okunmuş</Button>
                 </div>
             </header>
 
@@ -232,7 +249,7 @@ const NotificationHistory = () => {
                                         <div className="flex items-center gap-3">
                                             <MessageSquare className={`w-5 h-5 shrink-0 ${n.is_read ? 'text-slate-500' : 'text-teal-400'}`} />
                                             <div>
-                                                <p className={`font-medium ${n.is_read ? 'text-slate-400' : 'text-white'}`}>{n.message}</p>
+                                                <p className={`font-medium ${n.is_read ? 'text-slate-400' : 'text-white'}`}>{getNotificationLabel(n)}</p>
                                                 <p className="text-xs text-slate-500">Müşteri: {n.customer_name || 'Bilinmiyor'}</p>
                                             </div>
                                         </div>

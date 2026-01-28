@@ -627,7 +627,7 @@ const DetailedAnalytics = () => {
                 {/* 1. Trend & Marka Algısı */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Sol: Trend Grafiği */}
-                  <div className="lg:col-span-2 bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6 shadow-lg">
+                  <div className="lg:col-span-2 bg-slate-900/50 border border-slate-800 rounded-2xl p-6 shadow-lg">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                       <h3 className="text-white font-bold text-lg flex items-center gap-2">
                         <TrendingUp className="w-5 h-5 text-sky-400" />
@@ -666,7 +666,7 @@ const DetailedAnalytics = () => {
                   </div>
 
                   {/* Sağ: Marka vs Deneyim (RESTORE EDİLDİ) */}
-                  <div className="bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                  <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
                     <div>
                       <h3 className="text-white font-bold text-lg flex items-center gap-2">
                         <Zap className="w-5 h-5 text-yellow-400" />
@@ -683,7 +683,7 @@ const DetailedAnalytics = () => {
                             <span className="text-slate-300">Genel Algı (Marka)</span>
                             <span className="text-white font-bold">{loyaltyComparison.general}%</span>
                           </div>
-                          <div className="h-4 bg-slate-900 rounded-full border border-slate-700/50">
+                          <div className="detail-analytics-bar-wrap h-4 bg-slate-900 rounded-full border border-slate-700/50">
                             <div className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full" style={{ width: `${loyaltyComparison.general}%` }}></div>
                           </div>
                         </div>
@@ -694,7 +694,7 @@ const DetailedAnalytics = () => {
                             <span className="text-slate-300">Anlık Deneyim (Hizmet)</span>
                             <span className="text-white font-bold">{loyaltyComparison.instant}%</span>
                           </div>
-                          <div className="h-4 bg-slate-900 rounded-full border border-slate-700/50">
+                          <div className="detail-analytics-bar-wrap h-4 bg-slate-900 rounded-full border border-slate-700/50">
                             <div className="h-full bg-gradient-to-r from-sky-500 to-blue-500 rounded-full" style={{ width: `${loyaltyComparison.instant}%` }}></div>
                           </div>
                         </div>
@@ -715,7 +715,7 @@ const DetailedAnalytics = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   
                   {/* TRAFİK VE DÖNÜŞÜM KARTI (GRID TASARIM) */}
-                  <div className="bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6 relative flex flex-col">
+                  <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 relative flex flex-col">
                     <div className="flex items-center gap-2 mb-6">
                       <Filter className="w-5 h-5 text-purple-400" />
                       <div>
@@ -728,9 +728,9 @@ const DetailedAnalytics = () => {
                       {/* Pasta Grafik */}
                       <div className="relative w-40 h-40 shrink-0 mx-auto md:mx-0">
                           <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie data={sourceData} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={5} dataKey="value" stroke="none">
-                                  {sourceData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
+                            <PieChart className="detail-analytics-pie">
+                                <Pie data={sourceData} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={5} dataKey="value" stroke="rgba(255,255,255,0.15)" strokeWidth={1.5}>
+                                  {sourceData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} stroke="rgba(0,0,0,0.06)" strokeWidth={1} />))}
                                 </Pie>
                             </PieChart>
                           </ResponsiveContainer>
@@ -756,20 +756,20 @@ const DetailedAnalytics = () => {
                          </div>
                          {/* Form Dönüşüm */}
                          <div className="bg-purple-500/10 p-3 rounded-lg border border-purple-500/20 flex flex-col items-center text-center justify-center group relative cursor-help">
+                            <div className="absolute top-2 right-2"><InfoTooltip text="Sayfayı ziyaret eden her 100 kişiden kaçı formu tamamladı?" /></div>
                             <Activity className="w-5 h-5 text-purple-400 mb-1" />
                             <span className="text-lg font-bold text-white leading-none">%{trafficStats.conversionRate}</span>
                             <div className="flex items-center gap-1 mt-1">
                                 <span className="text-[10px] text-purple-300">Form Dönüşüm</span>
-                                <InfoTooltip text="Sayfayı ziyaret eden her 100 kişiden kaçı formu tamamladı?" />
                             </div>
                          </div>
                          {/* Google Geçiş (Vurgulu) */}
-                         <div className="bg-red-500/10 p-3 rounded-lg border border-red-500/20 flex flex-col items-center text-center justify-center cursor-help">
+                         <div className="bg-red-500/10 p-3 rounded-lg border border-red-500/20 flex flex-col items-center text-center justify-center cursor-help relative">
+                            <div className="absolute top-2 right-2"><InfoTooltip text="Formu doldurduktan sonra Google Maps yorum sayfasına yönlenen müşteri sayısı." /></div>
                             <MapPin className="w-5 h-5 text-red-400 mb-1" />
                             <span className="text-lg font-bold text-white leading-none">{trafficStats.googleRedirects}</span>
                             <div className="flex items-center gap-1 mt-1">
                                 <span className="text-[10px] text-red-300">Haritalara Geçiş</span>
-                                <InfoTooltip text="Formu doldurduktan sonra Google Maps yorum sayfasına yönlenen müşteri sayısı." />
                             </div>
                          </div>
                       </div>
@@ -777,13 +777,13 @@ const DetailedAnalytics = () => {
                   </div>
 
                   {/* DUYGU ANALİZİ */}
-                  <div className="bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6">
+                  <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
                     <div className="flex items-center gap-2 mb-6"><TrendingUp className="w-5 h-5 text-yellow-400" /><div><h3 className="text-white font-bold text-lg">Genel Memnuniyet</h3><p className="text-slate-400 text-xs">Müşteri geri bildirim tonu dağılımı.</p></div></div>
                     <div className="space-y-6">
                       {sentimentData.map((item, idx) => (
                         <div key={idx}>
                           <div className="flex justify-between items-end mb-2"><span className="text-sm font-medium text-slate-300">{item.label}</span><div className="text-right leading-none"><span className="text-lg font-bold text-white">{item.percent}%</span><span className="text-xs text-slate-500 ml-1">({item.count})</span></div></div>
-                          <div className="h-2.5 w-full bg-slate-800 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-1000" style={{ width: `${item.percent}%`, backgroundColor: item.color }}></div></div>
+                          <div className="detail-analytics-bar-wrap h-2.5 w-full bg-slate-800 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-1000" style={{ width: `${item.percent}%`, backgroundColor: item.color }}></div></div>
                         </div>
                       ))}
                     </div>
@@ -793,7 +793,7 @@ const DetailedAnalytics = () => {
 
             {/* 🏆 ŞUBE LİDERLİK TABLOSU (GÜNCELLENMİŞ LEJANT İLE) */}
             {selectedBranchId === 'all' && leaderboardData && (
-              <div className="bg-[#1e293b]/40 border border-slate-800 rounded-2xl p-6 relative overflow-visible z-0 mb-8 shadow-lg">
+              <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 relative overflow-visible z-0 mb-8 shadow-lg">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
                    <div className="flex items-center gap-2">
                       <Trophy className="w-6 h-6 text-amber-400" />
@@ -827,7 +827,7 @@ const DetailedAnalytics = () => {
                 </div>
                 
                 <div className="overflow-x-auto pb-4 relative z-0">
-                  <table className="w-full min-w-[800px] text-left text-sm text-slate-400 border-collapse">
+                  <table className="branch-league-table w-full min-w-[800px] text-left text-sm text-slate-400 border-collapse">
                     <thead className="bg-[#0f172a] text-xs uppercase font-bold text-slate-500 tracking-wider">
                       <tr>
                         <th className="px-6 py-4 rounded-l-lg border-r border-slate-800/50">Sıra</th>

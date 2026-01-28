@@ -419,10 +419,11 @@ export default function CustomerPanel() {
       },
       guestWarning: {
         title: "⚠️ Continuing as Guest",
-        text: "Guest feedbacks are not saved to your profile.",
+        // 🟢 GÜNCELLENEN KISIM:
+        text: "This feedback will not be saved to your account, and the business cannot reply to you. To track your feedback and allow the business to contact you, please Login & Send.",
         dontShow: "Don't show again",
         continueGuest: "Continue",
-        loginToSend: "Sign In"
+        loginToSend: "Login & Send" // "Sign In" yerine bu daha net olur
       },
       support: {
         title: 'Support Ticket',

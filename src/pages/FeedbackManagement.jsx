@@ -56,8 +56,12 @@ const FeedbackManagement = () => {
   // SEÇİM STATE'LERİ
   const [selectedIds, setSelectedIds] = useState([]);
   
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [mobileScrollToList, setMobileScrollToList] = useState(false);
+  
   const itemRefs = useRef({});
   const pendingTimeoutRef = useRef(null);
+  const feedbackListRef = useRef(null);
 
   // 🟢 GÜNCELLEME BURADA: REALTIME ABONELİĞİ EKLENDİ
   useEffect(() => {
@@ -91,13 +95,19 @@ const FeedbackManagement = () => {
     };
   }, [businessId, selectedBranchId]); // selectedBranchId değişirse de yeniden kurar
 
-  // URL/localStorage ID yakalama
+  // URL state: urgent filtresi veya openFeedbackId
   useEffect(() => {
+    if (location.state?.filter === 'urgent') {
+      setShowUrgentOnly(true);
+      if (typeof window !== 'undefined' && window.innerWidth < 768) setMobileScrollToList(true);
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
+    }
     if (location.state?.openFeedbackId) {
       const targetId = location.state.openFeedbackId;
       setPendingFeedbackId(targetId);
       localStorage.setItem('vocalize_pending_feedback', targetId);
-      setModalOpenAttempts(0); 
+      setModalOpenAttempts(0);
       navigate(location.pathname, { replace: true, state: {} });
     }
     else {
@@ -108,6 +118,17 @@ const FeedbackManagement = () => {
       }
     }
   }, [location.state, navigate, location.pathname, pendingFeedbackId]);
+
+  // Mobilde acil filtresiyle gelindiğinde listeyi görünür yap (filtrelerin altına kaydır)
+  useEffect(() => {
+    if (mobileScrollToList && !loading && feedbacks.length >= 0 && feedbackListRef.current) {
+      const t = setTimeout(() => {
+        feedbackListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setMobileScrollToList(false);
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  }, [mobileScrollToList, loading, feedbacks.length]);
 
   // ID İşleme
   useEffect(() => {
@@ -177,13 +198,7 @@ const FeedbackManagement = () => {
 
   const fetchFeedbacks = async () => {
     if (!businessId) return;
-    // Highlight ve scroll sıfırlamayı kaldırdık ki realtime update sırasında sayfa zıplamasın
-    // setHighlightedId(null); 
-    // setTargetScrollId(null);
-    
-    // Loading'i sadece ilk açılışta true yapıyoruz, realtime güncellemede ekranı karartmıyoruz
     if (feedbacks.length === 0) setLoading(true);
-    
     try {
       let query = supabase.from('feedbacks').select(`
           *,
@@ -238,6 +253,11 @@ const FeedbackManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchFeedbacks().finally(() => setIsRefreshing(false));
   };
 
   const handleFlagsUpdate = (profileId, newFlags, relatedEmail) => {
@@ -421,15 +441,15 @@ const FeedbackManagement = () => {
     <>
       <div className="mx-auto max-w-7xl px-4 pt-32 md:px-6 md:pt-0 lg:px-8 space-y-6 relative">
         {hasUrgentFeedbacks && (
-          <div className="acil-durum-box bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.3)] shrink-0">
-            <div className="flex items-center gap-3"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
-            <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg" onClick={() => setShowUrgentOnly(true)}>İncele</Button>
+          <div className="acil-durum-box bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between shadow-[0_0_15px_rgba(220,38,38,0.3)] shrink-0">
+            <div className="flex items-center gap-3 animate-pulse"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
+            <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shrink-0" onClick={() => setShowUrgentOnly(true)}>İncele</Button>
           </div>
         )}
 
        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
           <div><h1 className="text-3xl font-bold text-white tracking-tight">Geri Bildirim Yönetimi</h1><p className="text-slate-400 mt-1">Müşteri geri bildirimlerini inceleyin, filtreleyin ve yönetin.</p></div>
-          <Button onClick={fetchFeedbacks} variant="outline" className="gap-2 border-slate-700 hover:bg-slate-800 text-slate-300"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />Yenile</Button>
+          <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline" className="gap-2 border-slate-700 hover:bg-slate-800 text-slate-300"><RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />Yenile</Button>
         </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-5 shrink-0 shadow-sm relative z-10">
@@ -490,6 +510,7 @@ const FeedbackManagement = () => {
           <div className="flex flex-col items-center justify-center h-64 gap-4 bg-slate-900/30 rounded-xl border border-dashed border-slate-800"><div className="bg-slate-800/50 p-4 rounded-full"><MessageSquare className="w-8 h-8 text-slate-500" /></div><div className="text-center"><h3 className="text-lg font-medium text-slate-300">Kayıt bulunamadı</h3></div></div>
         ) : (
           <>
+            <div ref={feedbackListRef} className={cn("transition-opacity duration-300", isRefreshing && "opacity-50 pointer-events-none")}>
             <div className="grid gap-3">
               {paginatedFeedbacks.map((f) => {
               const customerName = getCustomerData(f, 'name');
@@ -528,6 +549,7 @@ const FeedbackManagement = () => {
                       onClick={() => handleFeedbackClick(f)} 
                       className={cn(
                           "feedback-activity-card flex-1 group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border duration-200 ease-in-out",
+                          isHighlighted && "feedback-card-highlighted",
                           isHighlighted 
                               ? "bg-teal-900/30 border-teal-500 shadow-[0_0_20px_rgba(20,184,166,0.25)] ring-2 ring-teal-500/50" 
                               : (isEscalated ? "feedback-row-escalated bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700"),
@@ -565,7 +587,7 @@ const FeedbackManagement = () => {
                           {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
                           
                           {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
-                          {hasManagerNote && (<div className="flex items-center justify-center w-6 h-6 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30"><StickyNote className="w-3.5 h-3.5 fill-current" /></div>)}
+                          {hasManagerNote && (<div className="feedback-note-icon flex items-center justify-center w-7 h-7 rounded-md bg-amber-500/25 text-amber-500 border-2 border-amber-500/50 shadow-sm" title="Yönetici notu var"><StickyNote className="w-4 h-4 fill-current" /></div>)}
                           {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}
                           {isSensitive && (<div className="flex items-center gap-1 px-3 py-1 bg-orange-900/30 rounded text-xs text-orange-300 border border-orange-500/30 font-medium"><AlertTriangle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Hassas</span></div>)}
                         </div>
@@ -577,6 +599,7 @@ const FeedbackManagement = () => {
             })}
             </div>
 
+            </div>
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-2 mt-6 pb-4">
                 <Button

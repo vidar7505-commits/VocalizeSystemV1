@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAdminContext } from '@/contexts/AdminContext';
 import { 
   MessageSquare, Star, AlertTriangle, Calendar, Loader2, ChevronRight, 
   ArrowUpRight, ArrowDownRight, Minus, CheckCircle2, User, 
-  Image as ImageIcon, StickyNote, Crown, Siren, BarChart
+  Image as ImageIcon, StickyNote, Crown, Siren, BarChart, RefreshCw
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -18,7 +18,7 @@ import { cn, formatCustomerName, getCustomerData, calculateDelta } from "@/lib/u
 import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
 
-// --- HELPER COMPONENTS (Korundu) ---
+// --- HELPER COMPONENTS ---
 
 const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass, sparkData, loading, isInverseMetric = false }) => {
   let sentimentColor = "bg-slate-800 text-slate-400 border-slate-700"; 
@@ -95,7 +95,6 @@ const hasImages = (f) => {
   return ((f.feedback_images && f.feedback_images.length > 0) || (f.image_urls && f.image_urls.length > 0) || (f.receipt_images && f.receipt_images.length > 0) || f.receipt_url || f.product_image_url);
 };
 
-/** Grafik tooltip – tema duyarlı, "Adet: X" formatı */
 const ChartTooltip = ({ active, payload, formatter = (v) => [v, 'Adet'] }) => {
   if (!active || !payload?.length) return null;
   const item = payload[0];
@@ -128,6 +127,9 @@ const AdminPanel = () => {
   const location = useLocation();
   const { toast } = useToast();
 
+  // 🟢 REF: Scroll için referans
+  const feedbackSectionRef = useRef(null);
+
   const [metrics, setMetrics] = useState({
     total: { value: 0, delta: '0%', type: 'neutral' },
     complaints: { value: 0, delta: '0%', type: 'neutral' },
@@ -143,6 +145,10 @@ const AdminPanel = () => {
   const [hasData, setHasData] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingFeedbacks, setLoadingFeedbacks] = useState(true);
+  
+  // 🟢 YENİ: Refresh State (Spin animasyonu için)
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
@@ -154,6 +160,11 @@ const AdminPanel = () => {
       if (targetFeedback) {
         setSelectedFeedback(targetFeedback);
         setIsDetailModalOpen(true);
+        // Scroll to that feedback if found
+        setTimeout(() => {
+            const el = document.getElementById(`feedback-${targetFeedback.id}`);
+            if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 500);
         window.history.replaceState({}, document.title);
       }
     }
@@ -186,7 +197,7 @@ const AdminPanel = () => {
   const fetchData = useCallback(async () => {
     if (!businessId) return;
     setLoading(true);
-    setLoadingFeedbacks(true);
+    if (!isRefreshing) setLoadingFeedbacks(true); // Refresh sırasında sadece ikon dönsün
     try {
       const { currentStart, prevStart } = getDateIntervals();
       let query = supabase.from('feedbacks')
@@ -365,6 +376,7 @@ const AdminPanel = () => {
     } finally {
       setLoading(false);
       setLoadingFeedbacks(false);
+      setIsRefreshing(false); // Refresh bitti
     }
   }, [businessId, selectedBranchId, dateRange, getDateIntervals, toast]);
 
@@ -377,6 +389,20 @@ const AdminPanel = () => {
         .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [businessId, fetchData]);
+
+  // 🟢 YENİLEME FONKSİYONU (Kullanıcıya Hissiyat Verir)
+  const handleRefreshFeedbacks = () => {
+    setIsRefreshing(true);
+    setLoadingFeedbacks(true); // Listeyi flulaştırmak için
+    setTimeout(() => {
+      fetchData();
+    }, 500); // En az 500ms bekle ki kullanıcı dönüşü görsün
+  };
+
+  // 🟢 ACİL DURUM İNCELEME – Geri bildirimler sayfasına acil filtresiyle yönlendir
+  const handleInspectUrgent = () => {
+    navigate('/admin-panel/feedbacks', { state: { filter: 'urgent' } });
+  };
 
   const handleStatusChange = (id, newStatus) => {
       setRecentFeedbacks(prev => prev.map(f => f.id === id ? { ...f, status: newStatus } : f));
@@ -429,14 +455,15 @@ const AdminPanel = () => {
         </div>
       </div>
 
+      {/* 🟢 ACİL DURUM KUTUSU */}
       {hasUrgentFeedbacks && (
-          <div className="acil-durum-box bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.3)] mb-6">
-            <div className="flex items-center gap-3"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
-            <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg" onClick={() => navigate('/admin-panel/feedbacks', { state: { filter: 'urgent' } })}>İncele</Button>
+          <div className="acil-durum-box bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between shadow-[0_0_15px_rgba(220,38,38,0.3)] mb-6">
+            <div className="flex items-center gap-3 animate-pulse"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
+            <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shrink-0" onClick={handleInspectUrgent}>İncele</Button>
           </div>
       )}
 
-      {/* 1. KPI KARTLARI (EN ÜSTTE) */}
+      {/* 1. KPI KARTLARI */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <SparklineCard title="Toplam Bildirim" value={`${metrics.total.value}`} delta={metrics.total.delta} deltaType={metrics.total.type} icon={MessageSquare} colorClass="bg-blue-500" sparkData={sparklineData.total} loading={loading}/>
         <SparklineCard title="Bekleyen Şikayet" value={`${metrics.complaints.value}`} delta={metrics.complaints.delta} deltaType={metrics.complaints.type} icon={AlertTriangle} colorClass="bg-red-500" sparkData={sparklineData.complaints} loading={loading} isInverseMetric={true}/>
@@ -444,7 +471,7 @@ const AdminPanel = () => {
         <SparklineCard title="Ort. Puan" value={metrics.rating.value} delta={metrics.rating.delta} deltaType={metrics.rating.type} icon={Star} colorClass="bg-yellow-500" sparkData={sparklineData.rating} loading={loading}/>
       </div>
 
-      {/* 2. GRAFİKLER (ORTADA) */}
+      {/* 2. GRAFİKLER */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8">
         <Tabs defaultValue="stars" className="w-full">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -455,7 +482,7 @@ const AdminPanel = () => {
             </TabsList>
           </div>
           <TabsContent value="stars" className="mt-0">
-            <div className="w-full h-[250px] sm:h-[300px]">
+            <div className="admin-panel-chart w-full h-[250px] sm:h-[300px]">
               {loading ? (<div className="h-full w-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-slate-500 animate-spin" /></div>) : !hasData ? (
                 <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><Star className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz değerlendirme almadınız</h3></div>
               ) : (
@@ -472,7 +499,7 @@ const AdminPanel = () => {
             </div>
           </TabsContent>
           <TabsContent value="types" className="mt-0">
-            <div className="w-full h-[250px] sm:h-[300px]">
+            <div className="admin-panel-chart w-full h-[250px] sm:h-[300px]">
               {loading ? (<div className="h-full w-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-slate-500 animate-spin" /></div>) : !hasData ? (
                 <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><MessageSquare className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz geri bildirim almadınız</h3></div>
               ) : (
@@ -492,66 +519,75 @@ const AdminPanel = () => {
       </div>
 
       {/* 3. SON AKTİVİTELER (EN ALTTA) */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden p-6">
+      <div ref={feedbackSectionRef} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">Son Aktiviteler</h2>
-          <Button variant="ghost" className="text-slate-400 hover:text-white" onClick={() => navigate('/admin-panel/feedbacks')}>Tümünü Gör <ChevronRight className="w-4 h-4 ml-1" /></Button>
+          {/* 🟢 YENİLE BUTONU (Spin Efekti) */}
+          <div className="flex gap-2">
+            <Button variant="ghost" size="icon" onClick={handleRefreshFeedbacks} disabled={isRefreshing} className="text-slate-400 hover:text-white">
+                <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+            </Button>
+            <Button variant="ghost" className="text-slate-400 hover:text-white" onClick={() => navigate('/admin-panel/feedbacks')}>Tümünü Gör <ChevronRight className="w-4 h-4 ml-1" /></Button>
+          </div>
         </div>
 
-        {loadingFeedbacks ? (<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>) : recentFeedbacks.length === 0 ? (<div className="text-center py-8 text-slate-500">Henüz aktivite yok.</div>) : (
-            <div className="space-y-3">
-                {recentFeedbacks.map((f) => {
-                   const customerName = getCustomerData(f, 'name');
-                   const smartName = formatCustomerName(customerName);
+        {/* 🟢 LOADING SİMÜLASYONU (Opaklık Değişimi) */}
+        <div className={cn("transition-opacity duration-300", loadingFeedbacks ? "opacity-50 pointer-events-none" : "opacity-100")}>
+            {loadingFeedbacks && !recentFeedbacks.length ? (<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>) : recentFeedbacks.length === 0 ? (<div className="text-center py-8 text-slate-500">Henüz aktivite yok.</div>) : (
+                <div className="space-y-3">
+                    {recentFeedbacks.map((f) => {
+                    const customerName = getCustomerData(f, 'name');
+                    const smartName = formatCustomerName(customerName);
 
-                   const isVip = f.flag_vip_customer || f.customer_profiles?.flag_vip_customer;
-                   const isSensitive = f.flag_sensitive_customer || f.customer_profiles?.flag_sensitive_customer;
-                   const rating = f.rating || f.general_eval_rating;
-                   const hasImgs = hasImages(f);
-                   const isEscalated = f.status === 'escalated';
-                   const hasManagerNote = !!f.manager_note;
-                   const hasCustomerProfileNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
-                   const hasComment = (f.message && f.message.trim().length > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
-                   const hasGeneralEval = (Number(f.general_eval_rating) > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
+                    const isVip = f.flag_vip_customer || f.customer_profiles?.flag_vip_customer;
+                    const isSensitive = f.flag_sensitive_customer || f.customer_profiles?.flag_sensitive_customer;
+                    const rating = f.rating || f.general_eval_rating;
+                    const hasImgs = hasImages(f);
+                    const isEscalated = f.status === 'escalated';
+                    const hasManagerNote = !!f.manager_note;
+                    const hasCustomerProfileNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
+                    const hasComment = (f.message && f.message.trim().length > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
+                    const hasGeneralEval = (Number(f.general_eval_rating) > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
 
-                   return (
-                    <div key={f.id} onClick={() => handleFeedbackClick(f)} className={cn("feedback-activity-card group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "feedback-row-escalated bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
-                      <div className="flex flex-col md:flex-row gap-4 items-start">
-                        <div className="flex-1 w-full min-w-0 pr-0 md:pr-4"> 
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            {getTypeBadge(f.feedback_type)}
-                            {getStatusBadge(f.status)}
-                            <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0"><Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                            <Badge variant="outline" className="text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[200px]">{f.branches?.branch_name_tr || "Şube Bilinmiyor"}</Badge>
-                          </div>
-                          <div className="flex gap-3 mt-1">
-                            <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${f.feedback_type === 'complaint' ? 'bg-red-500' : f.feedback_type === 'suggestion' ? 'bg-blue-500' : 'bg-yellow-500'}`} />
-                            <div className="flex-1"><p className="text-slate-200 text-sm line-clamp-2 leading-relaxed">{f.message || <span className="text-slate-600 italic">Mesaj içeriği yok</span>}</p>{rating > 0 && (<div className="flex items-center gap-0.5 mt-1.5">{[...Array(5)].map((_, i) => (<Star key={i} className={`w-3 h-3 ${i < rating ? 'fill-yellow-500 text-yellow-500' : 'fill-none text-slate-700'}`} />))}</div>)}</div>
-                          </div>
+                    return (
+                        <div key={f.id} id={`feedback-${f.id}`} onClick={() => handleFeedbackClick(f)} className={cn("feedback-activity-card group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "feedback-row-escalated bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
+                        <div className="flex flex-col md:flex-row gap-4 items-start">
+                            <div className="flex-1 w-full min-w-0 pr-0 md:pr-4"> 
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                {getTypeBadge(f.feedback_type)}
+                                {getStatusBadge(f.status)}
+                                <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0"><Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                <Badge variant="outline" className="text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[200px]">{f.branches?.branch_name_tr || "Şube Bilinmiyor"}</Badge>
+                            </div>
+                            <div className="flex gap-3 mt-1">
+                                <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${f.feedback_type === 'complaint' ? 'bg-red-500' : f.feedback_type === 'suggestion' ? 'bg-blue-500' : 'bg-yellow-500'}`} />
+                                <div className="flex-1"><p className="text-slate-200 text-sm line-clamp-2 leading-relaxed">{f.message || <span className="text-slate-600 italic">Mesaj içeriği yok</span>}</p>{rating > 0 && (<div className="flex items-center gap-0.5 mt-1.5">{[...Array(5)].map((_, i) => (<Star key={i} className={`w-3 h-3 ${i < rating ? 'fill-yellow-500 text-yellow-500' : 'fill-none text-slate-700'}`} />))}</div>)}</div>
+                            </div>
+                            </div>
+                            <div className="w-full md:w-auto md:min-w-[200px] flex md:flex-col justify-between md:items-end gap-2 pl-0 md:pl-4 md:border-l border-slate-800/50 mt-4 md:mt-0">
+                            <div className="flex items-center gap-2 group/customer hover:bg-slate-800 p-1.5 rounded-lg -ml-1.5 md:ml-0 transition-colors mr-auto md:mr-0 cursor-pointer" onClick={(e) => handleOpenCustomerProfile(e, f)}>
+                                <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 group-hover/customer:border-indigo-500/50 transition-colors"><User className="w-4 h-4 text-slate-400 group-hover/customer:text-indigo-400" /></div>
+                                <div className="flex flex-col items-start md:items-end">
+                                    <span className={cn("text-sm font-medium transition-colors truncate max-w-[140px] flex items-center gap-1", hasCustomerProfileNote ? "text-blue-400 font-bold" : "text-slate-300 group-hover/customer:text-indigo-300")} title={hasCustomerProfileNote ? "Müşteri Notu Mevcut" : customerName}>
+                                    {smartName}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
+                                {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
+                                {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
+                                {hasManagerNote && (<div className="feedback-note-icon flex items-center justify-center w-7 h-7 rounded-md bg-amber-500/25 text-amber-500 border-2 border-amber-500/50 shadow-sm" title="Yönetici notu var"><StickyNote className="w-4 h-4 fill-current" /></div>)}
+                                {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}
+                                {isSensitive && (<div className="flex items-center gap-1 px-3 py-1 bg-orange-900/30 rounded text-xs text-orange-300 border border-orange-500/30 font-medium"><AlertTriangle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Hassas</span></div>)}
+                            </div>
+                            </div>
                         </div>
-                        <div className="w-full md:w-auto md:min-w-[200px] flex md:flex-col justify-between md:items-end gap-2 pl-0 md:pl-4 md:border-l border-slate-800/50 mt-4 md:mt-0">
-                           <div className="flex items-center gap-2 group/customer hover:bg-slate-800 p-1.5 rounded-lg -ml-1.5 md:ml-0 transition-colors mr-auto md:mr-0 cursor-pointer" onClick={(e) => handleOpenCustomerProfile(e, f)}>
-                             <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 group-hover/customer:border-indigo-500/50 transition-colors"><User className="w-4 h-4 text-slate-400 group-hover/customer:text-indigo-400" /></div>
-                             <div className="flex flex-col items-start md:items-end">
-                                <span className={cn("text-sm font-medium transition-colors truncate max-w-[140px] flex items-center gap-1", hasCustomerProfileNote ? "text-blue-400 font-bold" : "text-slate-300 group-hover/customer:text-indigo-300")} title={hasCustomerProfileNote ? "Müşteri Notu Mevcut" : customerName}>
-                                  {smartName}
-                                </span>
-                             </div>
-                           </div>
-                           <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
-                              {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
-                              {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
-                              {hasManagerNote && (<div className="flex items-center justify-center w-6 h-6 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30"><StickyNote className="w-3.5 h-3.5 fill-current" /></div>)}
-                              {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}
-                              {isSensitive && (<div className="flex items-center gap-1 px-3 py-1 bg-orange-900/30 rounded text-xs text-orange-300 border border-orange-500/30 font-medium"><AlertTriangle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Hassas</span></div>)}
-                           </div>
                         </div>
-                      </div>
-                    </div>
-                   );
-                })}
-            </div>
-        )}
+                    );
+                    })}
+                </div>
+            )}
+        </div>
       </div>
       {selectedFeedback && <FeedbackDetailModal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} feedback={selectedFeedback} onStatusChange={handleStatusChange} />}
       {customerModalOpen && <CustomerProfileModal isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} customerProfileId={selectedCustomer?.id} customerEmail={selectedCustomer?.email} businessId={businessId} onFlagsUpdate={handleFlagsUpdate} />}

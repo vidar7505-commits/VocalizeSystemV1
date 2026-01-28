@@ -17,20 +17,20 @@
   --logo-filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5)); /* Neon logo */
 }
 
-/* ☀️ AYDINLIK TEMA PALETİ (Vocalize Kurumsal) */
+/* ☀️ AYDINLIK TEMA PALETİ (Vocalize Kurumsal - GÜNCELLENDİ) */
 body.light-theme {
-  --bg-main: #f3f4f6;       /* Cool Gray 100 - Çok hafif gri zemin, göz almaz */
+  --bg-main: #f8fafc;       /* Slate 50 - Daha soğuk ve temiz beyaz */
   --bg-card: #ffffff;       /* Kartlar Net Beyaz */
-  --text-main: #0f172a;     /* Slate 900 - Derin Lacivert/Siyah */
-  --text-muted: #4b5563;    /* Gray 600 - Daha okunaklı ikincil yazılar */
-  --border-color: #f1f5f9;  /* Slate 100 - Zarif, hafif kenarlıklar */
-  --scroll-track: #f3f4f6;
-  --scroll-thumb: #d1d5db;
+  --text-main: #0f172a;     /* Slate 900 */
+  --text-muted: #475569;    /* Slate 600 - Daha okunaklı */
+  --border-color: #cbd5e1;  /* Slate 300 - Sınırlar artık daha belirgin */
+  --scroll-track: #f1f5f9;
+  --scroll-thumb: #94a3b8;  /* Slate 400 - Scrollbar görünür */
   --logo-filter: none;      /* Parlamayı kapat */
   
   /* Grafik Renkleri */
-  --chart-grid: #e5e7eb;
-  --chart-text: #6b7280;
+  --chart-grid: #e2e8f0;
+  --chart-text: #64748b;
 }
 
 /* ================================================================= */
@@ -43,22 +43,22 @@ body {
   overflow-x: hidden;
   width: 100%;
   min-height: 100vh;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  /* ⚡ ANINDA GEÇİŞ İÇİN TRANSITION KALDIRILDI */
+  /* transition: background-color 0.3s ease, color 0.3s ease; */ 
 }
 
-/* Yumuşak Geçiş (Göz yormadan) */
+/* Yumuşak Geçiş (Sadece hover vb. için, tema değişimi hariç) */
 *, *::before, *::after {
-  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
-  transition-duration: 0.3s;
-  transition-timing-function: ease-in-out;
+  transition-property: border-color, color, fill, stroke, box-shadow, transform, opacity;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-out;
 }
 
 /* ================================================================= */
 /* 🚨 3. AGRESİF OVERRIDE (BEYAZ TEMA DÜZELTMELERİ) 🚨 */
 /* ================================================================= */
 
-/* A. ARKAPLANLARI TEMİZLE - SADECE KOYU SLATE/GRAY ARKAPLANLARI */
-/* Vurgu renklerini (teal, amber, blue, red vb.) koruyoruz, sadece koyu arkaplanları açık yapıyoruz */
+/* A. ARKAPLANLARI TEMİZLE */
 body.light-theme .glass,
 body.light-theme .bg-slate-950,
 body.light-theme .bg-slate-900,
@@ -69,13 +69,11 @@ body.light-theme .bg-slate-500,
 body.light-theme .bg-gray-900,
 body.light-theme .bg-gray-800,
 body.light-theme .bg-gray-700,
-/* Hex kodlu arkaplanlar (en çok kullanılanlar) */
 body.light-theme .bg-\[\#111827\],
 body.light-theme .bg-\[\#0f172a\],
 body.light-theme .bg-\[\#1e293b\],
 body.light-theme .bg-\[\#1a2847\],
 body.light-theme .bg-\[\#1a2235\],
-/* Opacity varyasyonları */
 body.light-theme .bg-slate-950\/50,
 body.light-theme .bg-slate-900\/50,
 body.light-theme .bg-slate-900\/30,
@@ -89,7 +87,8 @@ body.light-theme .bg-\[\#0f172a\]\/50,
 body.light-theme .bg-\[\#0f172a\]\/90,
 body.light-theme .bg-\[\#1e293b\]\/40 {
     background-color: #ffffff !important;
-    border-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    /* 🟢 KART GÖLGESİ (Derinlik) */
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
 }
 
@@ -97,40 +96,37 @@ body.light-theme .bg-\[\#1e293b\]\/40 {
 body.light-theme header,
 body.light-theme aside {
     background-color: #ffffff !important;
-    border-color: #f1f5f9 !important;
-    box-shadow: none !important;
-    border-bottom: 1px solid #f1f5f9 !important;
-    border-right: 1px solid #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-right: 1px solid #e2e8f0 !important;
     z-index: 50;
 }
 
-/* B.2. BORDER SINIFLARI - TÜM KOYU KENARLIKLARI AÇIK GRI YAP */
+/* B.2. BORDER SINIFLARI */
 body.light-theme .border-slate-800,
 body.light-theme .border-slate-700,
 body.light-theme .border-slate-600,
 body.light-theme .border-slate-500,
 body.light-theme .border-gray-800,
 body.light-theme .border-gray-700,
-/* Opacity varyasyonları */
 body.light-theme .border-slate-800\/50,
 body.light-theme .border-slate-700\/50,
 body.light-theme .border-slate-700\/30,
 body.light-theme .border-slate-600\/50 {
-    border-color: #f1f5f9 !important; /* Zarif, hafif kenarlık */
+    border-color: #e2e8f0 !important;
 }
 
-/* C. METİN GÖRÜNÜRLÜĞÜ (En Önemli Kısım) */
-/* Beyaz yazıları koyu yap (Kart içindeki sayılar, başlıklar) */
+/* C. METİN GÖRÜNÜRLÜĞÜ */
 body.light-theme .text-white,
 body.light-theme .text-slate-50,
 body.light-theme .text-slate-100,
 body.light-theme .text-slate-200,
 body.light-theme .text-gray-100,
 body.light-theme .text-gray-200 {
-    color: #0f172a !important; /* Derin Lacivert/Siyah (Slate 900) */
+    color: #0f172a !important;
 }
 
-/* Soluk yazıları (Tarih, alt başlık) okunur hale getir */
 body.light-theme .text-slate-300,
 body.light-theme .text-slate-400,
 body.light-theme .text-slate-500,
@@ -139,50 +135,55 @@ body.light-theme .text-gray-300,
 body.light-theme .text-gray-400,
 body.light-theme .text-gray-500,
 body.light-theme .text-gray-600 {
-    color: #4b5563 !important; /* Daha okunaklı koyu gri (Gray 600) */
+    color: #475569 !important; /* Daha koyu gri okunabilirlik için */
 }
 
-/* Başlıkları Netleştir */
 body.light-theme h1, body.light-theme h2, body.light-theme h3, 
 body.light-theme .font-bold, 
 body.light-theme .font-semibold,
 body.light-theme .text-3xl {
-    color: #0f172a !important; /* Derin Lacivert/Siyah (Slate 900) */
+    color: #0f172a !important; 
 }
 
 /* D. LOGO VE IKONLAR */
-/* Logonun neon parlamasını kapat, temiz dursun */
 body.light-theme img, 
 body.light-theme svg {
     filter: none !important; 
 }
-/* Headerdaki ikonları koyulaştır (vurgu renkli olanlar hariç) */
 body.light-theme header svg:not(.text-teal-400):not(.text-amber-400):not(.text-blue-400):not(.text-red-400):not(.text-indigo-400), 
 body.light-theme aside svg:not(.text-teal-400):not(.text-amber-400):not(.text-blue-400):not(.text-red-400):not(.text-indigo-400) {
-    color: #4b5563 !important;
+    color: #475569 !important;
 }
 /* Vurgu renkli iconlar korunur */
-body.light-theme .text-teal-400,
-body.light-theme .text-amber-400,
-body.light-theme .text-blue-400,
-body.light-theme .text-indigo-400,
-body.light-theme .text-red-400,
-body.light-theme .text-green-400,
-body.light-theme .text-yellow-400,
-body.light-theme .text-orange-400 {
-    color: inherit !important; /* Vurgu renkleri korunur */
+body.light-theme .text-teal-400, body.light-theme .text-amber-400, body.light-theme .text-blue-400, 
+body.light-theme .text-indigo-400, body.light-theme .text-red-400, body.light-theme .text-green-400, 
+body.light-theme .text-yellow-400, body.light-theme .text-orange-400 {
+    color: inherit !important; 
 }
 
-/* E. FORM ELEMANLARI (Inputlar) */
+/* E. FORM ELEMANLARI (GÜNCELLENDİ - Checkbox Görünürlüğü) */
 body.light-theme input, 
 body.light-theme select, 
 body.light-theme textarea {
-    background-color: #f9fafb !important; /* Çok açık gri zemin */
+    background-color: #ffffff !important;
     color: #0f172a !important;
-    border: 1px solid #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important; /* Koyu sınır */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
-/* Form elemanları içindeki koyu arkaplan sınıfları */
+/* 🟢 CHECKBOX DÜZELTMESİ */
+body.light-theme [type="checkbox"],
+body.light-theme [role="checkbox"] {
+    border: 1px solid #94a3b8 !important; /* Çok belirgin sınır */
+    background-color: #ffffff !important;
+}
+body.light-theme [role="checkbox"][data-state="checked"] {
+    background-color: #0f172a !important;
+    border-color: #0f172a !important;
+    color: #ffffff !important;
+}
+
+/* Form elemanları override */
 body.light-theme input.bg-slate-900,
 body.light-theme input.bg-slate-800,
 body.light-theme input.bg-\[\#111827\],
@@ -192,374 +193,191 @@ body.light-theme select.bg-\[\#111827\],
 body.light-theme textarea.bg-slate-900,
 body.light-theme textarea.bg-slate-800,
 body.light-theme textarea.bg-\[\#111827\] {
-    background-color: #f9fafb !important;
+    background-color: #ffffff !important;
     color: #0f172a !important;
-    border-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
 }
 
 body.light-theme input:focus, 
 body.light-theme select:focus,
 body.light-theme textarea:focus {
     background-color: #ffffff !important;
-    border-color: #0ea5e9 !important; /* Vocalize Mavisi Focus */
+    border-color: #0ea5e9 !important;
     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1) !important;
 }
 
-/* Placeholder renkleri */
 body.light-theme input::placeholder,
 body.light-theme textarea::placeholder,
 body.light-theme .placeholder\:text-slate-500::placeholder {
-    color: #9ca3af !important; /* Açık gri placeholder */
+    color: #94a3b8 !important;
 }
 
 /* ================================================================= */
-/* 4. HOVER & SIDEBAR (Etkileşimler) */
+/* 4. HOVER & SIDEBAR */
 /* ================================================================= */
 
-/* Sidebar Linkleri */
 body.light-theme .sidebar-link {
-    color: #4b5563 !important;
+    color: #475569 !important;
     border: none !important;
 }
 body.light-theme .sidebar-link:hover {
-    background-color: #f0f9ff !important; /* Sky-50 */
-    color: #0369a1 !important; /* Sky-700 */
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
 }
 body.light-theme .sidebar-link.active {
-    background-color: #e0f2fe !important; /* Sky-100 */
-    color: #0284c7 !important; /* Sky-600 */
+    background-color: #e0f2fe !important;
+    color: #0284c7 !important;
     border-right: 3px solid #0284c7 !important;
 }
 
-/* Buton Hoverları - Mikro-etkileşim */
 body.light-theme button {
     transition: all 0.2s ease-out !important;
 }
-body.light-theme button:hover:not(.bg-red-500):not(.bg-sky-500):not(.bg-teal-500) {
-    background-color: #f3f4f6 !important;
+body.light-theme button:hover:not(.bg-red-500):not(.bg-sky-500):not(.bg-teal-500):not(.bg-red-600) {
+    background-color: #f1f5f9 !important;
     color: #0f172a !important;
     transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
 }
 
-/* Hover durumları - Koyu arkaplan hover'larını açık yap */
+/* Hover override */
 body.light-theme .hover\:bg-slate-800:hover,
 body.light-theme .hover\:bg-slate-700:hover,
 body.light-theme .hover\:bg-slate-900:hover,
 body.light-theme .hover\:bg-slate-800\/50:hover,
 body.light-theme .hover\:bg-slate-700\/50:hover {
-    background-color: #f3f4f6 !important; /* Açık gri hover */
+    background-color: #f1f5f9 !important;
 }
 
-/* Vurgu renkleri hover durumları */
-body.light-theme .hover\:bg-teal-500\/20:hover {
-    background-color: #ccfbf1 !important; /* teal-100 */
-}
-body.light-theme .hover\:bg-amber-500\/20:hover {
-    background-color: #fef3c7 !important; /* amber-100 */
-}
-body.light-theme .hover\:bg-blue-500\/20:hover {
-    background-color: #dbeafe !important; /* blue-100 */
-}
-body.light-theme .hover\:bg-red-500\/20:hover {
-    background-color: #fee2e2 !important; /* red-100 */
-}
+/* Vurgu renkleri hover */
+body.light-theme .hover\:bg-teal-500\/20:hover { background-color: #ccfbf1 !important; }
+body.light-theme .hover\:bg-amber-500\/20:hover { background-color: #fef3c7 !important; }
+body.light-theme .hover\:bg-blue-500\/20:hover { background-color: #dbeafe !important; }
+body.light-theme .hover\:bg-red-500\/20:hover { background-color: #fee2e2 !important; }
 
-/* Hover metin renkleri */
-body.light-theme .hover\:text-white:hover {
-    color: #0f172a !important;
-}
-
+body.light-theme .hover\:text-white:hover { color: #0f172a !important; }
 body.light-theme .hover\:text-slate-300:hover,
-body.light-theme .hover\:text-slate-400:hover {
-    color: #4b5563 !important;
-}
+body.light-theme .hover\:text-slate-400:hover { color: #475569 !important; }
 
-/* Hover border renkleri */
 body.light-theme .hover\:border-slate-700:hover,
 body.light-theme .hover\:border-slate-600:hover,
 body.light-theme .hover\:border-slate-500:hover {
-    border-color: #d1d5db !important; /* Biraz daha koyu açık gri */
+    border-color: #94a3b8 !important;
 }
 
 /* ================================================================= */
-/* 📊 5. CHART / GRAFİK DÜZELTMELERİ (SVG Override) 📊 */
+/* 📊 5. CHART / GRAFİK */
 /* ================================================================= */
-/* Recharts kütüphanesinin içindeki SVG elemanlarını zorla boyuyoruz */
-
-/* Izgara Çizgileri */
 body.light-theme .recharts-cartesian-grid-horizontal line,
 body.light-theme .recharts-cartesian-grid-vertical line {
-    stroke: #f1f5f9 !important; /* Zarif, hafif çizgiler */
+    stroke: #e2e8f0 !important;
 }
-
-/* Eksen Yazıları (X ve Y) */
 body.light-theme .recharts-text {
-    fill: #4b5563 !important; /* Daha okunaklı koyu gri */
+    fill: #64748b !important;
 }
-
-/* Tooltip (Hover Kutusu) */
 body.light-theme .recharts-tooltip-wrapper .recharts-default-tooltip {
     background-color: #ffffff !important;
-    border: 1px solid #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
     color: #0f172a !important;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* ================================================================= */
-/* 🛡️ 6. VURGU RENKLERİNİ KORUMA VE BEYAZ TEMAYA UYARLAMA 🛡️ */
+/* 🛡️ 6. VURGU RENKLERİNİ KORUMA */
 /* ================================================================= */
-/* Vurgu renklerini koruyoruz, sadece beyaz temaya uygun tonlara çeviriyoruz */
+/* (Mevcut kodlardaki gibi koruyoruz) */
+body.light-theme .bg-teal-500\/10, body.light-theme .bg-teal-500\/20 { background-color: #ccfbf1 !important; border-color: #5eead4 !important; }
+body.light-theme .text-teal-400, body.light-theme .text-teal-300 { color: #0d9488 !important; }
+body.light-theme .border-teal-500\/30, body.light-theme .border-teal-500\/50 { border-color: #5eead4 !important; }
 
-/* TEAL VURGU RENKLERİ (Erken Erişim / Esnek Plan – light’ta daha renkli) */
-body.light-theme .bg-teal-500\/10,
-body.light-theme .bg-teal-500\/20 {
-    background-color: #ccfbf1 !important; /* teal-100 */
-    border-color: #5eead4 !important; /* teal-300 */
-}
-body.light-theme .text-teal-400,
-body.light-theme .text-teal-300 {
-    color: #0d9488 !important; /* teal-600 */
-}
-body.light-theme .border-teal-500\/30,
-body.light-theme .border-teal-500\/50 {
-    border-color: #5eead4 !important; /* teal-300 */
-}
+body.light-theme .bg-amber-500\/10, body.light-theme .bg-amber-500\/20 { background-color: #fef3c7 !important; border-color: #fcd34d !important; }
+body.light-theme .text-amber-400, body.light-theme .text-amber-300 { color: #d97706 !important; }
+body.light-theme .border-amber-500\/30, body.light-theme .border-amber-500\/50 { border-color: #fcd34d !important; }
 
-/* AMBER VURGU RENKLERİ (Erken Erişim – light’ta daha renkli) */
-body.light-theme .bg-amber-500\/10,
-body.light-theme .bg-amber-500\/20 {
-    background-color: #fef3c7 !important; /* amber-100 */
-    border-color: #fcd34d !important; /* amber-300 */
-}
-body.light-theme .text-amber-400,
-body.light-theme .text-amber-300 {
-    color: #d97706 !important; /* amber-600 */
-}
-body.light-theme .border-amber-500\/30,
-body.light-theme .border-amber-500\/50 {
-    border-color: #fcd34d !important; /* amber-300 */
-}
+body.light-theme .bg-blue-500\/10, body.light-theme .bg-blue-500\/20, body.light-theme .bg-indigo-500\/10 { background-color: #c7d2fe !important; border-color: #818cf8 !important; }
+body.light-theme .text-blue-400 { color: #2563eb !important; }
+body.light-theme .text-indigo-400, body.light-theme .text-indigo-300 { color: #4f46e5 !important; }
+body.light-theme .border-indigo-500\/50 { border-color: #818cf8 !important; }
 
-/* BLUE / INDIGO VURGU RENKLERİ */
-body.light-theme .bg-blue-500\/10,
-body.light-theme .bg-blue-500\/20,
-body.light-theme .bg-indigo-500\/10 {
-    background-color: #c7d2fe !important; /* indigo-200 */
-    border-color: #818cf8 !important; /* indigo-400 */
-}
-body.light-theme .text-blue-400 {
-    color: #2563eb !important; /* blue-600 */
-}
-body.light-theme .text-indigo-400,
-body.light-theme .text-indigo-300 {
-    color: #4f46e5 !important; /* indigo-600 */
-}
-body.light-theme .border-indigo-500\/50 {
-    border-color: #818cf8 !important; /* indigo-400 */
-}
+body.light-theme .bg-red-500\/10, body.light-theme .bg-red-500\/20 { background-color: #fecaca !important; border-color: #f87171 !important; }
+body.light-theme .text-red-400, body.light-theme .text-red-300, body.light-theme .text-red-200 { color: #dc2626 !important; }
+body.light-theme .bg-red-950\/30, body.light-theme .bg-red-900\/40 { background-color: #fef2f2 !important; border: 1px solid #fecaca !important; }
 
-/* RED VURGU RENKLERİ */
-body.light-theme .bg-red-500\/10,
-body.light-theme .bg-red-500\/20 {
-    background-color: #fecaca !important; /* red-200 */
-    border-color: #f87171 !important; /* red-400 */
-}
-body.light-theme .text-red-400,
-body.light-theme .text-red-300,
-body.light-theme .text-red-200 {
-    color: #dc2626 !important; /* red-600 */
-}
-body.light-theme .bg-red-950\/30, 
-body.light-theme .bg-red-900\/40 {
-    background-color: #fef2f2 !important; /* red-50 */
-    border: 1px solid #fecaca !important; /* red-200 */
-}
+body.light-theme .bg-green-500\/10, body.light-theme .bg-emerald-500\/10 { background-color: #bbf7d0 !important; border-color: #4ade80 !important; }
+body.light-theme .text-green-400, body.light-theme .text-emerald-400 { color: #16a34a !important; }
 
-/* GREEN/EMERALD VURGU RENKLERİ */
-body.light-theme .bg-green-500\/10,
-body.light-theme .bg-emerald-500\/10 {
-    background-color: #bbf7d0 !important; /* green-200 */
-    border-color: #4ade80 !important; /* green-400 */
-}
-body.light-theme .text-green-400,
-body.light-theme .text-emerald-400 {
-    color: #16a34a !important; /* green-600 */
-}
+body.light-theme .bg-yellow-500\/10, body.light-theme .bg-yellow-500\/20 { background-color: #fef08a !important; border-color: #facc15 !important; }
+body.light-theme .text-yellow-400, body.light-theme .text-yellow-500, body.light-theme .fill-yellow-500 { color: #ca8a04 !important; fill: #ca8a04 !important; }
 
-/* YELLOW VURGU RENKLERİ */
-body.light-theme .bg-yellow-500\/10,
-body.light-theme .bg-yellow-500\/20 {
-    background-color: #fef08a !important; /* yellow-200 */
-    border-color: #facc15 !important; /* yellow-400 */
-}
-body.light-theme .text-yellow-400,
-body.light-theme .text-yellow-500,
-body.light-theme .fill-yellow-500 {
-    color: #ca8a04 !important; /* yellow-600 */
-    fill: #ca8a04 !important;
-}
+body.light-theme .bg-orange-500\/10, body.light-theme .bg-orange-500\/20 { background-color: #fff7ed !important; border-color: #fed7aa !important; }
+body.light-theme .text-orange-400, body.light-theme .text-orange-300 { color: #ea580c !important; }
 
-/* ORANGE VURGU RENKLERİ */
-body.light-theme .bg-orange-500\/10,
-body.light-theme .bg-orange-500\/20 {
-    background-color: #fff7ed !important; /* orange-50 */
-    border-color: #fed7aa !important; /* orange-200 */
-}
-body.light-theme .text-orange-400,
-body.light-theme .text-orange-300 {
-    color: #ea580c !important; /* orange-600 */
-}
+body.light-theme .bg-purple-500\/10, body.light-theme .bg-purple-500\/20, body.light-theme .bg-purple-900\/30 { background-color: #faf5ff !important; border-color: #e9d5ff !important; }
+body.light-theme .text-purple-300, body.light-theme .text-purple-400 { color: #9333ea !important; }
+body.light-theme .border-purple-500\/30 { border-color: #c084fc !important; }
 
-/* PURPLE/VIOLET VURGU RENKLERİ */
-body.light-theme .bg-purple-500\/10,
-body.light-theme .bg-purple-500\/20,
-body.light-theme .bg-purple-900\/30 {
-    background-color: #faf5ff !important; /* purple-50 */
-    border-color: #e9d5ff !important; /* purple-200 */
-}
-body.light-theme .text-purple-300,
-body.light-theme .text-purple-400 {
-    color: #9333ea !important; /* purple-600 */
-}
-body.light-theme .border-purple-500\/30 {
-    border-color: #c084fc !important; /* purple-300 */
-}
+body.light-theme .bg-orange-900\/30 { background-color: #fff7ed !important; border-color: #fed7aa !important; }
+body.light-theme .text-orange-300 { color: #ea580c !important; }
 
-/* ORANGE VURGU RENKLERİ (900/30 varyasyonu) */
-body.light-theme .bg-orange-900\/30 {
-    background-color: #fff7ed !important; /* orange-50 */
-    border-color: #fed7aa !important; /* orange-200 */
-}
-body.light-theme .text-orange-300 {
-    color: #ea580c !important; /* orange-600 */
-}
+body.light-theme .bg-cyan-500\/10, body.light-theme .bg-sky-500\/10 { background-color: #a5f3fc !important; border-color: #22d3ee !important; }
+body.light-theme .text-cyan-500, body.light-theme .text-sky-400 { color: #0891b2 !important; }
 
-/* CYAN VURGU RENKLERİ */
-body.light-theme .bg-cyan-500\/10,
-body.light-theme .bg-sky-500\/10 {
-    background-color: #a5f3fc !important; /* cyan-200 */
-    border-color: #22d3ee !important; /* cyan-400 */
-}
-body.light-theme .text-cyan-500,
-body.light-theme .text-sky-400 {
-    color: #0891b2 !important; /* cyan-600 */
-}
+body.light-theme .bg-rose-950\/30, body.light-theme .bg-rose-500\/10, body.light-theme .bg-rose-500\/20 { background-color: #fff1f2 !important; border-color: #fecdd3 !important; }
+body.light-theme .text-rose-400, body.light-theme .text-rose-300 { color: #e11d48 !important; }
+body.light-theme .border-rose-500\/20 { border-color: #fda4af !important; }
 
-/* ROSE/PINK VURGU RENKLERİ */
-body.light-theme .bg-rose-950\/30,
-body.light-theme .bg-rose-500\/10,
-body.light-theme .bg-rose-500\/20 {
-    background-color: #fff1f2 !important; /* rose-50 */
-    border-color: #fecdd3 !important; /* rose-200 */
-}
-body.light-theme .text-rose-400,
-body.light-theme .text-rose-300 {
-    color: #e11d48 !important; /* rose-600 */
-}
-body.light-theme .border-rose-500\/20 {
-    border-color: #fda4af !important; /* rose-300 */
-}
+body.light-theme .bg-emerald-950\/30 { background-color: #ecfdf5 !important; border-color: #a7f3d0 !important; }
+body.light-theme .text-emerald-400 { color: #059669 !important; }
+body.light-theme .border-emerald-500\/20 { border-color: #6ee7b7 !important; }
 
-/* EMERALD VURGU RENKLERİ (zaten var ama tekrar kontrol) */
-body.light-theme .bg-emerald-950\/30 {
-    background-color: #ecfdf5 !important; /* emerald-50 */
-    border-color: #a7f3d0 !important; /* emerald-200 */
-}
-body.light-theme .text-emerald-400 {
-    color: #059669 !important; /* emerald-600 */
-}
-body.light-theme .border-emerald-500\/20 {
-    border-color: #6ee7b7 !important; /* emerald-300 */
-}
+/* Tip Badge */
+body.light-theme .bg-red-900\/20, body.light-theme .border-red-900\/30 { background-color: #fecaca !important; border-color: #f87171 !important; }
+body.light-theme .bg-blue-900\/20, body.light-theme .border-blue-900\/30 { background-color: #bfdbfe !important; border-color: #60a5fa !important; }
+body.light-theme .bg-yellow-900\/20, body.light-theme .border-yellow-900\/30 { background-color: #fef08a !important; border-color: #facc15 !important; }
 
-/* TİP BADGE (Şikayet / Öneri / Değerlendirme) – light’ta renkli dolu */
-body.light-theme .bg-red-900\/20,
-body.light-theme .border-red-900\/30 {
-    background-color: #fecaca !important;
-    border-color: #f87171 !important;
-}
-body.light-theme .bg-blue-900\/20,
-body.light-theme .border-blue-900\/30 {
-    background-color: #bfdbfe !important;
-    border-color: #60a5fa !important;
-}
-body.light-theme .bg-yellow-900\/20,
-body.light-theme .border-yellow-900\/30 {
-    background-color: #fef08a !important;
-    border-color: #facc15 !important;
-}
+body.light-theme .hover\:bg-red-900\/50:hover { background-color: #fee2e2 !important; }
+body.light-theme .hover\:border-red-400:hover { border-color: #f87171 !important; }
 
-/* RED HOVER DURUMLARI (Feedback card'ları için) */
-body.light-theme .hover\:bg-red-900\/50:hover {
-    background-color: #fee2e2 !important; /* red-100 */
-}
-body.light-theme .hover\:border-red-400:hover {
-    border-color: #f87171 !important; /* red-400 */
-}
+body.light-theme .bg-opacity-10 { background-color: rgba(255, 255, 255, 0.1) !important; }
+body.light-theme .border-white\/5 { border-color: rgba(0, 0, 0, 0.05) !important; }
 
-/* Icon container'ları (bg-opacity-10 ve border-white/5) */
-body.light-theme .bg-opacity-10 {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-}
-body.light-theme .border-white\/5 {
-    border-color: rgba(0, 0, 0, 0.05) !important; /* Açık temada siyah border */
-}
-
-/* Dropdown Menüler ve Dialog'lar */
-body.light-theme [role="menu"],
-body.light-theme [role="dialog"],
-body.light-theme [role="dialog"] > * {
+body.light-theme [role="menu"], body.light-theme [role="dialog"], body.light-theme [role="dialog"] > * {
     background-color: #ffffff !important;
-    border-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
     color: #0f172a !important;
 }
 body.light-theme [role="menuitem"]:hover {
-    background-color: #f3f4f6 !important;
+    background-color: #f1f5f9 !important;
     transform: translateY(-1px) !important;
     transition: all 0.2s ease-out !important;
 }
 
-/* Select Component Override */
-body.light-theme [data-radix-select-trigger],
-body.light-theme [data-radix-select-content],
-body.light-theme .select-trigger,
-body.light-theme .select-content {
+body.light-theme [data-radix-select-trigger], body.light-theme [data-radix-select-content], body.light-theme .select-trigger, body.light-theme .select-content {
     background-color: #ffffff !important;
-    border-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
     color: #0f172a !important;
 }
-
-/* SelectItem hover */
-body.light-theme [data-radix-select-item]:hover,
-body.light-theme .select-item:hover {
-    background-color: #f3f4f6 !important;
+body.light-theme [data-radix-select-item]:hover, body.light-theme .select-item:hover {
+    background-color: #f1f5f9 !important;
     color: #0f172a !important;
     transform: translateY(-1px) !important;
     transition: all 0.2s ease-out !important;
 }
 
-/* Focus durumları */
-body.light-theme .focus\:bg-slate-700:focus,
-body.light-theme .focus\:bg-slate-800:focus {
-    background-color: #f3f4f6 !important;
-}
+body.light-theme .focus\:bg-slate-700:focus, body.light-theme .focus\:bg-slate-800:focus { background-color: #f1f5f9 !important; }
+body.light-theme .focus\:text-white:focus { color: #0f172a !important; }
 
-body.light-theme .focus\:text-white:focus {
-    color: #0f172a !important;
-}
-
-/* F. CARD VE BADGE COMPONENT'LERİ */
+/* F. CARD VE BADGE COMPONENT'LERİ (Düzeltildi) */
 body.light-theme .card,
 body.light-theme [class*="card"],
 body.light-theme .rounded-xl,
 body.light-theme .rounded-lg {
     background-color: #ffffff !important;
-    border-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
     transition: all 0.2s ease-out !important;
 }
 
-/* Kartlar için hover efekti (Mikro-etkileşim) - Tıklanabilir kartlar */
 body.light-theme .card:hover,
 body.light-theme [class*="card"]:hover,
 body.light-theme .rounded-xl:hover:not(button):not(input):not(select):not(textarea),
@@ -568,182 +386,130 @@ body.light-theme .rounded-lg:hover:not(button):not(input):not(select):not(textar
     box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.08), 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
 }
 
-/* Badge içindeki koyu arkaplanlar */
-body.light-theme .bg-slate-900\/80,
-body.light-theme .bg-slate-800\/40 {
-    background-color: #f9fafb !important;
-    border-color: #f1f5f9 !important;
-}
+body.light-theme .bg-slate-900\/80, body.light-theme .bg-slate-800\/40 { background-color: #f9fafb !important; border-color: #e2e8f0 !important; }
 
-/* Badge hover card'ları (AdminHeader ve Sidebar) */
-body.light-theme .bg-slate-800.border-amber-500\/50,
-body.light-theme .bg-slate-800.border-teal-500\/50 {
+body.light-theme .bg-slate-800.border-amber-500\/50, body.light-theme .bg-slate-800.border-teal-500\/50 {
     background-color: #ffffff !important;
-    border-color: #fcd34d !important; /* amber-300 veya teal-300 */
+    border-color: #fcd34d !important;
 }
-body.light-theme .bg-slate-800.border-amber-500\/50 .text-amber-400 {
-    color: #d97706 !important; /* amber-600 */
-}
-body.light-theme .bg-slate-800.border-teal-500\/50 .text-teal-400 {
-    color: #0d9488 !important; /* teal-600 */
-}
-body.light-theme .bg-slate-800.border-amber-500\/50 .text-slate-300,
-body.light-theme .bg-slate-800.border-teal-500\/50 .text-slate-300 {
-    color: #4b5563 !important; /* Daha okunaklı koyu gri */
-}
+body.light-theme .bg-slate-800.border-amber-500\/50 .text-amber-400 { color: #d97706 !important; }
+body.light-theme .bg-slate-800.border-teal-500\/50 .text-teal-400 { color: #0d9488 !important; }
+body.light-theme .bg-slate-800.border-amber-500\/50 .text-slate-300, body.light-theme .bg-slate-800.border-teal-500\/50 .text-slate-300 { color: #475569 !important; }
 
-/* G. ACTIVE VE DISABLED DURUMLARI */
-body.light-theme .active\:bg-slate-800\/30:active {
-    background-color: #f3f4f6 !important;
-}
+body.light-theme .active\:bg-slate-800\/30:active { background-color: #f1f5f9 !important; }
+body.light-theme .disabled\:bg-slate-700:disabled, body.light-theme .disabled\:bg-slate-800:disabled { background-color: #f1f5f9 !important; color: #9ca3af !important; }
 
-body.light-theme .disabled\:bg-slate-700:disabled,
-body.light-theme .disabled\:bg-slate-800:disabled {
-    background-color: #f3f4f6 !important;
-    color: #9ca3af !important;
-}
+body.light-theme .group-hover\:bg-slate-800\/50:hover, body.light-theme .group-hover\:bg-slate-700:hover { background-color: #f1f5f9 !important; }
+body.light-theme .group-hover\:text-white:hover { color: #0f172a !important; }
 
-/* H. GROUP HOVER DURUMLARI */
-body.light-theme .group-hover\:bg-slate-800\/50:hover,
-body.light-theme .group-hover\:bg-slate-700:hover {
-    background-color: #f3f4f6 !important;
-}
+body.light-theme .border-t, body.light-theme .border-b, body.light-theme .border-l, body.light-theme .border-r { border-color: #e2e8f0 !important; }
+body.light-theme .border-slate-800\/50, body.light-theme .border-slate-700\/50, body.light-theme .border-slate-700\/30 { border-color: #e2e8f0 !important; }
+body.light-theme .border-dashed.border-slate-800, body.light-theme .border-dashed.border-slate-700 { border-color: #cbd5e1 !important; }
 
-body.light-theme .group-hover\:text-white:hover {
+body.light-theme [role="tablist"], body.light-theme .tabs-list, body.light-theme [data-radix-tabs-list] {
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+}
+body.light-theme [role="tab"][data-state="active"], body.light-theme [data-radix-tabs-trigger][data-state="active"], body.light-theme .data-\[state\=active\]\:bg-slate-700[data-state="active"] {
+    background-color: #ffffff !important;
     color: #0f172a !important;
 }
+body.light-theme [role="tab"]:not([data-state="active"]), body.light-theme [data-radix-tabs-trigger]:not([data-state="active"]) { color: #475569 !important; }
 
-/* I. DIVIDER VE SEPARATOR */
-body.light-theme .border-t,
-body.light-theme .border-b,
-body.light-theme .border-l,
-body.light-theme .border-r {
-    border-color: #f1f5f9 !important;
-}
-
-body.light-theme .border-slate-800\/50,
-body.light-theme .border-slate-700\/50,
-body.light-theme .border-slate-700\/30 {
-    border-color: #f1f5f9 !important;
-}
-
-/* J. DASHED BORDER */
-body.light-theme .border-dashed.border-slate-800,
-body.light-theme .border-dashed.border-slate-700 {
-    border-color: #d1d5db !important;
-}
-
-/* K. TABS COMPONENT */
-body.light-theme [role="tablist"],
-body.light-theme .tabs-list,
-body.light-theme [data-radix-tabs-list] {
-    background-color: #f3f4f6 !important; /* Açık gri */
-    border-color: #f1f5f9 !important;
-}
-
-body.light-theme [role="tab"][data-state="active"],
-body.light-theme [data-radix-tabs-trigger][data-state="active"],
-body.light-theme .data-\[state\=active\]\:bg-slate-700[data-state="active"] {
-    background-color: #ffffff !important; /* Aktif tab beyaz */
-    color: #0f172a !important;
-}
-
-body.light-theme [role="tab"]:not([data-state="active"]),
-body.light-theme [data-radix-tabs-trigger]:not([data-state="active"]) {
-    color: #4b5563 !important;
-}
-
-/* ChartTooltip (AdminPanel) – var(--bg-card) / var(--text-main) ile tema uyumlu */
 .chart-tooltip {
   z-index: 9999;
   pointer-events: none;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
-
-/* L. GRAFİK TOOLTIP OVERRIDE (Hardcoded renkler) */
 body.light-theme .recharts-tooltip-wrapper .recharts-default-tooltip {
     background-color: #ffffff !important;
-    border: 1px solid #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
     color: #0f172a !important;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* ================================================================= */
-/* 7. AYDINLIK TEMA ÖZEL – Sadece light’ta, karanlık tema dokunulmaz */
+/* 7. AYDINLIK TEMA ÖZEL – GÜNCELLENDİ (Acil Durum & Renkler) */
 /* ================================================================= */
 
-/* Acil durum kutusu – kırmızı dolu, dikkat çekici */
+/* 🟢 ACİL DURUM KUTUSU (Kurumsal Kırmızı) */
 body.light-theme .acil-durum-box {
-    background-color: #dc2626 !important;
-    border-color: #b91c1c !important;
-    box-shadow: 0 0 20px rgba(220, 38, 38, 0.4) !important;
+    background-color: #fef2f2 !important; /* Red-50 */
+    border-color: #fecaca !important;      /* Red-200 */
+    box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.1) !important;
 }
+body.light-theme .acil-durum-box h3,
+body.light-theme .acil-durum-box p,
 body.light-theme .acil-durum-box .text-red-200,
 body.light-theme .acil-durum-box .text-red-300\/80 {
-    color: #ffffff !important;
+    color: #991b1b !important; /* Red-800 - Okunabilir koyu kırmızı */
 }
 body.light-theme .acil-durum-box .bg-red-600 {
-    background-color: #ef4444 !important;
+    background-color: #ef4444 !important; /* Red-500 - İkon arkaplanı */
+    color: #ffffff !important;
+}
+body.light-theme .acil-durum-box button {
+    background-color: #dc2626 !important; /* Red-600 */
+    color: #ffffff !important;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
 }
 
-/* Kartlar varsayılan beyaz; sadece status === escalated olanlar kırmızı */
+/* Kartlar */
 body.light-theme .feedback-activity-card:not(.feedback-row-escalated) {
     background-color: #ffffff !important;
     border-color: #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
 }
 body.light-theme .feedback-activity-card:not(.feedback-row-escalated):hover {
     background-color: #f8fafc !important;
-    border-color: #cbd5e1 !important;
+    border-color: #94a3b8 !important; /* Hoverda sınır koyulaşsın */
 }
 
-/* Escalated feedback satırı – kırmızı dolu */
+/* 🟢 ESCALATED FEEDBACK (Soft Kırmızı) */
 body.light-theme .feedback-row-escalated {
-    background-color: rgba(239, 68, 68, 0.85) !important;
-    border-color: #f87171 !important;
+    background-color: #fef2f2 !important; /* Red-50 */
+    border-color: #fecaca !important;      /* Red-200 */
 }
 body.light-theme .feedback-row-escalated:hover {
-    background-color: #ef4444 !important;
+    background-color: #fee2e2 !important; /* Red-100 */
     border-color: #fca5a5 !important;
 }
 body.light-theme .feedback-row-escalated .text-slate-200 {
-    color: #ffffff !important;
+    color: #7f1d1d !important; /* Red-900 */
 }
 body.light-theme .feedback-row-escalated .text-slate-600.italic {
-    color: #fecaca !important;
+    color: #ef4444 !important; /* Red-500 */
 }
 
-/* Kart içi yuvarlak ikon kutuları – light theme görünürlük */
+/* Kart içi ikonlar */
 body.light-theme .feedback-activity-card .rounded-full,
 body.light-theme .feedback-activity-card div.rounded.bg-slate-800,
 body.light-theme .feedback-activity-card div.rounded.bg-amber-500\/20,
 body.light-theme .feedback-activity-card div.rounded.bg-purple-900\/30,
 body.light-theme .feedback-activity-card div.rounded.bg-orange-900\/30 {
-    border-color: #cbd5e1 !important; /* slate-300 */
+    border-color: #cbd5e1 !important;
 }
 body.light-theme .feedback-activity-card .rounded-full svg,
 body.light-theme .feedback-activity-card div.rounded.bg-slate-800 svg,
 body.light-theme .feedback-activity-card div.rounded.bg-amber-500\/20 svg,
 body.light-theme .feedback-activity-card div.rounded.bg-purple-900\/30 svg,
 body.light-theme .feedback-activity-card div.rounded.bg-orange-900\/30 svg {
-    color: #475569 !important; /* slate-600 – ikonlar koyu gri */
+    color: #475569 !important;
 }
-/* Acil (kırmızı) kartta ikon kutusu beyaz zemin */
 body.light-theme .feedback-row-escalated .rounded-full,
 body.light-theme .feedback-row-escalated div.rounded.bg-slate-800,
 body.light-theme .feedback-row-escalated div.rounded.bg-amber-500\/20,
 body.light-theme .feedback-row-escalated div.rounded.bg-purple-900\/30,
 body.light-theme .feedback-row-escalated div.rounded.bg-orange-900\/30 {
     background-color: #ffffff !important;
-    border-color: #cbd5e1 !important;
+    border-color: #e2e8f0 !important;
 }
 
-/* Sidebar profil çemberi – gölge */
 body.light-theme .profile-avatar {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.08) !important;
-    border: 1px solid #e5e7eb !important;
+    border: 1px solid #e2e8f0 !important;
 }
 
-/* Çıkış butonu hover – daha canlı */
 body.light-theme .logout-sidebar-btn:hover {
     background-color: #ef4444 !important;
     border-color: #f87171 !important;
@@ -760,77 +526,329 @@ body.light-theme .logout-menuitem:focus {
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25) !important;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--scroll-track); }
 ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
 /* ================================================================= */
-/* 📱 MOBİL ODAKLI MÜKEMMELLEŞTİRME (SAFE AREA & VIEWPORT) 📱 */
+/* 📱 MOBİL ODAKLI MÜKEMMELLEŞTİRME & ANİMASYONLAR */
 /* ================================================================= */
 
 @layer utilities {
-    /* Dynamic Viewport Height: Adres çubuğu sorununu çözer */
-    .h-dvh {
-      height: 100vh; /* Fallback */
-      height: 100dvh;
+    .h-dvh { height: 100vh; height: 100dvh; }
+    .min-h-dvh { min-height: 100vh; min-height: 100dvh; }
+    .pt-safe { padding-top: env(safe-area-inset-top); }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+    .mb-safe { margin-bottom: env(safe-area-inset-bottom); }
+
+    /* 🟢 BİLDİRİM PARLAMASI (Light Mode İçin Mavi) */
+    body.light-theme .animate-pulse-subtle {
+        animation: pulse-light 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+        border-color: #60a5fa !important; /* Blue-400 */
+        background-color: #eff6ff !important; /* Blue-50 */
     }
-    
-    .min-h-dvh {
-      min-height: 100vh; /* Fallback */
-      min-height: 100dvh;
-    }
-  
-    /* iOS Güvenli Alanlar (Çentik ve Alt Çizgi Koruması) */
-    .pt-safe {
-      padding-top: env(safe-area-inset-top);
-    }
-    .pb-safe {
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-    .mb-safe {
-      margin-bottom: env(safe-area-inset-bottom);
-    }
-  }
-  
-  /* Form geçiş animasyonları */
-  .step-content {
-    animation: fadeIn 0.3s ease-in-out;
-  }
-  
-  @keyframes fadeIn {
+}
+
+@keyframes pulse-light {
+    0%, 100% { opacity: 1; border-color: #93c5fd; }
+    50% { opacity: .8; border-color: #3b82f6; }
+}
+
+.step-content { animation: fadeIn 0.3s ease-in-out; }
+@keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
-  }
-  
-  /* ================================================================= */
-/* ✨ YILDIZ VE DUYGU ANİMASYONLARI ✨ */
-/* ================================================================= */
+}
 
 @keyframes star-pop {
     0% { transform: scale(1); }
     50% { transform: scale(1.5) rotate(5deg); }
     100% { transform: scale(1) rotate(0); }
-  }
-  
-  .animate-star-pop {
+}
+.animate-star-pop {
     animation: star-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-  }
-  
-  @keyframes pulse-gold {
+}
+
+@keyframes pulse-gold {
     0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
     70% { box-shadow: 0 0 0 10px rgba(234, 179, 8, 0); }
     100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
-  }
-  
-  .glow-success {
+}
+.glow-success {
     animation: pulse-gold 2s infinite;
-    border-color: #facc15 !important; /* Yellow-400 */
-  }
-  
-  /* Tarih Seçici İyileştirmesi */
-  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-      filter: invert(1); /* İkonu beyaz yapar */
-      opacity: 0.6;
-      cursor: pointer;
-  }
+    border-color: #facc15 !important;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1); opacity: 0.6; cursor: pointer;
+}
+/* Beyaz temada takvim ikonu koyu */
+body.light-theme input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: none !important; opacity: 0.5;
+}
+
+/* ================================================================= */
+/* 🚑 ACİL MÜDAHALE VE TABLO DÜZELTMELERİ (LIGHT MODE) */
+/* ================================================================= */
+
+/* 1. TABLO SATIRLARI (Şube Ligi Hover Sorunu) */
+body.light-theme tr:hover td {
+    background-color: #f1f5f9 !important; /* Slate-100 (Açık Gri) */
+    color: #0f172a !important;
+}
+/* 1. sıradaki altın rengi koru */
+body.light-theme tr.bg-amber-500\/5:hover td {
+    background-color: #fffbeb !important; /* Amber-50 */
+}
+
+/* 2. DETAYLI ANALİZ - BARLAR VE GRAFİKLER */
+/* Arkaplanları koyu kalan alanları beyazlat */
+body.light-theme .bg-\[\#1e293b\]\/40,
+body.light-theme .bg-slate-900\/50 {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
+}
+
+/* Trafik Kartları (Grid Kartlar) */
+body.light-theme .bg-slate-900\/50 {
+    background-color: #f8fafc !important; /* Slate-50 */
+    border-color: #cbd5e1 !important;
+}
+
+/* 3. MÜŞTERİ PROFİLİ NOT ALANI */
+/* Mavi alanın beyaz temada patlamaması için */
+body.light-theme .bg-blue-900\/20 {
+    background-color: #eff6ff !important; /* Blue-50 */
+    border-color: #bfdbfe !important;      /* Blue-200 */
+}
+body.light-theme .bg-blue-900\/20 h3,
+body.light-theme .bg-blue-900\/20 .text-blue-400 {
+    color: #1e40af !important; /* Blue-800 */
+}
+body.light-theme textarea.bg-slate-900\/80 {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+/* 4. MODAL DETAYLARI */
+/* Modal içindeki siyah alanları temizle */
+body.light-theme .bg-\[\#111827\],
+body.light-theme .bg-slate-950 {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+
+/* ================================================================= */
+/* 🎨 BEYAZ TEMA UX İYİLEŞTİRMELERİ (Light Mode – En Alta Eklenen) */
+/* ================================================================= */
+
+/* 1. Tablo satırı hover – açık gri */
+body.light-theme tr:hover td {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+/* 2. Textarea & Input – beyaz temada zorunlu stil */
+body.light-theme textarea,
+body.light-theme input {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+body.light-theme textarea.bg-slate-900\/80,
+body.light-theme input.bg-slate-900\/80 {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+/* 3. Acil durum kutusu – beyaz temada yumuşak kırmızı */
+body.light-theme .acil-durum-box {
+    background-color: #fef2f2 !important;
+    border-color: #fecaca !important;
+}
+body.light-theme .acil-durum-box h3,
+body.light-theme .acil-durum-box p,
+body.light-theme .acil-durum-box .text-red-200,
+body.light-theme .acil-durum-box .text-red-300\/80 {
+    color: #991b1b !important;
+}
+
+/* 4. Kart gölgeleri – beyaz zeminde derinlik */
+body.light-theme .card,
+body.light-theme [class*="card"],
+body.light-theme .rounded-xl,
+body.light-theme .rounded-lg,
+body.light-theme .bg-slate-900\/50,
+body.light-theme .bg-\[\#1e293b\]\/40 {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.05) !important;
+}
+body.light-theme .card:hover,
+body.light-theme [class*="card"]:hover,
+body.light-theme .rounded-xl:hover:not(button):not(input):not(select):not(textarea),
+body.light-theme .rounded-lg:hover:not(button):not(input):not(select):not(textarea) {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 5. Tema geçişinde “patlama” önleme – body’de transition yok */
+body {
+    transition: none !important;
+}
+
+/* ================================================================= */
+/* AYDINLIK TEMA – Kart flagleri, acil kart, barlar, müşteri alanı, parlayan kart */
+/* (Sadece light-theme; koyu temaya dokunulmaz) */
+/* ================================================================= */
+
+/* Geri bildirim kartı flagleri – beyaza uyumlu, profesyonel renkler */
+body.light-theme .feedback-activity-card .bg-purple-900\/30,
+body.light-theme .feedback-activity-card [class*="purple-900"] {
+    background-color: #f5f3ff !important;
+    border-color: #c4b5fd !important;
+    color: #5b21b6 !important;
+}
+body.light-theme .feedback-activity-card .text-purple-300 {
+    color: #5b21b6 !important;
+}
+body.light-theme .feedback-activity-card .bg-orange-900\/30,
+body.light-theme .feedback-activity-card [class*="orange-900"] {
+    background-color: #fff7ed !important;
+    border-color: #fdba74 !important;
+    color: #c2410c !important;
+}
+body.light-theme .feedback-activity-card .text-orange-300 {
+    color: #c2410c !important;
+}
+body.light-theme .feedback-activity-card .bg-slate-800 {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #475569 !important;
+}
+body.light-theme .feedback-activity-card .text-teal-400 {
+    color: #0d9488 !important;
+}
+body.light-theme .feedback-activity-card .text-blue-400 {
+    color: #2563eb !important;
+}
+body.light-theme .feedback-activity-card .bg-amber-500\/20 {
+    background-color: #fef3c7 !important;
+    border-color: #fcd34d !important;
+}
+body.light-theme .feedback-activity-card .text-amber-400 {
+    color: #b45309 !important;
+}
+
+/* Acil (escalated) kart – daha belirgin, profesyonel kırmızı */
+body.light-theme .feedback-row-escalated {
+    background-color: #fef2f2 !important;
+    border: 2px solid #ef4444 !important;
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2), 0 2px 8px rgba(220, 38, 38, 0.12) !important;
+}
+body.light-theme .feedback-row-escalated:hover {
+    background-color: #fee2e2 !important;
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.25), 0 4px 12px rgba(220, 38, 38, 0.15) !important;
+}
+/* Acil kart içindeki Şikayet/Acil flagları – daha belirgin */
+body.light-theme .feedback-row-escalated [class*="bg-red-900"],
+body.light-theme .feedback-row-escalated [class*="red-500/10"],
+body.light-theme .feedback-row-escalated .text-red-400,
+body.light-theme .feedback-row-escalated .text-red-500 {
+    background-color: #fecaca !important;
+    border-color: #ef4444 !important;
+    color: #b91c1c !important;
+}
+
+/* Bildirimden açılan kart – aydınlık temada belirgin parlama (zil tıklanınca) */
+body.light-theme .feedback-card-highlighted {
+    background-color: #ccfbf1 !important;
+    border-color: #0d9488 !important;
+    border-width: 2px !important;
+    box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.4), 0 8px 24px rgba(13, 148, 136, 0.3) !important;
+    outline: 3px solid rgba(13, 148, 136, 0.5) !important;
+    outline-offset: 2px !important;
+}
+body.light-theme .feedback-card-highlighted .text-slate-200,
+body.light-theme .feedback-card-highlighted .text-slate-300 {
+    color: #0f172a !important;
+}
+
+/* Detaylı Analiz – Genel Memnuniyet ve Şube performans barları – net görünüm */
+body.light-theme .detail-analytics-bar-wrap {
+    background-color: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    border-radius: 9999px !important;
+}
+body.light-theme .detail-analytics-bar-wrap > div {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Müşteri profili modal – müşteri bilgileri alanı, indigo yerine uyumlu renk */
+body.light-theme .customer-info-block {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    border-color: #cbd5e1 !important;
+}
+body.light-theme .customer-info-block .text-slate-400,
+body.light-theme .customer-info-block .text-slate-500 {
+    color: #475569 !important;
+}
+
+/* Ana panel grafik – aydınlık temada hover/cursor net */
+body.light-theme .admin-panel-chart .recharts-tooltip-cursor,
+body.light-theme .admin-panel-chart .recharts-default-tooltip rect {
+    fill: rgba(0, 0, 0, 0.08) !important;
+}
+body.light-theme .admin-panel-chart .recharts-bar-rectangle:hover {
+    opacity: 0.9;
+}
+
+/* Pasta grafiği – her iki temada net (solukluk gider) */
+.detail-analytics-pie .recharts-pie-sector,
+.detail-analytics-pie .recharts-layer path {
+    filter: none;
+}
+body.light-theme .detail-analytics-pie .recharts-pie-sector {
+    stroke: rgba(255,255,255,0.6) !important;
+    stroke-width: 1.5px !important;
+}
+
+/* Şube performans ligi – aydınlık temada satır/hover koyu karışmasın (sadece lig tablosu) */
+body.light-theme .branch-league-table thead.bg-\[\#0f172a\],
+body.light-theme .branch-league-table thead[class*="0f172a"] {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+}
+body.light-theme .branch-league-table tbody tr:hover td {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+body.light-theme .branch-league-table tbody tr.bg-amber-500\/5:hover td {
+    background-color: #fffbeb !important;
+}
+body.light-theme .branch-league-table .bg-slate-900\/30,
+body.light-theme .branch-league-table .bg-slate-900\/50 {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+body.light-theme .branch-league-table tbody tr td {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+}
+body.light-theme .branch-league-table tbody tr.bg-amber-500\/5 td {
+    background-color: #fffbeb !important;
+}
+body.light-theme .branch-league-table .border-slate-800\/50 {
+    border-color: #e2e8f0 !important;
+}
+
+/* Notlu bildirim ikonu – aydınlık temada daha belirgin */
+body.light-theme .feedback-note-icon {
+    background-color: #fef3c7 !important;
+    border-color: #f59e0b !important;
+    color: #b45309 !important;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.2) !important;
+}

@@ -128,13 +128,21 @@ const AdminHeader = () => {
 
   const fetchNotifications = useCallback(async () => {
     if (!user || !businessId) return;
-    let query = supabase.from('notifications').select('*').eq('user_id', user.id).eq('business_id', businessId);
+    let query = supabase.from('notifications').select('*, feedbacks(feedback_type)').eq('user_id', user.id).eq('business_id', businessId);
     if (isBranchManager && assignedBranchId) query = query.eq('branch_id', assignedBranchId);
 
     const { data } = await query.order('created_at', { ascending: false }).limit(10);
     setNotifications(data || []);
     setUnreadCount((data || []).filter(n => !n.is_read).length);
   }, [user, businessId, isBranchManager, assignedBranchId]);
+
+  const getNotificationLabel = (n) => {
+    const type = n.feedbacks?.feedback_type || n.feedback_type;
+    if (type === 'complaint') return 'Yeni bir şikayetiniz var';
+    if (type === 'suggestion') return 'Yeni bir öneriniz var';
+    if (type === 'evaluation' || type === 'review' || type === 'rating') return 'Yeni bir değerlendirmeniz var';
+    return n.message || 'Yeni bildirim';
+  };
 
   useEffect(() => {
     if (user && businessId) {
@@ -272,7 +280,7 @@ const AdminHeader = () => {
                   </div>
                   <div className="max-h-96 overflow-y-auto">
                     {escalatedCount > 0 && (
-                      <div onClick={() => { navigate('/admin-panel/feedbacks'); setNotificationOpen(false); }} className="flex items-start gap-3 p-3 border-b border-slate-700/30 bg-red-950/30 hover:bg-red-900/40 cursor-pointer">
+                      <div onClick={() => { navigate('/admin-panel/feedbacks', { state: { filter: 'urgent' } }); setNotificationOpen(false); }} className="flex items-start gap-3 p-3 border-b border-slate-700/30 bg-red-950/30 hover:bg-red-900/40 cursor-pointer">
                           <AlertOctagon className="w-4 h-4 shrink-0 mt-1 text-red-500 animate-pulse" />
                           <div className="flex-grow">
                              <p className="text-sm text-red-200 font-bold">Acil Durum</p>
@@ -287,7 +295,7 @@ const AdminHeader = () => {
                           <MessageSquare className={`w-4 h-4 shrink-0 mt-1 ${n.is_read ? 'text-slate-500' : 'text-teal-400'}`} />
                           <div className="flex-grow">
                             <p className={`text-sm ${n.is_read ? 'text-slate-400' : 'text-slate-200 font-medium'}`}>
-                              <span className="font-semibold">{n.branch_name}</span>: {n.message?.substring(0, 40)}...
+                              <span className="font-semibold">{n.branch_name}</span>: {getNotificationLabel(n)}
                             </p>
                             <p className="text-xs text-slate-500 mt-1">{formatTimeAgo(n.created_at)}</p>
                           </div>

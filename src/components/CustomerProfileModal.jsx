@@ -508,7 +508,7 @@ if (queryConditions.length > 0) {
             ) : (
               <>
                 {/* Profil Bilgileri */}
-                <div className="bg-gradient-to-br from-indigo-900/30 to-purple-900/20 rounded-lg p-5 border border-indigo-700/40 grid md:grid-cols-2 gap-4">
+                <div className="customer-info-block bg-gradient-to-br from-indigo-900/30 to-purple-900/20 rounded-lg p-5 border border-indigo-700/40 grid md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <User className="w-5 h-5 text-indigo-400 shrink-0" />
                     <div className="min-w-0">
@@ -581,7 +581,7 @@ if (queryConditions.length > 0) {
                     <Textarea 
                       value={notes} 
                       onChange={(e) => setNotes(e.target.value)} 
-                      className="bg-slate-900/80 border-slate-700 flex-1 min-h-[80px] text-slate-200" 
+                      className="bg-slate-900/80 border-slate-700 flex-1 min-h-[80px] text-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500"
                       placeholder="Sadece bu işletme yöneticileri görebilir..." 
                     />
                     <div className="flex justify-end gap-2 mt-2">
@@ -590,7 +590,7 @@ if (queryConditions.length > 0) {
                           size="sm" 
                           onClick={() => { setNotes(''); saveChanges(flags, ''); }} 
                           disabled={isSavingNotes} 
-                          className="h-7 bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/50 hover:text-red-300 transition-colors"
+                          className="h-7 bg-red-600/90 hover:bg-red-600 text-white border border-red-500/60 font-medium shadow-sm"
                         >
                           <Trash2 className="w-3 h-3 mr-1" /> Sil
                         </Button>
@@ -599,7 +599,7 @@ if (queryConditions.length > 0) {
                         size="sm" 
                         onClick={() => saveChanges(flags, notes)} 
                         disabled={isSavingNotes} 
-                        className="h-7 bg-blue-600 hover:bg-blue-700 text-white"
+                        className="h-7 bg-blue-600 hover:bg-blue-700 text-white font-semibold border border-blue-500/50 shadow-md"
                       >
                         {isSavingNotes ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3 mr-1" />} 
                         Kaydet
@@ -805,7 +805,7 @@ if (queryConditions.length > 0) {
             <Button 
               variant="outline" 
               onClick={handleClose} 
-              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+              className="border-slate-600 text-slate-200 hover:bg-slate-700 hover:text-white font-medium"
             >
               Kapat
             </Button>
