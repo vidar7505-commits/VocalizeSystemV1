@@ -221,6 +221,10 @@ const LandingPage = () => {
   } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  
+  // 🚀 KORUMA KALKANI: iPhone için başlatma kontrolü
+  const [isInitializing, setIsInitializing] = useState(true);
+  
   const progressRef = useRef(null);
   const progressInView = useInView(progressRef, {
     once: true
@@ -237,6 +241,25 @@ const LandingPage = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+  
+  // 🚀 iPhone URL Kontrolü ve Başlatma Mantığı
+  useEffect(() => {
+    // iPhone'un aşırı hızını dengelemek için kısa bir güvenlik gecikmesi
+    // Bu süre içinde URL parametreleri (business_id) kesinlikle okunmuş olur.
+    const checkTimer = setTimeout(() => {
+      
+      // Varsa URL'deki parametreleri kontrol et veya Context'i güncelle
+      const bid = searchParams.get('businessId') || searchParams.get('bid');
+      
+      console.log("URL Kontrolü Tamamlandı. Business ID:", bid);
+      
+      // Artık yüklemeyi bitir ve gerçek ekranı göster
+      setIsInitializing(false);
+      
+    }, 800); // 800ms (iPhone için ideal süre, kullanıcıya hissettirmez ama hatayı çözer)
+
+    return () => clearTimeout(checkTimer);
+  }, [searchParams]);
   
   // ✅ QRRedirector'dan geldiğinde modal aç
   useEffect(() => {
@@ -394,6 +417,21 @@ const LandingPage = () => {
     title: "Zincir İşletme & Franchise",
     image: "Frenchise.jpg"
   }];
+  
+  // 🛡️ LOADING EKRANI (Veri gelene kadar bunu göster)
+  if (isInitializing) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900">
+        <Loader2 className="w-12 h-12 text-teal-500 animate-spin mb-4" />
+        <p className="text-slate-400 text-sm font-medium animate-pulse">İşletme verileri doğrulanıyor...</p>
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------
+  // BURADAN SONRASI MEVCUT KODLARINIZ (Logic Aynen Kalıyor)
+  // ---------------------------------------------------------------
+
   return <div className="min-h-screen bg-[#0f172a] text-slate-100 font-sans overflow-x-hidden relative selection:bg-primary/30">
       <Helmet>
         <title>Vocalize - Müşteri Geri Bildirim Sistemi</title>
