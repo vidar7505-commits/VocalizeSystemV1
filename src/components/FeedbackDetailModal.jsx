@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X, Star, Calendar, User, Mail, Phone, MessageSquare,
-  AlertTriangle, Image as ImageIcon, Building2, StickyNote, Save, 
+  AlertTriangle, Image as ImageIcon, Building2, StickyNote, Save,
   Loader2, Crown, FileText, Copy, Hash, Download,
   ZoomIn, ChevronLeft, ChevronRight, Siren, Trash2, Lightbulb, Receipt,
   BarChart, ExternalLink
@@ -18,7 +18,7 @@ import { cn, formatCustomerName, getCustomerData } from "@/lib/utils";
 const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onStatusChange, scrollToNotes = false }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  
+
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(feedback?.status || 'new');
@@ -36,14 +36,14 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
   const [lightboxImages, setLightboxImages] = useState([]);
 
   const [liveProfileData, setLiveProfileData] = useState(null);
-  const [businessSpecificData, setBusinessSpecificData] = useState(null); 
+  const [businessSpecificData, setBusinessSpecificData] = useState(null);
   const notesSectionRef = useRef(null);
 
   // --- SÜZGEÇ (HATA ÖNLEYİCİ) ---
   const normalizeUrl = (u) => {
     if (!u) return null;
     const s = String(u).trim();
-    if (/^[a-zA-Z]:\\/.test(s) || s.includes("\\")) return null; 
+    if (/^[a-zA-Z]:\\/.test(s) || s.includes("\\")) return null;
     if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("blob:") || s.startsWith("data:")) return s;
     return null;
   };
@@ -54,16 +54,19 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
 
   const displayPhone = (liveProfileData?.phone && liveProfileData.phone.length > 3) ? liveProfileData.phone : (feedback.customer_phone || '-');
   const displayEmail = (liveProfileData?.email && liveProfileData.email.length > 3) ? liveProfileData.email : (feedback.customer_email || '-');
-  
+
+  // 🟢 ANONİM KONTROLÜ (YENİ EKLENDİ)
+  const isAnonymous = !feedback.customer_profile_id || feedback.customer_profile_id === 'guest';
+
   const isVip = businessSpecificData?.is_vip || false;
   const isSensitive = businessSpecificData?.is_sensitive || false;
   const customerProfileNote = businessSpecificData?.manager_notes || null;
 
   const allImages = [
-    ...(feedback?.feedback_images || []), 
-    ...(feedback?.image_urls || []), 
-    feedback?.product_image_url, 
-    ...(feedback?.receipt_images || []), 
+    ...(feedback?.feedback_images || []),
+    ...(feedback?.image_urls || []),
+    feedback?.product_image_url,
+    ...(feedback?.receipt_images || []),
     feedback?.receipt_url
   ].map(normalizeUrl).filter(Boolean);
 
@@ -79,17 +82,27 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
       setManagerNote(feedback.manager_note || '');
       setLiveProfileData(null);
       setBusinessSpecificData(null);
-      fetchCustomerData();
+
+      // Sadece kayıtlı kullanıcı ise veriyi çek
+      if (!isAnonymous) {
+        fetchCustomerData();
+      } else {
+        setCustomerStats(null);
+        setCustomerJoinDate(null);
+      }
+
       if (feedback.manager_note_updated_at && feedback.manager_note_updated_by) fetchUpdaterInfo(feedback.manager_note_updated_by, feedback.manager_note_updated_at);
     }
-  }, [feedback, isOpen]);
+  }, [feedback, isOpen, isAnonymous]);
 
   const fetchCustomerData = useCallback(async () => {
+    if (isAnonymous) return; // Güvenlik önlemi
+
     setStatsLoading(true);
     try {
       const cEmail = getCustomerData(feedback, 'email');
       const cProfileId = feedback.customer_profile_id;
-      
+
       let statsQuery = supabase.from('feedbacks').select('feedback_type', { count: 'exact' }).eq('business_id', feedback.business_id);
       if (cProfileId) statsQuery = statsQuery.eq('customer_profile_id', cProfileId);
       else if (cEmail) statsQuery = statsQuery.eq('customer_email', cEmail);
@@ -113,9 +126,9 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
         const { data } = await supabase.from('customer_profiles').select('*, users(first_name, last_name)').eq('email', cEmail).maybeSingle();
         profileData = data;
       }
-      
-      if (profileData) { 
-        setLiveProfileData(profileData); 
+
+      if (profileData) {
+        setLiveProfileData(profileData);
         setCustomerJoinDate(profileData.created_at);
 
         if (feedback.business_id) {
@@ -125,12 +138,12 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
             .eq('business_id', feedback.business_id)
             .eq('customer_profile_id', profileData.id)
             .maybeSingle();
-          
+
           if (bizData) setBusinessSpecificData(bizData);
         }
       }
     } catch (err) { console.error("Error", err); } finally { setStatsLoading(false); }
-  }, [feedback]);
+  }, [feedback, isAnonymous]);
 
   const fetchUpdaterInfo = async (userId, updatedAt) => {
     if (!userId) return;
@@ -203,9 +216,9 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
                 </span>
               </DialogTitle>
               <div className="flex items-center gap-2 mt-1 flex-shrink-0 mr-10">
-                 {isVip && <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-500/10 rounded text-[10px] text-purple-300 border border-purple-500/30 font-medium whitespace-nowrap"><Crown className="w-3 h-3" /><span>VIP</span></div>}
-                 {isSensitive && <div className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 rounded text-[10px] text-orange-300 border border-orange-500/30 font-medium whitespace-nowrap"><AlertTriangle className="w-3 h-3" /><span>Hassas</span></div>}
-                 <Badge className={`${getStatusColor(currentStatus)} px-3 py-1 text-sm whitespace-nowrap`}>{getStatusLabel(currentStatus)}</Badge>
+                {isVip && <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-500/10 rounded text-[10px] text-purple-300 border border-purple-500/30 font-medium whitespace-nowrap"><Crown className="w-3 h-3" /><span>VIP</span></div>}
+                {isSensitive && <div className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 rounded text-[10px] text-orange-300 border border-orange-500/30 font-medium whitespace-nowrap"><AlertTriangle className="w-3 h-3" /><span>Hassas</span></div>}
+                <Badge className={`${getStatusColor(currentStatus)} px-3 py-1 text-sm whitespace-nowrap`}>{getStatusLabel(currentStatus)}</Badge>
               </div>
             </div>
           </DialogHeader>
@@ -221,20 +234,37 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-lg text-white break-words" title={customerProfileNote ? "Müşteri Notu Mevcut" : ""}>{formattedName}</span>
                     </div>
-                    {customerJoinDate && (<div className="flex items-center gap-2 text-xs text-slate-400"><User className="w-3 h-3 text-slate-500" /><span>Üyelik: {new Date(customerJoinDate).toLocaleDateString('tr-TR')}</span></div>)}
+                    {/* 🟢 SADECE KAYITLI İSE GÖSTER */}
+                    {customerJoinDate && !isAnonymous && (<div className="flex items-center gap-2 text-xs text-slate-400"><User className="w-3 h-3 text-slate-500" /><span>Üyelik: {new Date(customerJoinDate).toLocaleDateString('tr-TR')}</span></div>)}
                   </div>
-                  {customerStats ? (
-                    <div className="text-xs text-slate-400 mt-2 flex flex-wrap gap-x-3 gap-y-1">
-                      <span className="font-medium text-slate-300">Toplam: {customerStats.total}</span>
-                      <span className="text-red-400">Şikayet: {customerStats.complaints}</span>
-                      <span className="text-blue-400">Öneri: {customerStats.suggestions}</span>
-                      <span className="text-yellow-400">Değ.: {customerStats.evaluations}</span>
+
+                  {/* 🟢 İSTATİSTİKLER - SADECE KAYITLI İSE */}
+                  {!isAnonymous ? (
+                    customerStats ? (
+                      <div className="text-xs text-slate-400 mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                        <span className="font-medium text-slate-300">Toplam: {customerStats.total}</span>
+                        <span className="text-red-400">Şikayet: {customerStats.complaints}</span>
+                        <span className="text-blue-400">Öneri: {customerStats.suggestions}</span>
+                        <span className="text-yellow-400">Değ.: {customerStats.evaluations}</span>
+                      </div>
+                    ) : statsLoading ? (
+                      <div className="text-xs text-slate-500 flex items-center gap-1 mt-1"><Loader2 className="w-3 h-3 animate-spin" /> Yükleniyor...</div>
+                    ) : (
+                      <div className="text-xs text-slate-500 italic mt-1">Veri yok.</div>
+                    )
+                  ) : (
+                    // 🟢 ANONİM İÇİN BOŞ MESAJ
+                    <div className="text-xs text-slate-500 italic mt-1">Anonim kullanıcı (Profil verisi yok)</div>
+                  )}
+
+                  {/* 🟢 PROFİL BUTONU - SADECE KAYITLI İSE */}
+                  {!isAnonymous && (
+                    <div className="mt-3">
+                      <Button variant="outline" size="sm" onClick={() => setIsProfileModalOpen(true)} className="h-8 text-xs border-teal-500/40 text-teal-400 bg-teal-500/10 hover:bg-teal-500/20 w-full md:w-auto"><User className="w-3.5 h-3.5 mr-1.5" /> Profili Görüntüle</Button>
                     </div>
-                  ) : statsLoading ? (<div className="text-xs text-slate-500 flex items-center gap-1 mt-1"><Loader2 className="w-3 h-3 animate-spin" /> Yükleniyor...</div>) : (<div className="text-xs text-slate-500 italic mt-1">Veri yok.</div>)}
-                  <div className="mt-3">
-                    <Button variant="outline" size="sm" onClick={() => setIsProfileModalOpen(true)} className="h-8 text-xs border-teal-500/40 text-teal-400 bg-teal-500/10 hover:bg-teal-500/20 w-full md:w-auto"><User className="w-3.5 h-3.5 mr-1.5" /> Profili Görüntüle</Button>
-                  </div>
+                  )}
                 </div>
+
                 <div className="bg-[#111827] p-4 rounded-lg border border-slate-700/50 flex flex-col gap-2 min-w-[250px]">
                   <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><Hash className="w-3 h-3" /> Teknik Bilgiler</h3>
                   <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded px-3 py-2"><div className="flex flex-col overflow-hidden flex-1"><span className="text-[10px] text-slate-500">Referans ID</span><code className="text-[10px] sm:text-xs text-indigo-300 font-mono break-all select-all" title={feedback?.id}>{feedback?.id}</code></div><Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400" onClick={() => { navigator.clipboard.writeText(feedback.id); toast({ description: "Kopyalandı" }); }}><Copy className="w-4 h-4" /></Button></div>
@@ -247,6 +277,54 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
                 <div className="flex items-center gap-2 text-slate-300"><Calendar className="w-3.5 h-3.5 text-slate-500" /> {new Date(feedback.created_at).toLocaleString('tr-TR')}</div>
               </div>
             </div>
+
+            {/* 🟢 MİSAFİR İLETİŞİM İSTEĞİ KARTI (BURAYA EKLENDİ) */}
+            {feedback.guest_contact_info && (
+              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 flex flex-col gap-2 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/10 rounded-full -mr-8 -mt-8 pointer-events-none"></div>
+
+                <div className="flex items-center gap-2 text-orange-400 mb-1">
+                  <div className="p-1.5 bg-orange-500/20 rounded-full">
+                    <Phone className="w-4 h-4 text-orange-500" />
+                  </div>
+                  <span className="text-sm font-bold uppercase tracking-wide">Misafir İletişim Talebi</span>
+                </div>
+
+                <p className="text-xs text-slate-400 mb-2">
+                  Bu misafir, yaşadığı deneyimle ilgili kendisine ulaşılmasını talep etti.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-slate-900/60 p-2.5 rounded border border-slate-700/50 flex flex-col">
+                    <span className="text-[10px] text-slate-500 uppercase font-semibold mb-0.5">İsim Soyisim</span>
+                    <div className="flex items-center gap-2">
+                      <User className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="text-sm text-white font-medium">{feedback.guest_contact_info.name || 'Belirtilmedi'}</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/60 p-2.5 rounded border border-slate-700/50 flex flex-col">
+                    <span className="text-[10px] text-slate-500 uppercase font-semibold mb-0.5">Telefon</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="text-sm text-white font-medium">{feedback.guest_contact_info.phone || 'Belirtilmedi'}</span>
+                      </div>
+                      {feedback.guest_contact_info.phone && (
+                        <a
+                          href={`tel:${feedback.guest_contact_info.phone}`}
+                          className="flex items-center justify-center w-7 h-7 bg-green-600 hover:bg-green-500 text-white rounded-full transition-colors shadow-sm"
+                          title="Hemen Ara"
+                        >
+                          <Phone className="w-3.5 h-3.5 fill-current" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* 🟢 MİSAFİR KARTI SONU */}
 
             {customerProfileNote && (
               <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 flex gap-3 overflow-hidden">
@@ -284,15 +362,15 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
               <div className="mb-2"><h4 className="text-xs font-semibold text-slate-400 uppercase flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> Müşteri Mesajı</h4></div>
               <div className="bg-slate-900/80 p-4 rounded-md border border-slate-700/50 min-h-[80px] overflow-hidden">
                 <p className="text-slate-200 whitespace-pre-wrap leading-relaxed text-sm md:text-base break-words">{feedback.message || <span className="text-slate-500 italic">Mesaj yok.</span>}</p>
-                
+
                 {(feedback.rating || feedback.overall_rating) && (
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-700/30">
                     <span className="text-xs text-slate-400 font-medium">Puan:</span>
                     <div className="flex gap-0.5">
                       {[...Array(5)].map((_, i) => (
-                        <Star 
-                          key={i} 
-                          className={`w-4 h-4 ${i < (feedback.rating || feedback.overall_rating) ? "fill-yellow-500 text-yellow-500" : "fill-none text-slate-600"}`} 
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${i < (feedback.rating || feedback.overall_rating) ? "fill-yellow-500 text-yellow-500" : "fill-none text-slate-600"}`}
                         />
                       ))}
                     </div>
@@ -302,21 +380,21 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
                   </div>
                 )}
               </div>
-              
+
               {allImages.length > 0 && (
                 <div className="mt-6 space-y-6">
                   <div>
                     <h3 className="text-sm font-semibold text-teal-400 mb-3 flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Görseller ({allImages.length})</h3>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                       {allImages.map((url, idx) => (
-                        <div 
-                          key={idx} 
-                          className="relative aspect-square bg-slate-950 rounded-lg border-2 border-slate-700 overflow-hidden cursor-zoom-in group" 
+                        <div
+                          key={idx}
+                          className="relative aspect-square bg-slate-950 rounded-lg border-2 border-slate-700 overflow-hidden cursor-zoom-in group"
                           onClick={() => { setLightboxImages(allImages); setCurrentImageIndex(idx); setLightboxOpen(true); }}
                         >
                           <img src={url} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" alt="feedback" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                             <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
                         </div>
                       ))}
@@ -342,20 +420,20 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {['pending', 'in_progress', 'resolved', 'escalated']
                 .filter(status => {
-                   if (feedback.feedback_type !== 'complaint' && status === 'escalated') return false;
-                   return true;
+                  if (feedback.feedback_type !== 'complaint' && status === 'escalated') return false;
+                  return true;
                 })
                 .map(status => (
-                  <Button 
-                    key={status} 
-                    onClick={() => handleStatusUpdate(status)} 
-                    disabled={isUpdating || currentStatus === status} 
-                    variant="outline" 
+                  <Button
+                    key={status}
+                    onClick={() => handleStatusUpdate(status)}
+                    disabled={isUpdating || currentStatus === status}
+                    variant="outline"
                     className={`border-slate-700 text-xs md:text-sm ${currentStatus === status ? getStatusColor(status) : 'text-slate-400'}`}
                   >
                     {getStatusLabel(status)}
                   </Button>
-              ))}
+                ))}
             </div>
             <div className="flex justify-end">
               <Button variant="outline" onClick={onClose} className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white">Kapat</Button>
@@ -363,7 +441,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
           </div>
         </DialogContent>
       </Dialog>
-      
+
       {lightboxOpen && (
         <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/95 p-4 animate-in fade-in duration-300" onClick={() => setLightboxOpen(false)}>
           <Button variant="ghost" className="absolute top-5 right-5 text-white hover:bg-white/20 rounded-full w-12 h-12 p-0 z-[100001]" onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}><X className="w-8 h-8" /></Button>
@@ -381,17 +459,17 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
       )}
 
       {isProfileModalOpen && (
-        <CustomerProfileModal 
-          isOpen={isProfileModalOpen} 
-          onClose={() => setIsProfileModalOpen(false)} 
-          customerProfileId={feedback.customer_profile_id} 
-          customerEmail={displayEmail !== '-' ? displayEmail : null} 
-          businessId={feedback.business_id} 
-          onFlagsUpdate={(id, f, email) => { 
-            setLiveProfileData(prev => ({ ...prev, flag_vip_customer: f.vip, flag_sensitive_customer: f.sensitive, admin_note: f.admin_note })); 
+        <CustomerProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          customerProfileId={feedback.customer_profile_id}
+          customerEmail={displayEmail !== '-' ? displayEmail : null}
+          businessId={feedback.business_id}
+          onFlagsUpdate={(id, f, email) => {
+            setLiveProfileData(prev => ({ ...prev, flag_vip_customer: f.vip, flag_sensitive_customer: f.sensitive, admin_note: f.admin_note }));
             setBusinessSpecificData(prev => ({ ...prev, is_vip: f.vip, is_sensitive: f.sensitive, manager_notes: f.admin_note }));
-            if (onFeedbackUpdate) onFeedbackUpdate(feedback.id, { customer_profile_id: id }); 
-          }} 
+            if (onFeedbackUpdate) onFeedbackUpdate(feedback.id, { customer_profile_id: id });
+          }}
         />
       )}
     </>

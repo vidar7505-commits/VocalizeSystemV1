@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { 
-  ArrowLeft, ImagePlus, X, CheckCircle2, Send, Loader2, Star, 
-  AlertTriangle, Lightbulb, Building2, MapPin, 
-  Calendar as CalendarIcon, Trash2, Maximize2, ChevronRight, Camera, Clock, PenLine, Instagram, Copy
+import {
+  ArrowLeft, ImagePlus, X, CheckCircle2, Send, Loader2, Star,
+  AlertTriangle, Lightbulb, Building2, MapPin,
+  Calendar as CalendarIcon, Trash2, Maximize2, ChevronRight, Camera, Clock, PenLine, Instagram, Copy, Phone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -20,31 +20,31 @@ import { tr, enUS } from 'date-fns/locale';
 const getEmojiForRating = (rating, emojis) => emojis[rating] || '';
 
 const getReactionMessage = (rating, t) => {
-    if (rating === 1) return t.reactions.oneStar;
-    if (rating === 2) return t.reactions.twoStar;
-    if (rating === 3) return t.reactions.threeStar;
-    if (rating === 4) return t.reactions.fourStar;
-    if (rating === 5) return t.reactions.fiveStar;
-    return "";
+  if (rating === 1) return t.reactions.oneStar;
+  if (rating === 2) return t.reactions.twoStar;
+  if (rating === 3) return t.reactions.threeStar;
+  if (rating === 4) return t.reactions.fourStar;
+  if (rating === 5) return t.reactions.fiveStar;
+  return "";
 };
 
 const getDynamicPlaceholder = (rating, t) => {
-    if (rating === 0) return t.general.placeholder;
-    if (rating <= 2) return t.general.placeholderLow;
-    if (rating === 3) return t.general.placeholderMid;
-    return t.general.placeholderHigh;
+  if (rating === 0) return t.general.placeholder;
+  if (rating <= 2) return t.general.placeholderLow;
+  if (rating === 3) return t.general.placeholderMid;
+  return t.general.placeholderHigh;
 };
 
 const getFormInfo = (feedbackType, titles) => {
-  if (feedbackType === 'complaint') return { 
+  if (feedbackType === 'complaint') return {
     title: titles.complaint, subtitle: titles.complaintSub,
     icon: <AlertTriangle className="h-8 w-8 text-red-500" />, gradient: "from-red-400 to-red-600"
   };
-  if (feedbackType === 'suggestion') return { 
+  if (feedbackType === 'suggestion') return {
     title: titles.suggestion, subtitle: titles.suggestionSub,
     icon: <Lightbulb className="h-8 w-8 text-blue-500" />, gradient: "from-blue-400 to-blue-600"
   };
-  if (feedbackType === 'review') return { 
+  if (feedbackType === 'review') return {
     title: titles.review, subtitle: titles.reviewSub,
     icon: <Star className="h-8 w-8 text-yellow-500" />, gradient: "from-yellow-400 to-orange-500"
   };
@@ -52,9 +52,9 @@ const getFormInfo = (feedbackType, titles) => {
 };
 
 const getCurrentLocalISOString = () => {
-    const now = new Date();
-    const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
-    return localDate.toISOString().slice(0, 16);
+  const now = new Date();
+  const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+  return localDate.toISOString().slice(0, 16);
 };
 
 const TEXTS = {
@@ -72,25 +72,25 @@ const TEXTS = {
       review: "Değerlendir", reviewSub: "Deneyiminizi puanlayın.",
       default: "Geri Bildirim", defaultSub: "Görüşlerinizi paylaşın"
     },
-    
-    // 🟢 ADIM BAŞLIKLARI VE AÇIKLAMALARI (YENİ EKLENDİ)
+
+    // 🟢 ADIM BAŞLIKLARI VE AÇIKLAMALARI
     stepsUI: {
-        evidenceTitle: "Kanıt & Zaman",
-        evidenceDesc: "İşleminizi hızlandırmak için detay verin.",
-        problemTitle: "Sorun Nedir?",
-        suggestionTitle: "Öneriniz Nedir?",
-        problemDesc: "Lütfen detaylıca açıklayınız.",
-        rateTitle: "Puanlayın",
-        rateDesc: "Hizmetimizden ne kadar memnun kaldınız?",
-        finalTitle: "Son Dokunuşlar",
-        finalDesc: "Eklemek istedikleriniz var mı?",
-        branchLabel: "Şube",
-        addPhoto: "Ekle",
-        extraImages: "Ek Görseller"
+      evidenceTitle: "Kanıt & Zaman",
+      evidenceDesc: "İşleminizi hızlandırmak için detay verin.",
+      problemTitle: "Sorun Nedir?",
+      suggestionTitle: "Öneriniz Nedir?",
+      problemDesc: "Lütfen detaylıca açıklayınız.",
+      rateTitle: "Puanlayın",
+      rateDesc: "Hizmetimizden ne kadar memnun kaldınız?",
+      finalTitle: "Son Dokunuşlar",
+      finalDesc: "Eklemek istedikleriniz var mı?",
+      branchLabel: "Şube",
+      addPhoto: "Ekle",
+      extraImages: "Ek Görseller"
     },
 
     infoBanner: "Geri bildiriminiz anında yöneticiye iletilir.",
-    businessLabel: "İşletme", 
+    businessLabel: "İşletme",
     branch: { label: "Şube Seçin", placeholder: "Şube Seçiniz", auto: "QR ile otomatik seçildi" },
     receipt: {
       label: "Alışveriş Fişiniz Var mı?", noReceipt: "Fişim Yok", hasReceipt: "Fişim Var",
@@ -100,38 +100,38 @@ const TEXTS = {
     message: { label: "Açıklama", placeholder: "Lütfen detayları buraya yazın...", minChars: "En az 10 karakter" },
     rating: { label: "Memnuniyetiniz", emojis: { 1: '😞 Çok Kötü', 2: '😟 Kötü', 3: '😐 İdare Eder', 4: '😊 Memnun Kaldım', 5: '🤩 Harikaydı!' } },
     reactions: {
-        oneStar: "Çok üzgünüz 😔 Bunu telafi etmek için derhal incelemeye alacağız.",
-        twoStar: "Beklentinizin altında kaldığımız için üzgünüz. Kendimizi geliştireceğiz.",
-        threeStar: "Daha iyisini yapabiliriz. Geri bildiriminizle büyüyoruz.",
-        fourStar: "Teşekkürler! Mükemmele ulaşmak için çalışmaya devam edeceğiz. 💪",
-        fiveStar: "Muhteşemsiniz! Günümüzü güzelleştirdiniz, desteğiniz için teşekkürler! 🌟"
+      oneStar: "Çok üzgünüz 😔 Bunu telafi etmek için derhal incelemeye alacağız.",
+      twoStar: "Beklentinizin altında kaldığımız için üzgünüz. Kendimizi geliştireceğiz.",
+      threeStar: "Daha iyisini yapabiliriz. Geri bildiriminizle büyüyoruz.",
+      fourStar: "Teşekkürler! Mükemmele ulaşmak için çalışmaya devam edeceğiz. 💪",
+      fiveStar: "Muhteşemsiniz! Günümüzü güzelleştirdiniz, desteğiniz için teşekkürler! 🌟"
     },
-    general: { 
-        title: "İşletme Hakkındaki Genel Deneyiminiz", 
-        placeholder: "Mekan, hizmet veya atmosfer hakkında eklemek istedikleriniz...",
-        placeholderLow: "Lütfen nerede hata yaptığımızı bize anlatın, düzeltmek istiyoruz...",
-        placeholderMid: "Sizce neyi daha iyi yapabilirdik?",
-        placeholderHigh: "En çok neyi beğendiğinizi anlatın (Hizmet, Lezzet, Ortam?)..."
+    general: {
+      title: "İşletme Hakkındaki Genel Deneyiminiz",
+      placeholder: "Mekan, hizmet veya atmosfer hakkında eklemek istedikleriniz...",
+      placeholderLow: "Lütfen nerede hata yaptığımızı bize anlatın, düzeltmek istiyoruz...",
+      placeholderMid: "Sizce neyi daha iyi yapabilirdik?",
+      placeholderHigh: "En çok neyi beğendiğinizi anlatın (Hizmet, Lezzet, Ortam?)..."
     },
     images: { label: "Ek Görseller (Opsiyonel)", placeholder: "Fotoğraf Ekle", sub: "Max 3 adet", uploaded: "görsel seçildi" },
     submit: { sending: "Gönderiliyor...", send: "Gönder", error: "Hata oluştu.", errorValidation: "Lütfen gerekli alanları doldurun." },
-    success: { 
-        title: "Teşekkürler!", 
-        defaultTitle: "Harika!",
-        desc: (name) => `Bildiriminiz ${name} yönetimine iletildi.`, 
-        defaultDesc: "Geri bildiriminiz başarıyla iletildi.",
-        footer: "Bizi tercih ettiğiniz için teşekkürler.", 
-        button: "Kapat",
-        homeButton: "Ana Sayfaya Dön"
+    success: {
+      title: "Teşekkürler!",
+      defaultTitle: "Harika!",
+      desc: (name) => `Bildiriminiz ${name} yönetimine iletildi.`,
+      defaultDesc: "Geri bildiriminiz başarıyla iletildi.",
+      footer: "Bizi tercih ettiğiniz için teşekkürler.",
+      button: "Kapat",
+      homeButton: "Ana Sayfaya Dön"
     },
     google: {
-        title: "Harikasınız! 🤩", 
-        copyAlert: "Yorumunuzu sizin için kopyaladık! 📋",
-        desc: "Bu güzel deneyiminizi Google'da paylaşarak diğer müşterilere de ilham vermek ister misiniz? Yapıştırmanız yeterli.",
-        yesButton: "Google'da Paylaş",
-        noButton: "Hayır, Teşekkürler",
-        instaButton: "Bizi Instagram'da Takip Et",
-        copiedToast: "Yorum kopyalandı! Google'a yönlendiriliyorsunuz..."
+      title: "Harikasınız! 🤩",
+      copyAlert: "Yorumunuzu sizin için kopyaladık! 📋",
+      desc: "Bu güzel deneyiminizi Google'da paylaşarak diğer müşterilere de ilham vermek ister misiniz? Yapıştırmanız yeterli.",
+      yesButton: "Google'da Paylaş",
+      noButton: "Hayır, Teşekkürler",
+      instaButton: "Bizi Instagram'da Takip Et",
+      copiedToast: "Yorum kopyalandı! Google'a yönlendiriliyorsunuz..."
     },
     steps: "Adım"
   },
@@ -149,21 +149,20 @@ const TEXTS = {
       review: "Rate Experience", reviewSub: "Rate your experience.",
       default: "Feedback", defaultSub: "Share your thoughts"
     },
-    
-    // 🟢 ENGLISH STEP UI TEXTS (TRANSLATED)
+
     stepsUI: {
-        evidenceTitle: "Evidence & Time",
-        evidenceDesc: "Provide details to speed up the process.",
-        problemTitle: "What is the issue?",
-        suggestionTitle: "What is your suggestion?",
-        problemDesc: "Please explain in detail.",
-        rateTitle: "Rate Us",
-        rateDesc: "How satisfied were you with our service?",
-        finalTitle: "Final Touches",
-        finalDesc: "Anything else you'd like to add?",
-        branchLabel: "Branch",
-        addPhoto: "Add",
-        extraImages: "Additional Images"
+      evidenceTitle: "Evidence & Time",
+      evidenceDesc: "Provide details to speed up the process.",
+      problemTitle: "What is the issue?",
+      suggestionTitle: "What is your suggestion?",
+      problemDesc: "Please explain in detail.",
+      rateTitle: "Rate Us",
+      rateDesc: "How satisfied were you with our service?",
+      finalTitle: "Final Touches",
+      finalDesc: "Anything else you'd like to add?",
+      branchLabel: "Branch",
+      addPhoto: "Add",
+      extraImages: "Additional Images"
     },
 
     infoBanner: "Sent instantly to the manager.",
@@ -178,38 +177,38 @@ const TEXTS = {
     message: { label: "Description", placeholder: "Please provide details...", minChars: "Min 10 chars" },
     rating: { label: "Satisfaction", emojis: { 1: '😞 Very Bad', 2: '😟 Bad', 3: '😐 Average', 4: '😊 Good', 5: '😍 Excellent' } },
     reactions: {
-        oneStar: "We are very sorry 😔 We will investigate immediately to make it right.",
-        twoStar: "We apologize for falling below expectations. We will improve ourselves.",
-        threeStar: "We can do better. We grow with your feedback.",
-        fourStar: "Thank you! We will continue working to reach perfection. 💪",
-        fiveStar: "You are awesome! You made our day, thank you for your support! 🌟"
+      oneStar: "We are very sorry 😔 We will investigate immediately to make it right.",
+      twoStar: "We apologize for falling below expectations. We will improve ourselves.",
+      threeStar: "We can do better. We grow with your feedback.",
+      fourStar: "Thank you! We will continue working to reach perfection. 💪",
+      fiveStar: "You are awesome! You made our day, thank you for your support! 🌟"
     },
-    general: { 
-        title: "Your General Experience with the Business", 
-        placeholder: "Anything you'd like to add about the venue, service, or atmosphere...",
-        placeholderLow: "Please tell us where we went wrong, we want to fix it...",
-        placeholderMid: "What could we have done better?",
-        placeholderHigh: "Tell us what you liked best (Service, Taste, Ambiance?)..."
+    general: {
+      title: "Your General Experience with the Business",
+      placeholder: "Anything you'd like to add about the venue, service, or atmosphere...",
+      placeholderLow: "Please tell us where we went wrong, we want to fix it...",
+      placeholderMid: "What could we have done better?",
+      placeholderHigh: "Tell us what you liked best (Service, Taste, Ambiance?)..."
     },
     images: { label: "Images (Optional)", placeholder: "Add Photo", sub: "Max 3 images", uploaded: "images selected" },
     submit: { sending: "Sending...", send: "Send", error: "Error occurred.", errorValidation: "Please fill required fields." },
-    success: { 
-        title: "Thank You!", 
-        defaultTitle: "Awesome!",
-        desc: (name) => `Sent to ${name} management.`, 
-        defaultDesc: "Your feedback has been sent successfully.",
-        footer: "Thanks for choosing us.", 
-        button: "Close",
-        homeButton: "Return to Home"
+    success: {
+      title: "Thank You!",
+      defaultTitle: "Awesome!",
+      desc: (name) => `Sent to ${name} management.`,
+      defaultDesc: "Your feedback has been sent successfully.",
+      footer: "Thanks for choosing us.",
+      button: "Close",
+      homeButton: "Return to Home"
     },
     google: {
-        title: "You're Awesome! 🤩",
-        copyAlert: "We copied your feedback for you! 📋",
-        desc: "Would you like to empower us by sharing this great experience with others on Google? Just paste it.",
-        yesButton: "Share on Google",
-        noButton: "No, Thanks",
-        instaButton: "Follow us on Instagram",
-        copiedToast: "Copied! Redirecting..."
+      title: "You're Awesome! 🤩",
+      copyAlert: "We copied your feedback for you! 📋",
+      desc: "Would you like to empower us by sharing this great experience with others on Google? Just paste it.",
+      yesButton: "Share on Google",
+      noButton: "No, Thanks",
+      instaButton: "Follow us on Instagram",
+      copiedToast: "Copied! Redirecting..."
     },
     steps: "Step"
   }
@@ -233,24 +232,24 @@ export default function FeedbackForm() {
   const [language, setLanguage] = useState('tr');
   const [feedbackType, setFeedbackType] = useState('complaint');
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 3;
+  const totalSteps = feedbackType === 'complaint' ? 3 : 2;
 
   const [businessName, setBusinessName] = useState('');
-  const [branches, setBranches] = useState([]); 
+  const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(branchParam || '');
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [hasReceipt, setHasReceipt] = useState(false);
   const [receiptFile, setReceiptFile] = useState(null);
-  const [receiptPreview, setReceiptPreview] = useState(null); 
-  const [visitDate, setVisitDate] = useState(getCurrentLocalISOString()); 
+  const [receiptPreview, setReceiptPreview] = useState(null);
+  const [visitDate, setVisitDate] = useState(getCurrentLocalISOString());
 
   const [message, setMessage] = useState('');
   const [rating, setRating] = useState(0);
   const [generalRating, setGeneralRating] = useState(0);
   const [generalComment, setGeneralComment] = useState('');
   const [feedbackImages, setFeedbackImages] = useState([]);
-  
+
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [imageModalSrc, setImageModalSrc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -260,6 +259,11 @@ export default function FeedbackForm() {
   const [currentFeedbackId, setCurrentFeedbackId] = useState(null);
 
   const [animatingStar, setAnimatingStar] = useState(null);
+
+  // 🟢 YENİ STATE'LER (MİSAFİR İLETİŞİM)
+  const [wantsGuestContact, setWantsGuestContact] = useState(false);
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
 
   const t = TEXTS[language] || TEXTS.tr;
 
@@ -279,28 +283,28 @@ export default function FeedbackForm() {
 
         let targetBusinessId = businessParam;
         if (!targetBusinessId && branchParam) {
-           const { data } = await supabase.from('branches').select('business_id').eq('id', branchParam).single();
-           if (data) targetBusinessId = data.business_id;
+          const { data } = await supabase.from('branches').select('business_id').eq('id', branchParam).single();
+          if (data) targetBusinessId = data.business_id;
         }
 
         if (targetBusinessId) {
-            const { data: biz } = await supabase.from('businesses').select('business_name').eq('id', targetBusinessId).single();
-            if (biz) setBusinessName(biz.business_name);
+          const { data: biz } = await supabase.from('businesses').select('business_name').eq('id', targetBusinessId).single();
+          if (biz) setBusinessName(biz.business_name);
 
-            const { data: allBranches } = await supabase
-              .from('branches')
-              .select('id, branch_name_tr, google_review_url, instagram_url')
-              .eq('business_id', targetBusinessId)
-              .eq('is_active', true);
-            
-            if (allBranches) {
-                setBranches(allBranches);
-                if (branchParam && allBranches.some(b => b.id === branchParam)) {
-                    setSelectedBranch(branchParam);
-                } else if (allBranches.length === 1) {
-                    setSelectedBranch(allBranches[0].id);
-                }
+          const { data: allBranches } = await supabase
+            .from('branches')
+            .select('id, branch_name_tr, google_review_url, instagram_url')
+            .eq('business_id', targetBusinessId)
+            .eq('is_active', true);
+
+          if (allBranches) {
+            setBranches(allBranches);
+            if (branchParam && allBranches.some(b => b.id === branchParam)) {
+              setSelectedBranch(branchParam);
+            } else if (allBranches.length === 1) {
+              setSelectedBranch(allBranches[0].id);
             }
+          }
         }
       } catch (error) {
         console.error('Init error:', error);
@@ -314,14 +318,14 @@ export default function FeedbackForm() {
   // --- HANDLERS ---
   const handleStarClick = (starValue, isGeneral = false) => {
     if (starValue >= 3) {
-        setAnimatingStar(starValue);
-        setTimeout(() => setAnimatingStar(null), 400);
+      setAnimatingStar(starValue);
+      setTimeout(() => setAnimatingStar(null), 400);
     }
 
     if (isGeneral) {
-        setGeneralRating(starValue);
+      setGeneralRating(starValue);
     } else {
-        setRating(starValue);
+      setRating(starValue);
     }
   };
 
@@ -338,30 +342,30 @@ export default function FeedbackForm() {
   };
 
   const handleReceiptUpload = (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      if (file.size > 5 * 1024 * 1024) return toast({ title: t.fileTooLarge, variant: "destructive" });
-      setReceiptFile(file);
-      setReceiptPreview(URL.createObjectURL(file));
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return toast({ title: t.fileTooLarge, variant: "destructive" });
+    setReceiptFile(file);
+    setReceiptPreview(URL.createObjectURL(file));
   };
 
   const isStepValid = () => {
     if (!selectedBranch) return false;
 
     if (feedbackType === 'complaint') {
-        if (currentStep === 1) return hasReceipt ? !!receiptFile : !!visitDate;
-        if (currentStep === 2) return message.trim().length >= 10;
-        return true; 
+      if (currentStep === 1) return hasReceipt ? !!receiptFile : !!visitDate;
+      if (currentStep === 2) return message.trim().length >= 10;
+      return true;
     }
-    
+
     if (feedbackType === 'suggestion') {
-        if (currentStep === 1) return message.trim().length >= 10;
-        return true;
+      if (currentStep === 1) return message.trim().length >= 10;
+      return true;
     }
 
     if (feedbackType === 'review') {
-        if (currentStep === 1) return rating > 0;
-        return true;
+      if (currentStep === 1) return rating > 0;
+      return true;
     }
     return true;
   };
@@ -374,13 +378,13 @@ export default function FeedbackForm() {
   const handleBack = () => {
     if (currentStep > 1) setCurrentStep(prev => prev - 1);
     else {
-        const params = new URLSearchParams();
-        if (businessParam) params.set('business', businessParam);
-        if (branchParam) params.set('branch', branchParam);
-        if (guestParam) params.set('guest', guestParam);
-        if (qrParam) params.set('qr', qrParam);
-        if (langParam) params.set('lang', langParam);
-        navigate(`/customer-panel?${params.toString()}`);
+      const params = new URLSearchParams();
+      if (businessParam) params.set('business', businessParam);
+      if (branchParam) params.set('branch', branchParam);
+      if (guestParam) params.set('guest', guestParam);
+      if (qrParam) params.set('qr', qrParam);
+      if (langParam) params.set('lang', langParam);
+      navigate(`/customer-panel?${params.toString()}`);
     }
   };
 
@@ -400,22 +404,22 @@ export default function FeedbackForm() {
   const submitFeedback = async () => {
     if (!isStepValid()) return;
     setIsSubmitting(true);
-    
+
     try {
       const currentBusinessId = businessParam || branches.find(b => b.id === selectedBranch)?.business_id;
       const currentBranch = branches.find(b => b.id === selectedBranch);
-      
+
       const calculatedOverallRating = feedbackType === 'review' ? rating : (generalRating > 0 ? generalRating : 5);
       const actualRating = feedbackType === 'review' ? rating : generalRating;
-      
+
       // 🟢 GOOGLE VE INSTAGRAM YÖNLENDİRME
       if (feedbackType !== 'complaint') {
-          if (actualRating >= 4 && currentBranch?.google_review_url) {
-              setGoogleRedirectUrl(currentBranch.google_review_url);
-          }
-          if (actualRating >= 3 && currentBranch?.instagram_url) {
-              setInstagramRedirectUrl(currentBranch.instagram_url);
-          }
+        if (actualRating >= 4 && currentBranch?.google_review_url) {
+          setGoogleRedirectUrl(currentBranch.google_review_url);
+        }
+        if (actualRating >= 3 && currentBranch?.instagram_url) {
+          setInstagramRedirectUrl(currentBranch.instagram_url);
+        }
       }
 
       let receiptUrl = null;
@@ -435,7 +439,7 @@ export default function FeedbackForm() {
         feedback_type: feedbackType,
         rating: feedbackType === 'review' ? rating : null,
         overall_rating: calculatedOverallRating,
-        message: message.trim() || null, 
+        message: message.trim() || null,
         has_receipt: hasReceipt,
         receipt_images: receiptUrl ? [receiptUrl] : null,
         feedback_images: feedbackImageUrls,
@@ -444,6 +448,13 @@ export default function FeedbackForm() {
         general_eval_comment: generalComment.trim() || null,
         customer_email: isGuest ? null : (user?.email || null),
         customer_name: isGuest ? 'Anonim' : (user?.user_metadata?.full_name || 'Müşteri'),
+
+        // 🟢 MİSAFİR İLETİŞİM BİLGİSİ
+        guest_contact_info: (isGuest && wantsGuestContact && (guestName || guestPhone)) ? {
+          name: guestName,
+          phone: guestPhone
+        } : null,
+
         status: 'new',
         lang: language
       }).select().single();
@@ -464,34 +475,34 @@ export default function FeedbackForm() {
   const handleGoogleShare = async () => {
     let textToCopy = "";
     if (feedbackType === 'review') {
-        textToCopy = message;
+      textToCopy = message;
     } else {
-        textToCopy = generalComment;
+      textToCopy = generalComment;
     }
 
     try {
-        if (textToCopy) {
-            await navigator.clipboard.writeText(textToCopy);
-            toast({ 
-                title: "Kopyalandı!", 
-                description: t.google.copiedToast,
-                className: "bg-green-600 text-white border-none"
-            });
-        }
+      if (textToCopy) {
+        await navigator.clipboard.writeText(textToCopy);
+        toast({
+          title: "Kopyalandı!",
+          description: t.google.copiedToast,
+          className: "bg-green-600 text-white border-none"
+        });
+      }
     } catch (err) {
-        console.error("Clipboard error:", err);
+      console.error("Clipboard error:", err);
     }
 
     if (googleRedirectUrl) {
-        setTimeout(() => {
-           window.open(googleRedirectUrl, '_blank'); 
-        }, 500);
+      setTimeout(() => {
+        window.open(googleRedirectUrl, '_blank');
+      }, 500);
     }
   };
 
   const renderStepIndicator = () => (
     <div className="flex justify-center gap-2 mb-6">
-      {[1, 2, 3].map(step => (
+      {Array.from({ length: totalSteps }, (_, i) => i + 1).map(step => (
         <div key={step} className={`h-1.5 rounded-full transition-all duration-300 ${step <= currentStep ? (step === currentStep ? 'w-8 bg-teal-500' : 'w-4 bg-teal-800') : 'w-2 bg-slate-700'}`} />
       ))}
     </div>
@@ -501,7 +512,7 @@ export default function FeedbackForm() {
 
   return (
     <div className="h-dvh w-full bg-[#0f172a] text-white flex flex-col overflow-hidden relative">
-      
+
       {/* 1. HEADER (Fixed) */}
       <div className="flex-none pt-safe px-4 pb-2 bg-[#0f172a] z-10">
         <div className="flex justify-between items-center py-3">
@@ -509,21 +520,21 @@ export default function FeedbackForm() {
             <ArrowLeft className="h-6 w-6" />
           </button>
           <span className="font-semibold text-lg">{formInfo.title}</span>
-          <div className="w-10" /> 
+          <div className="w-10" />
         </div>
         {renderStepIndicator()}
       </div>
 
       {/* 2. SCROLLABLE CONTENT AREA (Flex-1) */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <div className="max-w-md mx-auto h-full flex flex-col pt-6 md:justify-center min-h-[400px]">
-          
+      <div className="flex-1 overflow-y-auto px-4 pb-4 scroll-smooth">
+        <div className="max-w-md mx-auto h-full flex flex-col pt-6 min-h-[400px]">
+
           {/* STEP 1: COMPLAINT (Evidence) */}
           {feedbackType === 'complaint' && currentStep === 1 && (
             <div className="step-content space-y-6">
               <div className="text-center space-y-2 mb-8">
                 <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
-                    <CalendarIcon className="h-8 w-8 text-red-500" />
+                  <CalendarIcon className="h-8 w-8 text-red-500" />
                 </div>
                 {/* 🟢 DİNAMİK METİNLER */}
                 <h2 className="text-2xl font-bold text-white">{t.stepsUI.evidenceTitle}</h2>
@@ -533,68 +544,68 @@ export default function FeedbackForm() {
               {/* Branch Selector */}
               {branches.length > 1 && (
                 <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                    <label className="text-xs text-slate-400 mb-1 block pl-1">{t.stepsUI.branchLabel}</label>
-                    <div className="relative">
-                        <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg py-3 px-3 appearance-none focus:ring-1 focus:ring-teal-500">
-                            {branches.map(b => <option key={b.id} value={b.id}>{b.branch_name_tr}</option>)}
-                        </select>
-                        <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                    </div>
+                  <label className="text-xs text-slate-400 mb-1 block pl-1">{t.stepsUI.branchLabel}</label>
+                  <div className="relative">
+                    <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg py-3 px-3 appearance-none focus:ring-1 focus:ring-teal-500">
+                      {branches.map(b => <option key={b.id} value={b.id}>{b.branch_name_tr}</option>)}
+                    </select>
+                    <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  </div>
                 </div>
               )}
 
               <div className="space-y-4">
                 <label className="text-sm font-medium text-slate-300 ml-1">{t.receipt.label}</label>
                 <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => { setHasReceipt(false); setReceiptFile(null); }} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${!hasReceipt ? 'bg-red-500/10 border-red-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                        <X className="h-6 w-6" />
-                        <span className="font-medium">{t.receipt.noReceipt}</span>
-                    </button>
-                    <button onClick={() => setHasReceipt(true)} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${hasReceipt ? 'bg-teal-500/10 border-teal-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                        <CheckCircle2 className="h-6 w-6" />
-                        <span className="font-medium">{t.receipt.hasReceipt}</span>
-                    </button>
+                  <button onClick={() => { setHasReceipt(false); setReceiptFile(null); }} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${!hasReceipt ? 'bg-red-500/10 border-red-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                    <X className="h-6 w-6" />
+                    <span className="font-medium">{t.receipt.noReceipt}</span>
+                  </button>
+                  <button onClick={() => setHasReceipt(true)} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${hasReceipt ? 'bg-teal-500/10 border-teal-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                    <CheckCircle2 className="h-6 w-6" />
+                    <span className="font-medium">{t.receipt.hasReceipt}</span>
+                  </button>
                 </div>
               </div>
 
               {hasReceipt ? (
                 <div className="animate-in fade-in zoom-in-95 duration-200">
-                    <label className="block bg-slate-800 border-2 border-dashed border-slate-600 hover:border-teal-500 rounded-xl p-8 text-center cursor-pointer transition-colors group">
-                        <input type="file" className="hidden" accept="image/*" onChange={handleReceiptUpload} />
-                        {receiptPreview ? (
-                            <div className="relative">
-                                <img src={receiptPreview} className="h-48 w-full object-contain rounded-lg mx-auto" />
-                                <button onClick={(e) => { e.preventDefault(); setReceiptFile(null); setReceiptPreview(null); }} className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"><X className="h-4 w-4 text-white" /></button>
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                <Camera className="h-10 w-10 text-slate-400 mx-auto group-hover:text-teal-400 transition-colors" />
-                                <p className="text-sm text-slate-400 font-medium">{t.receipt.placeholder}</p>
-                            </div>
-                        )}
-                    </label>
+                  <label className="block bg-slate-800 border-2 border-dashed border-slate-600 hover:border-teal-500 rounded-xl p-8 text-center cursor-pointer transition-colors group">
+                    <input type="file" className="hidden" accept="image/*" onChange={handleReceiptUpload} />
+                    {receiptPreview ? (
+                      <div className="relative">
+                        <img src={receiptPreview} className="h-48 w-full object-contain rounded-lg mx-auto" />
+                        <button onClick={(e) => { e.preventDefault(); setReceiptFile(null); setReceiptPreview(null); }} className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"><X className="h-4 w-4 text-white" /></button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Camera className="h-10 w-10 text-slate-400 mx-auto group-hover:text-teal-400 transition-colors" />
+                        <p className="text-sm text-slate-400 font-medium">{t.receipt.placeholder}</p>
+                      </div>
+                    )}
+                  </label>
                 </div>
               ) : (
                 <div className="animate-in fade-in slide-in-from-top-2 duration-200 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                    <label className="text-sm text-slate-400 mb-2 block">{t.receipt.dateLabel}</label>
-                    <div className="relative">
-                        <input 
-                            type="datetime-local" 
-                            lang={language === 'tr' ? 'tr-TR' : 'en-US'}
-                            value={visitDate} 
-                            onChange={(e) => setVisitDate(e.target.value)} 
-                            max={getCurrentLocalISOString()} 
-                            className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white [color-scheme:dark] focus:border-teal-500 outline-none" 
-                        />
-                        <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 pointer-events-none" />
+                  <label className="text-sm text-slate-400 mb-2 block">{t.receipt.dateLabel}</label>
+                  <div className="relative">
+                    <input
+                      type="datetime-local"
+                      lang={language === 'tr' ? 'tr-TR' : 'en-US'}
+                      value={visitDate}
+                      onChange={(e) => setVisitDate(e.target.value)}
+                      max={getCurrentLocalISOString()}
+                      className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white [color-scheme:dark] focus:border-teal-500 outline-none"
+                    />
+                    <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 pointer-events-none" />
+                  </div>
+                  {/* 🟢 TÜRKÇE FORMATLANMIŞ TARİH */}
+                  {visitDate && (
+                    <div className="mt-3 flex items-center gap-2 text-teal-400 text-sm font-medium bg-teal-500/10 p-3 rounded-lg border border-teal-500/20">
+                      <Clock className="w-4 h-4 shrink-0" />
+                      {format(new Date(visitDate), 'd MMMM yyyy, EEEE - HH:mm', { locale: language === 'tr' ? tr : enUS })}
                     </div>
-                    {/* 🟢 TÜRKÇE FORMATLANMIŞ TARİH */}
-                    {visitDate && (
-                        <div className="mt-3 flex items-center gap-2 text-teal-400 text-sm font-medium bg-teal-500/10 p-3 rounded-lg border border-teal-500/20">
-                            <Clock className="w-4 h-4 shrink-0" />
-                            {format(new Date(visitDate), 'd MMMM yyyy, EEEE - HH:mm', { locale: language === 'tr' ? tr : enUS })}
-                        </div>
-                    )}
+                  )}
                 </div>
               )}
             </div>
@@ -603,24 +614,24 @@ export default function FeedbackForm() {
           {/* STEP 2: COMPLAINT / STEP 1: SUGGESTION */}
           {((feedbackType === 'complaint' && currentStep === 2) || (feedbackType === 'suggestion' && currentStep === 1)) && (
             <div className="step-content space-y-6 h-full flex flex-col">
-               <div className="text-center space-y-2 flex-shrink-0">
+              <div className="text-center space-y-2 flex-shrink-0">
                 <h2 className="text-2xl font-bold text-white">
-                    {feedbackType === 'complaint' ? t.stepsUI.problemTitle : t.stepsUI.suggestionTitle}
+                  {feedbackType === 'complaint' ? t.stepsUI.problemTitle : t.stepsUI.suggestionTitle}
                 </h2>
                 <p className="text-slate-400">{t.stepsUI.problemDesc}</p>
               </div>
               <div className="flex-1 min-h-[200px]">
                 <div className="relative h-full bg-slate-800/30 border border-slate-700 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-transparent transition-all">
-                    <div className="absolute top-4 left-4 text-slate-500 pointer-events-none">
-                        <PenLine className="w-5 h-5" />
-                    </div>
-                    <textarea 
-                        value={message} 
-                        onChange={(e) => setMessage(e.target.value)} 
-                        placeholder={t.message.placeholder} 
-                        className="w-full h-full bg-transparent p-4 pl-12 text-base text-white placeholder:text-slate-500 resize-none outline-none"
-                        autoFocus
-                    />
+                  <div className="absolute top-4 left-4 text-slate-500 pointer-events-none">
+                    <PenLine className="w-5 h-5" />
+                  </div>
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder={t.message.placeholder}
+                    className="w-full h-full bg-transparent p-4 pl-12 text-base text-white placeholder:text-slate-500 resize-none outline-none"
+                    autoFocus
+                  />
                 </div>
               </div>
               <p className={`text-xs text-right ${message.length < 10 ? 'text-red-400' : 'text-teal-500'}`}>{message.length}/1000 (Min 10)</p>
@@ -630,147 +641,215 @@ export default function FeedbackForm() {
           {/* STEP 1: REVIEW (Rating) */}
           {feedbackType === 'review' && currentStep === 1 && (
             <div className="step-content flex flex-col items-center justify-center space-y-8 py-10">
-                <div className="text-center space-y-2">
-                    <h2 className="text-3xl font-bold text-white">{t.stepsUI.rateTitle}</h2>
-                    <p className="text-slate-400">{t.stepsUI.rateDesc}</p>
-                </div>
-                
-                <div className="flex gap-3">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                        <button 
-                            key={star} 
-                            onClick={() => handleStarClick(star)} 
-                            className={`group transition-transform focus:outline-none ${animatingStar === star && star >= 3 ? 'animate-star-pop' : 'hover:scale-110 active:scale-95'}`}
-                        >
-                            <Star className={cn(
-                                "w-12 h-12 transition-colors duration-300",
-                                star <= rating 
-                                ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" 
-                                : "text-slate-700"
-                            )} />
-                        </button>
-                    ))}
-                </div>
-                
-                <div className="h-10 flex items-center justify-center">
-                    {rating > 0 && (
-                        <div className="text-center animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <p className={`text-xl font-bold ${rating >= 4 ? 'text-green-400' : rating === 3 ? 'text-yellow-400' : 'text-red-400'}`}>
-                                {getEmojiForRating(rating, t.rating.emojis)}
-                            </p>
-                            <p className="text-xs text-slate-400 mt-1">{getReactionMessage(rating, t)}</p>
-                        </div>
-                    )}
-                </div>
+              <div className="text-center space-y-2">
+                <h2 className="text-3xl font-bold text-white">{t.stepsUI.rateTitle}</h2>
+                <p className="text-slate-400">{t.stepsUI.rateDesc}</p>
+              </div>
+
+              <div className="flex gap-3">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => handleStarClick(star)}
+                    className={`group transition-transform focus:outline-none ${animatingStar === star && star >= 3 ? 'animate-star-pop' : 'hover:scale-110 active:scale-95'}`}
+                  >
+                    <Star className={cn(
+                      "w-12 h-12 transition-colors duration-300",
+                      star <= rating
+                        ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]"
+                        : "text-slate-700"
+                    )} />
+                  </button>
+                ))}
+              </div>
+
+              <div className="h-10 flex items-center justify-center">
+                {rating > 0 && (
+                  <div className="text-center animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <p className={`text-xl font-bold ${rating >= 4 ? 'text-green-400' : rating === 3 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {getEmojiForRating(rating, t.rating.emojis)}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">{getReactionMessage(rating, t)}</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           {/* FINAL STEP: EXTRAS */}
           {((feedbackType === 'complaint' && currentStep === 3) || (feedbackType === 'suggestion' && currentStep === 2) || (feedbackType === 'review' && currentStep === 2)) && (
-            <div className="step-content space-y-6">
-                <div className="text-center mb-4">
-                    <h2 className="text-2xl font-bold text-white">{t.stepsUI.finalTitle}</h2>
-                    <p className="text-slate-400">{t.stepsUI.finalDesc}</p>
-                </div>
+            <div className="step-content space-y-6 pb-20">
+              <div className="text-center mb-4">
+                <h2 className="text-2xl font-bold text-white">{t.stepsUI.finalTitle}</h2>
+                <p className="text-slate-400">{t.stepsUI.finalDesc}</p>
+              </div>
 
-                {/* Optional General Rating & Comment */}
-                {feedbackType !== 'review' && (
-                    <div 
-                        className={cn(
-                            "bg-slate-800/30 p-5 rounded-2xl border transition-all duration-500 space-y-4 shadow-sm",
-                            generalRating >= 4 ? "border-yellow-500/50 glow-success bg-slate-800/60" : 
-                            generalRating === 3 ? "border-orange-400/40" : 
-                            generalRating > 0 ? "border-red-500/40 bg-red-500/5" : 
-                            "border-slate-700"
-                        )}
-                    >
-                        <div className="text-center">
-                            <label className="text-sm text-slate-300 mb-3 block font-medium">{t.general.title} (Opsiyonel)</label>
-                            <div className="flex justify-center gap-4">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <button 
-                                        key={star} 
-                                        onClick={() => handleStarClick(star, true)}
-                                        className={animatingStar === star && star >= 3 ? 'animate-star-pop' : 'transition-transform duration-200 active:scale-95'}
-                                    >
-                                        <Star className={cn(
-                                            "w-9 h-9 transition-colors duration-300",
-                                            star <= generalRating 
-                                                ? (generalRating >= 4 ? "fill-yellow-400 text-yellow-400" : 
-                                                   generalRating === 3 ? "fill-orange-400 text-orange-400" : 
-                                                   "fill-red-500 text-red-500") 
-                                                : "text-slate-700"
-                                        )} />
-                                    </button>
-                                ))}
-                            </div>
-                            
-                            {generalRating > 0 && (
-                                <div className="animate-in fade-in slide-in-from-top-1 duration-500">
-                                    <p className={cn(
-                                        "text-xs mt-3 font-medium px-3 py-1.5 rounded-full inline-block border",
-                                        generalRating >= 4 ? "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" :
-                                        generalRating === 3 ? "text-orange-300 bg-orange-400/10 border-orange-400/20" :
-                                        "text-red-300 bg-red-500/10 border-red-500/20"
-                                    )}>
-                                        {getReactionMessage(generalRating, t)}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                        
-                        <div className="relative group">
-                            <div className="absolute top-3 left-3 text-slate-500 group-focus-within:text-teal-500 transition-colors pointer-events-none">
-                                <PenLine className="w-4 h-4" />
-                            </div>
-                            <textarea
-                                value={generalComment}
-                                onChange={(e) => setGeneralComment(e.target.value)}
-                                placeholder={getDynamicPlaceholder(generalRating, t)}
-                                className="w-full bg-slate-950/50 border border-slate-600/50 rounded-xl p-3 pl-10 text-sm text-white resize-none focus:ring-1 focus:ring-teal-500/50 focus:border-teal-500 transition-all placeholder:text-slate-600"
-                                rows={3}
+              {/* Optional General Rating & Comment */}
+              {feedbackType !== 'review' && (
+                <div
+                  className={cn(
+                    "bg-slate-800/30 p-5 rounded-2xl border transition-all duration-500 space-y-4 shadow-sm",
+                    generalRating >= 4 ? "border-yellow-500/50 glow-success bg-slate-800/60" :
+                      generalRating === 3 ? "border-orange-400/40" :
+                        generalRating > 0 ? "border-red-500/40 bg-red-500/5" :
+                          "border-slate-700"
+                  )}
+                >
+                  <div className="text-center">
+                    <label className="text-sm text-slate-300 mb-3 block font-medium">{t.general.title} (Opsiyonel)</label>
+                    <div className="flex justify-center gap-4">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          onClick={() => handleStarClick(star, true)}
+                          className={animatingStar === star && star >= 3 ? 'animate-star-pop' : 'transition-transform duration-200 active:scale-95'}
+                        >
+                          <Star className={cn(
+                            "w-9 h-9 transition-colors duration-300",
+                            star <= generalRating
+                              ? (generalRating >= 4 ? "fill-yellow-400 text-yellow-400" :
+                                generalRating === 3 ? "fill-orange-400 text-orange-400" :
+                                  "fill-red-500 text-red-500")
+                              : "text-slate-700"
+                          )} />
+                        </button>
+                      ))}
+                    </div>
+
+                    {generalRating > 0 && (
+                      <div className="animate-in fade-in slide-in-from-top-1 duration-500">
+                        <p className={cn(
+                          "text-xs mt-3 font-medium px-3 py-1.5 rounded-full inline-block border",
+                          generalRating >= 4 ? "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" :
+                            generalRating === 3 ? "text-orange-300 bg-orange-400/10 border-orange-400/20" :
+                              "text-red-300 bg-red-500/10 border-red-500/20"
+                        )}>
+                          {getReactionMessage(generalRating, t)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative group">
+                    <div className="absolute top-3 left-3 text-slate-500 group-focus-within:text-teal-500 transition-colors pointer-events-none">
+                      <PenLine className="w-4 h-4" />
+                    </div>
+                    <textarea
+                      value={generalComment}
+                      onChange={(e) => setGeneralComment(e.target.value)}
+                      placeholder={getDynamicPlaceholder(generalRating, t)}
+                      className="w-full bg-slate-950/50 border border-slate-600/50 rounded-xl p-3 pl-10 text-sm text-white resize-none focus:ring-1 focus:ring-teal-500/50 focus:border-teal-500 transition-all placeholder:text-slate-600"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Optional Message (For Review) */}
+              {feedbackType === 'review' && (
+                <div className="relative h-32 bg-slate-800/30 border border-slate-700 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-transparent transition-all">
+                  <div className="absolute top-4 left-4 text-slate-500 pointer-events-none">
+                    <PenLine className="w-5 h-5" />
+                  </div>
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder={t.message.placeholder}
+                    className="w-full h-full bg-transparent p-4 pl-12 text-white resize-none outline-none placeholder:text-slate-500"
+                  />
+                </div>
+              )}
+
+              {/* Photo Upload */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-sm font-medium text-slate-300">{t.stepsUI.extraImages}</label>
+                  <span className="text-xs text-slate-500">{feedbackImages.length}/3</span>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {feedbackImages.map((img, i) => (
+                    <div key={i} className="relative aspect-square bg-black rounded-lg overflow-hidden border border-slate-700 group">
+                      <img src={img.preview} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                      <button onClick={() => setFeedbackImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-0 right-0 bg-red-500 p-1"><X className="w-3 h-3 text-white" /></button>
+                    </div>
+                  ))}
+                  {feedbackImages.length < 3 && (
+                    <label className="aspect-square bg-slate-800/50 border border-dashed border-slate-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800 hover:border-teal-500/50 transition-all group">
+                      <ImagePlus className="w-6 h-6 text-slate-500 group-hover:text-teal-500 transition-colors" />
+                      <span className="text-[10px] text-slate-500 mt-1 group-hover:text-slate-300">{t.stepsUI.addPhoto}</span>
+                      <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageUpload} />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* 🟢 MİSAFİR İLETİŞİM ALANI (Güncellenmiş Formatlı Hali) */}
+              {isGuest && feedbackType === 'complaint' && (
+                <div className="bg-orange-900/10 border border-orange-500/20 rounded-xl p-4 mt-6 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-orange-500/10 rounded-full shrink-0">
+                      <Phone className="w-5 h-5 text-orange-500" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-bold text-white mb-1">Telafi etmemize izin verin</h4>
+                      <p className="text-xs text-slate-400 mb-3">
+                        Yaşadığınız olumsuz deneyimi telafi edebilmemiz için size ulaşmamızı ister misiniz?
+                      </p>
+
+                      {!wantsGuestContact ? (
+                        <Button
+                          variant="outline"
+                          onClick={() => setWantsGuestContact(true)}
+                          className="w-full border-orange-500/30 text-orange-400 hover:bg-orange-500/10 hover:text-orange-300 h-9 text-xs"
+                        >
+                          Evet, bana ulaşın
+                        </Button>
+                      ) : (
+                        <div className="space-y-3 mt-3 animate-in fade-in zoom-in-95">
+                          <div className="space-y-1">
+                            <label className="text-xs text-slate-400 ml-1">İsminiz</label>
+                            <input
+                              type="text"
+                              value={guestName}
+                              onChange={(e) => {
+                                // Sadece harfleri al, baş harfleri büyüt
+                                const val = e.target.value;
+                                // Regex: Kelime başındaki harfleri bul ve Türkçe uyumlu büyüt
+                                const formatted = val.replace(/(^|\s)[a-zğüşiöç]/g, (c) => c.toLocaleUpperCase('tr-TR'));
+                                setGuestName(formatted);
+                              }}
+                              placeholder="Adınız Soyadınız"
+                              className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-orange-500 outline-none capitalize"
                             />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-slate-400 ml-1">Telefon Numaranız</label>
+                            <input
+                              type="tel"
+                              value={guestPhone}
+                              onChange={(e) => {
+                                // Sadece rakam ve + işaretine izin ver (yabancı numaralar için)
+                                const val = e.target.value.replace(/[^0-9+]/g, '');
+                                setGuestPhone(val);
+                              }}
+                              placeholder="0555..."
+                              className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-orange-500 outline-none font-mono tracking-wide"
+                            />
+                          </div>
+                          <div className="flex justify-end pt-2">
+                            <button
+                              onClick={() => { setWantsGuestContact(false); setGuestName(''); setGuestPhone(''); }}
+                              className="text-xs text-slate-400 hover:text-red-400 underline py-2 px-3 hover:bg-slate-800 rounded-lg transition-colors"
+                            >
+                              Vazgeç ve Kapat
+                            </button>
+                          </div>
                         </div>
+                      )}
                     </div>
-                )}
-
-                {/* Optional Message (For Review) */}
-                {feedbackType === 'review' && (
-                    <div className="relative h-32 bg-slate-800/30 border border-slate-700 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-transparent transition-all">
-                        <div className="absolute top-4 left-4 text-slate-500 pointer-events-none">
-                            <PenLine className="w-5 h-5" />
-                        </div>
-                        <textarea 
-                            value={message} 
-                            onChange={(e) => setMessage(e.target.value)} 
-                            placeholder={t.message.placeholder} 
-                            className="w-full h-full bg-transparent p-4 pl-12 text-white resize-none outline-none placeholder:text-slate-500"
-                        />
-                    </div>
-                )}
-
-                {/* Photo Upload */}
-                <div>
-                    <div className="flex justify-between items-center mb-2">
-                        <label className="text-sm font-medium text-slate-300">{t.stepsUI.extraImages}</label>
-                        <span className="text-xs text-slate-500">{feedbackImages.length}/3</span>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                        {feedbackImages.map((img, i) => (
-                            <div key={i} className="relative aspect-square bg-black rounded-lg overflow-hidden border border-slate-700 group">
-                                <img src={img.preview} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                                <button onClick={() => setFeedbackImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-0 right-0 bg-red-500 p-1"><X className="w-3 h-3 text-white" /></button>
-                            </div>
-                        ))}
-                        {feedbackImages.length < 3 && (
-                            <label className="aspect-square bg-slate-800/50 border border-dashed border-slate-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800 hover:border-teal-500/50 transition-all group">
-                                <ImagePlus className="w-6 h-6 text-slate-500 group-hover:text-teal-500 transition-colors" />
-                                <span className="text-[10px] text-slate-500 mt-1 group-hover:text-slate-300">{t.stepsUI.addPhoto}</span>
-                                <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageUpload} />
-                            </label>
-                        )}
-                    </div>
+                  </div>
                 </div>
+              )}
             </div>
           )}
 
@@ -779,85 +858,85 @@ export default function FeedbackForm() {
 
       {/* 3. FOOTER */}
       <div className="flex-none p-4 pb-safe bg-[#0f172a] border-t border-slate-800 z-20">
-        <Button 
-            onClick={currentStep === totalSteps || (feedbackType === 'suggestion' && currentStep === 2) || (feedbackType === 'review' && currentStep === 2) ? submitFeedback : handleNext}
-            disabled={!isStepValid() || isSubmitting}
-            className={cn(
-                "w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all active:scale-95",
-                "bg-gradient-to-r hover:opacity-90",
-                formInfo.gradient
-            )}
+        <Button
+          onClick={currentStep === totalSteps ? submitFeedback : handleNext}
+          disabled={!isStepValid() || isSubmitting}
+          className={cn(
+            "w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all active:scale-95",
+            "bg-gradient-to-r hover:opacity-90",
+            formInfo.gradient
+          )}
         >
-            {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : 
-             ((currentStep === totalSteps) || (feedbackType !== 'complaint' && currentStep === 2)) ? 
-             <span className="flex items-center gap-2">{t.submit.send} <Send className="w-5 h-5" /></span> : 
-             <span className="flex items-center gap-2">{t.next} <ChevronRight className="w-5 h-5" /></span>
-            }
+          {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> :
+            (currentStep === totalSteps) ?
+              <span className="flex items-center gap-2">{t.submit.send} <Send className="w-5 h-5" /></span> :
+              <span className="flex items-center gap-2">{t.next} <ChevronRight className="w-5 h-5" /></span>
+          }
         </Button>
       </div>
 
       {/* SUCCESS MODAL */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
-            <div className="bg-[#1e293b] w-full max-w-sm rounded-3xl p-8 text-center border border-slate-700 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-gradient-to-b from-green-500/20 to-transparent pointer-events-none" />
-                
-                <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(34,197,94,0.4)] animate-in zoom-in duration-500">
-                    <CheckCircle2 className="w-10 h-10 text-white" />
-                </div>
-                
-                <h2 className="text-3xl font-bold text-white mb-2">
-                    {googleRedirectUrl ? t.google.title : (googleRedirectUrl ? t.success.defaultTitle : t.success.title)}
-                </h2>
-                
-                <p className="text-slate-400 mb-8 text-lg">
-                    {googleRedirectUrl ? t.google.desc : (googleRedirectUrl ? t.success.defaultDesc : t.success.desc(businessName || "management"))}
-                </p>
+          <div className="bg-[#1e293b] w-full max-w-sm rounded-3xl p-8 text-center border border-slate-700 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-gradient-to-b from-green-500/20 to-transparent pointer-events-none" />
 
-                {/* 🟢 GOOGLE MODU (4-5 Yıldız) */}
-                {googleRedirectUrl && (
-                    <div className="space-y-4">
-                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center animate-in zoom-in duration-500">
-                            <p className="text-blue-300 font-bold text-sm flex items-center justify-center gap-2">
-                                <Copy className="w-4 h-4" /> {t.google.copyAlert}
-                            </p>
-                        </div>
-                        <Button onClick={handleGoogleShare} className="w-full bg-white text-slate-900 hover:bg-slate-200 h-14 rounded-xl font-bold text-lg animate-pulse shadow-xl shadow-white/10">
-                            {t.google.yesButton}
-                        </Button>
-                        
-                        {/* Google varsa, Instagram onun altında belirir */}
-                        {instagramRedirectUrl && (
-                            <Button onClick={() => window.open(instagramRedirectUrl, '_blank')} variant="outline" className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white h-12 rounded-xl">
-                                <Instagram className="w-4 h-4 mr-2" /> {t.google.instaButton}
-                            </Button>
-                        )}
-
-                        <button onClick={() => navigate('/customer-panel')} className="text-slate-500 text-sm font-medium p-2 hover:text-white transition-colors">
-                            {t.google.noButton}
-                        </button>
-                    </div>
-                )}
-
-                {/* 🟢 SADECE INSTAGRAM MODU (3 Yıldız / Google Yoksa) */}
-                {!googleRedirectUrl && instagramRedirectUrl && (
-                    <div className="space-y-4">
-                        <Button onClick={() => window.open(instagramRedirectUrl, '_blank')} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white h-14 rounded-xl font-bold text-lg shadow-xl shadow-pink-900/20">
-                            <Instagram className="w-5 h-5 mr-2" /> {t.google.instaButton}
-                        </Button>
-                        <Button onClick={() => navigate('/customer-panel')} variant="ghost" className="w-full text-slate-400 hover:text-white">
-                            {t.success.homeButton}
-                        </Button>
-                    </div>
-                )}
-
-                {/* 🟢 STANDART MOD (Hiçbiri Yoksa / Şikayet / Düşük Puan) */}
-                {!googleRedirectUrl && !instagramRedirectUrl && (
-                    <Button onClick={() => navigate('/customer-panel')} className="w-full bg-slate-700 hover:bg-slate-600 h-12 rounded-xl text-white font-bold">
-                        {t.success.homeButton}
-                    </Button>
-                )}
+            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(34,197,94,0.4)] animate-in zoom-in duration-500">
+              <CheckCircle2 className="w-10 h-10 text-white" />
             </div>
+
+            <h2 className="text-3xl font-bold text-white mb-2">
+              {googleRedirectUrl ? t.google.title : (googleRedirectUrl ? t.success.defaultTitle : t.success.title)}
+            </h2>
+
+            <p className="text-slate-400 mb-8 text-lg">
+              {googleRedirectUrl ? t.google.desc : (googleRedirectUrl ? t.success.defaultDesc : t.success.desc(businessName || "management"))}
+            </p>
+
+            {/* 🟢 GOOGLE MODU (4-5 Yıldız) */}
+            {googleRedirectUrl && (
+              <div className="space-y-4">
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center animate-in zoom-in duration-500">
+                  <p className="text-blue-300 font-bold text-sm flex items-center justify-center gap-2">
+                    <Copy className="w-4 h-4" /> {t.google.copyAlert}
+                  </p>
+                </div>
+                <Button onClick={handleGoogleShare} className="w-full bg-white text-slate-900 hover:bg-slate-200 h-14 rounded-xl font-bold text-lg animate-pulse shadow-xl shadow-white/10">
+                  {t.google.yesButton}
+                </Button>
+
+                {/* Google varsa, Instagram onun altında belirir */}
+                {instagramRedirectUrl && (
+                  <Button onClick={() => window.open(instagramRedirectUrl, '_blank')} variant="outline" className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white h-12 rounded-xl">
+                    <Instagram className="w-4 h-4 mr-2" /> {t.google.instaButton}
+                  </Button>
+                )}
+
+                <button onClick={() => navigate('/customer-panel')} className="text-slate-500 text-sm font-medium p-2 hover:text-white transition-colors">
+                  {t.google.noButton}
+                </button>
+              </div>
+            )}
+
+            {/* 🟢 SADECE INSTAGRAM MODU (3 Yıldız / Google Yoksa) */}
+            {!googleRedirectUrl && instagramRedirectUrl && (
+              <div className="space-y-4">
+                <Button onClick={() => window.open(instagramRedirectUrl, '_blank')} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white h-14 rounded-xl font-bold text-lg shadow-xl shadow-pink-900/20">
+                  <Instagram className="w-5 h-5 mr-2" /> {t.google.instaButton}
+                </Button>
+                <Button onClick={() => navigate('/customer-panel')} variant="ghost" className="w-full text-slate-400 hover:text-white">
+                  {t.success.homeButton}
+                </Button>
+              </div>
+            )}
+
+            {/* 🟢 STANDART MOD (Hiçbiri Yoksa / Şikayet / Düşük Puan) */}
+            {!googleRedirectUrl && !instagramRedirectUrl && (
+              <Button onClick={() => navigate('/customer-panel')} className="w-full bg-slate-700 hover:bg-slate-600 h-12 rounded-xl text-white font-bold">
+                {t.success.homeButton}
+              </Button>
+            )}
+          </div>
         </div>
       )}
 

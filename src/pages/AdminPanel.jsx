@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAdminContext } from '@/contexts/AdminContext';
-import { 
-  MessageSquare, Star, AlertTriangle, Calendar, Loader2, ChevronRight, 
-  ArrowUpRight, ArrowDownRight, Minus, CheckCircle2, User, 
-  Image as ImageIcon, StickyNote, Crown, Siren, BarChart, RefreshCw
+import {
+  MessageSquare, Star, AlertTriangle, Calendar, Loader2, ChevronRight,
+  ArrowUpRight, ArrowDownRight, Minus, CheckCircle2, User,
+  Image as ImageIcon, StickyNote, Crown, Siren, BarChart, RefreshCw, Phone // 🟢 Phone Eklendi
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -21,19 +21,19 @@ import CustomerProfileModal from '@/components/CustomerProfileModal';
 // --- HELPER COMPONENTS ---
 
 const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass, sparkData, loading, isInverseMetric = false }) => {
-  let sentimentColor = "bg-slate-800 text-slate-400 border-slate-700"; 
+  let sentimentColor = "bg-slate-800 text-slate-400 border-slate-700";
   let TrendIcon = Minus;
 
   if (deltaType === 'increase') {
-     TrendIcon = ArrowUpRight;
-     sentimentColor = isInverseMetric 
-        ? "bg-rose-950/30 text-rose-400 border-rose-500/20" 
-        : "bg-emerald-950/30 text-emerald-400 border-emerald-500/20"; 
+    TrendIcon = ArrowUpRight;
+    sentimentColor = isInverseMetric
+      ? "bg-rose-950/30 text-rose-400 border-rose-500/20"
+      : "bg-emerald-950/30 text-emerald-400 border-emerald-500/20";
   } else if (deltaType === 'decrease') {
-     TrendIcon = ArrowDownRight;
-     sentimentColor = isInverseMetric
-        ? "bg-emerald-950/30 text-emerald-400 border-emerald-500/20" 
-        : "bg-rose-950/30 text-rose-400 border-rose-500/20"; 
+    TrendIcon = ArrowDownRight;
+    sentimentColor = isInverseMetric
+      ? "bg-emerald-950/30 text-emerald-400 border-emerald-500/20"
+      : "bg-rose-950/30 text-rose-400 border-rose-500/20";
   }
 
   return (
@@ -116,18 +116,17 @@ const ChartTooltip = ({ active, payload, formatter = (v) => [v, 'Adet'] }) => {
 // --- MAIN COMPONENT ---
 
 const AdminPanel = () => {
-  const { 
-    businessId, 
-    selectedBranchId, 
-    branches, 
-    dateRange, 
+  const {
+    businessId,
+    selectedBranchId,
+    branches,
+    dateRange,
     setDateRange
   } = useAdminContext();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
-  // 🟢 REF: Scroll için referans
   const feedbackSectionRef = useRef(null);
 
   const [metrics, setMetrics] = useState({
@@ -141,14 +140,12 @@ const AdminPanel = () => {
   const [ratingDistribution, setRatingDistribution] = useState([]);
   const [feedbackTypeDistribution, setFeedbackTypeDistribution] = useState([]);
   const [recentFeedbacks, setRecentFeedbacks] = useState([]);
-  
+
   const [hasData, setHasData] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingFeedbacks, setLoadingFeedbacks] = useState(true);
-  
-  // 🟢 YENİ: Refresh State (Spin animasyonu için)
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
@@ -160,36 +157,35 @@ const AdminPanel = () => {
       if (targetFeedback) {
         setSelectedFeedback(targetFeedback);
         setIsDetailModalOpen(true);
-        // Scroll to that feedback if found
         setTimeout(() => {
-            const el = document.getElementById(`feedback-${targetFeedback.id}`);
-            if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const el = document.getElementById(`feedback-${targetFeedback.id}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 500);
         window.history.replaceState({}, document.title);
       }
     }
   }, [location.state, recentFeedbacks]);
 
-  const displayTitle = selectedBranchId === 'all' 
-    ? "Ana Panel" 
+  const displayTitle = selectedBranchId === 'all'
+    ? "Ana Panel"
     : branches.find(b => b.id === selectedBranchId)?.branch_name_tr || "Ana Panel";
 
-  const dateOptions = { 
-    'today': 'Bugün', 
-    'last7': 'Son 7 Gün', 
-    'last30': 'Son 30 Gün', 
-    'thisMonth': 'Bu Ay' 
+  const dateOptions = {
+    'today': 'Bugün',
+    'last7': 'Son 7 Gün',
+    'last30': 'Son 30 Gün',
+    'thisMonth': 'Bu Ay'
   };
 
   const getDateIntervals = useCallback(() => {
     const now = new Date();
     let currentStart, prevStart;
     switch (dateRange) {
-        case 'today': currentStart = startOfDay(now); prevStart = startOfDay(subDays(now, 1)); break;
-        case 'last7': currentStart = subDays(now, 7); prevStart = subDays(now, 14); break;
-        case 'last30': currentStart = subDays(now, 30); prevStart = subDays(now, 60); break;
-        case 'thisMonth': currentStart = startOfMonth(now); prevStart = startOfMonth(subMonths(now, 1)); break;
-        default: currentStart = subDays(now, 30); prevStart = subDays(now, 60); break;
+      case 'today': currentStart = startOfDay(now); prevStart = startOfDay(subDays(now, 1)); break;
+      case 'last7': currentStart = subDays(now, 7); prevStart = subDays(now, 14); break;
+      case 'last30': currentStart = subDays(now, 30); prevStart = subDays(now, 60); break;
+      case 'thisMonth': currentStart = startOfMonth(now); prevStart = startOfMonth(subMonths(now, 1)); break;
+      default: currentStart = subDays(now, 30); prevStart = subDays(now, 60); break;
     }
     return { currentStart, prevStart };
   }, [dateRange]);
@@ -197,19 +193,25 @@ const AdminPanel = () => {
   const fetchData = useCallback(async () => {
     if (!businessId) return;
     setLoading(true);
-    if (!isRefreshing) setLoadingFeedbacks(true); // Refresh sırasında sadece ikon dönsün
+    if (!isRefreshing) setLoadingFeedbacks(true);
     try {
       const { currentStart, prevStart } = getDateIntervals();
+
+      // 1. CHART DATA
       let query = supabase.from('feedbacks')
         .select('id, created_at, status, feedback_type, rating, general_eval_rating, resolved_at')
         .eq('business_id', businessId)
-        .gte('created_at', prevStart.toISOString()); 
+        .gte('created_at', prevStart.toISOString());
       if (selectedBranchId !== 'all') query = query.eq('branch_id', selectedBranchId);
+
       const { data: rawData, error } = await query;
       if (error) throw error;
+
       const currentData = rawData.filter(f => new Date(f.created_at) >= currentStart);
       const prevData = rawData.filter(f => new Date(f.created_at) < currentStart && new Date(f.created_at) >= prevStart);
       setHasData(currentData.length > 0);
+
+      // --- Metrics Calculation ---
       const totalCurr = currentData.length;
       const totalPrev = prevData.length;
       const isPending = (s) => ['new', 'pending', 'in_progress', 'escalated'].includes(s);
@@ -217,41 +219,47 @@ const AdminPanel = () => {
       const pendingPrev = prevData.filter(f => f.feedback_type === 'complaint' && isPending(f.status)).length;
       const resolvedCurr = currentData.filter(f => f.status === 'resolved').length;
       const resolvedPrev = prevData.filter(f => f.status === 'resolved').length;
+
       const getAvg = (ds) => {
-          const rated = ds.filter(f => f.rating || f.general_eval_rating).map(f => f.rating || f.general_eval_rating);
-          if (rated.length === 0) return 0;
-          return rated.reduce((a, b) => a + b, 0) / rated.length;
+        const rated = ds.filter(f => f.rating || f.general_eval_rating).map(f => f.rating || f.general_eval_rating);
+        if (rated.length === 0) return 0;
+        return rated.reduce((a, b) => a + b, 0) / rated.length;
       };
       const ratingCurr = getAvg(currentData);
       const ratingPrev = getAvg(prevData);
+
       const totalDelta = calculateDelta(totalCurr, totalPrev, 'total');
       const pendingDelta = calculateDelta(pendingCurr, pendingPrev, 'complaints');
       const resolvedDelta = calculateDelta(resolvedCurr, resolvedPrev, 'resolved');
       const ratingDelta = calculateDelta(ratingCurr, ratingPrev, 'rating');
+
       setMetrics({
         total: { value: totalCurr, delta: totalDelta.val, type: totalDelta.type },
         complaints: { value: pendingCurr, delta: pendingDelta.val, type: pendingDelta.type },
         resolved: { value: resolvedCurr, delta: resolvedDelta.val, type: resolvedDelta.type },
         rating: { value: ratingCurr.toFixed(1), delta: ratingDelta.val, type: ratingDelta.type }
       });
+
+      // --- Sparklines ---
       const bucketCount = dateRange === 'today' ? 24 : (dateRange === 'last7' ? 7 : 15);
       const generateSparkline = (filterFn) => {
-          const daysMap = new Map();
-          const startT = currentStart.getTime();
-          const endT = new Date().getTime(); 
-          const step = (endT - startT) / (bucketCount || 10);
-          for (let i = 0; i < bucketCount; i++) daysMap.set(i, { count: 0, sum: 0 });
-          currentData.filter(filterFn).forEach(f => {
-              const t = new Date(f.created_at).getTime();
-              const idx = Math.min(Math.floor((t - startT) / step), bucketCount - 1);
-              if (idx >= 0) {
-                 const item = daysMap.get(idx);
-                 item.count += 1;
-                 item.sum += (f.rating || f.general_eval_rating || 0);
-              }
-          });
-          return Array.from(daysMap.values()).map(v => ({ value: v.count }));
+        const daysMap = new Map();
+        const startT = currentStart.getTime();
+        const endT = new Date().getTime();
+        const step = (endT - startT) / (bucketCount || 10);
+        for (let i = 0; i < bucketCount; i++) daysMap.set(i, { count: 0, sum: 0 });
+        currentData.filter(filterFn).forEach(f => {
+          const t = new Date(f.created_at).getTime();
+          const idx = Math.min(Math.floor((t - startT) / step), bucketCount - 1);
+          if (idx >= 0) {
+            const item = daysMap.get(idx);
+            item.count += 1;
+            item.sum += (f.rating || f.general_eval_rating || 0);
+          }
+        });
+        return Array.from(daysMap.values()).map(v => ({ value: v.count }));
       };
+
       const generateRatingSparkline = () => {
         const startT = currentStart.getTime();
         const endT = new Date().getTime();
@@ -269,24 +277,28 @@ const AdminPanel = () => {
         });
         return Array.from(daysMap.values()).map(v => ({ value: v.count > 0 ? Number((v.sum / v.count).toFixed(1)) : 0 }));
       };
+
       setSparklineData({
-          total: generateSparkline(() => true),
-          complaints: generateSparkline(f => f.feedback_type === 'complaint' && isPending(f.status)),
-          resolved: generateSparkline(f => f.status === 'resolved'),
-          rating: generateRatingSparkline()
+        total: generateSparkline(() => true),
+        complaints: generateSparkline(f => f.feedback_type === 'complaint' && isPending(f.status)),
+        resolved: generateSparkline(f => f.status === 'resolved'),
+        rating: generateRatingSparkline()
       });
+
+      // --- Distributions ---
       const starCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
       currentData.forEach(f => {
-          const r = f.rating || f.general_eval_rating;
-          if (r && starCounts[r] !== undefined) starCounts[r]++;
+        const r = f.rating || f.general_eval_rating;
+        if (r && starCounts[r] !== undefined) starCounts[r]++;
       });
       setRatingDistribution([
-          { name: '5 Yıldız', count: starCounts[5], fill: '#22c55e' }, 
-          { name: '4 Yıldız', count: starCounts[4], fill: '#4ade80' }, 
-          { name: '3 Yıldız', count: starCounts[3], fill: '#facc15' }, 
-          { name: '2 Yıldız', count: starCounts[2], fill: '#f87171' }, 
-          { name: '1 Yıldız', count: starCounts[1], fill: '#ef4444' }, 
+        { name: '5 Yıldız', count: starCounts[5], fill: '#22c55e' },
+        { name: '4 Yıldız', count: starCounts[4], fill: '#4ade80' },
+        { name: '3 Yıldız', count: starCounts[3], fill: '#facc15' },
+        { name: '2 Yıldız', count: starCounts[2], fill: '#f87171' },
+        { name: '1 Yıldız', count: starCounts[1], fill: '#ef4444' },
       ]);
+
       const typeCounts = {
         complaint: currentData.filter(f => f.feedback_type === 'complaint').length,
         suggestion: currentData.filter(f => f.feedback_type === 'suggestion').length,
@@ -297,10 +309,12 @@ const AdminPanel = () => {
         { name: 'Öneri', count: typeCounts.suggestion, fill: '#3b82f6' },
         { name: 'Değerlendirme', count: typeCounts.evaluation, fill: '#eab308' }
       ]);
-      
+
+      // 2. RECENT FEEDBACKS (GÜNCELLENMİŞ SORGULU HALİ)
       let recentQuery = supabase.from('feedbacks').select(`
             id, created_at, status, feedback_type, message, rating,
             customer_name, customer_email, customer_phone, customer_profile_id,
+            guest_contact_info,
             manager_note, flag_vip_customer, flag_sensitive_customer,
             feedback_images, image_urls, receipt_images, receipt_url, product_image_url,
             general_eval_rating, general_eval_comment, manager_note_updated_at, manager_note_updated_by,
@@ -313,105 +327,84 @@ const AdminPanel = () => {
             ),
             manager_note_updater:manager_note_updated_by (first_name, last_name)
         `).eq('business_id', businessId).order('created_at', { ascending: false }).limit(20);
-      
+
       if (selectedBranchId !== 'all') recentQuery = recentQuery.eq('branch_id', selectedBranchId);
-      
-      const { data: recentData } = await recentQuery;
-      
-      let processedFeedbacks = recentData || [];
 
-      if (processedFeedbacks.length > 0) {
-          const unlinkedFeedbacks = processedFeedbacks.filter(f => !f.customer_profiles && f.customer_email);
-          const emailsToCheck = [...new Set(unlinkedFeedbacks.map(f => f.customer_email))];
-          if (emailsToCheck.length > 0) {
-              const { data: profiles } = await supabase
-                  .from('customer_profiles')
-                  .select('id, name, email')
-                  .in('email', emailsToCheck);
-              if (profiles && profiles.length > 0) {
-                  const profileMap = {};
-                  profiles.forEach(p => { profileMap[p.email] = p; });
-                  processedFeedbacks.forEach(f => {
-                      if (!f.customer_profiles && f.customer_email && profileMap[f.customer_email]) {
-                          f.customer_profiles = profileMap[f.customer_email];
-                          f.customer_profile_id = profileMap[f.customer_email].id;
-                          supabase.from('feedbacks')
-                              .update({ customer_profile_id: profileMap[f.customer_email].id })
-                              .eq('id', f.id)
-                              .then(({ error }) => { if(error) console.error("Auto-link error", error) });
-                      }
-                  });
-              }
+      const { data: recentData, error: recentError } = await recentQuery;
+      if (recentError) throw recentError;
+
+      // Basitleştirilmiş işleme mantığı (Veri kaybını önlemek için)
+      const processedFeedbacks = recentData || [];
+
+      // İşletme bayraklarını (VIP/Hassas) kontrol et
+      const { data: bizCustomers } = await supabase
+        .from('business_customers')
+        .select('customer_profile_id, is_vip, is_sensitive, manager_notes')
+        .eq('business_id', businessId);
+
+      const finalFeedbacks = processedFeedbacks.map(f => {
+        const bizData = bizCustomers?.find(bc => bc.customer_profile_id === f.customer_profile_id);
+        const effectiveVip = bizData ? bizData.is_vip : false;
+        const effectiveSensitive = bizData ? bizData.is_sensitive : false;
+        const effectiveNote = bizData ? bizData.manager_notes : '';
+
+        return {
+          ...f,
+          flag_vip_customer: effectiveVip,
+          flag_sensitive_customer: effectiveSensitive,
+          customer_profiles: {
+            ...(f.customer_profiles || {}),
+            flag_vip_customer: effectiveVip,
+            flag_sensitive_customer: effectiveSensitive,
+            admin_note: effectiveNote
           }
+        };
+      });
 
-          const { data: bizCustomers } = await supabase
-            .from('business_customers')
-            .select('customer_profile_id, is_vip, is_sensitive, manager_notes')
-            .eq('business_id', businessId);
+      setRecentFeedbacks(finalFeedbacks);
 
-          processedFeedbacks = processedFeedbacks.map(f => {
-            const bizData = bizCustomers?.find(bc => bc.customer_profile_id === f.customer_profile_id);
-            const effectiveVip = bizData ? bizData.is_vip : false;
-            const effectiveSensitive = bizData ? bizData.is_sensitive : false;
-            const effectiveNote = bizData ? bizData.manager_notes : '';
-
-            return {
-              ...f,
-              flag_vip_customer: effectiveVip,
-              flag_sensitive_customer: effectiveSensitive,
-              customer_profiles: {
-                ...(f.customer_profiles || {}),
-                flag_vip_customer: effectiveVip,
-                flag_sensitive_customer: effectiveSensitive,
-                admin_note: effectiveNote
-              }
-            };
-          });
-      }
-      
-      setRecentFeedbacks(processedFeedbacks);
     } catch (error) {
       console.error("Dashboard data fetch error:", error);
       toast({ variant: "destructive", title: "Hata", description: "Veriler yüklenemedi." });
     } finally {
       setLoading(false);
       setLoadingFeedbacks(false);
-      setIsRefreshing(false); // Refresh bitti
+      setIsRefreshing(false);
     }
   }, [businessId, selectedBranchId, dateRange, getDateIntervals, toast]);
 
   // Realtime
   useEffect(() => {
-    fetchData(); 
+    fetchData();
     if (!businessId) return;
     const channel = supabase.channel('admin-dashboard-realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks', filter: `business_id=eq.${businessId}` }, () => fetchData())
-        .subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks', filter: `business_id=eq.${businessId}` }, () => fetchData())
+      .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [businessId, fetchData]);
 
-  // 🟢 YENİLEME FONKSİYONU (Kullanıcıya Hissiyat Verir)
   const handleRefreshFeedbacks = () => {
     setIsRefreshing(true);
-    setLoadingFeedbacks(true); // Listeyi flulaştırmak için
+    setLoadingFeedbacks(true);
     setTimeout(() => {
       fetchData();
-    }, 500); // En az 500ms bekle ki kullanıcı dönüşü görsün
+    }, 500);
   };
 
-  // 🟢 ACİL DURUM İNCELEME – Geri bildirimler sayfasına acil filtresiyle yönlendir
   const handleInspectUrgent = () => {
     navigate('/admin-panel/feedbacks', { state: { filter: 'urgent' } });
   };
 
   const handleStatusChange = (id, newStatus) => {
-      setRecentFeedbacks(prev => prev.map(f => f.id === id ? { ...f, status: newStatus } : f));
-      fetchData(); 
+    setRecentFeedbacks(prev => prev.map(f => f.id === id ? { ...f, status: newStatus } : f));
+    fetchData();
   };
+
   const handleFeedbackClick = (feedback) => {
     setSelectedFeedback(feedback);
     setIsDetailModalOpen(true);
   };
+
   const handleOpenCustomerProfile = (e, feedback) => {
     e.stopPropagation();
     const profileId = feedback.customer_profile_id || (feedback.customer_profiles?.id) || null;
@@ -419,23 +412,24 @@ const AdminPanel = () => {
     setSelectedCustomer({ id: profileId, email: profileEmail });
     setCustomerModalOpen(true);
   };
+
   const handleFlagsUpdate = (customerId, newFlags) => {
-      setRecentFeedbacks(prev => prev.map(f => {
-          if (f.customer_profile_id === customerId || f.customer_profiles?.id === customerId) {
-               return { 
-                 ...f, 
-                 customer_profiles: { 
-                   ...f.customer_profiles, 
-                   flag_vip_customer: newFlags.vip, 
-                   flag_sensitive_customer: newFlags.sensitive,
-                   admin_note: newFlags.admin_note 
-                 }, 
-                 flag_vip_customer: newFlags.vip, 
-                 flag_sensitive_customer: newFlags.sensitive 
-               };
-          }
-          return f;
-      }));
+    setRecentFeedbacks(prev => prev.map(f => {
+      if (f.customer_profile_id === customerId || f.customer_profiles?.id === customerId) {
+        return {
+          ...f,
+          customer_profiles: {
+            ...f.customer_profiles,
+            flag_vip_customer: newFlags.vip,
+            flag_sensitive_customer: newFlags.sensitive,
+            admin_note: newFlags.admin_note
+          },
+          flag_vip_customer: newFlags.vip,
+          flag_sensitive_customer: newFlags.sensitive
+        };
+      }
+      return f;
+    }));
   };
 
   const hasUrgentFeedbacks = useMemo(() => recentFeedbacks.some(f => f.status === 'escalated'), [recentFeedbacks]);
@@ -455,20 +449,19 @@ const AdminPanel = () => {
         </div>
       </div>
 
-      {/* 🟢 ACİL DURUM KUTUSU */}
       {hasUrgentFeedbacks && (
-          <div className="acil-durum-box bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between shadow-[0_0_15px_rgba(220,38,38,0.3)] mb-6">
-            <div className="flex items-center gap-3 animate-pulse"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
-            <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shrink-0" onClick={handleInspectUrgent}>İncele</Button>
-          </div>
+        <div className="acil-durum-box bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between shadow-[0_0_15px_rgba(220,38,38,0.3)] mb-6">
+          <div className="flex items-center gap-3 animate-pulse"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
+          <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shrink-0" onClick={handleInspectUrgent}>İncele</Button>
+        </div>
       )}
 
       {/* 1. KPI KARTLARI */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <SparklineCard title="Toplam Bildirim" value={`${metrics.total.value}`} delta={metrics.total.delta} deltaType={metrics.total.type} icon={MessageSquare} colorClass="bg-blue-500" sparkData={sparklineData.total} loading={loading}/>
-        <SparklineCard title="Bekleyen Şikayet" value={`${metrics.complaints.value}`} delta={metrics.complaints.delta} deltaType={metrics.complaints.type} icon={AlertTriangle} colorClass="bg-red-500" sparkData={sparklineData.complaints} loading={loading} isInverseMetric={true}/>
-        <SparklineCard title="Çözülenler" value={`${metrics.resolved.value}`} delta={metrics.resolved.delta} deltaType={metrics.resolved.type} icon={CheckCircle2} colorClass="bg-green-500" sparkData={sparklineData.resolved} loading={loading}/>
-        <SparklineCard title="Ort. Puan" value={metrics.rating.value} delta={metrics.rating.delta} deltaType={metrics.rating.type} icon={Star} colorClass="bg-yellow-500" sparkData={sparklineData.rating} loading={loading}/>
+        <SparklineCard title="Toplam Bildirim" value={`${metrics.total.value}`} delta={metrics.total.delta} deltaType={metrics.total.type} icon={MessageSquare} colorClass="bg-blue-500" sparkData={sparklineData.total} loading={loading} />
+        <SparklineCard title="Bekleyen Şikayet" value={`${metrics.complaints.value}`} delta={metrics.complaints.delta} deltaType={metrics.complaints.type} icon={AlertTriangle} colorClass="bg-red-500" sparkData={sparklineData.complaints} loading={loading} isInverseMetric={true} />
+        <SparklineCard title="Çözülenler" value={`${metrics.resolved.value}`} delta={metrics.resolved.delta} deltaType={metrics.resolved.type} icon={CheckCircle2} colorClass="bg-green-500" sparkData={sparklineData.resolved} loading={loading} />
+        <SparklineCard title="Ort. Puan" value={metrics.rating.value} delta={metrics.rating.delta} deltaType={metrics.rating.type} icon={Star} colorClass="bg-yellow-500" sparkData={sparklineData.rating} loading={loading} />
       </div>
 
       {/* 2. GRAFİKLER */}
@@ -522,71 +515,79 @@ const AdminPanel = () => {
       <div ref={feedbackSectionRef} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">Son Aktiviteler</h2>
-          {/* 🟢 YENİLE BUTONU (Spin Efekti) */}
           <div className="flex gap-2">
             <Button variant="ghost" size="icon" onClick={handleRefreshFeedbacks} disabled={isRefreshing} className="text-slate-400 hover:text-white">
-                <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+              <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
             </Button>
             <Button variant="ghost" className="text-slate-400 hover:text-white" onClick={() => navigate('/admin-panel/feedbacks')}>Tümünü Gör <ChevronRight className="w-4 h-4 ml-1" /></Button>
           </div>
         </div>
 
-        {/* 🟢 LOADING SİMÜLASYONU (Opaklık Değişimi) */}
         <div className={cn("transition-opacity duration-300", loadingFeedbacks ? "opacity-50 pointer-events-none" : "opacity-100")}>
-            {loadingFeedbacks && !recentFeedbacks.length ? (<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>) : recentFeedbacks.length === 0 ? (<div className="text-center py-8 text-slate-500">Henüz aktivite yok.</div>) : (
-                <div className="space-y-3">
-                    {recentFeedbacks.map((f) => {
-                    const customerName = getCustomerData(f, 'name');
-                    const smartName = formatCustomerName(customerName);
+          {loadingFeedbacks && !recentFeedbacks.length ? (<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>) : recentFeedbacks.length === 0 ? (<div className="text-center py-8 text-slate-500">Henüz aktivite yok.</div>) : (
+            <div className="space-y-3">
+              {recentFeedbacks.map((f) => {
+                const customerName = getCustomerData(f, 'name');
+                const smartName = formatCustomerName(customerName);
 
-                    const isVip = f.flag_vip_customer || f.customer_profiles?.flag_vip_customer;
-                    const isSensitive = f.flag_sensitive_customer || f.customer_profiles?.flag_sensitive_customer;
-                    const rating = f.rating || f.general_eval_rating;
-                    const hasImgs = hasImages(f);
-                    const isEscalated = f.status === 'escalated';
-                    const hasManagerNote = !!f.manager_note;
-                    const hasCustomerProfileNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
-                    const hasComment = (f.message && f.message.trim().length > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
-                    const hasGeneralEval = (Number(f.general_eval_rating) > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
+                const isVip = f.flag_vip_customer || f.customer_profiles?.flag_vip_customer;
+                const isSensitive = f.flag_sensitive_customer || f.customer_profiles?.flag_sensitive_customer;
+                const rating = f.rating || f.general_eval_rating;
+                const hasImgs = hasImages(f);
+                const isEscalated = f.status === 'escalated';
+                const hasManagerNote = !!f.manager_note;
+                const hasCustomerProfileNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
+                const hasComment = (f.message && f.message.trim().length > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
+                const hasGeneralEval = (Number(f.general_eval_rating) > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
 
-                    return (
-                        <div key={f.id} id={`feedback-${f.id}`} onClick={() => handleFeedbackClick(f)} className={cn("feedback-activity-card group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "feedback-row-escalated bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
-                        <div className="flex flex-col md:flex-row gap-4 items-start">
-                            <div className="flex-1 w-full min-w-0 pr-0 md:pr-4"> 
-                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                {getTypeBadge(f.feedback_type)}
-                                {getStatusBadge(f.status)}
-                                <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0"><Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                                <Badge variant="outline" className="text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[200px]">{f.branches?.branch_name_tr || "Şube Bilinmiyor"}</Badge>
-                            </div>
-                            <div className="flex gap-3 mt-1">
-                                <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${f.feedback_type === 'complaint' ? 'bg-red-500' : f.feedback_type === 'suggestion' ? 'bg-blue-500' : 'bg-yellow-500'}`} />
-                                <div className="flex-1"><p className="text-slate-200 text-sm line-clamp-2 leading-relaxed">{f.message || <span className="text-slate-600 italic">Mesaj içeriği yok</span>}</p>{rating > 0 && (<div className="flex items-center gap-0.5 mt-1.5">{[...Array(5)].map((_, i) => (<Star key={i} className={`w-3 h-3 ${i < rating ? 'fill-yellow-500 text-yellow-500' : 'fill-none text-slate-700'}`} />))}</div>)}</div>
-                            </div>
-                            </div>
-                            <div className="w-full md:w-auto md:min-w-[200px] flex md:flex-col justify-between md:items-end gap-2 pl-0 md:pl-4 md:border-l border-slate-800/50 mt-4 md:mt-0">
-                            <div className="flex items-center gap-2 group/customer hover:bg-slate-800 p-1.5 rounded-lg -ml-1.5 md:ml-0 transition-colors mr-auto md:mr-0 cursor-pointer" onClick={(e) => handleOpenCustomerProfile(e, f)}>
-                                <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 group-hover/customer:border-indigo-500/50 transition-colors"><User className="w-4 h-4 text-slate-400 group-hover/customer:text-indigo-400" /></div>
-                                <div className="flex flex-col items-start md:items-end">
-                                    <span className={cn("text-sm font-medium transition-colors truncate max-w-[140px] flex items-center gap-1", hasCustomerProfileNote ? "text-blue-400 font-bold" : "text-slate-300 group-hover/customer:text-indigo-300")} title={hasCustomerProfileNote ? "Müşteri Notu Mevcut" : customerName}>
-                                    {smartName}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
-                                {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
-                                {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
-                                {hasManagerNote && (<div className="feedback-note-icon flex items-center justify-center w-7 h-7 rounded-md bg-amber-500/25 text-amber-500 border-2 border-amber-500/50 shadow-sm" title="Yönetici notu var"><StickyNote className="w-4 h-4 fill-current" /></div>)}
-                                {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}
-                                {isSensitive && (<div className="flex items-center gap-1 px-3 py-1 bg-orange-900/30 rounded text-xs text-orange-300 border border-orange-500/30 font-medium"><AlertTriangle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Hassas</span></div>)}
-                            </div>
-                            </div>
+                return (
+                  <div key={f.id} id={`feedback-${f.id}`} onClick={() => handleFeedbackClick(f)} className={cn("feedback-activity-card group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "feedback-row-escalated bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
+                    <div className="flex flex-col md:flex-row gap-4 items-start">
+                      <div className="flex-1 w-full min-w-0 pr-0 md:pr-4">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          {getTypeBadge(f.feedback_type)}
+                          {getStatusBadge(f.status)}
+                          <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0"><Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                          <Badge variant="outline" className="text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[200px]">{f.branches?.branch_name_tr || "Şube Bilinmiyor"}</Badge>
                         </div>
+                        <div className="flex gap-3 mt-1">
+                          <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${f.feedback_type === 'complaint' ? 'bg-red-500' : f.feedback_type === 'suggestion' ? 'bg-blue-500' : 'bg-yellow-500'}`} />
+                          <div className="flex-1"><p className="text-slate-200 text-sm line-clamp-2 leading-relaxed">{f.message || <span className="text-slate-600 italic">Mesaj içeriği yok</span>}</p>{rating > 0 && (<div className="flex items-center gap-0.5 mt-1.5">{[...Array(5)].map((_, i) => (<Star key={i} className={`w-3 h-3 ${i < rating ? 'fill-yellow-500 text-yellow-500' : 'fill-none text-slate-700'}`} />))}</div>)}</div>
                         </div>
-                    );
-                    })}
-                </div>
-            )}
+                      </div>
+                      <div className="w-full md:w-auto md:min-w-[200px] flex md:flex-col justify-between md:items-end gap-2 pl-0 md:pl-4 md:border-l border-slate-800/50 mt-4 md:mt-0">
+                        <div className="flex items-center gap-2 group/customer hover:bg-slate-800 p-1.5 rounded-lg -ml-1.5 md:ml-0 transition-colors mr-auto md:mr-0 cursor-pointer" onClick={(e) => handleOpenCustomerProfile(e, f)}>
+                          <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 group-hover/customer:border-indigo-500/50 transition-colors"><User className="w-4 h-4 text-slate-400 group-hover/customer:text-indigo-400" /></div>
+                          <div className="flex flex-col items-start md:items-end">
+                            <span className={cn("text-sm font-medium transition-colors truncate max-w-[140px] flex items-center gap-1", hasCustomerProfileNote ? "text-blue-400 font-bold" : "text-slate-300 group-hover/customer:text-indigo-300")} title={hasCustomerProfileNote ? "Müşteri Notu Mevcut" : customerName}>
+                              {smartName}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
+                          {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
+                          {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
+                          {hasManagerNote && (<div className="feedback-note-icon flex items-center justify-center w-7 h-7 rounded-md bg-amber-500/25 text-amber-500 border-2 border-amber-500/50 shadow-sm" title="Yönetici notu var"><StickyNote className="w-4 h-4 fill-current" /></div>)}
+                          {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}
+                          {isSensitive && (<div className="flex items-center gap-1 px-3 py-1 bg-orange-900/30 rounded text-xs text-orange-300 border border-orange-500/30 font-medium"><AlertTriangle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Hassas</span></div>)}
+
+                          {/* 🟢 MİSAFİR İLETİŞİM İKONU */}
+                          {f.guest_contact_info && (
+                            <div
+                              className="flex items-center justify-center w-7 h-7 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm"
+                              title="Misafir İletişim İsteği Var"
+                            >
+                              <Phone className="w-3.5 h-3.5" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
       {selectedFeedback && <FeedbackDetailModal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} feedback={selectedFeedback} onStatusChange={handleStatusChange} />}
