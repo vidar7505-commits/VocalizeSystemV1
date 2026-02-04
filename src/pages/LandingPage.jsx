@@ -8,7 +8,8 @@ import {
   ArrowRight, TrendingUp, Target, RefreshCw, Cpu, BrainCircuit, Activity, Sparkles, 
   MessageSquare as MessageSquareText, Info, AlertTriangle, Layers, Zap as ZapIcon, Network,
   Instagram, // <-- YENİ EKLENDİ
-  Mail       // <-- YENİ EKLENDİ
+  Mail,      // <-- YENİ EKLENDİ
+  Building2, Coffee, ShoppingBag, Utensils, Hotel, GraduationCap, Hospital, ShieldCheck, BarChart
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -386,6 +387,9 @@ const LandingPage = () => {
     name: 'Neden Vocalize?',
     to: 'features'
   }, {
+    name: 'Nasıl Çalışır?',
+    to: 'how-it-works'
+  }, {
     name: 'Kimler Kullanıyor?',
     to: 'use-cases'
   }, {
@@ -562,21 +566,43 @@ const LandingPage = () => {
 
 
              {/* Ana Başlık (H1) Güncellemesi */}
-           <h1 className="text-[32px] sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 tracking-tight leading-[1.2] px-4 flex flex-col items-center md:block">
-  <span className="block">Kayıp Müşterileri Yakalayın,</span>
-  <span className="block mt-2 md:mt-4 text-center md:text-left">
-    Şikayetleri <span className="text-orange-500 whitespace-nowrap">Kazanca Dönüştürün.</span>
-  </span>
-          </h1>
+           <h1 className="text-[32px] sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 tracking-tight leading-[1.1] px-4 flex flex-col items-center">
+             <span className="block">İşletmenizi Büyüten</span>
+             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">
+               Akıllı Geri Bildirim Sistemi
+             </span>
+           </h1>
+
+           <motion.div
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             transition={{ delay: 0.5 }}
+             className="flex items-center justify-center gap-2 mb-8 text-slate-400 text-sm font-medium"
+           >
+             <div className="flex -space-x-2">
+               {[1,2,3,4].map(i => (
+                 <div key={i} className="w-8 h-8 rounded-full border-2 border-[#0f172a] bg-slate-800 flex items-center justify-center overflow-hidden">
+                   <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" />
+                 </div>
+               ))}
+             </div>
+             <span className="ml-2">50+ İşletme Tarafından Güveniliyor</span>
+           </motion.div>
              
-             <p className="text-base sm:text-lg md:text-xl text-slate-200 mb-12 max-w-4xl mx-auto font-medium leading-[1.6] px-6 opacity-90">
-  <span className="block md:inline font-semibold text-white/90">Her müşteri geri bildirimi size anında ulaşsın;</span>
-  <span className="block md:inline md:ml-1 mt-3 md:mt-0">Şikayetleri büyümeden çözüp, itibarınızı tek panelden yönetin.</span>
-          </p>
+             <p className="text-base sm:text-lg md:text-xl text-slate-300 mb-10 max-w-3xl mx-auto font-normal leading-[1.6] px-6">
+               Müşteri deneyimini veriye dönüştürün. Şikayetleri anında yakalayın,
+               <span className="text-white font-semibold"> yapay zeka ile analiz edin</span> ve itibarınızı tek merkezden profesyonelce yönetin.
+             </p>
+
              {/* Butonlar - Mobilde Kenarlık ve Kontrast Ayarı */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 w-full px-6 sm:px-0">
-  <Button size="lg" className="h-14 px-8 w-full sm:w-auto bg-white hover:bg-slate-200 text-slate-900 font-bold text-base transition-colors" onClick={openInstallModal}>Kurulum İçin Başvur</Button>
-  <Button variant="outline" size="lg" className="h-14 px-8 w-full sm:w-auto bg-transparent border-white text-white hover:bg-white hover:text-slate-900 font-semibold text-base transition-colors" onClick={openManagerLogin}>Yönetici Girişi</Button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-5 mb-16 w-full px-6 sm:px-0">
+            <Button size="lg" className="h-14 px-10 w-full sm:w-auto bg-teal-500 hover:bg-teal-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-teal-500/20 transition-all hover:scale-105" onClick={openInstallModal}>
+              Hemen Başlayın
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+            <Button variant="outline" size="lg" className="h-14 px-10 w-full sm:w-auto bg-white/5 border-slate-700 text-white hover:bg-white hover:text-slate-900 font-bold text-lg rounded-xl transition-all" onClick={openManagerLogin}>
+              Yönetici Paneli
+            </Button>
           </div>
 
 
@@ -595,6 +621,58 @@ const LandingPage = () => {
         </div>
       </section>
 
+      <section className="py-12 border-y border-slate-800/50 bg-slate-900/20 relative z-10">
+        <div className="container mx-auto px-4">
+          <p className="text-center text-slate-500 text-xs font-bold uppercase tracking-[0.2em] mb-8">Türkiye'nin Önde Gelen İşletmeleri Tarafından Tercih Ediliyor</p>
+          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-20 opacity-20 grayscale hover:opacity-50 transition-all duration-700">
+             <div className="flex items-center gap-2"><Hotel className="w-8 h-8" /><span className="font-bold text-xl tracking-tighter italic">HOTEL</span></div>
+             <div className="flex items-center gap-2"><Utensils className="w-8 h-8" /><span className="font-bold text-xl tracking-tighter italic">RESTAURANT</span></div>
+             <div className="flex items-center gap-2"><ShoppingBag className="w-8 h-8" /><span className="font-bold text-xl tracking-tighter italic">RETAIL</span></div>
+             <div className="flex items-center gap-2"><Building2 className="w-8 h-8" /><span className="font-bold text-xl tracking-tighter italic">CORP</span></div>
+             <div className="flex items-center gap-2"><Hospital className="w-8 h-8" /><span className="font-bold text-xl tracking-tighter italic">CLINIC</span></div>
+          </div>
+        </div>
+      </section>
+
+
+      <section id="how-it-works" className="py-24 bg-[#0f172a] relative z-10 border-t border-slate-800/30">
+        <div className="container mx-auto px-4">
+          <FadeIn className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">4 Adımda Dijital Dönüşüm</h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">Vocalize ile işletmenizi modernize etmek ve müşteri memnuniyetini artırmak çok kolay.</p>
+          </FadeIn>
+
+          <div className="grid md:grid-cols-4 gap-8">
+            {[
+              { icon: <QrCode className="w-8 h-8 text-teal-400" />, title: "QR Kurulumu", desc: "Masalara veya ödeme noktalarına size özel QR kodları yerleştirin." },
+              { icon: <MessageSquareText className="w-8 h-8 text-teal-400" />, title: "Müşteri Bildirimi", desc: "Müşterileriniz uygulama indirmeden saniyeler içinde geri bildirim versin." },
+              { icon: <BrainCircuit className="w-8 h-8 text-teal-400" />, title: "Yapay Zeka Analizi", desc: "Gelen veriler anında analiz edilir ve kriz anında sizi uyarır." },
+              { icon: <TrendingUp className="w-8 h-8 text-teal-400" />, title: "İşletme Büyümesi", desc: "Veriye dayalı kararlar alarak müşteri sadakatini ve kârlılığı artırın." }
+            ].map((step, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.15 }}
+                className="relative text-center group"
+              >
+                {idx < 3 && (
+                  <div className="hidden md:block absolute top-12 left-1/2 w-full h-[2px] bg-gradient-to-r from-teal-500/50 to-transparent z-0" />
+                )}
+                <div className="w-20 h-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-6 mx-auto relative z-10 group-hover:border-teal-500/50 transition-all duration-300 group-hover:scale-110">
+                   {step.icon}
+                   <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-teal-500 text-white font-bold flex items-center justify-center text-sm shadow-lg">
+                     {idx + 1}
+                   </div>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">{step.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{step.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section id="features" className="py-24 bg-[#0f172a] relative z-10">
         <div className="container mx-auto px-4">
@@ -607,43 +685,148 @@ const LandingPage = () => {
 
 
           <div className="grid md:grid-cols-3 gap-8">
-            {[{
-            icon: <Send className="w-6 h-6 text-teal-400" />,
-            title: "Anında Müdahale",
-            desc: "Şikayetleri müşteriniz kapıdan çıkmadan çözün, dijital itibarınızı proaktif olarak koruyun."
-          }, {
-            icon: <Lightbulb className="w-6 h-6 text-teal-400" />,
-            title: "Şube Röntgeni",
-            desc: "Tüm lokasyonlarınızı ve personel performansınızı tek panelden, anlık verilerle yönetin."
-          }, {
-            icon: <Heart className="w-6 h-6 text-teal-400" />,
-            title: "Sıfır Sürtünme",
-            desc: "Uygulama indirme zorunluluğu yok. QR okutmak yeterli; geleneksel anketlere göre 12 kat daha fazla katılım."
-          }].map((feature, idx) => <motion.div key={idx} initial={{
-            opacity: 0,
-            y: 30
-          }} whileInView={{
-            opacity: 1,
-            y: 0
-          }} viewport={{
-            once: true,
-            margin: "-50px"
-          }} transition={{
-            delay: idx * 0.2,
-            duration: 0.5
-          }} className="bg-slate-800/50 p-8 rounded-xl border border-slate-700/50 hover:border-teal-500/30 transition-colors">
-                <div className="w-12 h-12 rounded-lg bg-slate-900 flex items-center justify-center mb-6 border border-slate-700">
+            {[
+              {
+                icon: <Send className="w-6 h-6 text-teal-400" />,
+                title: "Anında Müdahale",
+                desc: "Şikayetleri müşteriniz kapıdan çıkmadan çözün, dijital itibarınızı proaktif olarak koruyun."
+              },
+              {
+                icon: <BarChart className="w-6 h-6 text-teal-400" />,
+                title: "Gelişmiş Analitik",
+                desc: "Tüm lokasyonlarınızı ve personel performansınızı tek panelden, anlık verilerle yönetin."
+              },
+              {
+                icon: <Heart className="w-6 h-6 text-teal-400" />,
+                title: "Sıfır Sürtünme",
+                desc: "Uygulama indirme zorunluluğu yok. QR okutmak yeterli; geleneksel anketlere göre 12 kat daha fazla katılım."
+              },
+              {
+                icon: <BrainCircuit className="w-6 h-6 text-teal-400" />,
+                title: "Yapay Zeka İçgörüleri",
+                desc: "Yapay zeka, yüzlerce yorumu analiz ederek size iyileştirme için somut öneriler sunar."
+              },
+              {
+                icon: <ShieldCheck className="w-6 h-6 text-teal-400" />,
+                title: "Kurumsal Güvenlik",
+                desc: "Verileriniz 256-bit şifreleme ile korunur. KVKK uyumlu altyapımızla işletmeniz güvende."
+              },
+              {
+                icon: <Layers className="w-6 h-6 text-teal-400" />,
+                title: "Multi-Şube Yönetimi",
+                desc: "Sınırsız şube ekleyin, bölge müdürleri atayın ve tüm operasyonu hiyerarşik olarak yönetin."
+              }
+            ].map((feature, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ delay: (idx % 3) * 0.1, duration: 0.5 }}
+                className="bg-slate-900/40 p-8 rounded-2xl border border-slate-800 hover:border-teal-500/40 transition-all duration-300 hover:shadow-2xl hover:shadow-teal-500/5 group"
+              >
+                <div className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center mb-6 border border-slate-700 group-hover:bg-teal-500/10 group-hover:border-teal-500/30 transition-all">
                   {feature.icon}
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
+                <h3 className="text-xl font-bold text-white mb-3 group-hover:text-teal-400 transition-colors">{feature.title}</h3>
                 <p className="text-slate-400 leading-relaxed text-sm">
                   {feature.desc}
                 </p>
-              </motion.div>)}
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
+
+      <section id="dashboard-preview" className="py-24 bg-[#0f172a] relative z-10 overflow-hidden border-t border-slate-800/30">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <FadeIn>
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white leading-tight">
+                Karar Vericiler İçin <br />
+                <span className="text-teal-400">Gerçek Zamanlı</span> Dashboard
+              </h2>
+              <p className="text-slate-400 text-lg mb-8 leading-relaxed">
+                İşletmenizin performansını saniyelik verilerle takip edin. Şubelerinizdeki memnuniyet oranlarını, personel hızlarını ve müşteri beklentilerini tek ekranda görün.
+              </p>
+              <ul className="space-y-4 mb-10">
+                {[
+                  "Kritik şikayetlerde anlık bildirimler",
+                  "Yapay zeka destekli duygu analizi",
+                  "Şube bazlı karşılaştırmalı raporlar",
+                  "Müşteri sadakat puanı (NPS) takibi"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-slate-200">
+                    <CheckCircle2 className="w-5 h-5 text-teal-500" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Button onClick={openInstallModal} className="bg-white text-slate-900 hover:bg-slate-200 font-bold px-8 h-14 rounded-xl transition-all">
+                Ücretsiz Demo İsteyin
+              </Button>
+            </FadeIn>
+
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="relative"
+            >
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl relative z-10">
+                 <div className="flex items-center justify-between mb-6 border-b border-slate-800 pb-4">
+                   <div className="flex gap-2">
+                     <div className="w-3 h-3 rounded-full bg-red-500/50" />
+                     <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
+                     <div className="w-3 h-3 rounded-full bg-green-500/50" />
+                   </div>
+                   <div className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">Vocalize Admin Panel v2.0</div>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-3 mb-6">
+                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                      <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Toplam Bildirim</div>
+                      <div className="text-2xl font-bold text-white">1,284</div>
+                      <div className="text-[10px] text-green-400 font-medium">+12% vs geçen ay</div>
+                    </div>
+                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                      <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Memnuniyet Oranı</div>
+                      <div className="text-2xl font-bold text-white">4.8/5.0</div>
+                      <div className="text-[10px] text-teal-400 font-medium">Mükemmel</div>
+                    </div>
+                 </div>
+
+                 <div className="bg-slate-800/30 p-6 rounded-xl border border-slate-700 mb-2">
+                    <div className="flex items-center justify-between mb-6">
+                       <div className="text-xs font-bold text-white">Haftalık Analiz</div>
+                       <div className="flex gap-2">
+                         <div className="w-2 h-2 rounded-full bg-teal-500" />
+                         <div className="w-2 h-2 rounded-full bg-slate-700" />
+                       </div>
+                    </div>
+                    <div className="flex items-end justify-between h-32 gap-2">
+                       {[40, 70, 45, 90, 65, 80, 50].map((h, i) => (
+                         <motion.div
+                           key={i}
+                           initial={{ height: 0 }}
+                           whileInView={{ height: `${h}%` }}
+                           transition={{ delay: i * 0.1, duration: 0.5 }}
+                           className="w-full bg-gradient-to-t from-teal-500/20 to-teal-500 rounded-t-sm"
+                         />
+                       ))}
+                    </div>
+                 </div>
+              </div>
+
+              {/* Decorative elements */}
+              <div className="absolute -top-10 -right-10 w-64 h-64 bg-teal-500/10 blur-[100px] -z-0" />
+              <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-orange-500/10 blur-[100px] -z-0" />
+            </motion.div>
+          </div>
+        </div>
+      </section>
 
       <section id="use-cases" className="py-24 bg-[#111827] relative z-10">
         <div className="container mx-auto px-4">
@@ -770,7 +953,10 @@ const LandingPage = () => {
                </div>
                
                {/* Campaign Card - Order switched: Mobile Top (order-1), Desktop Right (order-2) */}
-               <div className="order-1 md:order-2 w-full md:w-[55%] bg-white text-slate-900 rounded-xl p-6 shadow-2xl relative overflow-hidden transform scale-100 md:scale-105 border-4 border-orange-500/20">
+               <motion.div
+                 whileHover={{ y: -10 }}
+                 className="order-1 md:order-2 w-full md:w-[55%] bg-white text-slate-900 rounded-xl p-6 shadow-2xl relative overflow-hidden transform scale-100 md:scale-105 border-4 border-orange-500/20"
+               >
                   <div className="absolute top-0 right-0 bg-yellow-400 text-xs font-bold px-3 py-1 rounded-bl-lg shadow-sm">ÖZEL</div>
                   <h3 className="text-orange-600 text-base font-bold uppercase mb-2 flex items-center justify-center gap-1">
                      <Zap className="w-4 h-4 fill-current" /> Kampanya Fiyatı
@@ -791,7 +977,7 @@ const LandingPage = () => {
                   <div className="text-xs font-medium text-slate-500 bg-slate-100 py-1 px-2 rounded-full inline-block">
                     İlk aylık ödeme kurulumdan 30 gün sonra alınır.
                   </div>
-               </div>
+               </motion.div>
             </div>
             
             <div className="text-orange-300 text-[10px] mt-3 font-medium opacity-80">
@@ -871,7 +1057,9 @@ const LandingPage = () => {
           }} transition={{
             delay: 0.1,
             duration: 0.5
-          }} className="p-8 rounded-xl bg-[#1a2235] border border-slate-800 hover:border-teal-500/30 transition-colors group">
+          }}
+          whileHover={{ y: -5, borderColor: 'rgba(20,184,166,0.5)' }}
+          className="p-8 rounded-xl bg-[#1a2235] border border-slate-800 hover:border-teal-500/30 transition-all group">
               <div className="w-12 h-12 rounded-lg bg-teal-500/10 flex items-center justify-center mb-6 mx-auto group-hover:bg-teal-500/20 transition-colors">
                 <TrendingUp className="w-6 h-6 text-teal-400" />
               </div>
@@ -894,7 +1082,9 @@ const LandingPage = () => {
           }} transition={{
             delay: 0.3,
             duration: 0.5
-          }} className="p-8 rounded-xl bg-[#1a2235] border border-slate-800 hover:border-teal-500/30 transition-colors group">
+          }}
+          whileHover={{ y: -5, borderColor: 'rgba(20,184,166,0.5)' }}
+          className="p-8 rounded-xl bg-[#1a2235] border border-slate-800 hover:border-teal-500/30 transition-all group">
               <div className="w-12 h-12 rounded-lg bg-teal-500/10 flex items-center justify-center mb-6 mx-auto group-hover:bg-teal-500/20 transition-colors">
                 <Target className="w-6 h-6 text-teal-400" />
               </div>
@@ -917,7 +1107,9 @@ const LandingPage = () => {
           }} transition={{
             delay: 0.5,
             duration: 0.5
-          }} className="p-8 rounded-xl bg-[#1a2235] border border-slate-800 hover:border-teal-500/30 transition-colors group">
+          }}
+          whileHover={{ y: -5, borderColor: 'rgba(20,184,166,0.5)' }}
+          className="p-8 rounded-xl bg-[#1a2235] border border-slate-800 hover:border-teal-500/30 transition-all group">
               <div className="w-12 h-12 rounded-lg bg-teal-500/10 flex items-center justify-center mb-6 mx-auto group-hover:bg-teal-500/20 transition-colors">
                 <RefreshCw className="w-6 h-6 text-teal-400" />
               </div>
@@ -1040,6 +1232,7 @@ const LandingPage = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2, duration: 0.6 }}
+              whileHover={{ scale: 1.02, y: -5 }}
               className="group relative backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-teal-500/40 transition-all duration-300 hover:bg-white/8"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-300"></div>
@@ -1061,6 +1254,7 @@ const LandingPage = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.3, duration: 0.6 }}
+              whileHover={{ scale: 1.02, y: -5 }}
               className="group relative backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-teal-500/40 transition-all duration-300 hover:bg-white/8"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-300"></div>
@@ -1082,6 +1276,7 @@ const LandingPage = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.4, duration: 0.6 }}
+              whileHover={{ scale: 1.02, y: -5 }}
               className="group relative backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-teal-500/40 transition-all duration-300 hover:bg-white/8"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-300"></div>
