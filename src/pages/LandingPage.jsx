@@ -7,9 +7,10 @@ import {
   Menu, X, Zap, CheckCircle2, Timer, Send, Lightbulb, Heart, QrCode, Loader2, 
   ArrowRight, TrendingUp, Target, RefreshCw, Cpu, BrainCircuit, Activity, Sparkles, 
   MessageSquare as MessageSquareText, Info, AlertTriangle, Layers, Zap as ZapIcon, Network,
-  Instagram, // <-- YENİ EKLENDİ
-  Mail,      // <-- YENİ EKLENDİ
-  Building2, Coffee, ShoppingBag, Utensils, Hotel, GraduationCap, Hospital, ShieldCheck, BarChart
+  Instagram,
+  Mail,
+  Building2, Coffee, ShoppingBag, Utensils, Hotel, GraduationCap, Hospital, ShieldCheck, BarChart,
+  Globe, LayoutGrid, Users, Rocket, Calendar
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -107,1355 +108,517 @@ Kişisel verileriniz, üyeliğiniz devam ettiği sürece veya yasal saklama sür
 KVKK Madde 11 uyarınca; verilerinizin işlenip işlenmediğini öğrenme, işlenmişse bilgi talep etme, işlenme amacını öğrenme, eksik/yanlış işlenmişse düzeltilmesini isteme ve silinmesini talep etme haklarına sahipsiniz. Taleplerinizi uygulama üzerinden veya e-posta yoluyla iletebilirsiniz.
 `;
 
-// Optimized Animated Counter
-const AnimatedCounter = ({
-  from = 0,
-  to,
-  duration = 2,
-  suffix = ""
-}) => {
-  const nodeRef = useRef();
-  const inView = useInView(nodeRef, {
-    once: true,
-    margin: "-100px"
-  });
-  useEffect(() => {
-    const node = nodeRef.current;
-    if (!inView) return;
-    let startTime;
-    const step = timestamp => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / (duration * 1000), 1);
-      const ease = 1 - Math.pow(1 - progress, 4);
-      const current = Math.floor(from + (to - from) * ease);
-      if (node) {
-        node.textContent = current.toLocaleString() + suffix;
-      }
-      if (progress < 1) {
-        window.requestAnimationFrame(step);
-      }
-    };
-    window.requestAnimationFrame(step);
-  }, [inView, from, to, duration, suffix]);
-  return <span ref={nodeRef} className="tabular-nums">{from}{suffix}</span>;
-};
+const DecorativeGrid = () => (
+  <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-20">
+    <div className="absolute inset-0" style={{
+      backgroundImage: `radial-gradient(circle at 2px 2px, rgba(249, 115, 22, 0.15) 1px, transparent 0)`,
+      backgroundSize: '40px 40px'
+    }}></div>
+    <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-orange-500/20 to-transparent"></div>
+    <div className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-transparent via-orange-500/20 to-transparent"></div>
+  </div>
+);
 
-const StarBackground = () => {
-  const {
-    scrollY
-  } = useScroll();
-  const y1 = useTransform(scrollY, [0, 1000], [0, 200]);
-  const y2 = useTransform(scrollY, [0, 1000], [0, -150]);
-  const stars = useRef(Array.from({
-    length: 50
-  }).map((_, i) => ({
-    id: i,
-    left: `${Math.random() * 100}%`,
-    top: `${Math.random() * 100}%`,
-    size: Math.random() * 3 + 1,
-    opacity: Math.random() * 0.3 + 0.1,
-    scale: Math.random() * 0.5 + 0.5
-  }))).current;
-  return <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-      {stars.map((star, i) => <motion.div key={star.id} style={{
-      position: 'absolute',
-      left: star.left,
-      top: star.top,
-      y: i % 2 === 0 ? y1 : y2,
-      opacity: star.opacity,
-      scale: star.scale
-    }} className="text-white/20 rounded-full bg-white">
-           <div style={{
-        width: star.size,
-        height: star.size,
-        borderRadius: '50%',
-        backgroundColor: 'currentColor'
-      }} />
-        </motion.div>)}
-    </div>;
-};
+const Blob = ({ className, color = "bg-orange-500" }) => (
+  <div className={cn("absolute rounded-full blur-[120px] opacity-20 animate-pulse", color, className)}></div>
+);
 
 const FadeIn = ({
   children,
   delay = 0,
-  className
+  className,
+  direction = "up"
 }) => {
-  return <motion.div initial={{
-    opacity: 0,
-    y: 30
-  }} whileInView={{
-    opacity: 1,
-    y: 0
-  }} viewport={{
-    once: true,
-    margin: "-50px"
-  }} transition={{
-    duration: 0.6,
-    delay,
-    ease: "easeOut"
-  }} className={className}>
-      {children}
-    </motion.div>;
+  const directions = {
+    up: { y: 20, x: 0 },
+    down: { y: -20, x: 0 },
+    left: { x: 20, y: 0 },
+    right: { x: -20, y: 0 }
+  };
+
+  return <motion.div
+    initial={{ opacity: 0, ...directions[direction] }}
+    whileInView={{ opacity: 1, x: 0, y: 0 }}
+    viewport={{ once: true, amount: 0.1 }}
+    transition={{ duration: 0.8, delay, ease: "easeOut" }}
+    className={className}
+  >
+    {children}
+  </motion.div>;
 };
 
 const LandingPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [installModalOpen, setInstallModalOpen] = useState(false); // NEW STATE
+  const [installModalOpen, setInstallModalOpen] = useState(false);
   const [authDefaultTab, setAuthDefaultTab] = useState('login');
   const [authDefaultRole, setAuthDefaultRole] = useState('customer');
   const [legalModal, setLegalModal] = useState({ isOpen: false, type: '' });
-
-  // Lead Modal State
   const [leadModalOpen, setLeadModalOpen] = useState(false);
-  const [leadType, setLeadType] = useState('info_request'); // 'info_request' or 'quick_question'
+  const [leadType, setLeadType] = useState('info_request');
   const [leadLoading, setLeadLoading] = useState(false);
-  const [leadForm, setLeadForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    message: ''
-  });
-  const {
-    toast
-  } = useToast();
+  const [leadForm, setLeadForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  
-  // 🚀 KORUMA KALKANI: iPhone için başlatma kontrolü
   const [isInitializing, setIsInitializing] = useState(true);
   
-  const progressRef = useRef(null);
-  const progressInView = useInView(progressRef, {
-    once: true
-  });
-  const quickOptions = ["Fiyatlandırmayı öğrenmek istiyorum", "Demo toplantısı yapmak istiyorum", "Vocalize'ın çalışma mantığını öğrenmek istiyorum", "İşletmem için uygun mu değerlendirmek istiyorum"];
-  const handleQuickOption = option => {
-    setLeadForm(prev => ({
-      ...prev,
-      message: option
-    }));
-  };
+  const quickOptions = ["Kurumsal çözüm teklifi almak istiyorum", "Demo toplantısı planlamak istiyorum", "Sistem entegrasyonu hakkında bilgi", "Ölçeklenebilir paket detayları"];
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
-  // 🚀 iPhone URL Kontrolü ve Başlatma Mantığı
-  useEffect(() => {
-    // iPhone'un aşırı hızını dengelemek için kısa bir güvenlik gecikmesi
-    // Bu süre içinde URL parametreleri (business_id) kesinlikle okunmuş olur.
-    const checkTimer = setTimeout(() => {
-      
-      // Varsa URL'deki parametreleri kontrol et veya Context'i güncelle
-      const bid = searchParams.get('businessId') || searchParams.get('bid');
-      
-      console.log("URL Kontrolü Tamamlandı. Business ID:", bid);
-      
-      // Artık yüklemeyi bitir ve gerçek ekranı göster
-      setIsInitializing(false);
-      
-    }, 800); // 800ms (iPhone için ideal süre, kullanıcıya hissettirmez ama hatayı çözer)
 
+  useEffect(() => {
+    const checkTimer = setTimeout(() => {
+      setIsInitializing(false);
+    }, 800);
     return () => clearTimeout(checkTimer);
-  }, [searchParams]);
-  
-  // ✅ QRRedirector'dan geldiğinde modal aç
+  }, []);
+
   useEffect(() => {
     const openAuth = searchParams.get('openAuth');
     if (openAuth === 'true') {
       setAuthDefaultTab('register');
       setAuthDefaultRole('customer');
       setIsAuthModalOpen(true);
-      
-      // URL'den openAuth parametresini temizle
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('openAuth');
       navigate(`?${newParams.toString()}`, { replace: true });
     }
   }, [searchParams, navigate]);
-  
-  const scrollToTop = () => {
-    scroll.scrollToTop();
-  };
-  const scrollToPricing = () => {
-    scroller.scrollTo('pricing', {
-      duration: 800,
-      delay: 0,
-      smooth: 'easeInOutQuart',
-      offset: -50
-    });
-  };
-  const openLogin = () => {
-    setAuthDefaultTab('login');
-    setAuthDefaultRole('customer');
-    setIsAuthModalOpen(true);
-  };
-  const openRegister = () => {
-    setAuthDefaultTab('register');
-    setAuthDefaultRole('customer');
-    setIsAuthModalOpen(true);
-  };
-  const openManagerLogin = () => {
-    setAuthDefaultTab('login');
-    setAuthDefaultRole('manager');
-    setIsAuthModalOpen(true);
-  };
-  
-  // NEW FUNCTION
-  const openInstallModal = () => {
-    setInstallModalOpen(true);
+
+  const scrollToTop = () => scroll.scrollToTop();
+  const openLogin = () => { setAuthDefaultTab('login'); setAuthDefaultRole('customer'); setIsAuthModalOpen(true); };
+  const openManagerLogin = () => { setAuthDefaultTab('login'); setAuthDefaultRole('manager'); setIsAuthModalOpen(true); };
+  const openInstallModal = () => setInstallModalOpen(true);
+  const openLeadModal = type => {
+    setLeadType(type);
+    setLeadForm({ name: '', email: '', phone: '', message: '' });
+    setLeadModalOpen(true);
   };
 
   const handleGuestContinue = () => {
     setIsAuthModalOpen(false);
-    toast({
-      title: "Misafir Modu",
-      description: "Geri bildirim göndermek için işletme seçin."
-    });
-    setTimeout(() => {
-      navigate('/customer-panel?guest=true');
-    }, 500);
+    toast({ title: "Misafir Modu", description: "Geri bildirim göndermek için işletme seçin." });
+    setTimeout(() => { navigate('/customer-panel?guest=true'); }, 500);
   };
 
-  const handleLegalLinkClick = (type) => setLegalModal({ isOpen: true, type });
-
-  // Lead Form Handlers
-  const openLeadModal = type => {
-    setLeadType(type);
-    setLeadForm({
-      name: '',
-      email: '',
-      phone: '',
-      message: ''
-    });
-    setLeadModalOpen(true);
-  };
   const handleLeadSubmit = async e => {
     e.preventDefault();
     if (!leadForm.name || !leadForm.email || !leadForm.message) {
-      toast({
-        title: "Hata",
-        description: "Lütfen gerekli alanları doldurun.",
-        variant: "destructive"
-      });
+      toast({ title: "Hata", description: "Lütfen gerekli alanları doldurun.", variant: "destructive" });
       return;
     }
     setLeadLoading(true);
     try {
-      const {
-        error
-      } = await supabase.from('vocalize_leads').insert({
-        name: leadForm.name,
-        email: leadForm.email,
-        phone: leadForm.phone || null,
-        company_name: null,
-        sector: null,
-        message: leadForm.message,
-        lead_type: leadType,
-        lead_score: 10,
-        source: 'landing_page'
+      const { error } = await supabase.from('vocalize_leads').insert({
+        name: leadForm.name, email: leadForm.email, phone: leadForm.phone || null,
+        message: leadForm.message, lead_type: leadType, lead_score: 10, source: 'landing_page'
       });
       if (error) throw error;
-      toast({
-        title: "Teşekkür ederiz!",
-        description: "Ekibimiz en kısa sürede sizinle iletişime geçecek."
-      });
+      toast({ title: "Talebiniz Alındı", description: "Ekibimiz 24 saat içerisinde sizinle iletişime geçecektir." });
       setLeadModalOpen(false);
-      
-      // Form sıfırlama
-      setLeadForm({
-        name: '',
-        email: '',
-        phone: '',
-        message: ''
-      });
     } catch (error) {
-      console.error('Lead submit error:', error);
-      toast({
-        title: "Hata",
-        description: "Bir sorun oluştu, lütfen tekrar deneyin.",
-        variant: "destructive"
-      });
-    } finally {
-      setLeadLoading(false);
-    }
+      toast({ title: "Hata", description: "Bir sorun oluştu, lütfen tekrar deneyin.", variant: "destructive" });
+    } finally { setLeadLoading(false); }
   };
-  const navLinks = [{
-    name: 'Neden Vocalize?',
-    to: 'features'
-  }, {
-    name: 'Nasıl Çalışır?',
-    to: 'how-it-works'
-  }, {
-    name: 'Kimler Kullanıyor?',
-    to: 'use-cases'
-  }, {
-    name: 'Fiyatlandırma',
-    to: 'pricing'
-  }, {
-    name: 'V2/AI',
-    to: 'v2-vision'
-  }];
-  const sectorImages = [{
-    title: "Kafe & Restaurant",
-    image: "Kafe.jpg"
-  }, {
-    title: "Fırın & Pastane",
-    image: "FırınPastane.jpg"
-  }, {
-    title: "Otel",
-    image: "Otel.jpg"
-  }, {
-    title: "Güzellik Salonu",
-    image: "GüzellikSalonu.jpg"
-  }, {
-    title: "Klinik",
-    image: "Klinik.jpg"
-  }, {
-    title: "Perakende",
-    image: "Perakende.jpg"
-  }, {
-    title: "Zincir İşletme & Franchise",
-    image: "Frenchise.jpg"
-  }];
-  
-  // 🛡️ LOADING EKRANI (Veri gelene kadar bunu göster)
+
+  const handleLegalLinkClick = (type) => {
+    setLegalModal({ isOpen: true, type });
+  };
+
+  const navLinks = [
+    { name: 'Çözümler', to: 'features' },
+    { name: 'Nasıl Çalışır?', to: 'how-it-works' },
+    { name: 'Sektörler', to: 'use-cases' },
+    { name: 'Yapay Zeka', to: 'v2-vision' }
+  ];
+
   if (isInitializing) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900">
-        <Loader2 className="w-12 h-12 text-teal-500 animate-spin mb-4" />
-        <p className="text-slate-400 text-sm font-medium animate-pulse">İşletme verileri doğrulanıyor...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950">
+        <Loader2 className="w-12 h-12 text-orange-500 animate-spin mb-4" />
+        <p className="text-slate-500 text-sm font-medium tracking-widest uppercase">Vocalize Enterprise</p>
       </div>
     );
   }
 
-  // ---------------------------------------------------------------
-  // BURADAN SONRASI MEVCUT KODLARINIZ (Logic Aynen Kalıyor)
-  // ---------------------------------------------------------------
-
-  return <div className="min-h-screen bg-[#0f172a] text-slate-100 font-sans overflow-x-hidden relative selection:bg-primary/30">
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans overflow-x-hidden relative selection:bg-orange-500/30">
       <Helmet>
-        <title>Vocalize - Müşteri Geri Bildirim Sistemi</title>
-        <meta name="description" content="Kayıp müşterileri yakalayın, şikayetleri kazanca dönüştürün. Anlık bildirimlerle işletme itibarınızı garanti altına alın." />
+        <title>Vocalize Enterprise | Kurumsal Müşteri Deneyimi Platformu</title>
       </Helmet>
 
-
-      <StarBackground />
-
-
-      <header className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-transparent will-change-transform", scrolled ? "bg-[#0f172a]/90 backdrop-blur-md border-slate-800 shadow-sm" : "bg-transparent")}>
-        <div className="container mx-auto px-4 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer relative" onClick={scrollToTop}>
-            <div className="w-12 h-12 flex items-center justify-center relative z-20">
-               <img src="faviconbeyaz.png" alt="Vocalize Logo" className="h-12 w-auto object-contain brightness-200 grayscale-0" />
+      <header className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b border-transparent",
+        scrolled ? "bg-slate-950/80 backdrop-blur-xl border-slate-800/50 py-3" : "bg-transparent py-6"
+      )}>
+        <div className="container mx-auto px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={scrollToTop}>
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
+               <img src="faviconbeyaz.png" alt="V" className="h-6 w-auto brightness-200" />
             </div>
-           
-            <div className="relative h-10 w-[120px] overflow-hidden">
-               <motion.span className="absolute left-0 top-0 h-full flex items-center font-bold text-xl tracking-tight whitespace-nowrap" initial={{
-              x: 0,
-              opacity: 1
-            }} animate={{
-              x: scrolled ? -40 : 0,
-              opacity: scrolled ? 0 : 1
-            }} transition={{
-              duration: 0.6,
-              ease: [0.4, 0, 0.2, 1]
-            }}>
-                 VOCALIZE
-               </motion.span>
-            </div>
+            <span className="font-bold text-2xl tracking-tighter text-white">VOCALIZE</span>
           </div>
 
-
-          <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map(link => <ScrollLink key={link.name} to={link.to} spy={true} smooth={true} offset={-80} duration={500} className="text-sm font-medium text-slate-300 hover:text-white cursor-pointer transition-colors">
+          <nav className="hidden lg:flex items-center gap-10">
+            {navLinks.map(link => (
+              <ScrollLink key={link.name} to={link.to} spy={true} smooth={true} offset={-100} duration={500} className="text-sm font-semibold text-slate-400 hover:text-white cursor-pointer transition-colors tracking-wide">
                 {link.name}
-              </ScrollLink>)}
+              </ScrollLink>
+            ))}
           </nav>
 
-
-          <div className="hidden md:flex items-center gap-4 text-sm font-medium text-slate-300">
-            <button onClick={openLogin} className="hover:text-white transition-colors">
-              Giriş Yap
-            </button>
-            <Button onClick={openInstallModal} className="bg-orange-500 hover:bg-orange-600 text-white border-none">
-              Kurulum İçin Başvur
+          <div className="hidden lg:flex items-center gap-6">
+            <button onClick={openManagerLogin} className="text-sm font-bold text-slate-300 hover:text-white transition-colors">Yönetici Girişi</button>
+            <Button onClick={() => openLeadModal('info_request')} className="bg-orange-500 hover:bg-orange-400 text-white font-bold px-6 py-5 rounded-full shadow-xl shadow-orange-500/20 transition-all hover:translate-y-[-2px] border-none">
+              Demo Talebi
             </Button>
           </div>
 
-
-          <button className="md:hidden p-2 text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            {isMenuOpen ? <X /> : <Menu />}
+          <button className="lg:hidden p-2 text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
-
-
-        <AnimatePresence>
-          {isMenuOpen && <motion.div initial={{
-          height: 0,
-          opacity: 0
-        }} animate={{
-          height: 'auto',
-          opacity: 1
-        }} exit={{
-          height: 0,
-          opacity: 0
-        }} className="md:hidden bg-[#0f172a] border-b border-slate-800 overflow-hidden">
-              <div className="container mx-auto px-4 py-4 flex flex-col gap-4">
-                {navLinks.map(link => <ScrollLink key={link.name} to={link.to} spy={true} smooth={true} offset={-80} duration={500} onClick={() => setIsMenuOpen(false)} className="text-lg font-medium py-2 border-b border-slate-800 text-slate-300">
-                    {link.name}
-                  </ScrollLink>)}
-                <div className="flex flex-col gap-3 mt-4">
-                  <Button variant="outline" className="w-full border-slate-600" onClick={() => {
-                setIsMenuOpen(false);
-                openLogin();
-              }}>Giriş Yap</Button>
-                  <Button className="w-full bg-orange-500 text-white" onClick={() => {
-                setIsMenuOpen(false);
-                openInstallModal();
-              }}>Kurulum İçin Başvur</Button>
-                </div>
-              </div>
-            </motion.div>}
-        </AnimatePresence>
       </header>
 
+      <section className="relative min-h-[90vh] flex items-center pt-32 pb-20 overflow-hidden">
+        <DecorativeGrid />
+        <Blob className="top-[-10%] right-[-5%] w-[500px] h-[500px]" />
+        <Blob className="bottom-[10%] left-[-5%] w-[400px] h-[400px] bg-yellow-500" />
 
-      <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
-        <div className="absolute inset-0 z-0">
-           <div className="absolute inset-0 bg-[#0f172a]/90 z-10"></div>
-           <motion.img initial={{
-          scale: 1.1
-        }} animate={{
-          scale: 1
-        }} transition={{
-          duration: 10,
-          ease: "easeOut"
-        }} src="3görsel.png" alt="Background cafe interior" className="w-full h-full object-cover" />
-        </div>
-       
-        <div className="container mx-auto px-4 relative z-20 text-center">
-           <motion.div initial={{
-          opacity: 0,
-          y: 20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          duration: 0.8
-        }} className="max-w-6xl mx-auto px-4 w-full">
-             <motion.div onClick={scrollToPricing} className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/30 text-orange-400 px-4 py-1.5 rounded-full text-sm font-semibold mb-8 backdrop-blur-sm cursor-pointer transition-colors hover:bg-orange-500/20 hover:border-orange-500/50" whileHover={{
-            scale: 1.05
-          }} whileTap={{
-            scale: 0.95
-          }} animate={{
-            boxShadow: ["0 0 0 0px rgba(249, 115, 22, 0)", "0 0 0 4px rgba(249, 115, 22, 0.2)", "0 0 0 0px rgba(249, 115, 22, 0)"]
-          }} transition={{
-            boxShadow: {
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }
-          }}>
-               <Zap className="w-4 h-4 fill-current" />
-               İlk 20 işletme için özel fiyat!
-             </motion.div>
-
-
-             {/* Ana Başlık (H1) Güncellemesi */}
-           <h1 className="text-[32px] sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 tracking-tight leading-[1.1] px-4 flex flex-col items-center">
-             <span className="block">İşletmenizi Büyüten</span>
-             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">
-               Akıllı Geri Bildirim Sistemi
-             </span>
-           </h1>
-
-           <motion.div
-             initial={{ opacity: 0 }}
-             animate={{ opacity: 1 }}
-             transition={{ delay: 0.5 }}
-             className="flex items-center justify-center gap-2 mb-8 text-slate-400 text-sm font-medium"
-           >
-             <div className="flex -space-x-2">
-               {[1,2,3,4].map(i => (
-                 <div key={i} className="w-8 h-8 rounded-full border-2 border-[#0f172a] bg-slate-800 flex items-center justify-center overflow-hidden">
-                   <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" />
-                 </div>
-               ))}
-             </div>
-             <span className="ml-2">50+ İşletme Tarafından Güveniliyor</span>
-           </motion.div>
-             
-             <p className="text-base sm:text-lg md:text-xl text-slate-300 mb-10 max-w-3xl mx-auto font-normal leading-[1.6] px-6">
-               Müşteri deneyimini veriye dönüştürün. Şikayetleri anında yakalayın,
-               <span className="text-white font-semibold"> yapay zeka ile analiz edin</span> ve itibarınızı tek merkezden profesyonelce yönetin.
-             </p>
-
-             {/* Butonlar - Mobilde Kenarlık ve Kontrast Ayarı */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-5 mb-16 w-full px-6 sm:px-0">
-            <Button size="lg" className="h-14 px-10 w-full sm:w-auto bg-teal-500 hover:bg-teal-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-teal-500/20 transition-all hover:scale-105" onClick={openInstallModal}>
-              Hemen Başlayın
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <Button variant="outline" size="lg" className="h-14 px-10 w-full sm:w-auto bg-white/5 border-slate-700 text-white hover:bg-white hover:text-slate-900 font-bold text-lg rounded-xl transition-all" onClick={openManagerLogin}>
-              Yönetici Paneli
-            </Button>
-          </div>
-
-
-             {/* Mikro Mesajlar - Mobilde Margin (Boşluk) Eklenmiş Yapı */}
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-bold text-slate-200 uppercase tracking-widest opacity-90">
-  <div className="flex items-center gap-2 bg-slate-900/40 border border-slate-100/10 px-4 py-2 rounded-full shadow-md backdrop-blur-sm mx-1">
-    <Zap className="w-3.5 h-3.5 text-orange-400 fill-current" />
-    <span>5 Dakikada Kurulum</span>
-  </div>
-  <div className="flex items-center gap-2 bg-slate-900/40 border border-slate-100/10 px-4 py-2 rounded-full shadow-md backdrop-blur-sm mx-1">
-    <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
-    <span>İlk Aylık Ödeme 30 Gün Sonra</span>
-  </div>
-          </div>
-           </motion.div>
-        </div>
-      </section>
-
-      <section className="py-12 border-y border-slate-800/50 bg-slate-900/20 relative z-10">
-        <div className="container mx-auto px-4">
-          <p className="text-center text-slate-500 text-xs font-bold uppercase tracking-[0.2em] mb-8">Türkiye'nin Önde Gelen İşletmeleri Tarafından Tercih Ediliyor</p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-20 opacity-20 grayscale hover:opacity-50 transition-all duration-700">
-             <div className="flex items-center gap-2"><Hotel className="w-8 h-8" /><span className="font-bold text-xl tracking-tighter italic">HOTEL</span></div>
-             <div className="flex items-center gap-2"><Utensils className="w-8 h-8" /><span className="font-bold text-xl tracking-tighter italic">RESTAURANT</span></div>
-             <div className="flex items-center gap-2"><ShoppingBag className="w-8 h-8" /><span className="font-bold text-xl tracking-tighter italic">RETAIL</span></div>
-             <div className="flex items-center gap-2"><Building2 className="w-8 h-8" /><span className="font-bold text-xl tracking-tighter italic">CORP</span></div>
-             <div className="flex items-center gap-2"><Hospital className="w-8 h-8" /><span className="font-bold text-xl tracking-tighter italic">CLINIC</span></div>
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="max-w-4xl">
+            <FadeIn direction="up">
+              <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest mb-8">
+                <Rocket className="w-4 h-4" /> B2B Müşteri Deneyimi Dönüşümü
+              </div>
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[1.05] mb-8 tracking-tight">
+                Müşteri Sesini <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-yellow-400 to-orange-500">
+                  Stratejik Veriye
+                </span> Dönüştürün.
+              </h1>
+              <p className="text-xl md:text-2xl text-slate-400 mb-12 max-w-2xl font-medium leading-relaxed">
+                Vocalize, ölçeklenebilir altyapısı ve yapay zeka destekli analitiği ile işletmenizin dijital itibarını ve müşteri sadakatini tek merkezden yönetir.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                <Button size="lg" className="h-16 px-10 w-full sm:w-auto bg-white text-slate-950 hover:bg-orange-500 hover:text-white font-black text-lg rounded-full transition-all border-none" onClick={() => openLeadModal('info_request')}>
+                  Kurumsal Çözüm Alın
+                </Button>
+                <div className="flex items-center gap-4 group cursor-pointer" onClick={openManagerLogin}>
+                  <div className="w-12 h-12 rounded-full border border-slate-700 flex items-center justify-center group-hover:bg-slate-800 transition-colors">
+                    <BarChart className="w-5 h-5 text-orange-400" />
+                  </div>
+                  <span className="font-bold text-slate-300 group-hover:text-white transition-colors">Dashboard'u Keşfedin</span>
+                </div>
+              </div>
+            </FadeIn>
           </div>
         </div>
       </section>
 
+      <section className="py-20 border-y border-slate-900 bg-slate-950/50">
+        <div className="container mx-auto px-6">
+          <p className="text-slate-500 text-xs font-black uppercase tracking-[0.3em] mb-12 text-center">Global Standartlarda Güvenilir Çözümler</p>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-12 items-center opacity-40 grayscale">
+             <div className="flex flex-col items-center gap-3 text-white"><Hotel className="w-10 h-10" /><span className="text-[10px] font-bold uppercase tracking-widest">Konaklama</span></div>
+             <div className="flex flex-col items-center gap-3 text-white"><Utensils className="w-10 h-10" /><span className="text-[10px] font-bold uppercase tracking-widest">Gastronomi</span></div>
+             <div className="flex flex-col items-center gap-3 text-white"><ShoppingBag className="w-10 h-10" /><span className="text-[10px] font-bold uppercase tracking-widest">Perakende</span></div>
+             <div className="flex flex-col items-center gap-3 text-white"><Building2 className="w-10 h-10" /><span className="text-[10px] font-bold uppercase tracking-widest">Kurumsal</span></div>
+             <div className="flex flex-col items-center gap-3 text-white"><Hospital className="w-10 h-10" /><span className="text-[10px] font-bold uppercase tracking-widest">Sağlık</span></div>
+          </div>
+        </div>
+      </section>
 
-      <section id="how-it-works" className="py-24 bg-[#0f172a] relative z-10 border-t border-slate-800/30">
-        <div className="container mx-auto px-4">
-          <FadeIn className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">4 Adımda Dijital Dönüşüm</h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">Vocalize ile işletmenizi modernize etmek ve müşteri memnuniyetini artırmak çok kolay.</p>
-          </FadeIn>
+      <section id="how-it-works" className="py-32 bg-slate-950 relative z-10">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col lg:flex-row gap-20 items-end mb-24">
+            <div className="lg:w-1/2">
+              <FadeIn direction="left">
+                <h2 className="text-4xl md:text-6xl font-black text-white mb-8 tracking-tighter italic uppercase">01. Operasyonel Mükemmellik</h2>
+                <p className="text-xl text-slate-400 leading-relaxed font-medium">
+                  Karmaşık süreçleri basitleştiriyoruz. Müşteri geri bildirimi toplama ve analiz sürecini tamamen otomatikleştirerek operasyonel yükünüzü azaltıyoruz.
+                </p>
+              </FadeIn>
+            </div>
+            <div className="lg:w-1/2 flex justify-end">
+              <div className="flex gap-4">
+                {[1, 2, 3, 4].map(i => <div key={i} className="w-1 h-12 bg-orange-500/20 rounded-full overflow-hidden">
+                  <motion.div
+                    animate={{ height: ['0%', '100%', '0%'] }}
+                    transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
+                    className="w-full bg-orange-500"
+                  />
+                </div>)}
+              </div>
+            </div>
+          </div>
 
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid lg:grid-cols-4 gap-12">
             {[
-              { icon: <QrCode className="w-8 h-8 text-teal-400" />, title: "QR Kurulumu", desc: "Masalara veya ödeme noktalarına size özel QR kodları yerleştirin." },
-              { icon: <MessageSquareText className="w-8 h-8 text-teal-400" />, title: "Müşteri Bildirimi", desc: "Müşterileriniz uygulama indirmeden saniyeler içinde geri bildirim versin." },
-              { icon: <BrainCircuit className="w-8 h-8 text-teal-400" />, title: "Yapay Zeka Analizi", desc: "Gelen veriler anında analiz edilir ve kriz anında sizi uyarır." },
-              { icon: <TrendingUp className="w-8 h-8 text-teal-400" />, title: "İşletme Büyümesi", desc: "Veriye dayalı kararlar alarak müşteri sadakatini ve kârlılığı artırın." }
+              { icon: <QrCode className="w-8 h-8 text-orange-400" />, title: "Stratejik Konumlandırma", desc: "İşletmeniz her temas noktasında kesintisiz veri toplama altyapısı." },
+              { icon: <Globe className="w-8 h-8 text-orange-400" />, title: "Anlık Reaksiyon", desc: "Geri bildirimleri saniyeler içinde analiz eden ve bildiren akıllı engine." },
+              { icon: <BrainCircuit className="w-8 h-8 text-orange-400" />, title: "AI Destekli Analiz", desc: "Büyük veriyi anlamlı içgörülere ve aksiyon planlarına dönüştürme." },
+              { icon: <TrendingUp className="w-8 h-8 text-orange-400" />, title: "Sürdürülebilir Büyüme", desc: "Müşteri sadakatini artıran ve kâr marjlarını yükselten optimizasyon." }
             ].map((step, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.15 }}
-                className="relative text-center group"
-              >
-                {idx < 3 && (
-                  <div className="hidden md:block absolute top-12 left-1/2 w-full h-[2px] bg-gradient-to-r from-teal-500/50 to-transparent z-0" />
-                )}
-                <div className="w-20 h-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-6 mx-auto relative z-10 group-hover:border-teal-500/50 transition-all duration-300 group-hover:scale-110">
-                   {step.icon}
-                   <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-teal-500 text-white font-bold flex items-center justify-center text-sm shadow-lg">
-                     {idx + 1}
-                   </div>
+              <FadeIn key={idx} delay={idx * 0.1} className="relative group">
+                <div className="p-10 rounded-[40px] bg-slate-900/40 border border-slate-800 hover:border-orange-500/50 transition-all duration-500 hover:translate-y-[-10px]">
+                  <div className="mb-8 w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    {step.icon}
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-4">{step.title}</h3>
+                  <p className="text-slate-400 leading-relaxed">{step.desc}</p>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">{step.title}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{step.desc}</p>
-              </motion.div>
+              </FadeIn>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="features" className="py-24 bg-[#0f172a] relative z-10">
-        <div className="container mx-auto px-4">
-          <FadeIn className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">Neden Vocalize?</h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Vocalize, işletmelerin müşterilerini sadece duymalarını değil, anlamalarını sağlar. Her mesaj, bir veri değil; bir deneyimdir.
-            </p>
-          </FadeIn>
-
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: <Send className="w-6 h-6 text-teal-400" />,
-                title: "Anında Müdahale",
-                desc: "Şikayetleri müşteriniz kapıdan çıkmadan çözün, dijital itibarınızı proaktif olarak koruyun."
-              },
-              {
-                icon: <BarChart className="w-6 h-6 text-teal-400" />,
-                title: "Gelişmiş Analitik",
-                desc: "Tüm lokasyonlarınızı ve personel performansınızı tek panelden, anlık verilerle yönetin."
-              },
-              {
-                icon: <Heart className="w-6 h-6 text-teal-400" />,
-                title: "Sıfır Sürtünme",
-                desc: "Uygulama indirme zorunluluğu yok. QR okutmak yeterli; geleneksel anketlere göre 12 kat daha fazla katılım."
-              },
-              {
-                icon: <BrainCircuit className="w-6 h-6 text-teal-400" />,
-                title: "Yapay Zeka İçgörüleri",
-                desc: "Yapay zeka, yüzlerce yorumu analiz ederek size iyileştirme için somut öneriler sunar."
-              },
-              {
-                icon: <ShieldCheck className="w-6 h-6 text-teal-400" />,
-                title: "Kurumsal Güvenlik",
-                desc: "Verileriniz 256-bit şifreleme ile korunur. KVKK uyumlu altyapımızla işletmeniz güvende."
-              },
-              {
-                icon: <Layers className="w-6 h-6 text-teal-400" />,
-                title: "Multi-Şube Yönetimi",
-                desc: "Sınırsız şube ekleyin, bölge müdürleri atayın ve tüm operasyonu hiyerarşik olarak yönetin."
-              }
-            ].map((feature, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ delay: (idx % 3) * 0.1, duration: 0.5 }}
-                className="bg-slate-900/40 p-8 rounded-2xl border border-slate-800 hover:border-teal-500/40 transition-all duration-300 hover:shadow-2xl hover:shadow-teal-500/5 group"
-              >
-                <div className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center mb-6 border border-slate-700 group-hover:bg-teal-500/10 group-hover:border-teal-500/30 transition-all">
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3 group-hover:text-teal-400 transition-colors">{feature.title}</h3>
-                <p className="text-slate-400 leading-relaxed text-sm">
-                  {feature.desc}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-
-      <section id="dashboard-preview" className="py-24 bg-[#0f172a] relative z-10 overflow-hidden border-t border-slate-800/30">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+      <section id="features" className="py-32 bg-slate-900/20 relative overflow-hidden">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-24">
             <FadeIn>
-              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white leading-tight">
-                Karar Vericiler İçin <br />
-                <span className="text-teal-400">Gerçek Zamanlı</span> Dashboard
-              </h2>
-              <p className="text-slate-400 text-lg mb-8 leading-relaxed">
-                İşletmenizin performansını saniyelik verilerle takip edin. Şubelerinizdeki memnuniyet oranlarını, personel hızlarını ve müşteri beklentilerini tek ekranda görün.
+              <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">Enterprise Çözüm Seti</h2>
+              <p className="text-slate-400 text-xl max-w-3xl mx-auto font-medium">
+                Sadece bir yazılım değil; büyüme odaklı bir ekosistem. Vocalize, her ölçekteki B2B ihtiyacına yanıt verecek şekilde tasarlanmıştır.
               </p>
-              <ul className="space-y-4 mb-10">
-                {[
-                  "Kritik şikayetlerde anlık bildirimler",
-                  "Yapay zeka destekli duygu analizi",
-                  "Şube bazlı karşılaştırmalı raporlar",
-                  "Müşteri sadakat puanı (NPS) takibi"
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-slate-200">
-                    <CheckCircle2 className="w-5 h-5 text-teal-500" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button onClick={openInstallModal} className="bg-white text-slate-900 hover:bg-slate-200 font-bold px-8 h-14 rounded-xl transition-all">
-                Ücretsiz Demo İsteyin
-              </Button>
             </FadeIn>
+          </div>
 
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="relative"
-            >
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl relative z-10">
-                 <div className="flex items-center justify-between mb-6 border-b border-slate-800 pb-4">
-                   <div className="flex gap-2">
-                     <div className="w-3 h-3 rounded-full bg-red-500/50" />
-                     <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-                     <div className="w-3 h-3 rounded-full bg-green-500/50" />
+          <div className="grid md:grid-cols-12 gap-6 auto-rows-[240px]">
+            <div className="md:col-span-8 p-10 rounded-[3rem] bg-gradient-to-br from-orange-500/20 to-yellow-500/5 border border-white/5 relative overflow-hidden group">
+               <div className="relative z-10 h-full flex flex-col justify-between">
+                 <div>
+                   <h3 className="text-3xl font-black text-white mb-4">Multi-Lokasyon Yönetimi</h3>
+                   <p className="text-slate-400 max-w-md text-lg">Yüzlerce şubeyi tek bir kontrol merkezinden hiyerarşik olarak yönetin.</p>
+                 </div>
+                 <div className="flex gap-4">
+                    <Button variant="outline" className="rounded-full border-white/10 text-white hover:bg-orange-500 hover:border-orange-500">Detayları Gör</Button>
+                 </div>
+               </div>
+               <LayoutGrid className="absolute bottom-[-10%] right-[-5%] w-64 h-64 text-orange-500/10 group-hover:rotate-12 transition-transform duration-1000" />
+            </div>
+
+            <div className="md:col-span-4 p-10 rounded-[3rem] bg-slate-900 border border-white/5 flex flex-col justify-between group">
+               <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-orange-400">
+                  <ShieldCheck size={32} />
+               </div>
+               <div>
+                 <h3 className="text-2xl font-bold text-white mb-2">Kurumsal Güvenlik</h3>
+                 <p className="text-slate-400 text-sm">KVKK uyumlu, 256-bit şifreleme ve gelişmiş rol yetkilendirme.</p>
+               </div>
+            </div>
+
+            <div className="md:col-span-4 p-10 rounded-[3rem] bg-slate-900 border border-white/5 flex flex-col justify-between group">
+               <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-orange-400">
+                  <ZapIcon size={32} />
+               </div>
+               <div>
+                 <h3 className="text-2xl font-bold text-white mb-2">Anlık Bildirimler</h3>
+                 <p className="text-slate-400 text-sm">Kritik şikayetlerde ilgili departmana anında kriz bildirimi.</p>
+               </div>
+            </div>
+
+            <div className="md:col-span-8 p-10 rounded-[3rem] bg-gradient-to-r from-slate-900 to-slate-800 border border-white/5 relative overflow-hidden group">
+               <div className="relative z-10 flex flex-col justify-center h-full">
+                  <h3 className="text-3xl font-black text-white mb-4">Müşteri Sadakati (NPS) 2.0</h3>
+                  <p className="text-slate-400 max-w-lg text-lg">Geleneksel anketleri unutun. Yapay zeka ile derinlemesine duygu analizi ve gerçek NPS skorları.</p>
+               </div>
+               <Activity className="absolute right-10 top-1/2 -translate-y-1/2 w-48 h-48 text-orange-500/5" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="dashboard-preview" className="py-32 bg-slate-950">
+        <div className="container mx-auto px-6">
+           <div className="bg-slate-900/50 rounded-[4rem] p-12 md:p-20 border border-slate-800 relative overflow-hidden">
+              <div className="grid lg:grid-cols-2 gap-20 items-center">
+                <FadeIn direction="left">
+                   <h2 className="text-4xl md:text-6xl font-black text-white mb-8 tracking-tighter">Karar Mekanizmanızı <span className="text-orange-400">Güçlendirin</span>.</h2>
+                   <p className="text-slate-400 text-xl leading-relaxed mb-10 font-medium">
+                     Dashboard'umuz sadece veriyi göstermez, aksiyon alınabilir içgörüler sunar. Hangi şubenizde, hangi saatte, hangi personelde sorun olduğunu anında görün.
+                   </p>
+                   <div className="space-y-6">
+                      {[
+                        "Gerçek zamanlı şube karşılaştırmaları",
+                        "Personel bazlı memnuniyet metrikleri",
+                        "Yapay zeka tarafından hazırlanan kriz raporları"
+                      ].map(t => (
+                        <div key={t} className="flex items-center gap-4 text-white font-bold">
+                          <CheckCircle2 className="text-orange-400" />
+                          <span>{t}</span>
+                        </div>
+                      ))}
                    </div>
-                   <div className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">Vocalize Admin Panel v2.0</div>
-                 </div>
+                </FadeIn>
 
-                 <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                      <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Toplam Bildirim</div>
-                      <div className="text-2xl font-bold text-white">1,284</div>
-                      <div className="text-[10px] text-green-400 font-medium">+12% vs geçen ay</div>
-                    </div>
-                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                      <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Memnuniyet Oranı</div>
-                      <div className="text-2xl font-bold text-white">4.8/5.0</div>
-                      <div className="text-[10px] text-teal-400 font-medium">Mükemmel</div>
-                    </div>
-                 </div>
-
-                 <div className="bg-slate-800/30 p-6 rounded-xl border border-slate-700 mb-2">
-                    <div className="flex items-center justify-between mb-6">
-                       <div className="text-xs font-bold text-white">Haftalık Analiz</div>
-                       <div className="flex gap-2">
-                         <div className="w-2 h-2 rounded-full bg-teal-500" />
-                         <div className="w-2 h-2 rounded-full bg-slate-700" />
-                       </div>
-                    </div>
-                    <div className="flex items-end justify-between h-32 gap-2">
-                       {[40, 70, 45, 90, 65, 80, 50].map((h, i) => (
-                         <motion.div
-                           key={i}
-                           initial={{ height: 0 }}
-                           whileInView={{ height: `${h}%` }}
-                           transition={{ delay: i * 0.1, duration: 0.5 }}
-                           className="w-full bg-gradient-to-t from-teal-500/20 to-teal-500 rounded-t-sm"
-                         />
-                       ))}
-                    </div>
-                 </div>
+                <FadeIn direction="right" className="relative">
+                  <div className="bg-slate-950 rounded-3xl p-4 shadow-3xl border border-orange-500/20">
+                     <div className="h-64 bg-slate-900 rounded-2xl flex items-end justify-around p-6 gap-2">
+                        {[60, 40, 90, 70, 50, 80, 100].map((h, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ height: 0 }}
+                            whileInView={{ height: `${h}%` }}
+                            className="w-full bg-orange-500/20 border-t-2 border-orange-500 rounded-t-lg"
+                          />
+                        ))}
+                     </div>
+                     <div className="mt-4 grid grid-cols-3 gap-4">
+                        <div className="h-12 bg-slate-900 rounded-xl border border-slate-800"></div>
+                        <div className="h-12 bg-slate-900 rounded-xl border border-slate-800"></div>
+                        <div className="h-12 bg-slate-900 rounded-xl border border-slate-800"></div>
+                     </div>
+                  </div>
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-orange-500 blur-3xl opacity-20"></div>
+                </FadeIn>
               </div>
-
-              {/* Decorative elements */}
-              <div className="absolute -top-10 -right-10 w-64 h-64 bg-teal-500/10 blur-[100px] -z-0" />
-              <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-orange-500/10 blur-[100px] -z-0" />
-            </motion.div>
-          </div>
+           </div>
         </div>
       </section>
 
-      <section id="use-cases" className="py-24 bg-[#111827] relative z-10">
-        <div className="container mx-auto px-4">
-          <FadeIn className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">İşletmenize Özel Çözümler</h2>
-            <p className="text-slate-400">Sektörünüz ne olursa olsun, müşteri sesini Vocalize ile büyüme stratejisine dönüştürün.</p>
-          </FadeIn>
-         
-          <div className="flex flex-wrap justify-center gap-4">
-            {sectorImages.map((sector, idx) => <motion.div key={idx} initial={{
-            opacity: 0,
-            scale: 0.9
-          }} whileInView={{
-            opacity: 1,
-            scale: 1
-          }} viewport={{
-            once: true
-          }} transition={{
-            delay: idx * 0.05
-          }} className="relative w-[160px] h-[200px] rounded-xl overflow-hidden group cursor-pointer" onClick={() => openLeadModal('info_request')}>
-                <img src={sector.image} alt={sector.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-70 group-hover:opacity-100" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent">
-                   <div className="absolute bottom-4 left-4">
-                     <h3 className="text-white font-bold text-sm">{sector.title}</h3>
-                   </div>
-                </div>
-              </motion.div>)}
-          </div>
-        </div>
-      </section>
-
-
-      <section className="py-24 bg-[#0f172a] text-white overflow-hidden relative z-10">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-16 items-center max-w-5xl mx-auto">
-            <FadeIn className="relative flex flex-col items-center justify-center">
-              <div className="bg-[#0B4F56] p-1 rounded-[2rem] shadow-2xl rotate-[-2deg] transform hover:rotate-0 transition-transform duration-500">
-                 <div className="bg-white text-black p-8 rounded-[1.8rem] w-[300px] h-[420px] flex flex-col items-center justify-between relative overflow-hidden">
-                    <div className="z-10 flex flex-col items-center mt-2">
-                      <img src="faviconmain.png" alt="Logo" className="w-16 h-16 mb-2" />
-                      <h3 className="font-bold text-3xl tracking-tight">Vocalize</h3>
-                    </div>
-                   
-                    <div className="z-10 w-48 h-48 bg-black rounded-lg p-2 flex items-center justify-center">
-                       <QrCode className="w-full h-full text-white" />
-                    </div>
-
-
-                    <div className="z-10 text-center mb-2">
-                      <p className="font-bold text-lg">Görüşlerinizi bizimle paylaşın</p>
-                    </div>
-                   
-                    <div className="absolute top-0 left-0 w-full h-32 bg-teal-50 rounded-b-[50%] -z-0" />
-                 </div>
-              </div>
-              <div className="mt-6 text-center text-teal-100/80 text-sm font-medium">
-                 Afiş Tasarım Süreci Bize, Baskı İşletmenize Aittir.
-              </div>
-            </FadeIn>
-
-
-            <FadeIn delay={0.2} className="space-y-6">
-              <h2 className="text-4xl font-bold leading-tight">
-                Her İşletmeye Özel QR <br /> Afiş Tasarımı
-              </h2>
-              <p className="text-slate-400 text-lg leading-relaxed">
-                QR afişleriniz markanıza ve mekânınıza özel renklendirilebilir.
-              </p>
-              <p className="text-slate-500 text-sm">
-                Renk, yazı veya dil düzenlemeleri işletmenize göre uyarlanır.
-              </p>
-            </FadeIn>
-          </div>
-        </div>
-      </section>
-
-
-      <section id="pricing" className="py-12 bg-[#102a30] relative z-10">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center mb-4">
+      <section id="pricing" className="py-32 bg-orange-500 relative z-10">
+        <div className="container mx-auto px-6 text-slate-950">
+          <div className="max-w-4xl mx-auto text-center">
             <FadeIn>
-              <span className="inline-block py-1 px-3 rounded-full bg-yellow-500/10 text-yellow-400 text-xs font-bold tracking-wider mb-2 uppercase border border-yellow-500/20">
-                <Zap className="w-3 h-3 inline mr-1" /> Özel Kampanya
-              </span>
-              <h2 className="text-2xl md:text-4xl font-bold mb-3 text-white">
-                <span className="text-orange-400">İLK 20 İŞLETME:</span> ÖMÜR BOYU %20 İNDİRİM FIRSATI
-              </h2>
-              <p className="text-slate-300 text-base mb-4">Erken katılanlar için sınırlı sayıda indirimli fırsat!</p>
-            </FadeIn>
-           
-            <FadeIn delay={0.1} className="mb-6 max-w-md mx-auto">
-               <div className="text-center mb-1">
-                 <span className="text-3xl font-bold text-white">16</span><span className="text-slate-400 text-lg">/20</span>
-               </div>
-               <div className="text-xs text-slate-400 mb-3">işletme katıldı!</div>
-               <div className="h-1.5 w-full bg-slate-700 rounded-full overflow-hidden mb-2" ref={progressRef}>
-                <motion.div initial={{
-                width: "0%"
-              }} animate={progressInView ? {
-                width: "80%"
-              } : {
-                width: "0%"
-              }} transition={{
-                duration: 1.5,
-                ease: "circOut"
-              }} className="h-full bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full" />
+              <h2 className="text-5xl md:text-7xl font-black mb-8 tracking-tighter uppercase italic text-slate-950">İşletmenize Özel Kurumsal Çözümler</h2>
+              <p className="text-xl md:text-2xl font-bold mb-12 opacity-80 leading-relaxed">
+                Vocalize Enterprise, şube sayınızdan çalışan kapasitenize kadar tamamen size özel yapılandırılır. Teklif almak ve demo toplantısı planlamak için hemen başvurun.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-8 mb-16">
+                 <div className="bg-slate-950/10 backdrop-blur-sm border border-slate-950/20 p-8 rounded-[2rem] text-left">
+                    <Users className="w-10 h-10 mb-4" />
+                    <h3 className="text-2xl font-black mb-2 tracking-tight">Kişiye Özel Planlama</h3>
+                    <p className="font-bold opacity-70">İhtiyacınız olmayan özellikler için ödeme yapmayın, tam kapsamlı verimlilik alın.</p>
+                 </div>
+                 <div className="bg-slate-950/10 backdrop-blur-sm border border-slate-950/20 p-8 rounded-[2rem] text-left">
+                    <Calendar className="w-10 h-10 mb-4" />
+                    <h3 className="text-2xl font-black mb-2 tracking-tight">24 Saat İçinde Teklif</h3>
+                    <p className="font-bold opacity-70">Talebinizden sonraki ilk iş gününde uzman ekibimiz size özel stratejiyi sunar.</p>
+                 </div>
               </div>
-              <div className="flex items-center justify-center gap-2 text-orange-400 text-xs font-medium">
-                 <Timer className="w-3.5 h-3.5" /> Son 4 kontenjan kaldı!
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                <Button size="lg" className="h-20 px-12 bg-slate-950 text-white hover:bg-slate-900 font-black text-2xl rounded-full w-full sm:w-auto shadow-2xl border-none" onClick={() => openLeadModal('info_request')}>
+                  Hemen Başvurun
+                </Button>
+                <span className="text-lg font-bold opacity-60">veya support@vocalize.global üzerinden ulaşın</span>
               </div>
             </FadeIn>
-
-
-            <div className="flex flex-col md:flex-row gap-4 max-w-4xl mx-auto items-stretch justify-center">
-               {/* Market Card - Order switched: Mobile Bottom (order-2), Desktop Left (order-1) */}
-               <div className="order-2 md:order-1 w-full md:w-[45%] bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex flex-col justify-center opacity-80 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-300">
-                  <h3 className="text-slate-400 text-base font-bold mb-1">Piyasa Değeri</h3>
-                  <div className="text-xl font-bold text-slate-300 line-through mb-1">
-                    $299 Kurulum <span className="text-xs font-normal no-underline opacity-60">+ KDV</span>
-                  </div>
-                  <div className="text-lg text-slate-400 line-through">
-                    $99/ay <span className="text-xs font-normal no-underline opacity-60">+ KDV</span>
-                  </div>
-               </div>
-               
-               {/* Campaign Card - Order switched: Mobile Top (order-1), Desktop Right (order-2) */}
-               <motion.div
-                 whileHover={{ y: -10 }}
-                 className="order-1 md:order-2 w-full md:w-[55%] bg-white text-slate-900 rounded-xl p-6 shadow-2xl relative overflow-hidden transform scale-100 md:scale-105 border-4 border-orange-500/20"
-               >
-                  <div className="absolute top-0 right-0 bg-yellow-400 text-xs font-bold px-3 py-1 rounded-bl-lg shadow-sm">ÖZEL</div>
-                  <h3 className="text-orange-600 text-base font-bold uppercase mb-2 flex items-center justify-center gap-1">
-                     <Zap className="w-4 h-4 fill-current" /> Kampanya Fiyatı
-                  </h3>
-                  
-                  {/* GÜNCELLENEN KISIM: Kurulum Fiyatı + KDV */}
-                  <div className="text-3xl font-extrabold mb-1 text-slate-900 flex items-baseline justify-center gap-1 flex-wrap">
-                    $249 Kurulum 
-                    <span className="text-sm font-semibold text-slate-400 tracking-normal">+ KDV</span>
-                  </div>
-
-                  {/* GÜNCELLENEN KISIM: Aylık Fiyat + KDV */}
-                  <div className="text-2xl font-bold text-slate-700 mb-2 flex items-baseline justify-center gap-1">
-                    $79/ay 
-                    <span className="text-sm font-semibold text-slate-400 tracking-normal">+ KDV</span>
-                  </div>
-
-                  <div className="text-xs font-medium text-slate-500 bg-slate-100 py-1 px-2 rounded-full inline-block">
-                    İlk aylık ödeme kurulumdan 30 gün sonra alınır.
-                  </div>
-               </motion.div>
-            </div>
-            
-            <div className="text-orange-300 text-[10px] mt-3 font-medium opacity-80">
-              * Bu fiyat sadece sınırlı kontenjan için geçerlidir.
-            </div>
-
-
-            <div className="mt-6 bg-slate-800/50 rounded-xl p-6 max-w-lg mx-auto border border-slate-700">
-               <h4 className="text-orange-400 font-bold mb-3 flex items-center gap-2 text-sm">
-                  <Zap className="w-3.5 h-3.5" /> Kampanya Avantajları:
-               </h4>
-               <ul className="space-y-2 text-left text-xs sm:text-sm text-slate-300">
-                 {["Ömür Boyu %20 İndirim Garantisi", "Taahhüt Yok, Dilediğiniz Zaman İptal", "V2 Sürümüne Erken Erişim Hakkı", "Özel QR Afiş Tasarımı Dahil"].map((item, i) => <li key={i} className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                      {item}
-                   </li>)}
-               </ul>
-               <div className="mt-4 pt-4 border-t border-slate-700 flex items-center gap-2">
-                 <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                 <span className="text-xs sm:text-sm text-slate-200 font-medium">İlk 14 Gün Para İade Garantisi</span>
-               </div>
-            </div>
-
-
-            <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
-              <Button className="bg-white text-slate-900 hover:bg-slate-200 font-bold h-11 px-6 text-sm transition-colors" onClick={openInstallModal}>
-                 <Zap className="w-4 h-4 mr-2 text-orange-600 fill-current" /> Avantajlı Kontenjanı Ayır
-              </Button>
-              <Button variant="outline" className="text-white border-slate-500 hover:bg-slate-800 h-11 px-6 text-sm transition-colors" onClick={() => openLeadModal('info_request')}>
-                 Bilgi Al
-              </Button>
-            </div>
-           
-            <div className="mt-3 text-[10px] text-slate-500 cursor-pointer hover:underline" onClick={() => openLeadModal('quick_question')}>
-               Sorularınız mı var? Bize ulaşın
-            </div>
-            
-            <div className="mt-8 text-xs text-slate-400 font-medium">
-               Farklı işletme profilleri için uyarlanabilir plan seçenekleri sunuyoruz.
-            </div>
-
           </div>
         </div>
       </section>
 
-
-      <section id="impact" className="py-24 bg-[#0f172a] text-center relative z-10">
-        <div className="container mx-auto px-4">
-          <motion.div initial={{
-          opacity: 0,
-          y: 30
-        }} whileInView={{
-          opacity: 1,
-          y: 0
-        }} viewport={{
-          once: true
-        }} transition={{
-          duration: 0.8
-        }}>
-            <h2 className="text-3xl font-bold mb-4 text-white">Geri Bildirim Değil, İşletme Zekası.</h2>
-            <p className="text-slate-400 mb-16 max-w-2xl mx-auto">
-              Vocalize, sadece geri bildirim toplamaz; işletmenizde ölçülebilir potansiyel etkinin bir parçasıdır.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {/* Card 1 */}
-            <motion.div initial={{
-            opacity: 0,
-            y: 50
-          }} whileInView={{
-            opacity: 1,
-            y: 0
-          }} viewport={{
-            once: true,
-            amount: 0.5
-          }} transition={{
-            delay: 0.1,
-            duration: 0.5
-          }}
-          whileHover={{ y: -5, borderColor: 'rgba(20,184,166,0.5)' }}
-          className="p-8 rounded-xl bg-[#1a2235] border border-slate-800 hover:border-teal-500/30 transition-all group">
-              <div className="w-12 h-12 rounded-lg bg-teal-500/10 flex items-center justify-center mb-6 mx-auto group-hover:bg-teal-500/20 transition-colors">
-                <TrendingUp className="w-6 h-6 text-teal-400" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3">Daha Fazla Geri Bildirim</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Müşterilerin geri bildirim iletme oranında belirgin artış sağlar ve anlık veri akışı oluşturur.
+      <section id="v2-vision" className="py-40 bg-slate-950 relative overflow-hidden">
+        <Blob className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-orange-500 opacity-10" />
+        <div className="container mx-auto px-6 text-center relative z-10">
+           <FadeIn>
+              <span className="text-orange-400 font-black tracking-[0.5em] uppercase mb-8 block">Future Vision</span>
+              <h2 className="text-7xl md:text-9xl font-black text-white mb-12 tracking-tighter">AI ENGINE V2</h2>
+              <p className="text-2xl text-slate-400 max-w-4xl mx-auto font-medium leading-relaxed mb-20">
+                Veriyi sadece okumuyoruz, tahmin ediyoruz. Gelecek nesil yapay zeka motorumuz ile krizleri oluşmadan engelleyen proaktif yönetim modeline geçiyoruz.
               </p>
-            </motion.div>
-
-            {/* Card 2 */}
-            <motion.div initial={{
-            opacity: 0,
-            y: 50
-          }} whileInView={{
-            opacity: 1,
-            y: 0
-          }} viewport={{
-            once: true,
-            amount: 0.5
-          }} transition={{
-            delay: 0.3,
-            duration: 0.5
-          }}
-          whileHover={{ y: -5, borderColor: 'rgba(20,184,166,0.5)' }}
-          className="p-8 rounded-xl bg-[#1a2235] border border-slate-800 hover:border-teal-500/30 transition-all group">
-              <div className="w-12 h-12 rounded-lg bg-teal-500/10 flex items-center justify-center mb-6 mx-auto group-hover:bg-teal-500/20 transition-colors">
-                <Target className="w-6 h-6 text-teal-400" />
+              
+              <div className="grid md:grid-cols-3 gap-12 text-left">
+                 {[
+                   { title: "Prediktif Analiz", desc: "Müşteri kaybı yaşanmadan önce davranış paternlerinden tehlikeyi fark eder." },
+                   { title: "Otomatik Yanıt", desc: "Marka dilinize uygun yapay zeka destekli anlık müşteri yanıt asistanı." },
+                   { title: "Derin Duygu Analizi", desc: "Sadece kelimeleri değil, satır aralarındaki gerçek memnuniyet düzeyini ölçer." }
+                 ].map(v => (
+                   <div key={v.title} className="p-8 border-l-2 border-orange-500/30 hover:border-orange-500 transition-colors">
+                      <h4 className="text-2xl font-bold text-white mb-4">{v.title}</h4>
+                      <p className="text-slate-400 font-medium leading-relaxed">{v.desc}</p>
+                   </div>
+                 ))}
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Daha Yüksek Kazanım Oranı</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Olumsuz deneyimler online platformlara taşınmadan yerinde çözülür, bu sayede müşteri kayıpları azalır.
-              </p>
-            </motion.div>
-
-            {/* Card 3 */}
-            <motion.div initial={{
-            opacity: 0,
-            y: 50
-          }} whileInView={{
-            opacity: 1,
-            y: 0
-          }} viewport={{
-            once: true,
-            amount: 0.5
-          }} transition={{
-            delay: 0.5,
-            duration: 0.5
-          }}
-          whileHover={{ y: -5, borderColor: 'rgba(20,184,166,0.5)' }}
-          className="p-8 rounded-xl bg-[#1a2235] border border-slate-800 hover:border-teal-500/30 transition-all group">
-              <div className="w-12 h-12 rounded-lg bg-teal-500/10 flex items-center justify-center mb-6 mx-auto group-hover:bg-teal-500/20 transition-colors">
-                <RefreshCw className="w-6 h-6 text-teal-400" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3">Operasyonel Verimlilik</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Şube performansı, ekip yanıt hızları ve müşteri memnuniyeti tek panelden yönetilir ve analiz edilir.
-              </p>
-            </motion.div>
-          </div>
+           </FadeIn>
         </div>
       </section>
 
-      {/* PREMIUM V2 AI VISION - BUSINESS & INVESTMENT FOCUSED */}
-      <section id="v2-vision" className="py-20 md:py-28 bg-gradient-to-br from-[#0f172a] via-slate-900/50 to-[#0f172a] relative overflow-hidden z-10 border-t border-slate-800">
-
-        <motion.div 
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center max-w-5xl w-full"
-        >
-          
-          {/* Large V2 AI Visual Header with Focused Radial Glow */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.05 }}
-            animate={{
-              opacity: [0.9, 1, 0.9],
-              scale: [1, 1.03, 1]
-            }}
-            whileInViewTransition={{
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="mb-8 relative w-full flex justify-center"
-          >
-            {/* Centered Radial Glow - Professional & Focused */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <motion.div
-                animate={{
-                  opacity: [0.4, 0.6, 0.4],
-                  scale: [0.95, 1.05, 0.95]
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                style={{
-                  width: '300px',
-                  height: '200px',
-                  background: 'radial-gradient(ellipse at center, rgba(20,184,166,0.25) 0%, rgba(34,211,238,0.15) 30%, transparent 80%)',
-                  filter: 'blur(40px)',
-                  position: 'absolute'
-                }}
-              ></motion.div>
-            </div>
-            
-            {/* V2 AI Text - With Breathing Animation */}
-            <motion.h2 
-              animate={{
-                opacity: [0.95, 1, 0.95],
-                scale: [1, 1.02, 1]
-              }}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="text-6xl md:text-7xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-cyan-300 to-teal-300 relative z-10"
-            >
-              V2 AI
-            </motion.h2>
-          </motion.div>
-          
-          {/* Badge: "Geliştirme Sürecinde" - Small & Elegant */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30 mb-6 backdrop-blur-sm"
-          >
-            <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></div>
-            <span className="text-xs font-semibold text-teal-400 uppercase tracking-wider">Geliştirme Sürecinde</span>
-          </motion.div>
-
-          {/* Main Heading: Premium Investment Language */}
-          <motion.h3 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight leading-tight"
-          >
-            İşletmenizin Gelecekteki <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">Akıllı Ortağı</span>
-          </motion.h3>
-
-          {/* Subtitle */}
-          <motion.p 
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            className="text-lg md:text-xl text-slate-300 mb-10 max-w-3xl leading-relaxed font-light"
-          >
-            Vocalize V2 geldiğinde, verilerinizi sadece raporlamayan, onları <span className="font-semibold text-white">kârlı kararlara dönüştüren</span> akıllı asistan teknolojisine sahip olacaksınız.
-          </motion.p>
-
-          {/* Key Benefit Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-12">
-            
-            {/* Card 1: Akıllı Yönetici Özeti */}
-            <motion.div 
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              whileHover={{ scale: 1.02, y: -5 }}
-              className="group relative backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-teal-500/40 transition-all duration-300 hover:bg-white/8"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-300"></div>
-              
-              <div className="relative z-10">
-                <div className="w-14 h-14 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center mb-5 group-hover:border-teal-500/60 transition-colors">
-                  <BrainCircuit className="w-7 h-7 text-teal-400" />
+      <footer className="bg-slate-950 py-20 border-t border-slate-900">
+        <div className="container mx-auto px-6">
+           <div className="flex flex-col md:flex-row justify-between items-center gap-12 mb-20">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
+                  <img src="faviconmain.png" alt="V" className="h-8 w-auto" />
                 </div>
-                <h4 className="text-xl font-bold text-white mb-3 text-left">Akıllı Yönetici Özeti</h4>
-                <p className="text-slate-400 text-sm leading-relaxed text-left">
-                  Yüzlerce yorumu okumadan, yapay zeka size haftalık performans ve şikayet özetini tek paragrafta sunsun. Karar almak hiç bu kadar basit olmamıştı.
-                </p>
+                <span className="text-2xl font-black tracking-tighter">VOCALIZE</span>
               </div>
-            </motion.div>
-
-            {/* Card 2: Kriz Kalkanı */}
-            <motion.div 
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-              whileHover={{ scale: 1.02, y: -5 }}
-              className="group relative backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-teal-500/40 transition-all duration-300 hover:bg-white/8"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-300"></div>
-              
-              <div className="relative z-10">
-                <div className="w-14 h-14 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center mb-5 group-hover:border-teal-500/60 transition-colors">
-                  <AlertTriangle className="w-7 h-7 text-teal-400" />
-                </div>
-                <h4 className="text-xl font-bold text-white mb-3 text-left">Kriz Kalkanı</h4>
-                <p className="text-slate-400 text-sm leading-relaxed text-left">
-                  İşletmenizde negatif yorum oranı arttığında sistem sizi anında uyarır. Sorun büyümeden müdahale edersiniz, itibarınız korunur.
-                </p>
+              <div className="flex gap-10">
+                 <Instagram className="cursor-pointer hover:text-orange-400 transition-colors" />
+                 <Mail className="cursor-pointer hover:text-orange-400 transition-colors" />
               </div>
-            </motion.div>
-
-            {/* Card 3: Müşteri İçgörüsü */}
-            <motion.div 
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              whileHover={{ scale: 1.02, y: -5 }}
-              className="group relative backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-teal-500/40 transition-all duration-300 hover:bg-white/8"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-300"></div>
-              
-              <div className="relative z-10">
-                <div className="w-14 h-14 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center mb-5 group-hover:border-teal-500/60 transition-colors">
-                  <Lightbulb className="w-7 h-7 text-teal-400" />
-                </div>
-                <h4 className="text-xl font-bold text-white mb-3 text-left">Müşteri İçgörüsü</h4>
-                <p className="text-slate-400 text-sm leading-relaxed text-left">
-                  Müşterilerinizin gizli isteklerini ve beklentilerini yapay zeka ile analiz ederek hizmet kalitenizi veriye dayalı olarak artırın.
-                </p>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Investment Opportunity Box - Premium CTA */}
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.5, duration: 0.7 }}
-            className="w-full max-w-2xl mx-auto backdrop-blur-lg bg-gradient-to-r from-teal-500/10 via-cyan-500/5 to-blue-500/10 border border-teal-500/30 rounded-2xl p-8 shadow-lg"
-          >
-            <div className="flex items-start gap-4 mb-4">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-teal-500/20 border border-teal-500/40">
-                  <Sparkles className="h-6 w-6 text-teal-400" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h4 className="text-xl font-bold text-white mb-3">Sınırlı Zaman Yatırım Fırsatı</h4>
-                <p className="text-slate-300 leading-relaxed text-sm md:text-base mb-4">
-                  <span className="font-bold text-teal-400">İlk 20 İşletme,</span> gelecekte V2 yayınlandığında <span className="font-bold text-teal-400">öncelikli geçiş hakkına</span> sahip olur.
-                </p>
-                <p className="text-slate-400 text-xs mt-3 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
-                  <span><span className="font-semibold text-slate-300">Erken Erişim Avantajı:</span> Sıra beklemeden V2 teknolojisine geçiş</span>
-                </p>
-                <p className="text-slate-400 text-xs mt-2 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
-                  <span><span className="font-semibold text-slate-300">%20 İndirim Garantisi:</span> V2 paket fiyatları artsa bile, sizin %20 indirim hakkınız baki kalır</span>
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-        </motion.div>
-      </section>
-
-
-      <footer className="bg-[#0f172a] py-8 border-t border-slate-800 relative z-10 text-center">
-        <div className="container mx-auto px-4">
-           <p className="text-slate-500 text-xs mb-4">
-             © 2025 Vocalize Systems — Müşteri sesini teknolojiyle buluşturuyoruz.
-           </p>
-
-           <div className="mb-4">
-              <span className="text-sm text-teal-400 cursor-pointer hover:text-teal-300 hover:underline transition-colors mx-2" onClick={() => handleLegalLinkClick('kvkk')}>
-                KVKK Aydınlatma Metni
-              </span>
-              <span className="text-slate-600">|</span>
-              <span className="text-sm text-teal-400 cursor-pointer hover:text-teal-300 hover:underline transition-colors mx-2" onClick={() => handleLegalLinkClick('terms')}>
-                Kullanım Koşulları
-              </span>
            </div>
 
-           <div className="flex justify-center gap-6 items-center">
-              {/* Logo - Yukarı kaydırır */}
-              <div onClick={scrollToTop} className="w-6 h-6 text-slate-600 hover:text-white cursor-pointer flex items-center justify-center transition-colors">
-                <img src="faviconbeyaz.png" alt="Vocalize Logo Footer" className="h-full w-full object-contain brightness-200 grayscale-0" />
+           <div className="flex flex-col md:flex-row justify-between items-center pt-10 border-t border-slate-900 gap-6">
+              <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">© 2025 Vocalize Enterprise Systems. All Rights Reserved.</p>
+              <div className="flex gap-8">
+                 <span className="text-xs font-bold text-slate-500 hover:text-white cursor-pointer transition-colors uppercase tracking-widest" onClick={() => handleLegalLinkClick('kvkk')}>KVKK</span>
+                 <span className="text-xs font-bold text-slate-500 hover:text-white cursor-pointer transition-colors uppercase tracking-widest" onClick={() => handleLegalLinkClick('terms')}>Kullanım Koşulları</span>
               </div>
-
-              {/* Instagram Linki */}
-              <a 
-                href="https://www.instagram.com/vocalize.global/" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-slate-500 hover:text-[#E1306C] transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-
-              {/* Email Linki (Mailto) */}
-              <a 
-                href="mailto:support@vocalize.global" 
-                className="text-slate-500 hover:text-teal-400 transition-colors"
-                aria-label="E-posta Gönder"
-              >
-                <Mail className="w-5 h-5" />
-              </a>
            </div>
         </div>
       </footer>
-     
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} defaultTab={authDefaultTab} defaultRole={authDefaultRole} showGuestOption={true} />
-      
-      {/* New Installation Modal added here before Toaster */}
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        defaultTab={authDefaultTab}
+        defaultRole={authDefaultRole}
+        showGuestOption={true}
+        onGuestContinue={handleGuestContinue}
+      />
       <InstallationRequestModal isOpen={installModalOpen} onClose={() => setInstallModalOpen(false)} />
 
       <Dialog open={leadModalOpen} onOpenChange={setLeadModalOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-800 text-white max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[500px] bg-slate-950 border-slate-800 text-white rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle className="text-white">
-              {leadType === 'info_request' ? 'Bilgi Alın' : 'Bize Ulaşın'}
-            </DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Aşağıdaki formu doldurun, ekibimiz sizinle iletişime geçsin.
+            <DialogTitle className="text-3xl font-black tracking-tight text-white">Kurumsal Başvuru</DialogTitle>
+            <DialogDescription className="text-slate-400 font-medium pt-2">
+              İşletmeniz için en doğru çözümü birlikte kurgulayalım. Uzman ekibimiz size ulaşacaktır.
             </DialogDescription>
           </DialogHeader>
-         
-          {leadType === 'info_request' && <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 my-2">
-              {quickOptions.map((option, idx) => <button key={idx} type="button" onClick={() => handleQuickOption(option)} className="text-xs text-left p-2 rounded border border-slate-700 bg-slate-800/50 hover:bg-slate-700 hover:text-white text-slate-300 transition-colors flex items-center gap-1">
-                  <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                  <span className="line-clamp-2">{option}</span>
-                </button>)}
-            </div>}
 
+          <div className="grid grid-cols-1 gap-2 my-4">
+            {quickOptions.map((option, idx) => (
+              <button key={idx} type="button" onClick={() => setLeadForm({...leadForm, message: option})} className="text-xs text-left p-3 rounded-xl border border-slate-800 bg-slate-900/50 hover:bg-orange-500/10 hover:border-orange-500/30 text-slate-400 hover:text-orange-400 transition-all">
+                {option}
+              </button>
+            ))}
+          </div>
 
-          <form onSubmit={handleLeadSubmit} className="grid gap-4 py-2">
-            <div className="grid gap-2">
-              <label htmlFor="name" className="text-sm font-medium text-slate-200">Ad Soyad *</label>
-              <Input id="name" placeholder="John Doe" value={leadForm.name} onChange={e => setLeadForm({
-              ...leadForm,
-              name: e.target.value
-            })} className="bg-slate-800 border-slate-700 text-white" required />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="email" className="text-sm font-medium text-slate-200">E-posta *</label>
-              <Input id="email" type="email" placeholder="ornek@sirket.com" value={leadForm.email} onChange={e => setLeadForm({
-              ...leadForm,
-              email: e.target.value
-            })} className="bg-slate-800 border-slate-700 text-white" required />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="phone" className="text-sm font-medium text-slate-200">Telefon (İsteğe bağlı)</label>
-              <Input id="phone" type="tel" placeholder="+90 555 ..." value={leadForm.phone} onChange={e => setLeadForm({
-              ...leadForm,
-              phone: e.target.value
-            })} className="bg-slate-800 border-slate-700 text-white" />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="message" className="text-sm font-medium text-slate-200">Mesajınız *</label>
-              <textarea id="message" rows="4" placeholder="Sorunuzu buraya yazın..." value={leadForm.message} onChange={e => setLeadForm({
-              ...leadForm,
-              message: e.target.value
-            })} className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none" required />
-            </div>
-            <DialogFooter className="mt-2">
-              <Button type="submit" disabled={leadLoading} className="bg-teal-600 hover:bg-teal-700 text-white w-full">
-                {leadLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Gönder
-              </Button>
-            </DialogFooter>
+          <form onSubmit={handleLeadSubmit} className="space-y-4">
+            <Input placeholder="Ad Soyad" value={leadForm.name} onChange={e => setLeadForm({...leadForm, name: e.target.value})} className="h-14 rounded-xl bg-slate-900 border-slate-800 focus:ring-orange-500" required />
+            <Input placeholder="Kurumsal E-posta" type="email" value={leadForm.email} onChange={e => setLeadForm({...leadForm, email: e.target.value})} className="h-14 rounded-xl bg-slate-900 border-slate-800" required />
+            <Input placeholder="Telefon" value={leadForm.phone} onChange={e => setLeadForm({...leadForm, phone: e.target.value})} className="h-14 rounded-xl bg-slate-900 border-slate-800" />
+            <textarea placeholder="Mesajınız" rows="4" value={leadForm.message} onChange={e => setLeadForm({...leadForm, message: e.target.value})} className="w-full rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm focus:ring-orange-500 resize-none" required />
+            <Button type="submit" disabled={leadLoading} className="w-full h-16 bg-orange-500 hover:bg-orange-400 text-white font-black text-xl rounded-2xl shadow-xl shadow-orange-500/20 border-none">
+              {leadLoading ? <Loader2 className="animate-spin" /> : 'Gönder'}
+            </Button>
           </form>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={legalModal.isOpen} onOpenChange={open => setLegalModal(prev => ({
-      ...prev,
-      isOpen: open
-    }))}>
-        <DialogContent className="bg-[#0f172a] border-slate-700 text-white sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+      <Dialog open={legalModal.isOpen} onOpenChange={open => setLegalModal(prev => ({ ...prev, isOpen: open }))}>
+        <DialogContent className="bg-slate-950 border-slate-800 text-white sm:max-w-[700px] rounded-[3rem]">
            <DialogHeader>
-             <DialogTitle>{legalModal.type === 'terms' ? 'Kullanım Koşulları' : 'KVKK Aydınlatma Metni'}</DialogTitle>
+             <DialogTitle className="text-2xl font-black">{legalModal.type === 'terms' ? 'Kullanım Koşulları' : 'KVKK Aydınlatma Metni'}</DialogTitle>
            </DialogHeader>
-           <div className="mt-4 p-4 bg-slate-900/50 rounded-lg border border-slate-800 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap font-sans text-justify">
+           <div className="mt-4 p-8 bg-slate-900/50 rounded-3xl border border-slate-800 text-sm text-slate-400 leading-relaxed max-h-[60vh] overflow-y-auto">
               {legalModal.type === 'terms' ? TERMS_CONTENT : KVKK_CONTENT}
            </div>
-           <DialogFooter>
-             <Button variant="outline" onClick={() => setLegalModal({
-            ...legalModal,
-            isOpen: false
-          })} className="border-slate-600 hover:bg-slate-800 text-white hover:text-white">Kapat</Button>
-           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-    </div>;
+    </div>
+  );
 };
+
 export default LandingPage;
