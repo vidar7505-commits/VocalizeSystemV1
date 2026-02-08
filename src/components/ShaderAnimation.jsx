@@ -37,7 +37,7 @@ export function ShaderAnimation({ className }) {
       uniform float time;
 
       void main(void) {
-        vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+        vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / resolution.y;
         uv.y -= 0.35; // Shift center up to be behind the text
         float t = time * 0.05;
         float lineWidth = 0.002;
