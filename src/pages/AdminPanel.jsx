@@ -328,13 +328,61 @@ const AdminPanel = () => {
             manager_note_updater:manager_note_updated_by (first_name, last_name)
         `).eq('business_id', businessId).order('created_at', { ascending: false }).limit(20);
 
-      if (selectedBranchId !== 'all') recentQuery = recentQuery.eq('branch_id', selectedBranchId);
+      // 🔴 ACİL OLANLARI AYRICA ÇEK (Limit dışı kalmasın diye)
+      let urgentQuery = supabase.from('feedbacks').select(`
+            id, created_at, status, feedback_type, message, rating,
+            customer_name, customer_email, customer_phone, customer_profile_id,
+            guest_contact_info,
+            manager_note, flag_vip_customer, flag_sensitive_customer,
+            feedback_images, image_urls, receipt_images, receipt_url, product_image_url,
+            general_eval_rating, general_eval_comment, manager_note_updated_at, manager_note_updated_by,
+            business_id, branch_id, resolved_at, updated_at,
+            branches (id, branch_name_tr),
+            customer_profiles (
+              id, name, email, phone, customer_number, created_at, updated_at, 
+              flag_vip_customer, flag_sensitive_customer, admin_note, 
+              users:user_id(first_name, last_name)
+            ),
+            manager_note_updater:manager_note_updated_by (first_name, last_name)
+        `).eq('business_id', businessId).eq('status', 'escalated');
 
-      const { data: recentData, error: recentError } = await recentQuery;
-      if (recentError) throw recentError;
+      if (selectedBranchId !== 'all') {
+        recentQuery = recentQuery.eq('branch_id', selectedBranchId);
+        urgentQuery = urgentQuery.eq('branch_id', selectedBranchId);
+      }
 
-      // Basitleştirilmiş işleme mantığı (Veri kaybını önlemek için)
-      let processedFeedbacks = recentData || [];
+      const [recentResult, urgentResult] = await Promise.all([recentQuery, urgentQuery]);
+
+      if (recentResult.error) throw recentResult.error;
+      if (urgentResult.error) throw urgentResult.error;
+
+      // 🔴 MERGE & DEDUPLICATE & SORT
+      const allRaw = [...(urgentResult.data || []), ...(recentResult.data || [])];
+
+      // ID'ye göre tekilleştir
+      const seenIds = new Set();
+      const uniqueFeedbacks = [];
+      for (const f of allRaw) {
+        if (!seenIds.has(f.id)) {
+          seenIds.add(f.id);
+          uniqueFeedbacks.push(f);
+        }
+      }
+
+      // 🔴 ÖZEL SIRALAMA: Aciller En Üste, sonra Tarih (Yeni -> Eski)
+      uniqueFeedbacks.sort((a, b) => {
+        // 1. Kriter: Acil mi?
+        const aUrgent = a.status === 'escalated';
+        const bUrgent = b.status === 'escalated';
+        if (aUrgent && !bUrgent) return -1;
+        if (!aUrgent && bUrgent) return 1;
+
+        // 2. Kriter: Tarih (Yeniden eskiye)
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+
+      // Basitleştirilmiş işleme mantığı
+      let processedFeedbacks = uniqueFeedbacks.slice(0, 25); // Biraz fazla gösterelim (Merged list)
 
       // 🔴 CROSS-MATCH: PID olmayan ama email olanlar için profil çek (Hybrid Detection)
       const missingPidEmails = processedFeedbacks

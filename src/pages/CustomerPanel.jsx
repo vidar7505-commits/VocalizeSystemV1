@@ -2259,19 +2259,21 @@ export default function CustomerPanel() {
           <p className="text-sm text-slate-300">
             {t.guestWarning.text}
           </p>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-4 ml-1">
             <Checkbox
               id="dontShow"
               checked={dontShowGuestWarning}
               onCheckedChange={setDontShowGuestWarning}
+              className="border-slate-500 data-[state=checked]:bg-teal-600 data-[state=checked]:text-white"
             />
-            <label htmlFor="dontShow" className="text-xs text-slate-400">
+            <label htmlFor="dontShow" className="text-xs text-slate-400 cursor-pointer select-none">
               {t.guestWarning.dontShow}
             </label>
           </div>
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-6 flex-row gap-3">
             <Button
-              variant="outline"
+              variant="secondary"
+              className="flex-1 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700"
               onClick={handleGuestWarningContinue}
             >
               {t.guestWarning.continueGuest}

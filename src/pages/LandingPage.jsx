@@ -945,7 +945,7 @@ const DashboardMockup = ({ lang }) => {
       {/* Mockup Container with enhanced 3D effect */}
       <div className="relative transform perspective-1200 hover:scale-[1.01] transition-all duration-700">
         <div
-          className="bg-gradient-to-br from-slate-800/95 via-slate-850/95 to-slate-900/95 backdrop-blur-2xl border border-slate-700/60 rounded-3xl shadow-2xl p-8 transform"
+          className="bg-gradient-to-br from-slate-800/95 via-slate-850/95 to-slate-900/95 backdrop-blur-2xl border border-slate-700/60 rounded-3xl shadow-2xl p-4 md:p-8 transform"
           style={{
             boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.6), 0 0 80px rgba(20, 184, 166, 0.2), inset 0 1px 0 rgba(255,255,255,0.1)'
           }}
@@ -995,7 +995,7 @@ const DashboardMockup = ({ lang }) => {
           </div>
 
           {/* Tab Navigation */}
-          <div className="mb-6 flex gap-2 border-b border-slate-700/50">
+          <div className="mb-6 flex gap-2 border-b border-slate-700/50 overflow-x-auto pb-1">
             {[
               { id: 'analytics', label: lang === 'tr' ? 'Analitikler' : 'Analytics', icon: '📊' },
               { id: 'feedback', label: lang === 'tr' ? 'Geri Bildirimler' : 'Feedback', icon: '💬' },
@@ -1950,7 +1950,7 @@ const LandingPage = () => {
       <section className="relative w-full min-h-[100svh] flex items-center justify-center pt-20 overflow-hidden z-10">
         {/* Shader Animation Background - Mobile: Start at text (top-20), Desktop: Full (top-0) */}
         {/* Shader Animation Background - Mobile: Full top coverage (inset-0), Desktop: Full */}
-        <ShaderAnimation className="absolute inset-0 w-full h-auto md:h-full z-0" />
+        <ShaderAnimation className="absolute inset-0 w-full h-full z-0" />
 
         {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-black/40 z-10" />
@@ -1965,7 +1965,7 @@ const LandingPage = () => {
           >
             {/* Badge */}
             <motion.div
-              className="inline-flex items-center gap-2 bg-teal-500/10 border border-teal-500/30 text-teal-400 px-3 md:px-4 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-semibold mb-8 md:mb-12 backdrop-blur-sm mt-32 md:mt-16"
+              className="inline-flex items-center gap-2 bg-teal-500/10 border border-teal-500/30 text-teal-400 px-3 md:px-4 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-semibold mb-8 md:mb-12 backdrop-blur-sm mt-20 md:mt-16"
               whileHover={{ scale: 1.05 }}
               animate={{
                 boxShadow: [
@@ -2962,7 +2962,7 @@ const LandingPage = () => {
       </section >
 
       {/* ===== GLOBAL REACH SECTION - ENTERPRISE DATA FLOW DESIGN ===== */}
-      <section id="global-map" className="relative w-full min-h-[600px] md:h-[80vh] bg-[#0f172a] overflow-hidden border-y border-slate-800 flex items-center justify-center">
+      <section id="global-map" className="relative w-full min-h-[400px] md:min-h-[600px] md:h-[80vh] bg-[#0f172a] overflow-hidden border-y border-slate-800 flex items-center justify-center">
 
         {/* 1. KATMAN: Harita ve Veri Akışı (Arka Plan) */}
         <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-40">

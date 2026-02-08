@@ -87,8 +87,12 @@ const FeedbackManagement = () => {
 
       // Sayfa yüklendiğinde de çalışsın
       setTimeout(() => {
-        feedbackListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 500);
+        if (feedbackListRef.current) {
+          const yOffset = -100; // Header offset
+          const y = feedbackListRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 800);
 
       navigate(location.pathname, { replace: true, state: {} });
       return;
@@ -406,9 +410,13 @@ const FeedbackManagement = () => {
 
     setTimeout(() => {
       setIsRefreshing(false);
-      // Listeye yumuşakça kaydır
-      feedbackListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 600);
+      // Listeye yumuşakça kaydır - Custom scroll with offset
+      if (feedbackListRef.current) {
+        const yOffset = -100;
+        const y = feedbackListRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }, 800);
   };
 
   const handleFeedbackClick = (feedback) => {

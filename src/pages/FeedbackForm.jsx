@@ -355,6 +355,12 @@ export default function FeedbackForm() {
     if (feedbackType === 'complaint') {
       if (currentStep === 1) return hasReceipt ? !!receiptFile : !!visitDate;
       if (currentStep === 2) return message.trim().length >= 10;
+      if (currentStep === 3) {
+        if (isGuest && wantsGuestContact) {
+          return guestName.trim().length > 1 && guestPhone.trim().length > 9;
+        }
+        return true;
+      }
       return true;
     }
 
@@ -798,9 +804,8 @@ export default function FeedbackForm() {
 
                       {!wantsGuestContact ? (
                         <Button
-                          variant="outline"
                           onClick={() => setWantsGuestContact(true)}
-                          className="w-full border-orange-500/30 text-orange-400 hover:bg-orange-500/10 hover:text-orange-300 h-9 text-xs"
+                          className="w-full bg-orange-500 hover:bg-orange-600 text-white border-none h-9 text-xs font-semibold shadow-lg shadow-orange-900/20"
                         >
                           Evet, bana ulaşın
                         </Button>
