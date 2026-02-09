@@ -78,7 +78,7 @@ KVKK AYDINLATMA METNİ
 Vocalize olarak kişisel verilerinizin güvenliğine önem veriyoruz. 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında, verilerinizin nasıl işlendiği aşağıda açıklanmıştır.
 
 1. VERİ SORUMLUSU
-Vocalize Platformu (İletişim: support@vocalize.app)
+Vocalize Platformu (İletişim: support@vocalize.global)
 
 2. İŞLENEN KİŞİSEL VERİLER
 Platforma kayıt olurken veya kullanırken aşağıdaki verileriniz işlenmektedir:
@@ -1867,7 +1867,7 @@ const LandingPage = () => {
             </button>
 
             <Button
-              onClick={openInstallModal}
+              onClick={() => openInstallModal()}
               className="bg-teal-500 hover:bg-teal-600 text-white border-none font-semibold px-5"
             >
               {t.nav.install}
@@ -2005,7 +2005,7 @@ const LandingPage = () => {
               <Button
                 size="lg"
                 className="h-14 px-8 w-full sm:w-auto bg-slate-100 hover:bg-white text-slate-900 font-bold text-base transition-all shadow-lg hover:shadow-xl"
-                onClick={openInstallModal}
+                onClick={() => openInstallModal()}
               >
                 {t.hero.ctaPrimary}
               </Button>

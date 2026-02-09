@@ -1044,6 +1044,11 @@ export default function CustomerPanel() {
 
   // Helper: Geolocation
   const handleGeolocation = () => {
+    if (userLocation) {
+      setUserLocation(null);
+      return;
+    }
+
     setIsLocating(true);
     if (!navigator.geolocation) {
       toast({ title: "Hata", description: "Tarayıcınız konum servisini desteklemiyor.", variant: "destructive" });

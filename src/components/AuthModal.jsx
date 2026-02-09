@@ -62,18 +62,18 @@ function LegalModal({ open, onOpenChange, activeLegalTab, setActiveLegalTab, leg
           </div>
         </Tabs>
         <div className="flex justify-end gap-2 mt-6">
-          <Button 
-            variant="outline" 
-            onClick={() => onOpenChange(false)} 
-            className="border-slate-600 hover:bg-slate-800 text-white hover:text-white"
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            className="bg-slate-700 hover:bg-slate-600 text-white"
           >
             Kapat
           </Button>
-          <Button 
+          <Button
             onClick={() => {
               setLegalAccepted(true);
               onOpenChange(false);
-            }} 
+            }}
             className="bg-teal-600 hover:bg-teal-700 text-white"
           >
             Okudum, Onaylıyorum
@@ -85,11 +85,11 @@ function LegalModal({ open, onOpenChange, activeLegalTab, setActiveLegalTab, leg
 }
 
 // ✅ Main AuthModal
-export default function AuthModal({ 
-  isOpen, 
-  onClose, 
-  defaultTab = "login", 
-  defaultRole = "customer", 
+export default function AuthModal({
+  isOpen,
+  onClose,
+  defaultTab = "login",
+  defaultRole = "customer",
   showGuestOption = false,
   onGuestContinue
 }) {
@@ -104,11 +104,11 @@ export default function AuthModal({
     password: '',
     managerCode: ''
   });
-  
+
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [showLegalModal, setShowLegalModal] = useState(false);
   const [activeLegalTab, setActiveLegalTab] = useState('terms');
-  
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const { loginAsGuest } = useAuth();
@@ -169,15 +169,15 @@ export default function AuthModal({
     } else {
       loginAsGuest();
       localStorage.setItem('vocalize_guest_mode', 'true');
-      
-      toast({ 
-        title: "Misafir Girişi Başarılı", 
+
+      toast({
+        title: "Misafir Girişi Başarılı",
         description: "Yönlendiriliyorsunuz...",
         className: "bg-teal-600 text-white border-none"
       });
-      
+
       onClose();
-      
+
       setTimeout(() => {
         navigate('/customer-panel?guest=true', { replace: true });
       }, 300);
@@ -197,13 +197,13 @@ export default function AuthModal({
       });
 
       if (error) throw error;
-      
-      toast({ 
-        title: "E-posta Gönderildi", 
+
+      toast({
+        title: "E-posta Gönderildi",
         description: "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. Lütfen spam kutunuzu da kontrol edin.",
         className: "bg-teal-600 text-white border-none"
       });
-      
+
       setViewMode('auth');
       setActiveTab('login');
       setFormData(prev => ({ ...prev, email: '' }));
@@ -228,8 +228,8 @@ export default function AuthModal({
 
         if (error) throw error;
 
-        toast({ 
-          title: "Giriş Başarılı", 
+        toast({
+          title: "Giriş Başarılı",
           description: "Hoş geldiniz! Yönlendiriliyorsunuz...",
           className: "bg-teal-600 text-white border-none"
         });
@@ -242,7 +242,7 @@ export default function AuthModal({
             navigate('/customer-panel', { replace: true });
           }
         }, 300);
-      } 
+      }
       else {
         if (!legalAccepted) {
           toast({ title: "Hata", description: "Lütfen yasal metinleri onaylayınız.", variant: "destructive" });
@@ -268,35 +268,35 @@ export default function AuthModal({
           return;
         }
 
-      // AuthModal.jsx içindeki signUp kısmını bu kesin haliyle güncelleyin:
-const { first, last } = splitName(formData.fullName); // fullName'den ayırıyoruz
+        // AuthModal.jsx içindeki signUp kısmını bu kesin haliyle güncelleyin:
+        const { first, last } = splitName(formData.fullName); // fullName'den ayırıyoruz
 
-const { data: signupData, error: signupError } = await supabase.auth.signUp({
-  email: formData.email,
-  password: formData.password,
-  options: {
-    data: {
-      first_name: first, // splitName'den gelen
-      last_name: last,   // splitName'den gelen
-      full_name: formData.fullName, 
-      phone: formData.phone,
-      user_type: activeRole, // "manager" olmalı
-      invite_code: formData.managerCode
-    }
-  }
-});
+        const { data: signupData, error: signupError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              first_name: first, // splitName'den gelen
+              last_name: last,   // splitName'den gelen
+              full_name: formData.fullName,
+              phone: formData.phone,
+              user_type: activeRole, // "manager" olmalı
+              invite_code: formData.managerCode
+            }
+          }
+        });
 
         if (signupError) throw signupError;
 
         if (signupData.session) {
-          toast({ 
-            title: "Kayıt Başarılı", 
+          toast({
+            title: "Kayıt Başarılı",
             description: "Hesabınız oluşturuldu, yönlendiriliyorsunuz...",
             className: "bg-teal-600 text-white border-none"
           });
 
           onClose();
-          
+
           setTimeout(() => {
             if (activeRole === 'manager') {
               navigate('/admin-panel', { replace: true });
@@ -305,8 +305,8 @@ const { data: signupData, error: signupError } = await supabase.auth.signUp({
             }
           }, 800);
         } else {
-          toast({ 
-            title: "Kayıt Başarılı", 
+          toast({
+            title: "Kayıt Başarılı",
             description: "Lütfen e-posta adresinizi doğrulayın. Gelen kutunuzu kontrol edin.",
             className: "bg-teal-600 text-white border-none"
           });
@@ -334,7 +334,7 @@ const { data: signupData, error: signupError } = await supabase.auth.signUp({
                 <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/20 rounded-full blur-2xl" />
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-teal-500/20 rounded-full blur-2xl" />
               </div>
-              <img 
+              <img
                 src={activeRole === 'customer' ? CUSTOMER_LOGO_URL : ADMIN_LOGO_URL}
                 alt="Logo"
                 className="h-16 md:h-20 relative z-10 transition-all duration-300"
@@ -348,9 +348,9 @@ const { data: signupData, error: signupError } = await supabase.auth.signUp({
             <div className="flex-1 p-5 md:p-6 space-y-4 overflow-y-auto">
               {viewMode === 'forgot-password' ? (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => setViewMode('auth')} 
+                    onClick={() => setViewMode('auth')}
                     className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors mb-2"
                   >
                     <ArrowLeft className="h-4 w-4" />
@@ -358,30 +358,30 @@ const { data: signupData, error: signupError } = await supabase.auth.signUp({
                   </button>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                    <Input 
-                      name="email" 
-                      type="email" 
-                      placeholder="E-posta Adresi" 
-                      value={formData.email} 
-                      onChange={handleInputChange} 
-                      className="pl-10 h-11 bg-slate-800 border-slate-700 text-white focus-visible:ring-teal-500 transition-all" 
-                      required 
+                    <Input
+                      name="email"
+                      type="email"
+                      placeholder="E-posta Adresi"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="pl-10 h-11 bg-slate-800 border-slate-700 text-white focus-visible:ring-teal-500 transition-all"
+                      required
                     />
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    disabled={isLoading} 
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
                     className="w-full h-11 bg-teal-600 hover:bg-teal-700 text-white font-bold transition-all"
                   >
                     {isLoading ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" /> 
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
                         Gönderiliyor...
                       </>
                     ) : (
                       <>
-                        <KeyRound className="h-4 w-4 mr-2" /> 
+                        <KeyRound className="h-4 w-4 mr-2" />
                         Sıfırlama Bağlantısı Gönder
                       </>
                     )}
@@ -402,18 +402,18 @@ const { data: signupData, error: signupError } = await supabase.auth.signUp({
                   </div>
 
                   <form onSubmit={handleAuth} className="space-y-4">
-                    
+
                     {/* Misafir Girişi Kutusu */}
                     {showGuestOption && activeRole === 'customer' && (
                       <div className="animate-in fade-in slide-in-from-top-2">
                         <div className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700/60 rounded-xl p-4 shadow-lg mb-6 flex flex-col gap-3">
                           <div className="flex items-center justify-between gap-2">
                             <div className="text-sm text-slate-300 font-medium leading-tight">
-                              Üyelikle uğraşmak <br className="hidden sm:block"/> istemiyor musun?
+                              Üyelikle uğraşmak <br className="hidden sm:block" /> istemiyor musun?
                             </div>
-                            <Button 
-                              type="button" 
-                              onClick={handleGuestLogin} 
+                            <Button
+                              type="button"
+                              onClick={handleGuestLogin}
                               size="sm"
                               className="bg-teal-600 hover:bg-teal-700 text-white font-semibold transition-all duration-200 whitespace-nowrap h-10 px-5 shadow-md shadow-teal-900/20 shrink-0"
                             >
@@ -426,7 +426,7 @@ const { data: signupData, error: signupError } = await supabase.auth.signUp({
                             </p>
                           </div>
                         </div>
-                        
+
                         <div className="relative my-6">
                           <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-700"></span></div>
                           <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
@@ -442,10 +442,10 @@ const { data: signupData, error: signupError } = await supabase.auth.signUp({
                       <div className="space-y-3">
                         <div className="relative">
                           <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                          <Input 
-                            name="fullName" placeholder="İsim Soyisim" 
-                            className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`} 
-                            value={formData.fullName} 
+                          <Input
+                            name="fullName" placeholder="İsim Soyisim"
+                            className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
+                            value={formData.fullName}
                             onChange={handleInputChange}
                             onBlur={(e) => {
                               const formatted = toTitleCase(e.target.value);
@@ -456,9 +456,9 @@ const { data: signupData, error: signupError } = await supabase.auth.signUp({
                         {activeRole === 'manager' && (
                           <div className="relative">
                             <Building2 className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                            <Input 
-                              name="managerCode" placeholder="Yönetici Kodu (MGR_...)" 
-                              className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`} 
+                            <Input
+                              name="managerCode" placeholder="Yönetici Kodu (MGR_...)"
+                              className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
                               value={formData.managerCode} onChange={handleInputChange} required />
                           </div>
                         )}
@@ -468,25 +468,25 @@ const { data: signupData, error: signupError } = await supabase.auth.signUp({
                     <div className="space-y-3">
                       <div className="relative">
                         <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                        <Input 
-                          name="email" type="email" placeholder="E-posta Adresi" 
-                          className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`} 
+                        <Input
+                          name="email" type="email" placeholder="E-posta Adresi"
+                          className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
                           value={formData.email} onChange={handleInputChange} required />
                       </div>
                       {activeTab === 'register' && (
                         <div className="relative">
                           <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                          <Input 
-                            name="phone" type="tel" placeholder="Telefon (05...)" 
-                            className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`} 
+                          <Input
+                            name="phone" type="tel" placeholder="Telefon (05...)"
+                            className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
                             value={formData.phone} onChange={handleInputChange} required pattern="05[0-9]{9}" title="Telefon numarası 05 ile başlamalı ve 11 haneli olmalıdır." />
                         </div>
                       )}
                       <div className="relative">
                         <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                        <Input 
-                          name="password" type="password" placeholder="Şifre (6-12 karakter)" 
-                          className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`} 
+                        <Input
+                          name="password" type="password" placeholder="Şifre (6-12 karakter)"
+                          className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
                           value={formData.password} onChange={handleInputChange} required minLength="6" maxLength="12" />
                       </div>
                     </div>
@@ -499,8 +499,8 @@ const { data: signupData, error: signupError } = await supabase.auth.signUp({
 
                     {activeTab === 'register' && (
                       <div className="flex items-start space-x-2 my-4 pt-2">
-                        <Checkbox 
-                          id="legal-check" checked={legalAccepted} onCheckedChange={setLegalAccepted} 
+                        <Checkbox
+                          id="legal-check" checked={legalAccepted} onCheckedChange={setLegalAccepted}
                           className={`mt-1 border-slate-500 ${activeRole === 'customer' ? 'data-[state=checked]:bg-orange-600 data-[state=checked]:border-orange-600' : 'data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600'}`} />
                         <div className="grid gap-1.5 leading-none">
                           <label htmlFor="legal-check" className="text-xs text-slate-400 font-medium leading-relaxed">
@@ -528,7 +528,7 @@ const { data: signupData, error: signupError } = await supabase.auth.signUp({
         </DialogContent>
       </Dialog>
 
-      <LegalModal 
+      <LegalModal
         open={showLegalModal}
         onOpenChange={setShowLegalModal}
         activeLegalTab={activeLegalTab}

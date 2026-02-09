@@ -52,7 +52,7 @@ KVKK AYDINLATMA METNİ
 Vocalize olarak kişisel verilerinizin güvenliğine önem veriyoruz. 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında, verilerinizin nasıl işlendiği aşağıda açıklanmıştır.
 
 1. VERİ SORUMLUSU
-Vocalize Platformu (İletişim: support@vocalize.app)
+Vocalize Platformu (İletişim: support@vocalize.global)
 
 2. İŞLENEN KİŞİSEL VERİLER
 Platforma kayıt olurken veya kullanırken aşağıdaki verileriniz işlenmektedir:
