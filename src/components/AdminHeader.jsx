@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAdminContext } from '@/contexts/AdminContext';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { Bell, Building2, User, LogOut, QrCode, MessageSquare, X, CheckCheck, AlertOctagon, Sun, Moon } from 'lucide-react';
+import { Bell, Building2, User, LogOut, QrCode, MessageSquare, X, CheckCheck, AlertOctagon, Sun, Moon, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -44,13 +44,13 @@ const formatTimeAgo = (dateString) => {
 };
 
 const AdminHeader = () => {
-  const { 
+  const {
     businessId, businessName, branches, selectedBranchId, setSelectedBranchId,
     qrCount, loading, dateRange,
     isSpecialOffer, monthlyFeeOverride,
-    userRole, assignedBranchId, isBranchManager 
+    userRole, assignedBranchId, isBranchManager
   } = useAdminContext();
-  
+
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -61,11 +61,19 @@ const AdminHeader = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false); // Profil menüsü kontrolü
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  
+
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [escalatedCount, setEscalatedCount] = useState(0);
+  const [branchSearchQuery, setBranchSearchQuery] = useState('');
+
+  // --- ŞUBE FİLTRELEME (Enterprise için 300+ şube desteği) ---
+  const filteredBranches = useMemo(() => {
+    if (!branchSearchQuery.trim()) return branches;
+    const query = branchSearchQuery.toLowerCase().trim();
+    return branches.filter(b => b.branch_name_tr.toLowerCase().includes(query));
+  }, [branches, branchSearchQuery]);
 
   // --- TEMA YÖNETİMİ ---
   const [theme, setTheme] = useState(localStorage.getItem('acta_theme') || 'dark');
@@ -115,7 +123,7 @@ const AdminHeader = () => {
         .select('*', { count: 'exact', head: true })
         .eq('business_id', businessId)
         .eq('status', 'escalated');
-      
+
       if (isBranchManager && assignedBranchId) {
         query = query.eq('branch_id', assignedBranchId);
       }
@@ -155,21 +163,21 @@ const AdminHeader = () => {
     if (!user || !businessId) return;
     const channel = supabase.channel('header-notifications')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (payload) => {
-          const newNotification = payload.new;
-          const isRelevant = isBranchManager ? newNotification.branch_id === assignedBranchId : newNotification.business_id === businessId;
-          if (isRelevant) {
-            setNotifications(prev => [newNotification, ...prev.slice(0, 9)]);
-            setUnreadCount(prev => prev + 1);
-            toast({ title: `Yeni Bildirim`, description: newNotification.message || 'Yeni bildirim.' });
-          }
-        }).subscribe();
-      
+        const newNotification = payload.new;
+        const isRelevant = isBranchManager ? newNotification.branch_id === assignedBranchId : newNotification.business_id === businessId;
+        if (isRelevant) {
+          setNotifications(prev => [newNotification, ...prev.slice(0, 9)]);
+          setUnreadCount(prev => prev + 1);
+          toast({ title: `Yeni Bildirim`, description: newNotification.message || 'Yeni bildirim.' });
+        }
+      }).subscribe();
+
     const feedbackChannel = supabase.channel('header-feedback-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks', filter: `business_id=eq.${businessId}` }, () => {
-           checkEscalatedStatus(); 
-           fetchNotifications(); 
-        }).subscribe();
-      
+        checkEscalatedStatus();
+        fetchNotifications();
+      }).subscribe();
+
     return () => { supabase.removeChannel(channel); supabase.removeChannel(feedbackChannel); };
   }, [user, businessId, toast, isBranchManager, assignedBranchId, checkEscalatedStatus, fetchNotifications]);
 
@@ -178,28 +186,28 @@ const AdminHeader = () => {
     if (!targetId) return;
     setNotificationOpen(false);
     if (!notification.is_read) {
-        setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-        supabase.from('notifications').update({ is_read: true }).eq('id', notification.id).then();
+      setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      supabase.from('notifications').update({ is_read: true }).eq('id', notification.id).then();
     }
     navigate('/admin-panel/feedbacks', { state: { openFeedbackId: targetId } });
   };
 
   const handleMarkAllAsRead = async () => {
     await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
-    setNotifications(prev => prev.map(n => ({...n, is_read: true})));
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     setUnreadCount(0);
-    toast({ title: 'Tüm bildirimler okundu.'});
+    toast({ title: 'Tüm bildirimler okundu.' });
   };
 
   const handleLogout = async () => { await signOut(); navigate('/'); };
-  
+
   const getSelectedBranchLabel = () => {
     if (selectedBranchId === 'all') return 'Tüm Şubeler';
     const branch = branches.find(b => b.id === selectedBranchId);
     return branch ? branch.branch_name_tr : 'Tüm Şubeler';
   };
-  
+
   const getQrDateLabel = () => {
     const labels = { 'today': 'Bugün', 'last7': 'Son 7 Gün', 'last30': 'Son 30 Gün', 'last90': 'Son 90 Gün', 'thisMonth': 'Bu Ay', 'allTime': 'Tüm Zamanlar' };
     return labels[dateRange] || 'Son 7 Gün';
@@ -244,9 +252,29 @@ const AdminHeader = () => {
                     <SelectValue placeholder="Şube Seçiniz">{getSelectedBranchLabel()}</SelectValue>
                   </div>
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                <SelectContent className="bg-slate-800 border-slate-700 text-white max-h-[300px]">
+                  {/* 🔍 ŞUBE ARAMA KUTUSU */}
+                  {branches.length > 5 && (
+                    <div className="p-2 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <input
+                          type="text"
+                          placeholder="Şube ara..."
+                          value={branchSearchQuery}
+                          onChange={(e) => setBranchSearchQuery(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          className="w-full pl-8 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20"
+                        />
+                      </div>
+                    </div>
+                  )}
                   <SelectItem value="all">Tüm Şubeler</SelectItem>
-                  {branches.map((branch) => <SelectItem key={branch.id} value={branch.id}>{branch.branch_name_tr}</SelectItem>)}
+                  {filteredBranches.length === 0 && branchSearchQuery && (
+                    <div className="p-3 text-center text-slate-500 text-sm">Şube bulunamadı</div>
+                  )}
+                  {filteredBranches.map((branch) => <SelectItem key={branch.id} value={branch.id}>{branch.branch_name_tr}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -260,7 +288,7 @@ const AdminHeader = () => {
               {getQrDateLabel()}: <span className="text-white font-bold">{loading ? '...' : qrCount}</span> Tarama
             </span>
           </div>
-          
+
           {/* BİLDİRİM BUTONU (GÜNCELLENDİ: toggleNotifications kullanıyor) */}
           <div ref={notificationRef} className="relative">
             <Button onClick={toggleNotifications} variant="ghost" size="icon" className="relative text-slate-400 hover:text-white hover:bg-slate-800">
@@ -281,11 +309,11 @@ const AdminHeader = () => {
                   <div className="max-h-96 overflow-y-auto">
                     {escalatedCount > 0 && (
                       <div onClick={() => { navigate('/admin-panel/feedbacks', { state: { filter: 'urgent' } }); setNotificationOpen(false); }} className="flex items-start gap-3 p-3 border-b border-slate-700/30 bg-red-950/30 hover:bg-red-900/40 cursor-pointer">
-                          <AlertOctagon className="w-4 h-4 shrink-0 mt-1 text-red-500 animate-pulse" />
-                          <div className="flex-grow">
-                             <p className="text-sm text-red-200 font-bold">Acil Durum</p>
-                             <p className="text-xs text-red-300 mt-1">{escalatedCount} acil bildirim.</p>
-                          </div>
+                        <AlertOctagon className="w-4 h-4 shrink-0 mt-1 text-red-500 animate-pulse" />
+                        <div className="flex-grow">
+                          <p className="text-sm text-red-200 font-bold">Acil Durum</p>
+                          <p className="text-xs text-red-300 mt-1">{escalatedCount} acil bildirim.</p>
+                        </div>
                       </div>
                     )}
                     {notifications.length > 0 ? (
@@ -320,10 +348,10 @@ const AdminHeader = () => {
               <DropdownMenuLabel>Hesabım</DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-slate-700" />
               <DropdownMenuItem onClick={() => navigate('/admin-panel/settings')} className="cursor-pointer focus:bg-slate-700 focus:text-white">Ayarlar</DropdownMenuItem>
-              
+
               {/* TEMA DEĞİŞTİR (Kapanmayı önler) */}
-              <DropdownMenuItem 
-                onSelect={(e) => { e.preventDefault(); toggleTheme(e); }} 
+              <DropdownMenuItem
+                onSelect={(e) => { e.preventDefault(); toggleTheme(e); }}
                 className="cursor-pointer focus:bg-slate-700 focus:text-white flex justify-between items-center group"
               >
                 <span>Görünüm</span>
@@ -339,7 +367,7 @@ const AdminHeader = () => {
                   </div>
                 )}
               </DropdownMenuItem>
-              
+
               <DropdownMenuItem onClick={handleLogout} className="logout-menuitem text-red-400 focus:bg-red-900/20 focus:text-red-300 cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />Çıkış Yap
               </DropdownMenuItem>

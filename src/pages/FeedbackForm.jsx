@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { tr, enUS } from 'date-fns/locale';
+import BranchSelector from '@/components/BranchSelector';
 
 // ============================================================================
 // STATIC DATA & HELPERS
@@ -550,13 +551,12 @@ export default function FeedbackForm() {
               {/* Branch Selector */}
               {branches.length > 1 && (
                 <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                  <label className="text-xs text-slate-400 mb-1 block pl-1">{t.stepsUI.branchLabel}</label>
-                  <div className="relative">
-                    <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg py-3 px-3 appearance-none focus:ring-1 focus:ring-teal-500">
-                      {branches.map(b => <option key={b.id} value={b.id}>{b.branch_name_tr}</option>)}
-                    </select>
-                    <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  </div>
+                  <BranchSelector
+                    branches={branches}
+                    selectedBranch={selectedBranch}
+                    onSelect={setSelectedBranch}
+                    t={t}
+                  />
                 </div>
               )}
 

@@ -108,6 +108,15 @@ export default function CustomerPanel() {
   const [selectedBusinessForBranches, setSelectedBusinessForBranches] = useState(null);
   const [showBranchSelector, setShowBranchSelector] = useState(false);
 
+  // 🟢 Branch Selector Logic
+  const [branchSearchTerm, setBranchSearchTerm] = useState('');
+  const [recentBranches, setRecentBranches] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
+  const [isLocating, setIsLocating] = useState(false);
+
+  // 🟢 Filter Popover Control
+  const [filterOpen, setFilterOpen] = useState(false);
+
   const [stats, setStats] = useState({
     total: 0, avgRating: 0, topBranch: '', topBranchCount: 0,
     complaints: 0, suggestions: 0, reviews: 0,
@@ -137,6 +146,14 @@ export default function CustomerPanel() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const isFromQr = urlParams.get('from_qr') === 'true' || urlParams.get('qr');
+
+    // Load recent branches from localStorage
+    try {
+      const stored = localStorage.getItem('vocalize_recent_branches');
+      if (stored) {
+        setRecentBranches(JSON.parse(stored));
+      }
+    } catch (e) { console.error("Recent branches load error", e); }
 
     // 🟢 DURUM 1: QR İLE GELDİ
     if (isFromQr && !alreadyLogged) {
@@ -633,7 +650,7 @@ export default function CustomerPanel() {
     try {
       const { data, error } = await supabase
         .from('branches')
-        .select('id, branch_name_tr')
+        .select('*')
         .eq('business_id', businessId)
         .eq('is_active', true);
 
@@ -973,7 +990,7 @@ export default function CustomerPanel() {
 
       const { data: branchesData, error } = await supabase
         .from('branches')
-        .select('id, branch_name_tr')
+        .select('*')
         .eq('business_id', businessId)
         .eq('is_active', true);
 
@@ -1018,7 +1035,86 @@ export default function CustomerPanel() {
     if (isGuest) params.set('guest', 'true');
 
     navigate(`${location.pathname}?${params.toString()}`);
+
+    // Update recent branches
+    const newRecents = [branchId, ...recentBranches.filter(id => id !== branchId)].slice(0, 3);
+    setRecentBranches(newRecents);
+    localStorage.setItem('vocalize_recent_branches', JSON.stringify(newRecents));
   };
+
+  // Helper: Geolocation
+  const handleGeolocation = () => {
+    setIsLocating(true);
+    if (!navigator.geolocation) {
+      toast({ title: "Hata", description: "Tarayıcınız konum servisini desteklemiyor.", variant: "destructive" });
+      setIsLocating(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setIsLocating(false);
+      },
+      (err) => {
+        console.error("Geolocation error:", err);
+        setIsLocating(false);
+      }
+    );
+  };
+
+  // Helper: Extract coordinates from Google Maps URL
+  const extractCoordsFromMapsUrl = (url) => {
+    if (!url) return null;
+    try {
+      const qMatch = url.match(/[?&]q=([0-9.-]+),([0-9.-]+)/);
+      if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
+      const atMatch = url.match(/@([0-9.-]+),([0-9.-]+)/);
+      if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
+      const placeMatch = url.match(/\/place\/[^/]+\/@([0-9.-]+),([0-9.-]+)/);
+      if (placeMatch) return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) };
+      return null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // Helper: Get coordinates from branch (URL or columns)
+  const getBranchCoords = (branch) => {
+    const urlCoords = extractCoordsFromMapsUrl(branch.google_maps_url || branch.map_url);
+    if (urlCoords) return urlCoords;
+    if (branch.latitude && branch.longitude) {
+      return { lat: branch.latitude, lng: branch.longitude };
+    }
+    return null;
+  };
+
+  // Helper: Distance
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const filteredBranchesForModal = useMemo(() => {
+    let result = branches;
+    if (branchSearchTerm.trim()) {
+      const query = branchSearchTerm.toLowerCase('tr');
+      result = result.filter(b => b.branch_name_tr.toLowerCase('tr').includes(query));
+    }
+    if (userLocation) {
+      result = [...result].sort((a, b) => {
+        const coordsA = getBranchCoords(a);
+        const coordsB = getBranchCoords(b);
+        const distA = coordsA ? calculateDistance(userLocation.lat, userLocation.lng, coordsA.lat, coordsA.lng) : Infinity;
+        const distB = coordsB ? calculateDistance(userLocation.lat, userLocation.lng, coordsB.lat, coordsB.lng) : Infinity;
+        return distA - distB;
+      });
+    }
+    return result;
+  }, [branches, branchSearchTerm, userLocation]);
 
   const proceedToFeedback = (type) => {
     if (!selectedBusiness && !fromQR) {
@@ -1533,7 +1629,7 @@ export default function CustomerPanel() {
                 <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-3xl md:text-4xl font-bold text-white break-words">{t.stats}</h1>
                   {!isGuest && stats.userTitle && (
-                    <Popover>
+                    <Popover open={filterOpen} onOpenChange={setFilterOpen}>
                       <PopoverTrigger asChild>
                         <button className="bg-teal-600/20 text-teal-300 border border-teal-500/30 px-3 py-1 rounded-full text-sm font-semibold whitespace-nowrap animate-in fade-in zoom-in-75 duration-500 hover:bg-teal-600/30 transition-all cursor-pointer group relative">
                           ✨ {stats.userTitle} <HelpCircle className="inline ml-1 h-3 w-3 opacity-70 group-hover:opacity-100" />
@@ -1711,20 +1807,76 @@ export default function CustomerPanel() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-4">
-            {branches.map((branch) => (
-              <button
-                key={branch.id}
-                onClick={() => handleBranchSelectForFeedback(branch.id)}
-                className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-teal-500 text-white p-4 rounded-lg transition-all text-left group"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium group-hover:text-teal-300 transition-colors">
-                    {branch.branch_name_tr}
-                  </span>
-                  <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-teal-400 transition-all group-hover:translate-x-1" />
-                </div>
+            {/* Search Bar */}
+            <div className="flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-2 border border-slate-700 focus-within:border-teal-500 transition-colors">
+              <Filter className="h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder={language === 'tr' ? "Şube veya ilçe ara..." : "Search branch..."}
+                value={branchSearchTerm}
+                onChange={(e) => setBranchSearchTerm(e.target.value)}
+                className="bg-transparent border-none outline-none text-white w-full text-sm placeholder:text-slate-500"
+                autoFocus
+              />
+              <button onClick={handleGeolocation} className={cn("p-1.5 rounded-md transition-colors", isLocating || userLocation ? "text-teal-400 bg-teal-500/10" : "text-slate-400 hover:text-white hover:bg-slate-700")}>
+                <MapPin className={cn("h-4 w-4", isLocating && "animate-pulse")} />
               </button>
-            ))}
+            </div>
+
+            <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-slate-700">
+              {/* Recent Visits in Modal */}
+              {!branchSearchTerm && recentBranches.length > 0 && (
+                <div className="mb-4">
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
+                    {language === 'tr' ? 'Son Ziyaretler' : 'Recent Visits'}
+                  </div>
+                  {recentBranches.map(id => {
+                    const b = branches.find(branch => branch.id === id);
+                    if (!b) return null;
+                    return (
+                      <button
+                        key={`recent-${b.id}`}
+                        onClick={() => handleBranchSelectForFeedback(b.id)}
+                        className="w-full bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-teal-500/50 text-white p-3 rounded-lg transition-all text-left group mb-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium group-hover:text-teal-300 transition-colors flex items-center gap-2">
+                            <TrendingUp className="h-3 w-3 text-teal-500" /> {b.branch_name_tr}
+                          </span>
+                          <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-teal-400 transition-all" />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Filtered List */}
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
+                {userLocation ? (language === 'tr' ? 'Mesafeye Göre' : 'By Distance') : (language === 'tr' ? 'Tüm Şubeler' : 'All Branches')} ({filteredBranchesForModal.length})
+              </div>
+
+              {filteredBranchesForModal.slice(0, 50).map((branch) => (
+                <button
+                  key={branch.id}
+                  onClick={() => handleBranchSelectForFeedback(branch.id)}
+                  className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-teal-500 text-white p-4 rounded-lg transition-all text-left group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium group-hover:text-teal-300 transition-colors">
+                      {branch.branch_name_tr}
+                    </span>
+                    <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-teal-400 transition-all group-hover:translate-x-1" />
+                  </div>
+                </button>
+              ))}
+
+              {filteredBranchesForModal.length === 0 && (
+                <div className="text-center py-8 text-slate-500">
+                  {language === 'tr' ? 'Sonuç bulunamadı' : 'No results found'}
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button

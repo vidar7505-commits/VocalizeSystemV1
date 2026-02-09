@@ -3,14 +3,15 @@ import { useAdminContext } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import { format, startOfDay, endOfDay, parseISO, differenceInDays, sub } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Legend, PieChart, Pie, Cell
 } from 'recharts';
-import { 
-  TrendingUp, CheckCircle, AlertTriangle, Activity, QrCode, 
-  Minus, ArrowUpRight, ArrowDownRight, BarChart3, Heart, Zap, 
-  Filter, Link as LinkIcon, Info, Trophy, MapPin, X, Sparkles, Target, MessageSquare, Scale
+import {
+  TrendingUp, CheckCircle, AlertTriangle, Activity, QrCode,
+  Minus, ArrowUpRight, ArrowDownRight, BarChart3, Heart, Zap,
+  Filter, Link as LinkIcon, Info, Trophy, MapPin, X, Sparkles, Target, MessageSquare, Scale,
+  Search, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import DateRangePicker from '@/components/DateRangePicker';
@@ -29,7 +30,14 @@ const COLORS = {
 const formatNumber = (num) => new Intl.NumberFormat('tr-TR').format(num);
 
 // --- YARDIMCI FONKSİYONLAR ---
-const calculateScore = (val) => (!val ? 0 : (val - 1) * 25);
+import { formatCompactNumber } from "@/lib/utils";
+
+// Rating (1-5) to Score (0-100) converter
+const calculateScore = (rating) => {
+  if (!rating || rating < 1 || rating > 5) return 0;
+  return (rating / 5) * 100;
+};
+
 const getWeightedScore = (rating, general) => {
   const rScore = rating ? calculateScore(rating) : null;
   const gScore = general ? calculateScore(general) : null;
@@ -146,8 +154,8 @@ const InfoTooltip = ({ text }) => {
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
-    const totalValue = payload.find(p => p.dataKey === 'total')?.value || 
-                       payload.reduce((acc, curr) => acc + (typeof curr.value === 'number' ? curr.value : 0), 0);
+    const totalValue = payload.find(p => p.dataKey === 'total')?.value ||
+      payload.reduce((acc, curr) => acc + (typeof curr.value === 'number' ? curr.value : 0), 0);
     return (
       <div className="bg-slate-900/95 backdrop-blur border border-slate-700 p-3 rounded-lg shadow-xl text-xs z-50 min-w-[160px]">
         <p className="font-bold text-slate-200 mb-2 border-b border-slate-700 pb-1">{label}</p>
@@ -157,13 +165,13 @@ const CustomTooltip = ({ active, payload, label }) => {
         </div>
         <div className="space-y-1">
           {payload.slice().reverse().map((p, i) => (
-             <div key={i} className="flex justify-between gap-3">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color || p.fill }}></div>
-                  <span className="text-slate-300 capitalize">{p.name === 'complaint' ? 'Şikayet' : p.name === 'suggestion' ? 'Öneri' : p.name === 'evaluation' ? 'Değerlendirme' : p.name}</span>
-                </div>
-                <span className="text-white font-mono font-bold">{formatNumber(p.value)}</span>
-             </div>
+            <div key={i} className="flex justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color || p.fill }}></div>
+                <span className="text-slate-300 capitalize">{p.name === 'complaint' ? 'Şikayet' : p.name === 'suggestion' ? 'Öneri' : p.name === 'evaluation' ? 'Değerlendirme' : p.name}</span>
+              </div>
+              <span className="text-white font-mono font-bold">{formatNumber(p.value)}</span>
+            </div>
           ))}
         </div>
       </div>
@@ -183,12 +191,27 @@ const KpiCard = ({ title, value, previousValue, icon: Icon, colorClass, suffix =
   const isGood = inverseTrend ? trendDirection === 'down' : trendDirection === 'up';
   const trendColor = trendDirection === 'neutral' ? "text-slate-400 bg-slate-800" : (isGood ? "text-emerald-400 bg-emerald-500/10" : "text-rose-400 bg-rose-500/10");
 
+  // 🟢 ENTERPRISE: Büyük sayılar için kompakt format (9.9K+) + Tooltip
+  const numericValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value;
+  // Suffix varsa (örn: TL) sayısal değeri ayırıp formatlayalım, yoksa direkt formatlayalım
+  // Ancak suffix genelde "TL" gibi metinler, formatCompactNumber sadece sayı alır
+  // Bu yüzden suffix'i display string'e ekleyeceğiz
+  const formatted = formatCompactNumber(numericValue || 0);
+  const displayValue = `${formatted.display}${suffix}`;
+  const fullValue = `${formatted.full}${suffix}`;
+  const needsTooltip = formatted.display !== formatted.full;
+
   return (
     <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50 p-5 shadow-sm hover:border-slate-700 transition-all group">
       <div className="flex justify-between items-start mb-3">
         <div>
           <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{title}</p>
-          <h3 className="text-2xl font-bold text-white mt-1">{value}{suffix}</h3>
+          <h3
+            className={`text-2xl font-bold text-white mt-1 ${needsTooltip ? 'cursor-help' : ''}`}
+            title={needsTooltip ? `Tam değer: ${fullValue}` : undefined}
+          >
+            {displayValue}
+          </h3>
         </div>
         <div className={`p-2 rounded-lg bg-slate-900 border border-slate-800 ${colorClass}`}><Icon className="h-5 w-5" /></div>
       </div>
@@ -215,7 +238,7 @@ const BranchDetailModal = ({ isOpen, onClose, branch }) => {
   const perception = Number(branch.brandPerception);
   const experience = Number(branch.instantExperience);
   const perceptionGap = perception - experience;
-  
+
   // Çakışma Kontrolü
   const isOverlap = Math.abs(perceptionGap) < 5;
 
@@ -227,18 +250,18 @@ const BranchDetailModal = ({ isOpen, onClose, branch }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-[#0f172a] border border-slate-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-        
+
         <div className="bg-slate-900/80 backdrop-blur p-6 border-b border-slate-800 flex justify-between items-start sticky top-0 z-10">
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h2 className="text-2xl font-bold text-white">{branch.name}</h2>
               <div className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-slate-800 border border-slate-700 text-slate-300">
-                 <span>Lig Puanı:</span>
-                 <span className={Number(branch.vocalizeScore) >= 80 ? 'text-amber-400' : 'text-white'}>{branch.vocalizeScore}</span>
+                <span>Lig Puanı:</span>
+                <span className={Number(branch.vocalizeScore) >= 80 ? 'text-amber-400' : 'text-white'}>{branch.vocalizeScore}</span>
               </div>
             </div>
             <p className="text-slate-400 text-sm flex items-center gap-1">
-               <Activity className="w-3.5 h-3.5" /> Şube Performans Karnesi
+              <Activity className="w-3.5 h-3.5" /> Şube Performans Karnesi
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
@@ -247,92 +270,92 @@ const BranchDetailModal = ({ isOpen, onClose, branch }) => {
         </div>
 
         <div className="p-6 space-y-6 overflow-y-auto">
-          
+
           {/* AKILLI TEŞHİS */}
           <div className={`p-5 rounded-xl border ${insight.color} relative overflow-hidden shadow-lg`}>
-             <div className="flex items-start gap-4 relative z-10">
-                <div className="p-2.5 rounded-lg bg-white/10 shrink-0 border border-white/10">
-                   <InsightIcon className="w-6 h-6" /> 
-                </div>
-                <div>
-                   <h3 className="font-bold text-lg mb-1.5">Vocalize Analizi: {insight.title}</h3>
-                   <p className="text-sm opacity-90 leading-relaxed font-medium mb-2">{insight.desc}</p>
-                   {insight.suggestion && (
-                     <p className="text-sm leading-relaxed font-semibold text-emerald-300">
-                       <span className="font-bold">Öneri: </span>
-                       {insight.suggestion}
-                     </p>
-                   )}
-                </div>
-             </div>
-             <div className="absolute -right-6 -top-6 w-32 h-32 bg-current opacity-10 blur-3xl rounded-full"></div>
+            <div className="flex items-start gap-4 relative z-10">
+              <div className="p-2.5 rounded-lg bg-white/10 shrink-0 border border-white/10">
+                <InsightIcon className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg mb-1.5">Vocalize Analizi: {insight.title}</h3>
+                <p className="text-sm opacity-90 leading-relaxed font-medium mb-2">{insight.desc}</p>
+                {insight.suggestion && (
+                  <p className="text-sm leading-relaxed font-semibold text-emerald-300">
+                    <span className="font-bold">Öneri: </span>
+                    {insight.suggestion}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="absolute -right-6 -top-6 w-32 h-32 bg-current opacity-10 blur-3xl rounded-full"></div>
           </div>
 
           {/* MARKA VS DENEYİM (LAZER EFEKTLİ BAR) */}
           <div className="bg-slate-900/50 rounded-xl p-5 border border-slate-800">
             <div className="flex justify-between items-center mb-8">
-               <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2">
-                 <Zap className="w-4 h-4 text-sky-400" /> Beklenti & Deneyim Dengesi
-               </h3>
-               <span className={`text-[10px] font-bold px-2 py-1 rounded bg-slate-950 border border-slate-800 ${gapStatus.color}`}>
-                  {gapStatus.text}
-               </span>
+              <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-sky-400" /> Beklenti & Deneyim Dengesi
+              </h3>
+              <span className={`text-[10px] font-bold px-2 py-1 rounded bg-slate-950 border border-slate-800 ${gapStatus.color}`}>
+                {gapStatus.text}
+              </span>
             </div>
-            
+
             <div className="relative h-16 mx-4">
-               {/* Arka Ray */}
-               <div className="absolute top-1/2 left-0 right-0 h-1.5 bg-slate-800 -translate-y-1/2 rounded-full"></div>
-               
-               {/* 🟡 SARI İZ (BEKLENTİ İZİ) */}
-               <div className="absolute top-1/2 -translate-y-1/2 h-1.5 rounded-l-full bg-gradient-to-r from-transparent to-yellow-500/30" style={{ left: '0%', width: `${perception}%` }}></div>
-               
-               {/* 🔵 MAVİ İZ (DENEYİM İZİ) */}
-               <div className="absolute top-1/2 -translate-y-1/2 h-1.5 rounded-l-full bg-gradient-to-r from-transparent to-sky-500/30" style={{ left: '0%', width: `${experience}%` }}></div>
+              {/* Arka Ray */}
+              <div className="absolute top-1/2 left-0 right-0 h-1.5 bg-slate-800 -translate-y-1/2 rounded-full"></div>
 
-               {isOverlap ? (
-                 <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center z-20" style={{ left: `${perception}%`, transform: 'translate(-50%, -50%)' }}>
-                    <div className="relative">
-                      <div className="w-6 h-6 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] flex items-center justify-center border-2 border-slate-900 z-10">
-                        <CheckCircle className="w-3.5 h-3.5 text-white" />
-                      </div>
-                      <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-30"></div>
+              {/* 🟡 SARI İZ (BEKLENTİ İZİ) */}
+              <div className="absolute top-1/2 -translate-y-1/2 h-1.5 rounded-l-full bg-gradient-to-r from-transparent to-yellow-500/30" style={{ left: '0%', width: `${perception}%` }}></div>
+
+              {/* 🔵 MAVİ İZ (DENEYİM İZİ) */}
+              <div className="absolute top-1/2 -translate-y-1/2 h-1.5 rounded-l-full bg-gradient-to-r from-transparent to-sky-500/30" style={{ left: '0%', width: `${experience}%` }}></div>
+
+              {isOverlap ? (
+                <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center z-20" style={{ left: `${perception}%`, transform: 'translate(-50%, -50%)' }}>
+                  <div className="relative">
+                    <div className="w-6 h-6 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] flex items-center justify-center border-2 border-slate-900 z-10">
+                      <CheckCircle className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-400 mt-2 whitespace-nowrap">Tam Uyum ({perception})</span>
-                 </div>
-               ) : (
-                 <>
-                   {/* 🔴 LAZER DOLGU HATTI (İKİ NOKTA ARASI) */}
-                   <div 
-                      className={`absolute top-1/2 -translate-y-1/2 h-1.5 rounded-full ${gapStatus.barColor} opacity-60 shadow-[0_0_12px_currentColor] transition-all duration-700`} 
-                      style={{ left: `${Math.min(perception, experience)}%`, width: `${Math.abs(perceptionGap)}%` }}
-                   ></div>
+                    <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-30"></div>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-400 mt-2 whitespace-nowrap">Tam Uyum ({perception})</span>
+                </div>
+              ) : (
+                <>
+                  {/* 🔴 LAZER DOLGU HATTI (İKİ NOKTA ARASI) */}
+                  <div
+                    className={`absolute top-1/2 -translate-y-1/2 h-1.5 rounded-full ${gapStatus.barColor} opacity-60 shadow-[0_0_12px_currentColor] transition-all duration-700`}
+                    style={{ left: `${Math.min(perception, experience)}%`, width: `${Math.abs(perceptionGap)}%` }}
+                  ></div>
 
-                   {/* Beklenti Noktası */}
-                   <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center z-10" style={{ left: `${perception}%`, transform: 'translate(-50%, -50%)' }}>
-                      <span className="absolute -top-8 text-[9px] text-slate-500 font-bold uppercase tracking-tighter bg-slate-900 px-1 py-0.5 rounded border border-slate-800 whitespace-nowrap">Beklenti</span>
-                      <div className="w-4 h-4 rounded-full bg-slate-800 border-4 border-yellow-500 shadow-lg"></div>
-                      <span className="absolute -bottom-6 text-[10px] font-bold text-yellow-500">{perception}</span>
-                   </div>
+                  {/* Beklenti Noktası */}
+                  <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center z-10" style={{ left: `${perception}%`, transform: 'translate(-50%, -50%)' }}>
+                    <span className="absolute -top-8 text-[9px] text-slate-500 font-bold uppercase tracking-tighter bg-slate-900 px-1 py-0.5 rounded border border-slate-800 whitespace-nowrap">Beklenti</span>
+                    <div className="w-4 h-4 rounded-full bg-slate-800 border-4 border-yellow-500 shadow-lg"></div>
+                    <span className="absolute -bottom-6 text-[10px] font-bold text-yellow-500">{perception}</span>
+                  </div>
 
-                   {/* Deneyim Noktası */}
-                   <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center z-20" style={{ left: `${experience}%`, transform: 'translate(-50%, -50%)' }}>
-                      <span className="absolute -top-8 text-[9px] text-sky-400 font-bold uppercase tracking-tighter bg-slate-900 px-1 py-0.5 rounded border border-slate-800 whitespace-nowrap">Gerçekleşen</span>
-                      <div className="relative">
-                        <div className="w-5 h-5 rounded-full bg-sky-500 border-2 border-white shadow-lg z-10"></div>
-                        <div className="absolute inset-0 bg-sky-400 rounded-full animate-pulse opacity-50 blur-sm"></div>
-                      </div>
-                      <span className="absolute -bottom-6 text-[10px] font-bold text-white">{experience}</span>
-                   </div>
-                 </>
-               )}
+                  {/* Deneyim Noktası */}
+                  <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center z-20" style={{ left: `${experience}%`, transform: 'translate(-50%, -50%)' }}>
+                    <span className="absolute -top-8 text-[9px] text-sky-400 font-bold uppercase tracking-tighter bg-slate-900 px-1 py-0.5 rounded border border-slate-800 whitespace-nowrap">Gerçekleşen</span>
+                    <div className="relative">
+                      <div className="w-5 h-5 rounded-full bg-sky-500 border-2 border-white shadow-lg z-10"></div>
+                      <div className="absolute inset-0 bg-sky-400 rounded-full animate-pulse opacity-50 blur-sm"></div>
+                    </div>
+                    <span className="absolute -bottom-6 text-[10px] font-bold text-white">{experience}</span>
+                  </div>
+                </>
+              )}
             </div>
-            
+
             <div className="mt-6 text-center px-4">
-               <p className="text-[11px] text-slate-500 italic">
-                  {isOverlap 
-                    ? "✨ Müşterinin beklediği kalite ile aldığı hizmet birebir örtüşüyor." 
-                    : "Aradaki renkli alan (lazer), beklenti ile gerçeklik arasındaki farkı temsil eder."}
-               </p>
+              <p className="text-[11px] text-slate-500 italic">
+                {isOverlap
+                  ? "✨ Müşterinin beklediği kalite ile aldığı hizmet birebir örtüşüyor."
+                  : "Aradaki renkli alan (lazer), beklenti ile gerçeklik arasındaki farkı temsil eder."}
+              </p>
             </div>
           </div>
 
@@ -353,20 +376,20 @@ const BranchDetailModal = ({ isOpen, onClose, branch }) => {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-             <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                <div className="flex flex-col">
-                   <span className="text-xs text-slate-400 uppercase font-medium">Haritalara Geçiş</span>
-                   <span className="text-white font-bold text-xl">{branch.googleClicks} <span className="text-sm font-normal text-slate-500">Kişi</span></span>
-                </div>
-                <div className="p-2 bg-slate-800 rounded-lg text-red-400"><MapPin className="w-5 h-5" /></div>
-             </div>
-             <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                <div className="flex flex-col">
-                   <span className="text-xs text-slate-400 uppercase font-medium">Çözüm Hızı</span>
-                   <span className="text-white font-bold text-xl">%{branch.operationScore}</span>
-                </div>
-                <div className="p-2 bg-slate-800 rounded-lg text-green-400"><CheckCircle className="w-5 h-5" /></div>
-             </div>
+            <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+              <div className="flex flex-col">
+                <span className="text-xs text-slate-400 uppercase font-medium">Haritalara Geçiş</span>
+                <span className="text-white font-bold text-xl">{branch.googleClicks} <span className="text-sm font-normal text-slate-500">Kişi</span></span>
+              </div>
+              <div className="p-2 bg-slate-800 rounded-lg text-red-400"><MapPin className="w-5 h-5" /></div>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+              <div className="flex flex-col">
+                <span className="text-xs text-slate-400 uppercase font-medium">Çözüm Hızı</span>
+                <span className="text-white font-bold text-xl">%{branch.operationScore}</span>
+              </div>
+              <div className="p-2 bg-slate-800 rounded-lg text-green-400"><CheckCircle className="w-5 h-5" /></div>
+            </div>
           </div>
 
         </div>
@@ -379,15 +402,20 @@ const BranchDetailModal = ({ isOpen, onClose, branch }) => {
 const DetailedAnalytics = () => {
   const { businessId, selectedBranchId, businessCreatedAt } = useAdminContext();
   const { toast } = useToast();
-  
+
   const [loading, setLoading] = useState(true);
   const [feedbacks, setFeedbacks] = useState([]);
   const [prevFeedbacks, setPrevFeedbacks] = useState([]);
   const [trafficStats, setTrafficStats] = useState({ visits: 0, conversionRate: 0, qrCount: 0, webCount: 0, googleRedirects: 0 });
   const [trendViewMode, setTrendViewMode] = useState('total');
-  
+
   const [selectedModalBranch, setSelectedModalBranch] = useState(null);
-  
+
+  // 🟢 ŞUBE LİGİ SAYFALAMA & ARAMA (Enterprise 300+ şube desteği)
+  const [leaderboardPage, setLeaderboardPage] = useState(1);
+  const [leaderboardSearch, setLeaderboardSearch] = useState('');
+  const leaderboardItemsPerPage = 20;
+
   const [dateRange, setDateRange] = useState({ from: new Date(2020, 0, 1), to: new Date() });
   const [preset, setPreset] = useState('allTime');
 
@@ -411,9 +439,9 @@ const DetailedAnalytics = () => {
         .eq('business_id', businessId)
         .gte('created_at', startOfDay(dateRange.from).toISOString())
         .lte('created_at', endOfDay(dateRange.to).toISOString());
-      
+
       if (selectedBranchId !== 'all') queryCurr = queryCurr.eq('branch_id', selectedBranchId);
-      
+
       let queryPrev = supabase.from('feedbacks').select('id, rating, general_eval_rating, status, feedback_type').eq('business_id', businessId).gte('created_at', startOfDay(prevFrom).toISOString()).lte('created_at', endOfDay(prevTo).toISOString());
       if (selectedBranchId !== 'all') queryPrev = queryPrev.eq('branch_id', selectedBranchId);
 
@@ -428,7 +456,7 @@ const DetailedAnalytics = () => {
       const [resCurr, resPrev, resQrTraffic, resWebTraffic] = await Promise.all([queryCurr, queryPrev, qrTrafficQuery, webTrafficQuery]);
 
       if (resCurr.error) throw resCurr.error;
-      
+
       const currData = resCurr.data || [];
       setFeedbacks(currData);
       setPrevFeedbacks(resPrev.data || []);
@@ -436,18 +464,18 @@ const DetailedAnalytics = () => {
       const qrCount = resQrTraffic.count || 0;
       const webCount = resWebTraffic.count || 0;
       const googleRedirects = currData.filter(f => f.redirected_to_google).length;
-      
+
       const totalVisits = qrCount + webCount;
       const actionCount = currData.length;
 
-      setTrafficStats({ 
+      setTrafficStats({
         visits: totalVisits, qrCount, webCount, googleRedirects,
-        conversionRate: totalVisits > 0 ? ((actionCount / totalVisits) * 100).toFixed(1) : 0 
+        conversionRate: totalVisits > 0 ? ((actionCount / totalVisits) * 100).toFixed(1) : 0
       });
 
     } catch (err) {
       console.error(err);
-      toast({ variant: "destructive", title: "Hata", description: "Veriler alınamadı." });
+      toast({ variant: "destructive", title: "Bağlantı Hatası", description: "Verileriniz yüklenirken bir sorun oluştu. Lütfen sayfayı yenileyin veya birkaç dakika sonra tekrar deneyin." });
     } finally {
       setLoading(false);
     }
@@ -455,15 +483,15 @@ const DetailedAnalytics = () => {
 
   // 🟢 REALTIME (Anlık Güncelleme)
   useEffect(() => {
-    fetchData(); 
+    fetchData();
     if (!businessId) return;
 
     const channel = supabase.channel('analytics-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks', filter: `business_id=eq.${businessId}` }, () => {
-         fetchData();
+        fetchData();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'qr_scans', filter: `business_id=eq.${businessId}` }, () => {
-         fetchData();
+        fetchData();
       })
       .subscribe();
 
@@ -544,34 +572,34 @@ const DetailedAnalytics = () => {
   const leaderboardData = useMemo(() => {
     if (selectedBranchId !== 'all') return null;
     const map = {};
-    
+
     feedbacks.forEach(f => {
       const bName = f.branches?.branch_name_tr || 'Bilinmiyor';
-      if (!map[bName]) map[bName] = { 
-        name: bName, 
-        total: 0, 
-        resolved: 0, 
+      if (!map[bName]) map[bName] = {
+        name: bName,
+        total: 0,
+        resolved: 0,
         complaints: 0,
-        scoreSum: 0, 
-        scoreCount: 0, 
+        scoreSum: 0,
+        scoreCount: 0,
         googleClicks: 0,
         happy: 0, neutral: 0, risky: 0,
         ratingSum: 0, ratingCount: 0,
         generalSum: 0, generalCount: 0
       };
-      
+
       const item = map[bName];
       item.total += 1;
       if (f.redirected_to_google) item.googleClicks += 1;
       if (f.feedback_type === 'complaint') item.complaints += 1;
       if (f.status === 'resolved' && f.feedback_type === 'complaint') item.resolved += 1;
-      
+
       const s = getWeightedScore(f.rating, f.general_eval_rating);
       if (s > 0 || f.rating || f.general_eval_rating) {
         item.scoreSum += s; item.scoreCount += 1;
         const rawScore = f.general_eval_rating || f.rating;
-        if(rawScore >= 4) item.happy += 1;
-        else if(rawScore === 3) item.neutral += 1;
+        if (rawScore >= 4) item.happy += 1;
+        else if (rawScore === 3) item.neutral += 1;
         else item.risky += 1;
 
         if (f.rating) { item.ratingSum += (f.rating - 1) * 25; item.ratingCount += 1; }
@@ -587,7 +615,7 @@ const DetailedAnalytics = () => {
       const operationScore = b.complaints > 0 ? (b.resolved / b.complaints) * 100 : 100;
       const trafficScore = (b.total / maxTotal) * 100;
       const vocalizeScore = (qualityScore * 0.4) + (operationScore * 0.3) + (trafficScore * 0.3);
-      
+
       const base = b.scoreCount || 1;
       const happyRate = ((b.happy / base) * 100).toFixed(0);
       const neutralRate = ((b.neutral / base) * 100).toFixed(0);
@@ -596,8 +624,8 @@ const DetailedAnalytics = () => {
       const instantExperience = b.ratingCount > 0 ? (b.ratingSum / b.ratingCount).toFixed(0) : qualityScore.toFixed(0);
       const brandPerception = b.generalCount > 0 ? (b.generalSum / b.generalCount).toFixed(0) : qualityScore.toFixed(0);
 
-      return { 
-        ...b, 
+      return {
+        ...b,
         qualityScore: qualityScore.toFixed(0),
         operationScore: operationScore.toFixed(0),
         trafficScore: trafficScore.toFixed(0),
@@ -607,6 +635,27 @@ const DetailedAnalytics = () => {
       };
     }).sort((a, b) => b.vocalizeScore - a.vocalizeScore);
   }, [feedbacks, selectedBranchId]);
+
+  // 🟢 FİLTRELENMİŞ LİDERLİK TABLOSU (Arama özelliği)
+  const filteredLeaderboard = useMemo(() => {
+    if (!leaderboardData) return [];
+    if (!leaderboardSearch.trim()) return leaderboardData;
+    const query = leaderboardSearch.toLowerCase().trim();
+    return leaderboardData.filter(b => b.name.toLowerCase().includes(query));
+  }, [leaderboardData, leaderboardSearch]);
+
+  // 🟢 SAYFALANMIŞ LİDERLİK TABLOSU (Enterprise performans)
+  const paginatedLeaderboard = useMemo(() => {
+    const startIndex = (leaderboardPage - 1) * leaderboardItemsPerPage;
+    return filteredLeaderboard.slice(startIndex, startIndex + leaderboardItemsPerPage);
+  }, [filteredLeaderboard, leaderboardPage, leaderboardItemsPerPage]);
+
+  const leaderboardTotalPages = Math.ceil(filteredLeaderboard.length / leaderboardItemsPerPage);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setLeaderboardPage(1);
+  }, [leaderboardSearch]);
 
   // Tek şube / tek satır durumunda akıllı analiz için özet nesne
   const singleBranchSummary = useMemo(() => {
@@ -677,7 +726,7 @@ const DetailedAnalytics = () => {
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 pb-32 pt-24 lg:pt-0 font-sans selection:bg-sky-500/30">
       <div className="mx-auto max-w-7xl px-4 pt-8 lg:px-8">
-        
+
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
           <div>
@@ -706,235 +755,247 @@ const DetailedAnalytics = () => {
           <div className="py-32 flex flex-col items-center justify-center text-slate-500 gap-4"><div className="w-12 h-12 border-4 border-slate-800 border-t-sky-500 rounded-full animate-spin"></div><p className="text-sm font-medium animate-pulse">Analizler hazırlanıyor...</p></div>
         ) : (
           <div className="space-y-8">
-            
+
             {/* GRAFİKLER BÖLÜMÜ */}
             <div className="space-y-8">
-                
-                {/* 1. Trend & Marka Algısı */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Sol: Trend Grafiği */}
-                  <div className="lg:col-span-2 bg-slate-900/50 border border-slate-800 rounded-2xl p-6 shadow-lg">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                      <h3 className="text-white font-bold text-lg flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-sky-400" />
-                        Bildirim Trendi
-                      </h3>
-                      <div className="flex bg-[#0f172a] p-1 rounded-lg border border-slate-800 shrink-0">
-                        <button onClick={() => setTrendViewMode('total')} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${trendViewMode === 'total' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Genel</button>
-                        <button onClick={() => setTrendViewMode('breakdown')} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${trendViewMode === 'breakdown' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Detaylı</button>
-                      </div>
-                    </div>
-                    <div className="h-72 w-full min-h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        {trendViewMode === 'total' ? (
-                          <AreaChart data={trendData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                            <defs><linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.4} /><stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} /></linearGradient></defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.4} />
-                            <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} dy={10} minTickGap={30} />
-                            <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Area type="monotone" dataKey="total" name="Bildirim" stroke={COLORS.primary} strokeWidth={3} fill="url(#colorTrend)" />
-                          </AreaChart>
-                        ) : (
-                          <BarChart data={trendData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.4} />
-                            <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} dy={10} minTickGap={30} />
-                            <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" iconSize={8} formatter={(value) => <span className="mr-4">{value}</span>} />
-                            <Bar dataKey="complaint" name="Şikayet" stackId="a" fill={COLORS.danger} barSize={20} />
-                            <Bar dataKey="suggestion" name="Öneri" stackId="a" fill={COLORS.primary} barSize={20} />
-                            <Bar dataKey="evaluation" name="Değerlendirme" stackId="a" fill={COLORS.warning} radius={[4, 4, 0, 0]} barSize={20} />
-                          </BarChart>
-                        )}
-                      </ResponsiveContainer>
+
+              {/* 1. Trend & Marka Algısı */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Sol: Trend Grafiği */}
+                <div className="lg:col-span-2 bg-slate-900/50 border border-slate-800 rounded-2xl p-6 shadow-lg">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-sky-400" />
+                      Bildirim Trendi
+                    </h3>
+                    <div className="flex bg-[#0f172a] p-1 rounded-lg border border-slate-800 shrink-0">
+                      <button onClick={() => setTrendViewMode('total')} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${trendViewMode === 'total' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Genel</button>
+                      <button onClick={() => setTrendViewMode('breakdown')} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${trendViewMode === 'breakdown' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Detaylı</button>
                     </div>
                   </div>
-
-                  {/* Sağ: Marka vs Deneyim (RESTORE EDİLDİ) */}
-                  <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-white font-bold text-lg flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-yellow-400" />
-                        Marka vs Deneyim
-                      </h3>
-                      <p className="text-slate-400 text-xs mt-1 mb-8">
-                        Müşterinin aklındaki "Marka" ile o an yaşadığı "Hizmet" arasındaki fark.
-                      </p>
-                      
-                      <div className="space-y-6">
-                        {/* Genel Algı */}
-                        <div>
-                          <div className="flex justify-between text-sm mb-2">
-                            <span className="text-slate-300">Genel Algı (Marka)</span>
-                            <span className="text-white font-bold">{loyaltyComparison.general}%</span>
-                          </div>
-                          <div className="detail-analytics-bar-wrap h-4 bg-slate-900 rounded-full border border-slate-700/50">
-                            <div className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full" style={{ width: `${loyaltyComparison.general}%` }}></div>
-                          </div>
-                        </div>
-
-                        {/* Anlık Deneyim */}
-                        <div>
-                          <div className="flex justify-between text-sm mb-2">
-                            <span className="text-slate-300">Anlık Deneyim (Hizmet)</span>
-                            <span className="text-white font-bold">{loyaltyComparison.instant}%</span>
-                          </div>
-                          <div className="detail-analytics-bar-wrap h-4 bg-slate-900 rounded-full border border-slate-700/50">
-                            <div className="h-full bg-gradient-to-r from-sky-500 to-blue-500 rounded-full" style={{ width: `${loyaltyComparison.instant}%` }}></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                      <p className="text-xs text-slate-400 text-center leading-relaxed">
-                        {Number(loyaltyComparison.general) > Number(loyaltyComparison.instant) 
-                          ? "⚠️ Dikkat: Marka beklentisi yüksek, ancak son hizmet deneyimleri bu beklentinin altında kalıyor." 
-                          : "✅ Harika: Sunduğunuz hizmet, müşterinin marka beklentisinin üzerine çıkıyor."}
-                      </p>
-                    </div>
+                  <div className="h-72 w-full min-h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      {trendViewMode === 'total' ? (
+                        <AreaChart data={trendData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                          <defs><linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.4} /><stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} /></linearGradient></defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.4} />
+                          <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} dy={10} minTickGap={30} />
+                          <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Area type="monotone" dataKey="total" name="Bildirim" stroke={COLORS.primary} strokeWidth={3} fill="url(#colorTrend)" />
+                        </AreaChart>
+                      ) : (
+                        <BarChart data={trendData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.4} />
+                          <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} dy={10} minTickGap={30} />
+                          <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" iconSize={8} formatter={(value) => <span className="mr-4">{value}</span>} />
+                          <Bar dataKey="complaint" name="Şikayet" stackId="a" fill={COLORS.danger} barSize={20} />
+                          <Bar dataKey="suggestion" name="Öneri" stackId="a" fill={COLORS.primary} barSize={20} />
+                          <Bar dataKey="evaluation" name="Değerlendirme" stackId="a" fill={COLORS.warning} radius={[4, 4, 0, 0]} barSize={20} />
+                        </BarChart>
+                      )}
+                    </ResponsiveContainer>
                   </div>
                 </div>
 
-                {/* 2. Trafik & Duygu */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  
-                  {/* TRAFİK VE DÖNÜŞÜM KARTI (GRID TASARIM) */}
-                  <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 relative flex flex-col">
-                    <div className="flex items-center gap-2 mb-6">
-                      <Filter className="w-5 h-5 text-purple-400" />
-                      <div>
-                          <h3 className="text-white font-bold text-lg">Trafik & Dönüşüm Hunisi</h3>
-                          <p className="text-slate-400 text-xs">Müşterilerin form doldurma ve Google'a geçiş yolculuğu.</p>
-                      </div>
-                    </div>
+                {/* Sağ: Marka vs Deneyim (RESTORE EDİLDİ) */}
+                <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-yellow-400" />
+                      Marka vs Deneyim
+                    </h3>
+                    <p className="text-slate-400 text-xs mt-1 mb-8">
+                      Müşterinin aklındaki "Marka" ile o an yaşadığı "Hizmet" arasındaki fark.
+                    </p>
 
-                    <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
-                      {/* Pasta Grafik */}
-                      <div className="relative w-52 h-52 shrink-0 flex items-center justify-center mx-auto md:mx-0">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart className="detail-analytics-pie">
-                                <Pie
-                                  data={sourceData}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={60}
-                                  outerRadius={80}
-                                  paddingAngle={5}
-                                  dataKey="value"
-                                  stroke="rgba(255,255,255,0.15)"
-                                  strokeWidth={1.5}
-                                >
-                                  {sourceData.map((entry, index) => (
-                                    <Cell
-                                      key={`cell-${index}`}
-                                      fill={entry.color}
-                                      stroke="rgba(0,0,0,0.06)"
-                                      strokeWidth={1}
-                                    />
-                                  ))}
-                                </Pie>
-                                <Tooltip
-                                  formatter={(value, name) => [
-                                    value,
-                                    name === 'QR Kod' ? 'QR Kod' : 'Web/Link'
-                                  ]}
-                                />
-                            </PieChart>
-                          </ResponsiveContainer>
-                          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span className="text-lg font-bold text-white">{formatNumber(trafficStats.visits)}</span>
-                            <span className="text-[9px] text-slate-500 uppercase">Ziyaret</span>
-                          </div>
-                      </div>
-
-                      {/* Sağ Taraf: Grid Kartlar */}
-                      <div className="flex-1 grid grid-cols-2 gap-3 content-start">
-                         {/* QR */}
-                         <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800 flex flex-col items-center text-center justify-center">
-                            <QrCode className="w-5 h-5 text-green-500 mb-1" />
-                            <span className="text-lg font-bold text-white leading-none">{trafficStats.qrCount}</span>
-                            <span className="text-[10px] text-slate-500 mt-1">QR Okutma</span>
-                         </div>
-                         {/* Link */}
-                         <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800 flex flex-col items-center text-center justify-center">
-                            <LinkIcon className="w-5 h-5 text-sky-500 mb-1" />
-                            <span className="text-lg font-bold text-white leading-none">{trafficStats.webCount}</span>
-                            <span className="text-[10px] text-slate-500 mt-1">Web Link</span>
-                         </div>
-                         {/* Form Dönüşüm */}
-                         <div className="bg-purple-500/10 p-3 rounded-lg border border-purple-500/20 flex flex-col items-center text-center justify-center group relative cursor-help">
-                            <div className="absolute top-2 right-2"><InfoTooltip text="Sayfayı ziyaret eden her 100 kişiden kaçı formu tamamladı?" /></div>
-                            <Activity className="w-5 h-5 text-purple-400 mb-1" />
-                            <span className="text-lg font-bold text-white leading-none">%{trafficStats.conversionRate}</span>
-                            <div className="flex items-center gap-1 mt-1">
-                                <span className="text-[10px] text-purple-300">Form Dönüşüm</span>
-                            </div>
-                         </div>
-                         {/* Google Geçiş (Vurgulu) */}
-                         <div className="bg-red-500/10 p-3 rounded-lg border border-red-500/20 flex flex-col items-center text-center justify-center cursor-help relative">
-                            <div className="absolute top-2 right-2"><InfoTooltip text="Formu doldurduktan sonra Google Maps yorum sayfasına yönlenen müşteri sayısı." /></div>
-                            <MapPin className="w-5 h-5 text-red-400 mb-1" />
-                            <span className="text-lg font-bold text-white leading-none">{trafficStats.googleRedirects}</span>
-                            <div className="flex items-center gap-1 mt-1">
-                                <span className="text-[10px] text-red-300">Haritalara Geçiş</span>
-                            </div>
-                         </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* DUYGU ANALİZİ */}
-                  <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
-                    <div className="flex items-center gap-2 mb-6"><TrendingUp className="w-5 h-5 text-yellow-400" /><div><h3 className="text-white font-bold text-lg">Genel Memnuniyet</h3><p className="text-slate-400 text-xs">Müşteri geri bildirim tonu dağılımı.</p></div></div>
                     <div className="space-y-6">
-                      {sentimentData.map((item, idx) => (
-                        <div key={idx}>
-                          <div className="flex justify-between items-end mb-2"><span className="text-sm font-medium text-slate-300">{item.label}</span><div className="text-right leading-none"><span className="text-lg font-bold text-white">{item.percent}%</span><span className="text-xs text-slate-500 ml-1">({item.count})</span></div></div>
-                          <div className="detail-analytics-bar-wrap h-2.5 w-full bg-slate-800 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-1000" style={{ width: `${item.percent}%`, backgroundColor: item.color }}></div></div>
+                      {/* Genel Algı */}
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-slate-300">Genel Algı (Marka)</span>
+                          <span className="text-white font-bold">{loyaltyComparison.general}%</span>
                         </div>
-                      ))}
+                        <div className="detail-analytics-bar-wrap h-4 bg-slate-900 rounded-full border border-slate-700/50">
+                          <div className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full" style={{ width: `${loyaltyComparison.general}%` }}></div>
+                        </div>
+                      </div>
+
+                      {/* Anlık Deneyim */}
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-slate-300">Anlık Deneyim (Hizmet)</span>
+                          <span className="text-white font-bold">{loyaltyComparison.instant}%</span>
+                        </div>
+                        <div className="detail-analytics-bar-wrap h-4 bg-slate-900 rounded-full border border-slate-700/50">
+                          <div className="h-full bg-gradient-to-r from-sky-500 to-blue-500 rounded-full" style={{ width: `${loyaltyComparison.instant}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                    <p className="text-xs text-slate-400 text-center leading-relaxed">
+                      {Number(loyaltyComparison.general) > Number(loyaltyComparison.instant)
+                        ? "⚠️ Dikkat: Marka beklentisi yüksek, ancak son hizmet deneyimleri bu beklentinin altında kalıyor."
+                        : "✅ Harika: Sunduğunuz hizmet, müşterinin marka beklentisinin üzerine çıkıyor."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Trafik & Duygu */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                {/* TRAFİK VE DÖNÜŞÜM KARTI (GRID TASARIM) */}
+                <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 relative flex flex-col">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Filter className="w-5 h-5 text-purple-400" />
+                    <div>
+                      <h3 className="text-white font-bold text-lg">Trafik & Dönüşüm Hunisi</h3>
+                      <p className="text-slate-400 text-xs">Müşterilerin form doldurma ve Google'a geçiş yolculuğu.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+                    {/* Pasta Grafik */}
+                    <div className="relative w-52 h-52 shrink-0 flex items-center justify-center mx-auto md:mx-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart className="detail-analytics-pie">
+                          <Pie
+                            data={sourceData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                            stroke="rgba(255,255,255,0.15)"
+                            strokeWidth={1.5}
+                          >
+                            {sourceData.map((entry, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={entry.color}
+                                stroke="rgba(0,0,0,0.06)"
+                                strokeWidth={1}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value, name) => [
+                              value,
+                              name === 'QR Kod' ? 'QR Kod' : 'Web/Link'
+                            ]}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span className="text-lg font-bold text-white">{formatNumber(trafficStats.visits)}</span>
+                        <span className="text-[9px] text-slate-500 uppercase">Ziyaret</span>
+                      </div>
+                    </div>
+
+                    {/* Sağ Taraf: Grid Kartlar */}
+                    <div className="flex-1 grid grid-cols-2 gap-3 content-start">
+                      {/* QR */}
+                      <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800 flex flex-col items-center text-center justify-center">
+                        <QrCode className="w-5 h-5 text-green-500 mb-1" />
+                        <span className="text-lg font-bold text-white leading-none">{trafficStats.qrCount}</span>
+                        <span className="text-[10px] text-slate-500 mt-1">QR Okutma</span>
+                      </div>
+                      {/* Link */}
+                      <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800 flex flex-col items-center text-center justify-center">
+                        <LinkIcon className="w-5 h-5 text-sky-500 mb-1" />
+                        <span className="text-lg font-bold text-white leading-none">{trafficStats.webCount}</span>
+                        <span className="text-[10px] text-slate-500 mt-1">Web Link</span>
+                      </div>
+                      {/* Form Dönüşüm */}
+                      <div className="bg-purple-500/10 p-3 rounded-lg border border-purple-500/20 flex flex-col items-center text-center justify-center group relative cursor-help">
+                        <div className="absolute top-2 right-2"><InfoTooltip text="Sayfayı ziyaret eden her 100 kişiden kaçı formu tamamladı?" /></div>
+                        <Activity className="w-5 h-5 text-purple-400 mb-1" />
+                        <span className="text-lg font-bold text-white leading-none">%{trafficStats.conversionRate}</span>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-[10px] text-purple-300">Form Dönüşüm</span>
+                        </div>
+                      </div>
+                      {/* Google Geçiş (Vurgulu) */}
+                      <div className="bg-red-500/10 p-3 rounded-lg border border-red-500/20 flex flex-col items-center text-center justify-center cursor-help relative">
+                        <div className="absolute top-2 right-2"><InfoTooltip text="Formu doldurduktan sonra Google Maps yorum sayfasına yönlenen müşteri sayısı." /></div>
+                        <MapPin className="w-5 h-5 text-red-400 mb-1" />
+                        <span className="text-lg font-bold text-white leading-none">{trafficStats.googleRedirects}</span>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-[10px] text-red-300">Haritalara Geçiş</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* DUYGU ANALİZİ */}
+                <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
+                  <div className="flex items-center gap-2 mb-6"><TrendingUp className="w-5 h-5 text-yellow-400" /><div><h3 className="text-white font-bold text-lg">Genel Memnuniyet</h3><p className="text-slate-400 text-xs">Müşteri geri bildirim tonu dağılımı.</p></div></div>
+                  <div className="space-y-6">
+                    {sentimentData.map((item, idx) => (
+                      <div key={idx}>
+                        <div className="flex justify-between items-end mb-2"><span className="text-sm font-medium text-slate-300">{item.label}</span><div className="text-right leading-none"><span className="text-lg font-bold text-white">{item.percent}%</span><span className="text-xs text-slate-500 ml-1">({item.count})</span></div></div>
+                        <div className="detail-analytics-bar-wrap h-2.5 w-full bg-slate-800 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-1000" style={{ width: `${item.percent}%`, backgroundColor: item.color }}></div></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* 🏆 ŞUBE LİDERLİK TABLOSU (GÜNCELLENMİŞ LEJANT İLE) */}
+            {/* 🏆 ŞUBE LİDERLİK TABLOSU (SAYFALAMALI & ARAMALI) */}
             {selectedBranchId === 'all' && leaderboardData && leaderboardData.length > 1 && (
               <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 relative overflow-visible z-0 mb-8 shadow-lg">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
-                   <div className="flex items-center gap-2">
-                      <Trophy className="w-6 h-6 text-amber-400" />
-                      <div>
-                        <h3 className="text-white font-bold text-lg">Şube Performans Ligi</h3>
-                        <p className="text-slate-400 text-xs">Şubelerinizin detaylı karşılaştırması.</p>
-                      </div>
-                   </div>
-                   
-                   {/* 🟢 YENİLENMİŞ AĞIRLIK LEJANTI (VERİ GİBİ DURMUYOR) */}
-                   <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-slate-900/50 p-2 rounded-lg border border-slate-800/50">
-                      <span className="text-[10px] uppercase font-bold text-slate-500 ml-1 flex items-center gap-1"><Scale className="w-3 h-3" /> Hesaplama Ağırlığı:</span>
-                      <div className="flex flex-wrap gap-3">
-                        <div className="flex items-center gap-1.5 cursor-help group">
-                           <div className="w-2 h-2 rounded-full bg-green-500 group-hover:scale-110 transition-transform"></div>
-                           <span className="text-[10px] text-slate-400 font-medium group-hover:text-white transition-colors">Kalite %40</span>
-                           <InfoTooltip text="Müşterilerin verdiği yıldız ve puanların ortalaması." />
-                        </div>
-                        <div className="flex items-center gap-1.5 cursor-help group">
-                           <div className="w-2 h-2 rounded-full bg-blue-500 group-hover:scale-110 transition-transform"></div>
-                           <span className="text-[10px] text-slate-400 font-medium group-hover:text-white transition-colors">Operasyon %30</span>
-                           <InfoTooltip text="Şikayetlerin çözüme kavuşturulma hızı ve oranı." />
-                        </div>
-                        <div className="flex items-center gap-1.5 cursor-help group">
-                           <div className="w-2 h-2 rounded-full bg-purple-500 group-hover:scale-110 transition-transform"></div>
-                           <span className="text-[10px] text-slate-400 font-medium group-hover:text-white transition-colors">Veri Payı %30</span>
-                           <InfoTooltip text="Bu şubenin, toplam geri bildirim havuzundaki payı. (Diğer şubelere kıyasla ne kadar veri ürettiği)." />
-                        </div>
-                      </div>
-                   </div>
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-6 h-6 text-amber-400" />
+                    <div>
+                      <h3 className="text-white font-bold text-lg">Şube Performans Ligi</h3>
+                      <p className="text-slate-400 text-xs">Şubelerinizin detaylı karşılaştırması. ({leaderboardData.length} şube)</p>
+                    </div>
+                  </div>
+
+                  {/* 🔍 ARAMA KUTUSU */}
+                  <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type="text"
+                      placeholder="Şube ara..."
+                      value={leaderboardSearch}
+                      onChange={(e) => setLeaderboardSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-colors"
+                    />
+                  </div>
                 </div>
-                
+
+                {/* AĞIRLIK LEJANTI */}
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-slate-900/50 p-2 rounded-lg border border-slate-800/50 mb-4">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 ml-1 flex items-center gap-1"><Scale className="w-3 h-3" /> Hesaplama Ağırlığı:</span>
+                  <div className="flex flex-wrap gap-3">
+                    <div className="flex items-center gap-1.5 cursor-help group">
+                      <div className="w-2 h-2 rounded-full bg-green-500 group-hover:scale-110 transition-transform"></div>
+                      <span className="text-[10px] text-slate-400 font-medium group-hover:text-white transition-colors">Kalite %40</span>
+                      <InfoTooltip text="Müşterilerin verdiği yıldız ve puanların ortalaması." />
+                    </div>
+                    <div className="flex items-center gap-1.5 cursor-help group">
+                      <div className="w-2 h-2 rounded-full bg-blue-500 group-hover:scale-110 transition-transform"></div>
+                      <span className="text-[10px] text-slate-400 font-medium group-hover:text-white transition-colors">Operasyon %30</span>
+                      <InfoTooltip text="Şikayetlerin çözüme kavuşturulma hızı ve oranı." />
+                    </div>
+                    <div className="flex items-center gap-1.5 cursor-help group">
+                      <div className="w-2 h-2 rounded-full bg-purple-500 group-hover:scale-110 transition-transform"></div>
+                      <span className="text-[10px] text-slate-400 font-medium group-hover:text-white transition-colors">Veri Payı %30</span>
+                      <InfoTooltip text="Bu şubenin, toplam geri bildirim havuzundaki payı. (Diğer şubelere kıyasla ne kadar veri ürettiği)." />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="overflow-x-auto pb-4 relative z-0">
                   <table className="branch-league-table w-full min-w-[800px] text-left text-sm text-slate-400 border-collapse">
                     <thead className="bg-[#0f172a] text-xs uppercase font-bold text-slate-500 tracking-wider">
@@ -942,69 +1003,105 @@ const DetailedAnalytics = () => {
                         <th className="px-6 py-4 rounded-l-lg border-r border-slate-800/50">Sıra</th>
                         <th className="px-6 py-4 border-r border-slate-800/50">Şube Adı</th>
                         <th className="px-6 py-4 border-r border-slate-800/50 text-center">
-                           <div className="flex items-center justify-center gap-1">Toplam <MessageSquare className="w-3 h-3 text-slate-500" /></div>
+                          <div className="flex items-center justify-center gap-1">Toplam <MessageSquare className="w-3 h-3 text-slate-500" /></div>
                         </th>
                         <th className="px-6 py-4 text-center border-r border-slate-800/50 bg-slate-900/50 text-sky-400 cursor-help">
-                           <div className="flex items-center justify-center gap-1">🏆 Lig Puanı <InfoTooltip text="Kalite, Operasyon ve Veri Payı puanlarının ağırlıklı ortalaması." /></div>
+                          <div className="flex items-center justify-center gap-1">🏆 Lig Puanı <InfoTooltip text="Kalite, Operasyon ve Veri Payı puanlarının ağırlıklı ortalaması." /></div>
                         </th>
                         <th className="px-6 py-4 text-center border-r border-slate-800/50 cursor-help">
-                           <div className="flex items-center justify-center gap-1">⭐ Kalite <InfoTooltip text="Yıldız puan ortalaması." /></div>
+                          <div className="flex items-center justify-center gap-1">⭐ Kalite <InfoTooltip text="Yıldız puan ortalaması." /></div>
                         </th>
                         <th className="px-6 py-4 text-center border-r border-slate-800/50 cursor-help">
-                           <div className="flex items-center justify-center gap-1">⚡ Çözüm <InfoTooltip text="Şikayet çözüm oranı." /></div>
+                          <div className="flex items-center justify-center gap-1">⚡ Çözüm <InfoTooltip text="Şikayet çözüm oranı." /></div>
                         </th>
                         <th className="px-6 py-4 text-center rounded-r-lg cursor-help">
-                           <div className="flex items-center justify-center gap-1">🗺️ Harita <InfoTooltip text="Mutlu ayrılıp Google'a gidenler." /></div>
+                          <div className="flex items-center justify-center gap-1">🗺️ Harita <InfoTooltip text="Mutlu ayrılıp Google'a gidenler." /></div>
                         </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
-                      {leaderboardData.map((branch, i) => {
-                        const isFirst = i === 0;
+                      {paginatedLeaderboard.map((branch, i) => {
+                        // Gerçek sıra numarasını hesapla (sayfalama ile)
+                        const actualRank = filteredLeaderboard.indexOf(branch) + 1;
+                        const isFirst = actualRank === 1 && !leaderboardSearch;
                         return (
-                          <tr 
-                            key={i} 
+                          <tr
+                            key={branch.name}
                             onClick={() => setSelectedModalBranch(branch)}
                             className={`cursor-pointer transition-all duration-200 group ${isFirst ? 'bg-amber-500/5 hover:bg-amber-500/10' : 'hover:bg-slate-800/60'}`}
                           >
                             <td className="px-6 py-4 border-r border-slate-800/50 font-bold text-white relative">
-                                {isFirst ? <span className="text-2xl drop-shadow-lg">🥇</span> : <span className="text-slate-500">#{i + 1}</span>}
+                              {isFirst ? <span className="text-2xl drop-shadow-lg">🥇</span> : <span className="text-slate-500">#{actualRank}</span>}
                             </td>
                             <td className="px-6 py-4 font-medium text-white group-hover:text-sky-400 transition-colors border-r border-slate-800/50 flex items-center gap-2">
-                                {branch.name}
-                                <span className="opacity-0 group-hover:opacity-100 text-[10px] bg-slate-800 px-2 py-0.5 rounded text-sky-400 transition-opacity">İncele</span>
+                              {branch.name}
+                              <span className="opacity-0 group-hover:opacity-100 text-[10px] bg-slate-800 px-2 py-0.5 rounded text-sky-400 transition-opacity">İncele</span>
                             </td>
                             <td className="px-6 py-4 border-r border-slate-800/50 text-center font-mono text-slate-300">
-                                {branch.total}
+                              {branch.total}
                             </td>
                             <td className="px-6 py-4 text-center border-r border-slate-800/50 bg-slate-900/30">
-                                <span className={`text-xl font-extrabold px-3 py-1 rounded-lg border ${Number(branch.vocalizeScore) >= 80 ? 'text-amber-400 border-amber-500/30 bg-amber-500/10' : 'text-white border-slate-700 bg-slate-800'}`}>
-                                    {branch.vocalizeScore}
-                                </span>
+                              <span className={`text-xl font-extrabold px-3 py-1 rounded-lg border ${Number(branch.vocalizeScore) >= 80 ? 'text-amber-400 border-amber-500/30 bg-amber-500/10' : 'text-white border-slate-700 bg-slate-800'}`}>
+                                {branch.vocalizeScore}
+                              </span>
                             </td>
                             <td className="px-6 py-4 text-center border-r border-slate-800/50">
-                                <span className="text-slate-300 font-bold">{branch.qualityScore}</span>
+                              <span className="text-slate-300 font-bold">{branch.qualityScore}</span>
                             </td>
                             <td className="px-6 py-4 text-center border-r border-slate-800/50">
-                                <span className={`font-bold ${Number(branch.operationScore) < 50 ? 'text-red-400' : 'text-green-400'}`}>%{branch.operationScore}</span>
+                              <span className={`font-bold ${Number(branch.operationScore) < 50 ? 'text-red-400' : 'text-green-400'}`}>%{branch.operationScore}</span>
                             </td>
                             <td className="px-6 py-4 text-center">
-                                <div className="flex items-center justify-center gap-2">
-                                    <MapPin className="w-4 h-4 text-indigo-400" />
-                                    <span className="text-white font-mono font-bold text-lg">{branch.googleClicks}</span>
-                                </div>
+                              <div className="flex items-center justify-center gap-2">
+                                <MapPin className="w-4 h-4 text-indigo-400" />
+                                <span className="text-white font-mono font-bold text-lg">{branch.googleClicks}</span>
+                              </div>
                             </td>
                           </tr>
                         );
                       })}
                     </tbody>
                   </table>
-                  {leaderboardData.length === 0 && <div className="text-center py-10 text-slate-500">Karşılaştırılacak şube verisi bulunamadı.</div>}
+
+                  {/* Boş sonuç mesajı */}
+                  {filteredLeaderboard.length === 0 && (
+                    <div className="text-center py-10 text-slate-500">
+                      {leaderboardSearch ? `"${leaderboardSearch}" ile eşleşen şube bulunamadı.` : 'Karşılaştırılacak şube verisi bulunamadı.'}
+                    </div>
+                  )}
                 </div>
+
+                {/* 🟢 SAYFALAMA KONTROLLARI */}
+                {leaderboardTotalPages > 1 && (
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+                    <span className="text-xs text-slate-500">
+                      {filteredLeaderboard.length} şubeden {(leaderboardPage - 1) * leaderboardItemsPerPage + 1}-{Math.min(leaderboardPage * leaderboardItemsPerPage, filteredLeaderboard.length)} arası gösteriliyor
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setLeaderboardPage(p => Math.max(1, p - 1))}
+                        disabled={leaderboardPage === 1}
+                        className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm text-slate-300 px-3 py-1 bg-slate-800 rounded-lg border border-slate-700">
+                        {leaderboardPage} / {leaderboardTotalPages}
+                      </span>
+                      <button
+                        onClick={() => setLeaderboardPage(p => Math.min(leaderboardTotalPages, p + 1))}
+                        disabled={leaderboardPage === leaderboardTotalPages}
+                        className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {( (selectedBranchId !== 'all') || (leaderboardData && leaderboardData.length <= 1) ) && singleBranchSummary && (() => {
+            {((selectedBranchId !== 'all') || (leaderboardData && leaderboardData.length <= 1)) && singleBranchSummary && (() => {
               const insight = getSmartInsight(singleBranchSummary);
               const InsightIcon = insight.icon;
               return (
@@ -1042,10 +1139,10 @@ const DetailedAnalytics = () => {
         )}
 
         {/* 🟢 ŞUBE DETAY MODALI (Akıllı Teşhis + Gap Analizi) */}
-        <BranchDetailModal 
-           isOpen={!!selectedModalBranch} 
-           onClose={() => setSelectedModalBranch(null)} 
-           branch={selectedModalBranch}
+        <BranchDetailModal
+          isOpen={!!selectedModalBranch}
+          onClose={() => setSelectedModalBranch(null)}
+          branch={selectedModalBranch}
         />
       </div>
     </div>

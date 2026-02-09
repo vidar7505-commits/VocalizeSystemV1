@@ -11,7 +11,7 @@ export function cn(...inputs) {
 // "Emir", "Gürbüz" -> "Emir G." yapan iç fonksiyon
 function formatNameComponents(first, last) {
   if (!first) return "Misafir";
-  if (!last) return first; 
+  if (!last) return first;
   return `${first} ${last.charAt(0).toUpperCase()}.`;
 }
 
@@ -41,7 +41,7 @@ export function getCustomerNameFromFeedback(feedbackItem) {
   if (!feedbackItem) return "Misafir";
 
   const profile = feedbackItem.customer_profiles || {};
-  
+
   // Supabase join sonuçları bazen array bazen obje gelebilir.
   let userObj = profile.user || profile.users || {};
   if (Array.isArray(userObj)) {
@@ -60,7 +60,7 @@ export function getCustomerNameFromFeedback(feedbackItem) {
     if (uFirst.includes(" ")) return parseAndFormatString(uFirst);
     // Sadece ad var, soyad yok. Profil ismine bakalım eşleşiyor mu?
     if (pName && pName.toLowerCase().startsWith(uFirst.toLowerCase()) && pName.length > uFirst.length) {
-       return parseAndFormatString(pName);
+      return parseAndFormatString(pName);
     }
     return uFirst;
   }
@@ -82,17 +82,41 @@ export function getCustomerData(feedback, field) {
   // Önce Profil tablosuna bak (En güncel veri buradadır)
   const profileData = feedback.customer_profiles?.[field];
   if (profileData) return profileData;
-  
+
   // Profilde yoksa, feedback anındaki veriye bak
   // Mapping: field ismi ile feedback tablosundaki kolon ismi farklı olabilir
-  const feedbackKey = field === 'phone' ? 'customer_phone' : 
-                      field === 'email' ? 'customer_email' : 
-                      field === 'name' ? 'customer_name' : field;
-                      
+  const feedbackKey = field === 'phone' ? 'customer_phone' :
+    field === 'email' ? 'customer_email' :
+      field === 'name' ? 'customer_name' : field;
+
   return feedback?.[feedbackKey] || null;
 }
 
-// 5. DELTA HESAPLAYICI (İstatistikler için artış/azalış)
+// 5. BÜYÜK SAYI FORMATLAYICI (KPI için 9.9K+ formatı)
+// Kullanım: formatCompactNumber(12458) -> { display: "12.5K", full: "12.458" }
+export function formatCompactNumber(num) {
+  if (num === null || num === undefined || isNaN(num)) {
+    return { display: '0', full: '0' };
+  }
+  const absNum = Math.abs(num);
+  const sign = num < 0 ? '-' : '';
+
+  if (absNum >= 10000) {
+    return {
+      display: `${sign}${(absNum / 1000).toFixed(1)}K+`,
+      full: num.toLocaleString('tr-TR')
+    };
+  }
+  if (absNum >= 1000) {
+    return {
+      display: `${sign}${(absNum / 1000).toFixed(1)}K`,
+      full: num.toLocaleString('tr-TR')
+    };
+  }
+  return { display: num.toString(), full: num.toString() };
+}
+
+// 6. DELTA HESAPLAYICI (İstatistikler için artış/azalış)
 export function calculateDelta(current, previous, metricType = 'total') {
   const isRating = metricType === 'rating';
 
@@ -126,6 +150,6 @@ export function calculateDelta(current, previous, metricType = 'total') {
   // Şikayet sayısı arttıysa bu "kötü" (decrease color logic) bir şeydir, 
   // ama burada matematiksel artışı (increase) dönüyoruz. 
   // Rengi component içinde (SparklineCard) yönetiyoruz.
-  
+
   return { val, type };
 }

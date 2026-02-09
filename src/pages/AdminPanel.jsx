@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList, AreaChart, Area } from 'recharts';
 import { subDays, startOfDay, endOfDay, subMonths, startOfMonth } from 'date-fns';
-import { cn, formatCustomerName, getCustomerData, calculateDelta } from "@/lib/utils";
+import { cn, formatCustomerName, getCustomerData, calculateDelta, formatCompactNumber } from "@/lib/utils";
 import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
 
@@ -36,6 +36,11 @@ const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass,
       : "bg-rose-950/30 text-rose-400 border-rose-500/20";
   }
 
+  // 🟢 ENTERPRISE: Büyük sayılar için kompakt format (9.9K+) + Tooltip
+  const numericValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value;
+  const formatted = formatCompactNumber(numericValue || 0);
+  const needsTooltip = formatted.display !== formatted.full;
+
   return (
     <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900 p-5 shadow-sm transition-all hover:border-slate-700 h-[160px] flex flex-col justify-between group">
       <div className="flex justify-between items-start relative z-20">
@@ -44,7 +49,12 @@ const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass,
           {loading ? (
             <div className="h-8 w-24 bg-slate-800 rounded animate-pulse mt-1"></div>
           ) : (
-            <h3 className="text-3xl font-bold text-white mt-1 tracking-tight">{value}</h3>
+            <h3
+              className={`text-3xl font-bold text-white mt-1 tracking-tight ${needsTooltip ? 'cursor-help' : ''}`}
+              title={needsTooltip ? `Tam değer: ${formatted.full}` : undefined}
+            >
+              {formatted.display}
+            </h3>
           )}
         </div>
         <div className={`p-2 rounded-lg ${colorClass} bg-opacity-10 border border-white/5`}>
@@ -439,7 +449,7 @@ const AdminPanel = () => {
 
     } catch (error) {
       console.error("Dashboard data fetch error:", error);
-      toast({ variant: "destructive", title: "Hata", description: "Veriler yüklenemedi." });
+      toast({ variant: "destructive", title: "Bağlantı Hatası", description: "Verileriniz yüklenirken bir sorun oluştu. Lütfen sayfayı yenileyin." });
     } finally {
       setLoading(false);
       setLoadingFeedbacks(false);

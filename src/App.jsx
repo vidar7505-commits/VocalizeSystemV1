@@ -1,78 +1,87 @@
-import React, { useEffect } from 'react'; // useEffect eklendi
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'; // useLocation eklendi
-import LandingPage from '@/pages/LandingPage';
-import CustomerPanel from '@/pages/CustomerPanel';
-import AdminPanel from '@/pages/AdminPanel';
-import FeedbackManagement from '@/pages/FeedbackManagement';
-import DetailedAnalytics from '@/pages/DetailedAnalytics';
-import SettingsPage from '@/pages/SettingsPage';
-import FeedbackForm from '@/pages/FeedbackForm';
-import QRRedirector from '@/pages/QRRedirector';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import React, { useEffect, lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/SupabaseAuthContext';
 import { Toaster } from '@/components/ui/toaster';
-import AdminLayout from '@/layouts/AdminLayout';
-import NotificationHistory from '@/pages/NotificationHistory';
-import CustomerDetail from '@/pages/CustomerDetail';
-import UpdatePassword from '@/pages/UpdatePassword';
+import { Loader2 } from 'lucide-react';
 
-// 👇 YENİ BİLEŞEN: Tema Kontrolcüsü
-// Bu bileşen sayfa her değiştiğinde çalışır ve temayı ayarlar.
+// 🚀 PERFORMANCE: Lazy load all routes to reduce initial bundle size
+const LandingPage = lazy(() => import('@/pages/LandingPage'));
+const CustomerPanel = lazy(() => import('@/pages/CustomerPanel'));
+const AdminPanel = lazy(() => import('@/pages/AdminPanel'));
+const FeedbackManagement = lazy(() => import('@/pages/FeedbackManagement'));
+const DetailedAnalytics = lazy(() => import('@/pages/DetailedAnalytics'));
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
+const FeedbackForm = lazy(() => import('@/pages/FeedbackForm'));
+const QRRedirector = lazy(() => import('@/pages/QRRedirector'));
+const ProtectedRoute = lazy(() => import('@/components/ProtectedRoute'));
+const AdminLayout = lazy(() => import('@/layouts/AdminLayout'));
+const NotificationHistory = lazy(() => import('@/pages/NotificationHistory'));
+const CustomerDetail = lazy(() => import('@/pages/CustomerDetail'));
+const UpdatePassword = lazy(() => import('@/pages/UpdatePassword'));
+
+// Loading Screen Component
+const LoadingScreen = () => (
+  <div className="min-h-screen flex items-center justify-center bg-[#0f172a]">
+    <div className="flex flex-col items-center animate-in fade-in duration-500">
+      <Loader2 className="h-12 w-12 md:h-16 md:w-16 text-teal-500 animate-spin mb-6" />
+      <p className="text-slate-400 text-base md:text-lg font-medium text-center">Yükleniyor...</p>
+    </div>
+  </div>
+);
+
+// Theme Controller
 const ThemeController = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Eğer bulunduğumuz sayfa '/admin-panel' ile başlıyorsa (Yönetici Paneli içindeysek)
     if (location.pathname.startsWith('/admin-panel')) {
-      // Kullanıcının kaydettiği tercihi hatırla ve uygula
       const savedTheme = localStorage.getItem('acta_theme');
       if (savedTheme === 'light') {
         document.body.classList.add('light-theme');
       } else {
         document.body.classList.remove('light-theme');
       }
-    } 
-    // Eğer Yönetici Paneli DIŞINDAYSAK (Landing, Feedback Form, Login vb.)
-    else {
-      // Aydınlık temayı ZORLA KAPAT (Orijinal koyu temaya dön)
+    } else {
       document.body.classList.remove('light-theme');
     }
-  }, [location]); // Her URL değişiminde tetiklenir
+  }, [location]);
 
-  return null; // Görüntülenecek bir şeyi yok, sadece mantık çalıştırır.
+  return null;
 };
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        {/* 👇 ThemeController Router'ın içine eklendi */}
         <ThemeController />
-        
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          
-          <Route path="/scan" element={<QRRedirector />} />
-          
-          <Route path="/feedback" element={<FeedbackForm />} />
 
-          <Route path="/update-password" element={<UpdatePassword />} />
-          
-          <Route element={<ProtectedRoute allowedRole="customer" />}>
-            <Route path="/customer-panel" element={<CustomerPanel />} />
-          </Route>
-          
-          <Route element={<ProtectedRoute allowedRole="manager" />}>
-            <Route path="/admin-panel" element={<AdminLayout />}>
-              <Route index element={<AdminPanel />} />
-              <Route path="feedbacks" element={<FeedbackManagement />} />
-              <Route path="analytics" element={<DetailedAnalytics />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="notifications" element={<NotificationHistory />} />
-              <Route path="customers/:id" element={<CustomerDetail />} />
+        <Suspense fallback={<LoadingScreen />}>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+
+            <Route path="/scan" element={<QRRedirector />} />
+
+            <Route path="/feedback" element={<FeedbackForm />} />
+
+            <Route path="/update-password" element={<UpdatePassword />} />
+
+            <Route element={<ProtectedRoute allowedRole="customer" />}>
+              <Route path="/customer-panel" element={<CustomerPanel />} />
             </Route>
-          </Route>
-        </Routes>
+
+            <Route element={<ProtectedRoute allowedRole="manager" />}>
+              <Route path="/admin-panel" element={<AdminLayout />}>
+                <Route index element={<AdminPanel />} />
+                <Route path="feedbacks" element={<FeedbackManagement />} />
+                <Route path="analytics" element={<DetailedAnalytics />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="notifications" element={<NotificationHistory />} />
+                <Route path="customers/:id" element={<CustomerDetail />} />
+              </Route>
+            </Route>
+          </Routes>
+        </Suspense>
+
         <Toaster />
       </Router>
     </AuthProvider>

@@ -37,9 +37,12 @@ const FeedbackManagement = () => {
   const [showNotesOnly, setShowNotesOnly] = useState(false);
   const [showUrgentOnly, setShowUrgentOnly] = useState(false);
 
-  // Pagination
+  // Server-Side Pagination (Enterprise: 50 items per batch)
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 30;
+  const itemsPerPage = 50;
+  const [hasMoreData, setHasMoreData] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [totalServerCount, setTotalServerCount] = useState(0);
 
   // Modallar
   const [selectedFeedback, setSelectedFeedback] = useState(null);
@@ -190,10 +193,23 @@ const FeedbackManagement = () => {
     };
   }, []);
 
-  const fetchFeedbacks = async () => {
+  const fetchFeedbacks = async (page = 1) => {
     if (!businessId) return;
-    if (feedbacks.length === 0) setLoading(true);
+    setLoading(true);
     try {
+      // 🟢 İlk olarak toplam sayıyı al (sayfalama için)
+      const { count } = await supabase
+        .from('feedbacks')
+        .select('id', { count: 'exact', head: true })
+        .eq('business_id', businessId)
+        .match(selectedBranchId !== 'all' ? { branch_id: selectedBranchId } : {});
+
+      setTotalServerCount(count || 0);
+
+      // 🟢 Server-side pagination: Sayfaya göre range belirle
+      const rangeStart = (page - 1) * itemsPerPage;
+      const rangeEnd = rangeStart + itemsPerPage - 1;
+
       let query = supabase.from('feedbacks').select(`
           *,
           guest_contact_info,
@@ -205,7 +221,8 @@ const FeedbackManagement = () => {
           manager_note_updater:manager_note_updated_by(first_name, last_name)
         `)
         .eq('business_id', businessId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(rangeStart, rangeEnd);
 
       if (selectedBranchId !== 'all') {
         query = query.eq('branch_id', selectedBranchId);
@@ -244,15 +261,80 @@ const FeedbackManagement = () => {
       setFeedbacks(mergedFeedbacks);
     } catch (error) {
       console.error(error);
-      toast({ variant: "destructive", title: "Hata", description: "Veriler yüklenemedi." });
+      toast({ variant: "destructive", title: "Bağlantı Hatası", description: "Verileriniz yüklenirken bir sorun oluştu. Lütfen sayfayı yenileyin." });
     } finally {
       setLoading(false);
     }
   };
 
+  // 🟢 DAHA FAZLA YÜKLE (Infinite Scroll / Load More)
+  const loadMoreFeedbacks = async () => {
+    if (!businessId || isLoadingMore || !hasMoreData) return;
+    setIsLoadingMore(true);
+
+    try {
+      const nextPage = currentPage + 1;
+      const rangeStart = (nextPage - 1) * itemsPerPage;
+      const rangeEnd = rangeStart + itemsPerPage - 1;
+
+      let query = supabase.from('feedbacks').select(`
+          *,
+          guest_contact_info,
+          branches(id, branch_name_tr),
+          customer_profiles(
+            id, name, email, phone,
+            users(first_name, last_name)
+          ),
+          manager_note_updater:manager_note_updated_by(first_name, last_name)
+        `)
+        .eq('business_id', businessId)
+        .order('created_at', { ascending: false })
+        .range(rangeStart, rangeEnd);
+
+      if (selectedBranchId !== 'all') {
+        query = query.eq('branch_id', selectedBranchId);
+      }
+
+      const { data: newFeedbacks, error } = await query;
+      if (error) throw error;
+
+      const { data: bizCustomers } = await supabase
+        .from('business_customers')
+        .select('customer_profile_id, is_vip, is_sensitive, manager_notes')
+        .eq('business_id', businessId);
+
+      const mergedNew = (newFeedbacks || []).map(f => {
+        const bizData = bizCustomers?.find(bc => bc.customer_profile_id === f.customer_profile_id);
+        return {
+          ...f,
+          flag_vip_customer: bizData ? bizData.is_vip : false,
+          flag_sensitive_customer: bizData ? bizData.is_sensitive : false,
+          customer_profiles: {
+            ...(f.customer_profiles || {}),
+            flag_vip_customer: bizData ? bizData.is_vip : false,
+            flag_sensitive_customer: bizData ? bizData.is_sensitive : false,
+            admin_note: bizData ? bizData.manager_notes : '',
+            users: f.customer_profiles?.users
+          }
+        };
+      });
+
+      // Mevcut listeye ekle (scroll pozisyonu korunur)
+      setFeedbacks(prev => [...prev, ...mergedNew]);
+      setCurrentPage(nextPage);
+      setHasMoreData(newFeedbacks.length === itemsPerPage);
+
+    } catch (error) {
+      console.error(error);
+      toast({ variant: "destructive", title: "Hata", description: "Daha fazla veri yüklenemedi." });
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
   const handleRefresh = () => {
     setIsRefreshing(true);
-    fetchFeedbacks().finally(() => setIsRefreshing(false));
+    fetchFeedbacks(currentPage).finally(() => setIsRefreshing(false));
   };
 
   const handleFlagsUpdate = (profileId, newFlags, relatedEmail) => {
@@ -614,27 +696,35 @@ const FeedbackManagement = () => {
                   })}
                 </div>
 
+                {/* 🟢 DAHA FAZLA YÜKLE BUTONU (Server-side pagination) */}
               </div>
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6 pb-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                    className="border-slate-700 hover:bg-slate-800 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
 
-                  <div className="flex items-center gap-1 px-3">
-                    <span className="text-sm text-slate-400 md:hidden">
-                      {currentPage} / {totalPages}
-                    </span>
+              {/* 🟢 SERVER-SIDE STANDARD PAGINATION */}
+              {totalServerCount > itemsPerPage && (
+                <div className="flex flex-col items-center gap-4 mt-8 pb-8">
 
-                    <div className="hidden md:flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  <div className="flex items-center justify-center gap-2">
+                    {/* Önceki Sayfa */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newPage = Math.max(1, currentPage - 1);
+                        setCurrentPage(newPage);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        fetchFeedbacks(newPage);
+                      }}
+                      disabled={currentPage === 1 || loading}
+                      className="border-teal-500/30 text-teal-500 hover:bg-teal-500/10 disabled:opacity-30 h-9 w-9 p-0"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+
+                    {/* Sayfa Numaraları */}
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.ceil(totalServerCount / itemsPerPage) }, (_, i) => i + 1)
                         .filter(page => {
+                          const totalPages = Math.ceil(totalServerCount / itemsPerPage);
                           return (
                             page === 1 ||
                             page === totalPages ||
@@ -651,11 +741,15 @@ const FeedbackManagement = () => {
                               <Button
                                 variant={currentPage === page ? "default" : "ghost"}
                                 size="sm"
-                                onClick={() => setCurrentPage(page)}
+                                onClick={() => {
+                                  setCurrentPage(page);
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  fetchFeedbacks(page);
+                                }}
                                 className={cn(
-                                  "min-w-[32px] h-8",
+                                  "min-w-[36px] h-9 font-bold transition-all",
                                   currentPage === page
-                                    ? "bg-teal-600 hover:bg-teal-700 text-white"
+                                    ? "bg-teal-500 hover:bg-teal-600 text-slate-900 shadow-[0_0_15px_rgba(20,184,166,0.5)]"
                                     : "text-slate-400 hover:text-white hover:bg-slate-800"
                                 )}
                               >
@@ -666,20 +760,28 @@ const FeedbackManagement = () => {
                         })}
                     </div>
 
-                    <span className="text-xs text-slate-500 ml-2">
-                      ({filteredFeedbacks.length} sonuç)
-                    </span>
+                    {/* Sonraki Sayfa */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const totalPages = Math.ceil(totalServerCount / itemsPerPage);
+                        const newPage = Math.min(totalPages, currentPage + 1);
+                        setCurrentPage(newPage);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        fetchFeedbacks(newPage);
+                      }}
+                      disabled={currentPage === Math.ceil(totalServerCount / itemsPerPage) || loading}
+                      className="border-teal-500/30 text-teal-500 hover:bg-teal-500/10 disabled:opacity-30 h-9 w-9 p-0"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                    className="border-slate-700 hover:bg-slate-800 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
+                  {/* Bilgi Metni */}
+                  <div className="text-center text-xs text-slate-500">
+                    Toplam <span className="text-teal-500 font-medium">{totalServerCount}</span> kayıttan <span className="text-slate-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalServerCount)}</span> arası gösteriliyor
+                  </div>
                 </div>
               )}
             </>

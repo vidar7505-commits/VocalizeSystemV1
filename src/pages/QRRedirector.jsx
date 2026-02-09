@@ -14,7 +14,7 @@ const QRRedirector = () => {
   const [error, setError] = useState(null);
   const [debugInfo, setDebugInfo] = useState('');
   const [showDebug, setShowDebug] = useState(false);
-  
+
   const processingRef = useRef(false);
 
   // 🟢 YENİ: iOS'ta güvenli localStorage yazma
@@ -49,33 +49,36 @@ const QRRedirector = () => {
           throw new Error("URL'de QR kodu parametresi bulunamadı.");
         }
 
-        // 1. Şube Bilgisini Çek
-        const { data: branchData, error: branchError } = await supabase
-          .from('branches')
-          .select('id, business_id, branch_name_tr, qr_code')
-          .eq('qr_code', qrCode)
-          .single();
+        // 🚀 OPTIMIZATION 1: Parallel Fetch (Branch + Auth Session)
+        const [branchResult, sessionResult] = await Promise.all([
+          supabase
+            .from('branches')
+            .select('id, business_id, branch_name_tr, qr_code')
+            .eq('qr_code', qrCode)
+            .single(),
+          supabase.auth.getSession()
+        ]);
 
-        if (branchError) throw { step: 'Branch Fetch', ...branchError };
-        if (!branchData) throw { step: 'Branch Data', message: 'Şube bulunamadı' };
+        if (branchResult.error) throw { step: 'Branch Fetch', ...branchResult.error };
+        if (!branchResult.data) throw { step: 'Branch Data', message: 'Şube bulunamadı' };
 
-        const { id: branch_id, business_id, branch_name_tr } = branchData;
+        const { id: branch_id, business_id, branch_name_tr } = branchResult.data;
+        const session = sessionResult.data?.session;
 
-        // 2. Taramayı Supabase'e Logla (Kritik)
-        const logResult = await supabase.from('qr_scans').insert({
+        // 🚀 OPTIMIZATION 2: Fire-and-Forget Analytics Logging (Non-Blocking)
+        supabase.from('qr_scans').insert({
           branch_id,
           business_id,
           qr_code: qrCode,
           user_agent: navigator.userAgent,
           created_at: new Date().toISOString()
-        });
-        
-        if (logResult.error) {
-          console.error("QR Insert Error:", logResult.error);
-        }
+        }).then(
+          () => console.log('✓ QR scan logged'),
+          (err) => console.warn('⚠️ QR scan log failed (non-critical):', err)
+        );
 
-        // 3. 🟢 YENİ: localStorage'a yaz (PARALEL - ana akış bloke edilmez)
-        Promise.allSettled([
+        // 🔒 CRITICAL PATH: Await localStorage writes to prevent race conditions
+        await Promise.all([
           writeToStorageAsync('vocalize_last_business', business_id),
           writeToStorageAsync('vocalize_last_branch', branch_id),
           (async () => {
@@ -91,45 +94,49 @@ const QRRedirector = () => {
               return false;
             }
           })()
-        ]).catch(e => console.warn('Storage operations error:', e));
+        ]);
 
-        // 4. Kullanıcı Oturumunu Kontrol Et
-        const { data: { session } } = await supabase.auth.getSession();
-
+        // 🎯 Route Based on Session
         if (session) {
           const userType = session.user?.user_metadata?.user_type;
-          
+
           if (userType === 'manager') {
+            // 🚀 OPTIMIZATION 4: Removed 800ms artificial delay
             await supabase.auth.signOut({ scope: 'local' });
-            
-            toast({ 
-                title: "Oturum Sonlandırıldı", 
-                description: "Müşteri paneline yönlendirilmek üzere Yönetici hesabınızdan çıkış yapılmıştır.",
-                duration: 4000 
+
+            toast({
+              title: "Oturum Sonlandırıldı",
+              description: "Müşteri paneline yönlendirilmek üzere Yönetici hesabınızdan çıkış yapılmıştır.",
+              duration: 4000
             });
 
-            setTimeout(() => {
-                navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
-            }, 800);
+            // Navigate immediately after sign-out
+            navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
             return;
           }
-          
-          // Müşteri ise
+
+          // Customer user
           const user_id = session.user.id;
-          await supabase.from('customer_qr_scans').upsert({ 
-              user_id, 
-              business_id, 
-              branch_id, 
-              qr_code: qrCode,
-              last_scan_at: new Date().toISOString() 
-          }, { 
-              onConflict: 'user_id, business_id, branch_id, qr_code' 
-          });
-          
+
+          // 🚀 OPTIMIZATION 3: Fire-and-Forget Customer Scan Tracking (Non-Blocking)
+          supabase.from('customer_qr_scans').upsert({
+            user_id,
+            business_id,
+            branch_id,
+            qr_code: qrCode,
+            last_scan_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id, business_id, branch_id, qr_code'
+          }).then(
+            () => console.log('✓ Customer scan tracked'),
+            (err) => console.warn('⚠️ Customer scan tracking failed (non-critical):', err)
+          );
+
+          // Navigate immediately
           navigate(`/customer-panel?business=${business_id}&branch=${branch_id}&from_qr=true`, { replace: true });
 
         } else {
-          // Misafir ise
+          // Guest user - navigate immediately
           navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
         }
 
@@ -165,22 +172,22 @@ const QRRedirector = () => {
           </div>
           <h2 className="text-xl font-bold text-red-500 mb-2">Hata Oluştu</h2>
           <p className="text-slate-400 mb-6 text-sm">{error}</p>
-          
+
           <div className="mb-4">
-            <button 
-                onClick={() => setShowDebug(!showDebug)} 
-                className="flex items-center justify-center gap-1 text-xs text-slate-500 hover:text-slate-300 w-full transition-colors"
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="flex items-center justify-center gap-1 text-xs text-slate-500 hover:text-slate-300 w-full transition-colors"
             >
-                {showDebug ? 'Teknik Detayları Gizle' : 'Teknik Detayları Göster'}
-                {showDebug ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              {showDebug ? 'Teknik Detayları Gizle' : 'Teknik Detayları Göster'}
+              {showDebug ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             </button>
-            
+
             {showDebug && (
-                <div className="bg-black/50 p-3 rounded-lg text-left mt-2 overflow-auto max-h-48 animate-in slide-in-from-top-2">
-                    <p className="text-[10px] text-red-300 font-mono whitespace-pre-wrap break-all">
-                        {debugInfo}
-                    </p>
-                </div>
+              <div className="bg-black/50 p-3 rounded-lg text-left mt-2 overflow-auto max-h-48 animate-in slide-in-from-top-2">
+                <p className="text-[10px] text-red-300 font-mono whitespace-pre-wrap break-all">
+                  {debugInfo}
+                </p>
+              </div>
             )}
           </div>
 
