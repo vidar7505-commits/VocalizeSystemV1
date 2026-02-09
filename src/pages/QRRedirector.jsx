@@ -49,36 +49,33 @@ const QRRedirector = () => {
           throw new Error("URL'de QR kodu parametresi bulunamadı.");
         }
 
-        // 🚀 OPTIMIZATION 1: Parallel Fetch (Branch + Auth Session)
-        const [branchResult, sessionResult] = await Promise.all([
-          supabase
-            .from('branches')
-            .select('id, business_id, branch_name_tr, qr_code')
-            .eq('qr_code', qrCode)
-            .single(),
-          supabase.auth.getSession()
-        ]);
+        // 1. Şube Bilgisini Çek
+        const { data: branchData, error: branchError } = await supabase
+          .from('branches')
+          .select('id, business_id, branch_name_tr, qr_code')
+          .eq('qr_code', qrCode)
+          .single();
 
-        if (branchResult.error) throw { step: 'Branch Fetch', ...branchResult.error };
-        if (!branchResult.data) throw { step: 'Branch Data', message: 'Şube bulunamadı' };
+        if (branchError) throw { step: 'Branch Fetch', ...branchError };
+        if (!branchData) throw { step: 'Branch Data', message: 'Şube bulunamadı' };
 
-        const { id: branch_id, business_id, branch_name_tr } = branchResult.data;
-        const session = sessionResult.data?.session;
+        const { id: branch_id, business_id, branch_name_tr } = branchData;
 
-        // 🚀 OPTIMIZATION 2: Fire-and-Forget Analytics Logging (Non-Blocking)
-        supabase.from('qr_scans').insert({
+        // 2. Taramayı Supabase'e Logla (Kritik)
+        const logResult = await supabase.from('qr_scans').insert({
           branch_id,
           business_id,
           qr_code: qrCode,
           user_agent: navigator.userAgent,
           created_at: new Date().toISOString()
-        }).then(
-          () => console.log('✓ QR scan logged'),
-          (err) => console.warn('⚠️ QR scan log failed (non-critical):', err)
-        );
+        });
 
-        // 🔒 CRITICAL PATH: Await localStorage writes to prevent race conditions
-        await Promise.all([
+        if (logResult.error) {
+          console.error("QR Insert Error:", logResult.error);
+        }
+
+        // 3. 🟢 YENİ: localStorage'a yaz (PARALEL - ana akış bloke edilmez)
+        Promise.allSettled([
           writeToStorageAsync('vocalize_last_business', business_id),
           writeToStorageAsync('vocalize_last_branch', branch_id),
           (async () => {
@@ -94,14 +91,15 @@ const QRRedirector = () => {
               return false;
             }
           })()
-        ]);
+        ]).catch(e => console.warn('Storage operations error:', e));
 
-        // 🎯 Route Based on Session
+        // 4. Kullanıcı Oturumunu Kontrol Et
+        const { data: { session } } = await supabase.auth.getSession();
+
         if (session) {
           const userType = session.user?.user_metadata?.user_type;
 
           if (userType === 'manager') {
-            // 🚀 OPTIMIZATION 4: Removed 800ms artificial delay
             await supabase.auth.signOut({ scope: 'local' });
 
             toast({
@@ -110,16 +108,15 @@ const QRRedirector = () => {
               duration: 4000
             });
 
-            // Navigate immediately after sign-out
-            navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
+            setTimeout(() => {
+              navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
+            }, 800);
             return;
           }
 
-          // Customer user
+          // Müşteri ise
           const user_id = session.user.id;
-
-          // 🚀 OPTIMIZATION 3: Fire-and-Forget Customer Scan Tracking (Non-Blocking)
-          supabase.from('customer_qr_scans').upsert({
+          await supabase.from('customer_qr_scans').upsert({
             user_id,
             business_id,
             branch_id,
@@ -127,16 +124,12 @@ const QRRedirector = () => {
             last_scan_at: new Date().toISOString()
           }, {
             onConflict: 'user_id, business_id, branch_id, qr_code'
-          }).then(
-            () => console.log('✓ Customer scan tracked'),
-            (err) => console.warn('⚠️ Customer scan tracking failed (non-critical):', err)
-          );
+          });
 
-          // Navigate immediately
           navigate(`/customer-panel?business=${business_id}&branch=${branch_id}&from_qr=true`, { replace: true });
 
         } else {
-          // Guest user - navigate immediately
+          // Misafir ise
           navigate(`/?business=${business_id}&branch=${branch_id}&qr=${qrCode}&openAuth=true&authTab=login`, { replace: true });
         }
 
