@@ -20,7 +20,7 @@ import CustomerProfileModal from '@/components/CustomerProfileModal';
 
 // --- HELPER COMPONENTS ---
 
-const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass, sparkData, loading, isInverseMetric = false }) => {
+const SparklineCard = React.memo(({ title, value, delta, deltaType, icon: Icon, colorClass, sparkData, loading, isInverseMetric = false }) => {
   let sentimentColor = "bg-slate-800 text-slate-400 border-slate-700";
   let TrendIcon = Minus;
 
@@ -87,7 +87,7 @@ const SparklineCard = ({ title, value, delta, deltaType, icon: Icon, colorClass,
       </div>
     </div>
   );
-};
+});
 
 const getTypeBadge = (type) => {
   const styles = { complaint: "text-red-400 bg-red-900/20 border-red-900/30", suggestion: "text-blue-400 bg-blue-900/20 border-blue-900/30", evaluation: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", review: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", rating: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30" };
@@ -105,10 +105,13 @@ const hasImages = (f) => {
   return ((f.feedback_images && f.feedback_images.length > 0) || (f.image_urls && f.image_urls.length > 0) || (f.receipt_images && f.receipt_images.length > 0) || f.receipt_url || f.product_image_url);
 };
 
-const ChartTooltip = ({ active, payload, formatter = (v) => [v, 'Adet'] }) => {
+const ChartTooltip = React.memo(({ active, payload, formatter }) => {
   if (!active || !payload?.length) return null;
+
+  const formatFn = formatter || ((v) => [v, 'Adet']);
   const item = payload[0];
-  const [displayValue, suffix] = formatter(item.value);
+  const [displayValue, suffix] = formatFn(item.value);
+
   return (
     <div
       className="chart-tooltip px-3 py-2 rounded-lg shadow-lg border text-sm font-medium"
@@ -121,7 +124,7 @@ const ChartTooltip = ({ active, payload, formatter = (v) => [v, 'Adet'] }) => {
       {suffix}: {displayValue}
     </div>
   );
-};
+});
 
 // --- MAIN COMPONENT ---
 

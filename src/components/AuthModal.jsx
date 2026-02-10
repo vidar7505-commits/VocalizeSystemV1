@@ -326,10 +326,10 @@ export default function AuthModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-[#0f172a] border-slate-700 text-white sm:max-w-md p-0 max-h-[95vh] flex flex-col">
+        <DialogContent className="bg-[#0f172a] border-slate-700 text-white w-[95vw] max-w-md p-0 max-h-[85vh] flex flex-col rounded-xl md:rounded-lg overflow-hidden gap-0">
           <div className="relative flex-shrink-0">
             {/* Header: Mobilde Küçültüldü (h-28), Masaüstünde Normal (h-40) */}
-            <div className="relative h-28 md:h-40 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center overflow-hidden transition-all duration-300">
+            <div className="relative h-24 md:h-40 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center overflow-hidden transition-all duration-300">
               <div className="absolute inset-0 opacity-20">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/20 rounded-full blur-2xl" />
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-teal-500/20 rounded-full blur-2xl" />
@@ -337,196 +337,196 @@ export default function AuthModal({
               <img
                 src={activeRole === 'customer' ? CUSTOMER_LOGO_URL : ADMIN_LOGO_URL}
                 alt="Logo"
-                className="h-16 md:h-20 relative z-10 transition-all duration-300"
+                className="h-14 md:h-20 relative z-10 transition-all duration-300"
                 style={activeRole === 'manager' ? {
                   filter: 'brightness(0) saturate(100%) invert(64%) sepia(88%) saturate(402%) hue-rotate(132deg) brightness(95%) contrast(91%)'
                 } : {}}
               />
             </div>
+          </div>
 
-            {/* Content Container - Scrollable Area */}
-            <div className="flex-1 p-5 md:p-6 space-y-4 overflow-y-auto pb-20 md:pb-6">
-              {viewMode === 'forgot-password' ? (
-                <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('auth')}
-                    className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors mb-2"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Geri Dön
-                  </button>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                    <Input
-                      name="email"
-                      type="email"
-                      placeholder="E-posta Adresi"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="pl-10 h-11 bg-slate-800 border-slate-700 text-white focus-visible:ring-teal-500 transition-all"
-                      required
-                    />
+          {/* Content Container - Scrollable Area */}
+          <div className="flex-1 p-5 md:p-6 space-y-4 overflow-y-auto overscroll-y-contain">
+            {viewMode === 'forgot-password' ? (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('auth')}
+                  className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors mb-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Geri Dön
+                </button>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Input
+                    name="email"
+                    type="email"
+                    placeholder="E-posta Adresi"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="pl-10 h-11 bg-slate-800 border-slate-700 text-white focus-visible:ring-teal-500 transition-all"
+                    required
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-11 bg-teal-600 hover:bg-teal-700 text-white font-bold transition-all"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Gönderiliyor...
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="h-4 w-4 mr-2" />
+                      Sıfırlama Bağlantısı Gönder
+                    </>
+                  )}
+                </Button>
+              </form>
+            ) : (
+              <>
+                <Tabs value={activeRole} onValueChange={setActiveRole} className="w-full mb-4">
+                  <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 p-1">
+                    <TabsTrigger value="customer" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white transition-colors duration-300">Müşteri</TabsTrigger>
+                    <TabsTrigger value="manager" className="data-[state=active]:bg-teal-600 data-[state=active]:text-white transition-colors duration-300">Yönetici</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                <div className="flex bg-slate-800 rounded-lg p-1 gap-1 mb-4">
+                  <button onClick={() => setActiveTab('login')} className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors font-medium duration-200 ${activeTab === 'login' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Giriş</button>
+                  <button onClick={() => setActiveTab('register')} className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors font-medium duration-200 ${activeTab === 'register' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Kayıt Ol</button>
+                </div>
+
+                <form onSubmit={handleAuth} className="space-y-4">
+
+                  {/* Misafir Girişi Kutusu */}
+                  {showGuestOption && activeRole === 'customer' && (
+                    <div className="animate-in fade-in slide-in-from-top-2">
+                      <div className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700/60 rounded-xl p-4 shadow-lg mb-6 flex flex-col gap-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-sm text-slate-300 font-medium leading-tight">
+                            Üyelikle uğraşmak <br className="hidden sm:block" /> istemiyor musun?
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={handleGuestLogin}
+                            size="sm"
+                            className="bg-teal-600 hover:bg-teal-700 text-white font-semibold transition-all duration-200 whitespace-nowrap h-10 px-5 shadow-md shadow-teal-900/20 shrink-0"
+                          >
+                            Misafir Girişi <ArrowRight className="ml-1.5 h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="border-t border-slate-700/50 pt-2">
+                          <p className="text-[10px] text-slate-500 text-center leading-relaxed">
+                            Devam ederek <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('terms'); }}>Kullanım Koşulları</span> ve <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('kvkk'); }}>KVKK Metni</span>'ni kabul etmiş sayılırsınız.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-700"></span></div>
+                        <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
+                          <span className="bg-[#0f172a] px-3 text-slate-500">
+                            {activeTab === 'login' ? 'Veya Kayıt Ol' : 'Veya Giriş Yap'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'register' && (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                        <Input
+                          name="fullName" placeholder="İsim Soyisim"
+                          className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
+                          value={formData.fullName}
+                          onChange={handleInputChange}
+                          onBlur={(e) => {
+                            const formatted = toTitleCase(e.target.value);
+                            setFormData(prev => ({ ...prev, fullName: formatted }));
+                          }}
+                          required />
+                      </div>
+                      {activeRole === 'manager' && (
+                        <div className="relative">
+                          <Building2 className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                          <Input
+                            name="managerCode" placeholder="Yönetici Kodu (MGR_...)"
+                            className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
+                            value={formData.managerCode} onChange={handleInputChange} required />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input
+                        name="email" type="email" placeholder="E-posta Adresi"
+                        className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
+                        value={formData.email} onChange={handleInputChange} required />
+                    </div>
+                    {activeTab === 'register' && (
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                        <Input
+                          name="phone" type="tel" placeholder="Telefon (05...)"
+                          className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
+                          value={formData.phone} onChange={handleInputChange} required pattern="05[0-9]{9}" title="Telefon numarası 05 ile başlamalı ve 11 haneli olmalıdır." />
+                      </div>
+                    )}
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input
+                        name="password" type="password" placeholder="Şifre (6-12 karakter)"
+                        className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
+                        value={formData.password} onChange={handleInputChange} required minLength="6" maxLength="12" />
+                    </div>
                   </div>
 
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-11 bg-teal-600 hover:bg-teal-700 text-white font-bold transition-all"
-                  >
+                  {activeTab === 'login' && (
+                    <div className="flex justify-end pt-2">
+                      <button type="button" onClick={() => setViewMode('forgot-password')} className={`text-xs text-slate-400 transition-colors flex items-center gap-1 ${activeRole === 'customer' ? 'hover:text-orange-500' : 'hover:text-teal-500'}`}><KeyRound className="w-3 h-3" /> Şifremi Unuttum?</button>
+                    </div>
+                  )}
+
+                  {activeTab === 'register' && (
+                    <div className="flex items-start space-x-2 my-4 pt-2">
+                      <Checkbox
+                        id="legal-check" checked={legalAccepted} onCheckedChange={setLegalAccepted}
+                        className={`mt-1 border-slate-500 ${activeRole === 'customer' ? 'data-[state=checked]:bg-orange-600 data-[state=checked]:border-orange-600' : 'data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600'}`} />
+                      <div className="grid gap-1.5 leading-none">
+                        <label htmlFor="legal-check" className="text-xs text-slate-400 font-medium leading-relaxed">
+                          Kayıt olarak <span className={`cursor-pointer hover:underline transition-colors ${activeRole === 'customer' ? 'text-orange-500 hover:text-orange-400' : 'text-teal-500 hover:text-teal-400'}`} onClick={(e) => { e.preventDefault(); openLegal('terms'); }}>Kullanım Koşulları</span> ve <span className={`cursor-pointer hover:underline transition-colors ${activeRole === 'customer' ? 'text-orange-500 hover:text-orange-400' : 'text-teal-500 hover:text-teal-400'}`} onClick={(e) => { e.preventDefault(); openLegal('kvkk'); }}>KVKK Aydınlatma Metni</span>'ni okuduğumu ve kabul ettiğimi onaylıyorum.
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button type="submit" disabled={isLoading} className={`w-full h-11 text-white font-bold py-2 mt-2 transition-all duration-200 ${activeRole === 'customer' ? 'bg-orange-600 hover:bg-orange-700' : 'bg-teal-600 hover:bg-teal-700'}`}>
                     {isLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Gönderiliyor...
+                        {activeTab === 'login' ? 'Giriş Yapılıyor...' : 'Hesap Oluşturuluyor...'}
                       </>
                     ) : (
-                      <>
-                        <KeyRound className="h-4 w-4 mr-2" />
-                        Sıfırlama Bağlantısı Gönder
-                      </>
+                      activeTab === 'login' ? 'Giriş Yap' : 'Hesap Oluştur'
                     )}
                   </Button>
                 </form>
-              ) : (
-                <>
-                  <Tabs value={activeRole} onValueChange={setActiveRole} className="w-full mb-4">
-                    <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 p-1">
-                      <TabsTrigger value="customer" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white transition-colors duration-300">Müşteri</TabsTrigger>
-                      <TabsTrigger value="manager" className="data-[state=active]:bg-teal-600 data-[state=active]:text-white transition-colors duration-300">Yönetici</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-
-                  <div className="flex bg-slate-800 rounded-lg p-1 gap-1 mb-4">
-                    <button onClick={() => setActiveTab('login')} className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors font-medium duration-200 ${activeTab === 'login' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Giriş</button>
-                    <button onClick={() => setActiveTab('register')} className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors font-medium duration-200 ${activeTab === 'register' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Kayıt Ol</button>
-                  </div>
-
-                  <form onSubmit={handleAuth} className="space-y-4">
-
-                    {/* Misafir Girişi Kutusu */}
-                    {showGuestOption && activeRole === 'customer' && (
-                      <div className="animate-in fade-in slide-in-from-top-2">
-                        <div className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700/60 rounded-xl p-4 shadow-lg mb-6 flex flex-col gap-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="text-sm text-slate-300 font-medium leading-tight">
-                              Üyelikle uğraşmak <br className="hidden sm:block" /> istemiyor musun?
-                            </div>
-                            <Button
-                              type="button"
-                              onClick={handleGuestLogin}
-                              size="sm"
-                              className="bg-teal-600 hover:bg-teal-700 text-white font-semibold transition-all duration-200 whitespace-nowrap h-10 px-5 shadow-md shadow-teal-900/20 shrink-0"
-                            >
-                              Misafir Girişi <ArrowRight className="ml-1.5 h-4 w-4" />
-                            </Button>
-                          </div>
-                          <div className="border-t border-slate-700/50 pt-2">
-                            <p className="text-[10px] text-slate-500 text-center leading-relaxed">
-                              Devam ederek <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('terms'); }}>Kullanım Koşulları</span> ve <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('kvkk'); }}>KVKK Metni</span>'ni kabul etmiş sayılırsınız.
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="relative my-6">
-                          <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-700"></span></div>
-                          <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
-                            <span className="bg-[#0f172a] px-3 text-slate-500">
-                              {activeTab === 'login' ? 'Veya Kayıt Ol' : 'Veya Giriş Yap'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeTab === 'register' && (
-                      <div className="space-y-3">
-                        <div className="relative">
-                          <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                          <Input
-                            name="fullName" placeholder="İsim Soyisim"
-                            className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
-                            value={formData.fullName}
-                            onChange={handleInputChange}
-                            onBlur={(e) => {
-                              const formatted = toTitleCase(e.target.value);
-                              setFormData(prev => ({ ...prev, fullName: formatted }));
-                            }}
-                            required />
-                        </div>
-                        {activeRole === 'manager' && (
-                          <div className="relative">
-                            <Building2 className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                            <Input
-                              name="managerCode" placeholder="Yönetici Kodu (MGR_...)"
-                              className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
-                              value={formData.managerCode} onChange={handleInputChange} required />
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="space-y-3">
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                        <Input
-                          name="email" type="email" placeholder="E-posta Adresi"
-                          className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
-                          value={formData.email} onChange={handleInputChange} required />
-                      </div>
-                      {activeTab === 'register' && (
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                          <Input
-                            name="phone" type="tel" placeholder="Telefon (05...)"
-                            className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
-                            value={formData.phone} onChange={handleInputChange} required pattern="05[0-9]{9}" title="Telefon numarası 05 ile başlamalı ve 11 haneli olmalıdır." />
-                        </div>
-                      )}
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                        <Input
-                          name="password" type="password" placeholder="Şifre (6-12 karakter)"
-                          className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
-                          value={formData.password} onChange={handleInputChange} required minLength="6" maxLength="12" />
-                      </div>
-                    </div>
-
-                    {activeTab === 'login' && (
-                      <div className="flex justify-end pt-2">
-                        <button type="button" onClick={() => setViewMode('forgot-password')} className={`text-xs text-slate-400 transition-colors flex items-center gap-1 ${activeRole === 'customer' ? 'hover:text-orange-500' : 'hover:text-teal-500'}`}><KeyRound className="w-3 h-3" /> Şifremi Unuttum?</button>
-                      </div>
-                    )}
-
-                    {activeTab === 'register' && (
-                      <div className="flex items-start space-x-2 my-4 pt-2">
-                        <Checkbox
-                          id="legal-check" checked={legalAccepted} onCheckedChange={setLegalAccepted}
-                          className={`mt-1 border-slate-500 ${activeRole === 'customer' ? 'data-[state=checked]:bg-orange-600 data-[state=checked]:border-orange-600' : 'data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600'}`} />
-                        <div className="grid gap-1.5 leading-none">
-                          <label htmlFor="legal-check" className="text-xs text-slate-400 font-medium leading-relaxed">
-                            Kayıt olarak <span className={`cursor-pointer hover:underline transition-colors ${activeRole === 'customer' ? 'text-orange-500 hover:text-orange-400' : 'text-teal-500 hover:text-teal-400'}`} onClick={(e) => { e.preventDefault(); openLegal('terms'); }}>Kullanım Koşulları</span> ve <span className={`cursor-pointer hover:underline transition-colors ${activeRole === 'customer' ? 'text-orange-500 hover:text-orange-400' : 'text-teal-500 hover:text-teal-400'}`} onClick={(e) => { e.preventDefault(); openLegal('kvkk'); }}>KVKK Aydınlatma Metni</span>'ni okuduğumu ve kabul ettiğimi onaylıyorum.
-                          </label>
-                        </div>
-                      </div>
-                    )}
-
-                    <Button type="submit" disabled={isLoading} className={`w-full h-11 text-white font-bold py-2 mt-2 transition-all duration-200 ${activeRole === 'customer' ? 'bg-orange-600 hover:bg-orange-700' : 'bg-teal-600 hover:bg-teal-700'}`}>
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          {activeTab === 'login' ? 'Giriş Yapılıyor...' : 'Hesap Oluşturuluyor...'}
-                        </>
-                      ) : (
-                        activeTab === 'login' ? 'Giriş Yap' : 'Hesap Oluştur'
-                      )}
-                    </Button>
-                  </form>
-                </>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog >
 
       <LegalModal
         open={showLegalModal}

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { clearVocalizeCache } from '@/lib/cacheUtils'; // ✅ YENİ SATIR
@@ -12,6 +12,9 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
+
+  // Flag to prevent onAuthStateChange from overriding manual loading state during sign out
+  const isSigningOut = useRef(false);
 
   const handleSession = useCallback((session) => {
     setSession(session);
@@ -40,7 +43,8 @@ export const AuthProvider = ({ children }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (mounted) handleSession(session);
+        // Don't process auth changes if we are manually handling sign out
+        if (mounted && !isSigningOut.current) handleSession(session);
       }
     );
 
@@ -95,35 +99,45 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = useCallback(async () => {
     try {
+      isSigningOut.current = true;
+      setLoading(true); // Start loading UI
+
       // ✅ YENİ: Cache temizle (logout öncesi)
-      
       clearVocalizeCache();
-      
+
       // KRİTİK DÜZELTME: scope: 'local' parametresi eklendi
       // Bu "auth session missing" hatasını önler
       const { error } = await supabase.auth.signOut({ scope: 'local' });
-      
+
       // Reset all states
       setIsGuest(false);
       setUser(null);
       setSession(null);
 
+      // Force a small delay to let the loading screen be seen and ensuring smooth transition
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       if (error) {
         // Session missing hatası önemli değil, yine de çıkış yaptır
         if (error.message?.includes('session')) {
           console.warn('Session already cleared:', error);
+          isSigningOut.current = false;
+          setLoading(false);
           return { error: null };
         }
-        
+
         toast({
           variant: "destructive",
           title: "Çıkış Hatası",
           description: error.message || "Bir sorun oluştu",
         });
+        isSigningOut.current = false;
+        setLoading(false);
         return { error };
       }
-      
-      
+
+      isSigningOut.current = false;
+      setLoading(false);
       return { error: null };
     } catch (err) {
       console.error("Sign out error:", err);
@@ -131,6 +145,8 @@ export const AuthProvider = ({ children }) => {
       setIsGuest(false);
       setUser(null);
       setSession(null);
+      isSigningOut.current = false;
+      setLoading(false);
       return { error: err };
     }
   }, [toast]);

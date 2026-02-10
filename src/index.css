@@ -44,6 +44,10 @@ body.light-theme {
 /* ================================================================= */
 /* 2. TEMEL AYARLAR VE GEÇİŞLER */
 /* ================================================================= */
+html {
+    background-color: #0f172a;
+}
+
 body {
     background-color: var(--bg-main);
     color: var(--text-main);

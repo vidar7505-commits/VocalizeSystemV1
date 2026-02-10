@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { tr, enUS } from 'date-fns/locale';
 import BranchSelector from '@/components/BranchSelector';
+import imageCompression from 'browser-image-compression';
 
 // ============================================================================
 // STATIC DATA & HELPERS
@@ -330,24 +331,59 @@ export default function FeedbackForm() {
     }
   };
 
-  const handleImageUpload = (e) => {
+  // ... (inside component)
+
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length + feedbackImages.length > 3) {
       toast({ title: t.limitExceeded, description: t.limitDesc(3), variant: "destructive" });
       return;
     }
-    files.forEach(file => {
-      if (file.size > 5 * 1024 * 1024) return toast({ title: t.fileTooLarge, variant: "destructive" });
-      setFeedbackImages(prev => [...prev, { file, preview: URL.createObjectURL(file) }]);
-    });
+
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      initialQuality: 0.8
+    };
+
+    for (const file of files) {
+      if (file.size > 20 * 1024 * 1024) { // 20MB raw limit
+        toast({ title: t.fileTooLarge, variant: "destructive" });
+        continue;
+      }
+
+      try {
+        const compressedFile = await imageCompression(file, options);
+        setFeedbackImages(prev => [...prev, { file: compressedFile, preview: URL.createObjectURL(compressedFile) }]);
+      } catch (error) {
+        console.error("Image compression error:", error);
+        // Fallback to original if compression fails
+        setFeedbackImages(prev => [...prev, { file, preview: URL.createObjectURL(file) }]);
+      }
+    }
   };
 
-  const handleReceiptUpload = (e) => {
+  const handleReceiptUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) return toast({ title: t.fileTooLarge, variant: "destructive" });
-    setReceiptFile(file);
-    setReceiptPreview(URL.createObjectURL(file));
+
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      initialQuality: 0.8
+    };
+
+    try {
+      const compressedFile = await imageCompression(file, options);
+      setReceiptFile(compressedFile);
+      setReceiptPreview(URL.createObjectURL(compressedFile));
+    } catch (error) {
+      console.error("Receipt compression error:", error);
+      setReceiptFile(file);
+      setReceiptPreview(URL.createObjectURL(file));
+    }
   };
 
   const isStepValid = () => {
