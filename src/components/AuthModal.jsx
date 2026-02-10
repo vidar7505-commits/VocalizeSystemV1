@@ -345,7 +345,7 @@ export default function AuthModal({
             </div>
 
             {/* Content Container - Scrollable Area */}
-            <div className="flex-1 p-5 md:p-6 space-y-4 overflow-y-auto">
+            <div className="flex-1 p-5 md:p-6 space-y-4 overflow-y-auto pb-20 md:pb-6">
               {viewMode === 'forgot-password' ? (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <button
