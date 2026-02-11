@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -476,6 +476,9 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <User className="w-6 h-6 text-indigo-400" /> Müşteri Profili
             </DialogTitle>
+            <DialogDescription className="text-slate-400 text-sm sr-only">
+              Müşteri profil detayları ve geçmiş işlemleri.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 space-y-6">

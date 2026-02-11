@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,12 +39,16 @@ const toTitleCase = (str) => {
 };
 
 // ✅ Legal Modal Component
-function LegalModal({ open, onOpenChange, activeLegalTab, setActiveLegalTab, legalAccepted, setLegalAccepted }) {
+const LegalModal = React.memo(({ open, onOpenChange, activeLegalTab, setActiveLegalTab, legalAccepted, setLegalAccepted }) => {
   if (!open) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[#0f172a] border-slate-700 text-white sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+        <div className="sr-only">
+          <DialogTitle>Yasal Bilgilendirme</DialogTitle>
+          <DialogDescription>Kullanım Koşulları ve KVKK Metinleri</DialogDescription>
+        </div>
         <div className="mb-4">
           <h3 className="text-xl font-bold text-white">Yasal Bilgilendirme</h3>
         </div>
@@ -82,17 +86,17 @@ function LegalModal({ open, onOpenChange, activeLegalTab, setActiveLegalTab, leg
       </DialogContent>
     </Dialog>
   );
-}
+});
 
 // ✅ Main AuthModal
-export default function AuthModal({
+const AuthModal = React.memo(({
   isOpen,
   onClose,
   defaultTab = "login",
   defaultRole = "customer",
   showGuestOption = false,
   onGuestContinue
-}) {
+}) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [viewMode, setViewMode] = useState('auth');
   const [activeRole, setActiveRole] = useState(defaultRole);
@@ -112,6 +116,11 @@ export default function AuthModal({
   const navigate = useNavigate();
   const { toast } = useToast();
   const { loginAsGuest } = useAuth();
+
+  // 🟢 Memoize logo style
+  const managerLogoStyle = useMemo(() => ({
+    filter: 'brightness(0) saturate(100%) invert(64%) sepia(88%) saturate(402%) hue-rotate(132deg) brightness(95%) contrast(91%)'
+  }), []);
 
   useEffect(() => {
     if (isOpen) {
@@ -163,12 +172,12 @@ export default function AuthModal({
     setShowLegalModal(true);
   };
 
-  const handleGuestLogin = () => {
+  const handleGuestLogin = async () => {
     if (onGuestContinue) {
       onGuestContinue();
     } else {
-      loginAsGuest();
-      localStorage.setItem('vocalize_guest_mode', 'true');
+      await loginAsGuest();
+      // loginAsGuest zaten localStorage set ediyor
 
       toast({
         title: "Misafir Girişi Başarılı",
@@ -327,6 +336,10 @@ export default function AuthModal({
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="bg-[#0f172a] border-slate-700 text-white w-[95vw] max-w-md p-0 max-h-[85vh] flex flex-col rounded-xl md:rounded-lg overflow-hidden gap-0">
+          <div className="sr-only">
+            <DialogTitle>{activeTab === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}</DialogTitle>
+            <DialogDescription>Giriş yap veya yeni hesap oluştur.</DialogDescription>
+          </div>
           <div className="relative flex-shrink-0">
             {/* Header: Mobilde Küçültüldü (h-28), Masaüstünde Normal (h-40) */}
             <div className="relative h-24 md:h-40 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center overflow-hidden transition-all duration-300">
@@ -338,9 +351,7 @@ export default function AuthModal({
                 src={activeRole === 'customer' ? CUSTOMER_LOGO_URL : ADMIN_LOGO_URL}
                 alt="Logo"
                 className="h-14 md:h-20 relative z-10 transition-all duration-300"
-                style={activeRole === 'manager' ? {
-                  filter: 'brightness(0) saturate(100%) invert(64%) sepia(88%) saturate(402%) hue-rotate(132deg) brightness(95%) contrast(91%)'
-                } : {}}
+                style={activeRole === 'manager' ? managerLogoStyle : {}}
               />
             </div>
           </div>
@@ -363,6 +374,7 @@ export default function AuthModal({
                     name="email"
                     type="email"
                     placeholder="E-posta Adresi"
+                    autoComplete="email"
                     value={formData.email}
                     onChange={handleInputChange}
                     className="pl-10 h-11 bg-slate-800 border-slate-700 text-white focus-visible:ring-teal-500 transition-all"
@@ -448,6 +460,7 @@ export default function AuthModal({
                           className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
                           value={formData.fullName}
                           onChange={handleInputChange}
+                          autoComplete="name"
                           onBlur={(e) => {
                             const formatted = toTitleCase(e.target.value);
                             setFormData(prev => ({ ...prev, fullName: formatted }));
@@ -460,7 +473,9 @@ export default function AuthModal({
                           <Input
                             name="managerCode" placeholder="Yönetici Kodu (MGR_...)"
                             className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
-                            value={formData.managerCode} onChange={handleInputChange} required />
+                            value={formData.managerCode} onChange={handleInputChange}
+                            autoComplete="off"
+                            required />
                         </div>
                       )}
                     </div>
@@ -471,6 +486,7 @@ export default function AuthModal({
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                       <Input
                         name="email" type="email" placeholder="E-posta Adresi"
+                        autoComplete="username"
                         className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
                         value={formData.email} onChange={handleInputChange} required />
                     </div>
@@ -479,6 +495,7 @@ export default function AuthModal({
                         <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                         <Input
                           name="phone" type="tel" placeholder="Telefon (05...)"
+                          autoComplete="tel"
                           className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
                           value={formData.phone} onChange={handleInputChange} required pattern="05[0-9]{9}" title="Telefon numarası 05 ile başlamalı ve 11 haneli olmalıdır." />
                       </div>
@@ -487,6 +504,7 @@ export default function AuthModal({
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                       <Input
                         name="password" type="password" placeholder="Şifre (6-12 karakter)"
+                        autoComplete={activeTab === 'register' ? "new-password" : "current-password"}
                         className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
                         value={formData.password} onChange={handleInputChange} required minLength="6" maxLength="12" />
                     </div>
@@ -528,14 +546,18 @@ export default function AuthModal({
         </DialogContent>
       </Dialog >
 
-      <LegalModal
-        open={showLegalModal}
-        onOpenChange={setShowLegalModal}
-        activeLegalTab={activeLegalTab}
-        setActiveLegalTab={setActiveLegalTab}
-        legalAccepted={legalAccepted}
-        setLegalAccepted={setLegalAccepted}
-      />
+      {showLegalModal && (
+        <LegalModal
+          open={showLegalModal}
+          onOpenChange={setShowLegalModal}
+          activeLegalTab={activeLegalTab}
+          setActiveLegalTab={setActiveLegalTab}
+          legalAccepted={legalAccepted}
+          setLegalAccepted={setLegalAccepted}
+        />
+      )}
     </>
   );
-}
+});
+
+export default AuthModal;

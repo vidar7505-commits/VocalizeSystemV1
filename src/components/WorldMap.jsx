@@ -1,8 +1,8 @@
-import { useRef, useState, useMemo } from "react";
+import React, { useRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import DottedMap from "dotted-map";
+import mapData from "./worldMapSVG.json";
 
-export function WorldMap({
+export const WorldMap = React.memo(function WorldMap({
   dots = [],
   lineColor = "#14b8a6",
   showLabels = true,
@@ -13,22 +13,7 @@ export function WorldMap({
   const svgRef = useRef(null);
   const [hoveredLocation, setHoveredLocation] = useState(null);
 
-  // Generate dotted map with dark theme colors
-  const map = useMemo(
-    () => new DottedMap({ height: 100, grid: "diagonal" }),
-    []
-  );
-
-  const svgMap = useMemo(
-    () =>
-      map.getSVG({
-        radius: 0.22,
-        color: "#14b8a640", // Teal with transparency
-        shape: "circle",
-        backgroundColor: "#0f172a", // Dark background
-      }),
-    [map]
-  );
+  const svgMap = mapData.svg;
 
   const projectPoint = (lat, lng) => {
     const x = (lng + 180) * (800 / 360);
@@ -51,16 +36,14 @@ export function WorldMap({
   return (
     <div className="w-full aspect-[2/1] md:aspect-[2.5/1] lg:aspect-[2/1] bg-[#0f172a] rounded-lg relative font-sans overflow-hidden border border-slate-700/30">
       {/* Background Dotted Map */}
-      {svgMap && (
-        <img
-          src={`data:image/svg+xml;utf8,${encodeURIComponent(svgMap)}`}
-          className="h-full w-full [mask-image:linear-gradient(to_bottom,transparent,white_10%,white_90%,transparent)] pointer-events-none select-none object-cover"
-          alt="world map"
-          height="495"
-          width="1056"
-          draggable={false}
-        />
-      )}
+      <img
+        src={`data:image/svg+xml;utf8,${encodeURIComponent(svgMap)}`}
+        className="h-full w-full [mask-image:linear-gradient(to_bottom,transparent,white_10%,white_90%,transparent)] pointer-events-none select-none object-cover"
+        alt="world map"
+        height="495"
+        width="1056"
+        draggable={false}
+      />
 
       {/* Interactive SVG Overlay */}
       <svg
@@ -333,4 +316,4 @@ export function WorldMap({
       </AnimatePresence>
     </div>
   );
-}
+});

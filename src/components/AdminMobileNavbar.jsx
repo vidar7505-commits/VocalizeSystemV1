@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useAdminContext } from '@/contexts/AdminContext';
-import { Bell, QrCode, Building2, CheckCheck, X, AlertOctagon } from 'lucide-react';
+import { Bell, QrCode, Building2, CheckCheck, X, AlertOctagon, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -41,86 +41,29 @@ const AdminMobileNavbar = () => {
     loading,
     businessId,
     assignedBranchId,
-    isBranchManager
+    isBranchManager,
+    // 🟢 Context Data
+    notifications, unreadCount, escalatedCount,
+    markNotificationAsRead, markAllNotificationsAsRead
   } = useAdminContext();
 
 
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [unreadCount, setUnreadCount] = useState(0);
+  // 🟢 REMOVED: Local Notification Logic (notifications, unreadCount, escalatedCount) is now in Context
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [escalatedCount, setEscalatedCount] = useState(0);
+  const [branchSearchQuery, setBranchSearchQuery] = useState('');
 
   const containerRef = useRef(null);
 
-  useEffect(() => {
-    if (!user) return;
+  const filteredBranches = useMemo(() => {
+    if (!branchSearchQuery.trim()) return branches;
+    const query = branchSearchQuery.toLowerCase().trim();
+    return branches.filter(b => b.branch_name_tr.toLowerCase().includes(query));
+  }, [branches, branchSearchQuery]);
 
-    const fetchNotifications = async () => {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (!error) {
-        setNotifications(data || []);
-        const { count } = await supabase
-          .from('notifications')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .eq('is_read', false);
-        setUnreadCount(count || 0);
-      }
-    };
-
-    const checkEscalatedStatus = async () => {
-      if (!businessId) return;
-      try {
-        let query = supabase.from('feedbacks')
-          .select('*', { count: 'exact', head: true })
-          .eq('business_id', businessId)
-          .eq('status', 'escalated');
-
-        if (isBranchManager && assignedBranchId) {
-          query = query.eq('branch_id', assignedBranchId);
-        }
-        const { count } = await query;
-        setEscalatedCount(count || 0);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-
-    fetchNotifications();
-    checkEscalatedStatus();
-
-    const channel = supabase
-      .channel('mobile-nav-notifications')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${user.id}`
-      }, (payload) => {
-        setUnreadCount(prev => prev + 1);
-        setNotifications(prev => [payload.new, ...prev].slice(0, 5));
-      })
-      .subscribe();
-
-    const feedbackChannel = supabase.channel('mobile-nav-feedback-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks', filter: `business_id=eq.${businessId}` }, () => {
-        checkEscalatedStatus();
-      }).subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(feedbackChannel);
-    };
-  }, [user, businessId, isBranchManager, assignedBranchId]);
+  // 🟢 REMOVED: All local useEffects for fetching and subscriptions. Context handles it ONE time.
 
   // 🟢 GERİ TUŞU YÖNETİMİ: Dropdown açıkken geri tuşuna basılırsa kapat
   useEffect(() => {
@@ -198,37 +141,20 @@ const AdminMobileNavbar = () => {
       state_gönderiliyor: { openFeedbackId: feedbackId }
     });
 
-    // Navigate (State ile birlikte, ama localStorage primary)
+    // Navigate
     navigate('/admin-panel/feedbacks', {
       state: { openFeedbackId: feedbackId }
     });
 
-    // Okundu işaretleme (Arka planda)
+    // Okundu işaretleme (Context Method)
     if (!notification.is_read) {
-      setNotifications(prev => prev.map(n =>
-        n.id === notification.id ? { ...n, is_read: true } : n
-      ));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-
-      await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notification.id);
+      markNotificationAsRead(notification.id);
     }
   };
 
   const handleMarkAllRead = async (e) => {
     e.stopPropagation();
-
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    setUnreadCount(0);
-    toast({ title: "Tüm bildirimler okundu" });
-
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', user.id)
-      .eq('is_read', false);
+    await markAllNotificationsAsRead();
   };
 
   const getSelectedBranchLabel = () => {
@@ -265,9 +191,30 @@ const AdminMobileNavbar = () => {
                     <span className="truncate font-medium text-xs">{getSelectedBranchLabel()}</span>
                   </div>
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                <SelectContent className="bg-slate-800 border-slate-700 text-white max-h-[300px]">
+                  {/* 🔍 ŞUBE ARAMA KUTUSU */}
+                  {branches.length > 5 && (
+                    <div className="p-2 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                        <input
+                          type="text"
+                          placeholder="Şube ara..."
+                          value={branchSearchQuery}
+                          onChange={(e) => setBranchSearchQuery(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          className="w-full pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-700 rounded-md text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <SelectItem value="all">Tüm Şubeler</SelectItem>
-                  {branches.map((branch) => (
+                  {filteredBranches.length === 0 && branchSearchQuery && (
+                    <div className="p-3 text-center text-slate-500 text-xs">Şube bulunamadı</div>
+                  )}
+                  {filteredBranches.map((branch) => (
                     <SelectItem key={branch.id} value={branch.id}>
                       {branch.branch_name_tr}
                     </SelectItem>

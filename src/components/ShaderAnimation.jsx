@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-export function ShaderAnimation({ className }) {
+export const ShaderAnimation = React.memo(function ShaderAnimation({ className }) {
   const containerRef = useRef(null);
   const sceneRef = useRef({
     camera: null,
@@ -168,4 +168,4 @@ export function ShaderAnimation({ className }) {
       }}
     />
   );
-}
+});

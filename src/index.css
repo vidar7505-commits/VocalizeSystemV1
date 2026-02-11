@@ -61,10 +61,16 @@ body {
 }
 
 /* Yumuşak Geçiş (Sadece hover vb. için, tema değişimi hariç) */
-*,
-*::before,
-*::after {
-    transition-property: border-color, color, fill, stroke, box-shadow, transform, opacity;
+button,
+a,
+input,
+select,
+textarea,
+.card,
+[role="button"],
+[type="checkbox"],
+[type="radio"] {
+    transition-property: border-color, background-color, color, fill, stroke, opacity, box-shadow, transform;
     transition-duration: 0.2s;
     transition-timing-function: ease-out;
 }

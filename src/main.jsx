@@ -12,6 +12,9 @@ import GlobalErrorBoundary from '@/components/GlobalErrorBoundary'
 // 🟢 KATMAN 2: Auth State Wrapper (YENİ - session senkronizasyonu)
 import AuthStateWrapper from '@/components/AuthStateWrapper'
 
+// 🟡 KATMAN 1.25: Helmet Provider for SEO (react-helmet-async)
+import { HelmetProvider } from 'react-helmet-async'
+
 // 🔵 i18n Loading Fallback Component
 const I18nLoadingFallback = () => (
   <div className="flex items-center justify-center min-h-screen bg-slate-900">
@@ -26,13 +29,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     {/* 🔴 KATMAN 1: Global hata yakalama */}
     <GlobalErrorBoundary>
-      {/* 🔵 KATMAN 1.5: i18n Suspense wrapper (dil dosyaları yüklenene kadar bekle) */}
-      <Suspense fallback={<I18nLoadingFallback />}>
-        {/* 🟢 KATMAN 2: Auth session hazır olana kadar bekle */}
-        <AuthStateWrapper>
-          <App />
-        </AuthStateWrapper>
-      </Suspense>
+      {/* 🟡 KATMAN 1.25: SEO/Helmet Provider */}
+      <HelmetProvider>
+        {/* 🔵 KATMAN 1.5: i18n Suspense wrapper (dil dosyaları yüklenene kadar bekle) */}
+        <Suspense fallback={<I18nLoadingFallback />}>
+          {/* 🟢 KATMAN 2: Auth session hazır olana kadar bekle */}
+          <AuthStateWrapper>
+            <App />
+          </AuthStateWrapper>
+        </Suspense>
+      </HelmetProvider>
     </GlobalErrorBoundary>
   </React.StrictMode>,
 )

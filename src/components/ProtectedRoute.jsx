@@ -8,29 +8,14 @@ const ProtectedRoute = ({ allowedRole }) => {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
 
-  console.log('ProtectedRoute - render:', { 
-    hasUser: !!user, 
-    isGuest, 
-    loading, 
-    allowedRole,
-    pathname: location.pathname 
-  });
-
   useEffect(() => {
-    console.log('ProtectedRoute - useEffect:', { 
-      loading, 
-      hasUser: !!user, 
-      isGuest,
-      allowedRole 
-    });
-    
     if (!loading) {
       setIsLoading(false);
     }
   }, [loading, user, isGuest]);
 
   if (loading || isLoading) {
-    
+
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
         <Loader2 className="h-10 w-10 text-orange-500 animate-spin" />
@@ -39,42 +24,42 @@ const ProtectedRoute = ({ allowedRole }) => {
   }
 
   const isAuthenticated = !!user || isGuest;
-  
+
 
   if (!isAuthenticated) {
-    
+
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   // Determine user role
   let userRole = 'customer';
-  
+
   if (isGuest) {
     userRole = 'customer';
-    
+
   } else if (user?.user_metadata?.user_type) {
     userRole = user.user_metadata.user_type;
-    
+
   }
 
   // Check role access
   if (allowedRole && userRole !== allowedRole) {
-    
-    
+
+
     if (userRole === 'customer') {
-      
+
       return <Navigate to="/customer-panel" replace />;
     }
     if (userRole === 'manager') {
-      
+
       return <Navigate to="/admin-panel" replace />;
     }
-    
-    
+
+
     return <Navigate to="/" replace />;
   }
 
-  
+
   return <Outlet />;
 };
 

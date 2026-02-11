@@ -151,9 +151,26 @@ export const AuthProvider = ({ children }) => {
     }
   }, [toast]);
 
-  const loginAsGuest = useCallback(() => {
+  const loginAsGuest = useCallback(async () => {
+    // 🟢 KRİTİK DÜZELTME: Eğer aktif bir kullanıcı oturumu varsa, misafir girişinden önce onu temizle.
+    // Bu, misafir panelinde eski kullanıcı verilerinin görünmesini engeller.
+    if (user || session) {
+      isSigningOut.current = true;
+      try {
+        await supabase.auth.signOut({ scope: 'local' });
+        // State'leri hemen temizle
+        setUser(null);
+        setSession(null);
+      } catch (err) {
+        console.error("Session clear error during guest login:", err);
+      } finally {
+        isSigningOut.current = false;
+      }
+    }
+
     setIsGuest(true);
-  }, []);
+    localStorage.setItem('vocalize_guest_mode', 'true'); // Persistent guest mode
+  }, [user, session]);
 
   const value = useMemo(() => ({
     user,

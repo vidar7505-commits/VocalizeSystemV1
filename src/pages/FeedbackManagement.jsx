@@ -19,6 +19,127 @@ import CustomerProfileModal from '@/components/CustomerProfileModal';
 import { useToast } from "@/components/ui/use-toast";
 import { cn, formatCustomerName, getCustomerData } from "@/lib/utils";
 
+const getStatusLabel = (s) => ({ new: 'Yeni', pending: 'Beklemede', in_progress: 'İşlemde', resolved: 'Çözüldü', escalated: 'Acil' }[s] || s);
+
+const getTypeBadge = (type) => {
+  const styles = { complaint: "text-red-400 bg-red-900/20 border-red-900/30", suggestion: "text-blue-400 bg-blue-900/20 border-blue-900/30", evaluation: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", review: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", rating: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30" };
+  const labels = { complaint: "Şikayet", suggestion: "Öneri", evaluation: "Değerlendirme", review: "Değerlendirme", rating: "Değerlendirme" };
+  return <Badge variant="secondary" className={`text-xs px-2.5 py-1 ${styles[type] || "text-slate-400"}`}>{labels[type] || type}</Badge>;
+};
+
+const getStatusBadge = (status) => {
+  const styles = { new: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20", pending: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", in_progress: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20", resolved: "bg-green-500/10 text-green-500 border-green-500/20", escalated: "bg-red-500/10 text-red-500 border-red-500/20" };
+  const labels = { new: "Yeni", pending: "Beklemede", in_progress: "İşlemde", resolved: "Çözüldü", escalated: "Acil" };
+  return <Badge variant="outline" className={`text-[10px] h-5 px-1.5 whitespace-nowrap transition-colors ${styles[status] || "bg-slate-500/10 text-slate-500"}`}>{labels[status] || status}</Badge>;
+};
+
+const hasImages = (f) => ((f.feedback_images && f.feedback_images.length > 0) || (f.receipt_images && f.receipt_images.length > 0));
+
+const FeedbackCard = React.memo(React.forwardRef(({
+  feedback,
+  selectedIds,
+  highlightedId,
+  toggleSelect,
+  handleFeedbackClick,
+  handleOpenCustomerProfile
+}, ref) => {
+  const f = feedback;
+  const customerName = getCustomerData(f, 'name');
+  const smartName = formatCustomerName(customerName);
+  const isVip = f.customer_profiles?.flag_vip_customer || f.flag_vip_customer;
+  const isSensitive = f.customer_profiles?.flag_sensitive_customer || f.flag_sensitive_customer;
+  const hasCustomerProfileNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
+  const rating = f.rating || f.overall_rating;
+  const hasImgs = hasImages(f);
+  const isEscalated = f.status === 'escalated';
+  const hasManagerNote = !!f.manager_note;
+  const hasGeneralEval = (Number(f.general_eval_rating) > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
+  const isHighlighted = highlightedId === f.id;
+  const isSelected = selectedIds.includes(f.id);
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "flex gap-3 items-start transition-all duration-300 scroll-mt-32",
+        isHighlighted ? "scale-[1.01]" : ""
+      )}
+    >
+      <button
+        onClick={(e) => { e.stopPropagation(); toggleSelect(f.id); }}
+        className="mt-6 text-slate-600 hover:text-indigo-400 transition-colors shrink-0 p-1"
+      >
+        {isSelected
+          ? <CheckSquare className="w-6 h-6 text-indigo-500" />
+          : <Square className="w-6 h-6" />}
+      </button>
+
+      <div
+        onClick={() => handleFeedbackClick(f)}
+        className={cn(
+          "feedback-activity-card flex-1 group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border duration-200 ease-in-out",
+          isHighlighted && "feedback-card-highlighted",
+          isHighlighted
+            ? "bg-teal-900/30 border-teal-500 shadow-[0_0_20px_rgba(20,184,166,0.25)] ring-2 ring-teal-500/50"
+            : (isEscalated ? "feedback-row-escalated bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-700"),
+          isSelected ? "border-indigo-500/50 bg-indigo-900/10" : ""
+        )}
+      >
+        <div className="flex flex-col md:flex-row gap-4 items-start">
+          <div className="flex-1 w-full min-w-0 pr-0 md:pr-4">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              {getTypeBadge(f.feedback_type)}
+              {getStatusBadge(f.status)}
+              <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0"><Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+              <Badge variant="outline" className="text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[200px]">{f.branches?.branch_name_tr || "Şube Bilinmiyor"}</Badge>
+            </div>
+            <div className="flex gap-3 mt-1">
+              <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${f.feedback_type === 'complaint' ? 'bg-red-500' : f.feedback_type === 'suggestion' ? 'bg-blue-500' : 'bg-yellow-500'}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-slate-200 text-sm line-clamp-2 leading-relaxed break-all">{f.message || <span className="text-slate-600 italic">Mesaj içeriği yok</span>}</p>
+                {(f.feedback_type === 'review' || Number(f.general_eval_rating) > 0) && rating > 0 && (
+                  <div className="flex items-center gap-0.5 mt-1.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className={`w-3 h-3 ${i < rating ? 'fill-yellow-500 text-yellow-500' : 'fill-none text-slate-700'}`} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full md:w-auto md:min-w-[200px] md:shrink-0 flex md:flex-col justify-between md:items-end gap-2 pl-0 md:pl-4 md:border-l border-slate-800/50 mt-4 md:mt-0">
+            <div className="flex items-center gap-2 group/customer hover:bg-slate-800 p-1.5 rounded-lg -ml-1.5 md:ml-0 transition-colors mr-auto md:mr-0 cursor-pointer" onClick={(e) => handleOpenCustomerProfile(e, f)}>
+              <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 group-hover/customer:border-indigo-500/50 transition-colors"><User className="w-4 h-4 text-slate-400 group-hover/customer:text-indigo-400" /></div>
+              <div className="flex flex-col items-start md:items-end">
+                <span className={cn("text-sm font-medium transition-colors truncate max-w-[140px] flex items-center gap-1", hasCustomerProfileNote ? "text-blue-400 font-bold" : "text-slate-300 group-hover/customer:text-indigo-300")} title={hasCustomerProfileNote ? "Müşteri Notu Mevcut" : ""}>
+                  {smartName}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
+              {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
+              {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
+              {hasManagerNote && (<div className="feedback-note-icon flex items-center justify-center w-7 h-7 rounded-md bg-amber-500/25 text-amber-500 border-2 border-amber-500/50 shadow-sm" title="Yönetici notu var"><StickyNote className="w-4 h-4 fill-current" /></div>)}
+              {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}
+              {isSensitive && (<div className="flex items-center gap-1 px-3 py-1 bg-orange-900/30 rounded text-xs text-orange-300 border border-orange-500/30 font-medium"><AlertTriangle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Hassas</span></div>)}
+              {f.guest_contact_info && (
+                <div
+                  className="flex items-center justify-center w-7 h-7 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm"
+                  title="Misafir İletişim İsteği Var"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}));
+
 const FeedbackManagement = () => {
   const { businessId, selectedBranchId } = useAdminContext();
   const { toast } = useToast();
@@ -28,6 +149,7 @@ const FeedbackManagement = () => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [localSearchQuery, setLocalSearchQuery] = useState(''); // Debounce için
 
   // Filtreler
   const [statusFilter, setStatusFilter] = useState('all');
@@ -40,8 +162,6 @@ const FeedbackManagement = () => {
   // Server-Side Pagination (Enterprise: 50 items per batch)
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
-  const [hasMoreData, setHasMoreData] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [totalServerCount, setTotalServerCount] = useState(0);
 
   // Modallar
@@ -65,22 +185,42 @@ const FeedbackManagement = () => {
   const itemRefs = useRef({});
   const pendingTimeoutRef = useRef(null);
   const feedbackListRef = useRef(null);
+  const realtimeDebounceRef = useRef(null);
+  const searchDebounceRef = useRef(null);
 
-  // Realtime Aboneliği
+  // Search Debounce implementation
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setSearchQuery(localSearchQuery);
+    }, 500);
+
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [localSearchQuery]);
+
+  // Main Data Fetcher - Triggered by filters or page changes
   useEffect(() => {
     if (!businessId) return;
     fetchFeedbacks();
+
+    // Setup realtime subscription (🟢 DEBOUNCED)
     const channel = supabase.channel('feedback_list_realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'feedbacks', filter: `business_id=eq.${businessId}` },
-        (payload) => {
-          setTimeout(() => { fetchFeedbacks(); }, 500);
+        () => {
+          if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
+          realtimeDebounceRef.current = setTimeout(() => { fetchFeedbacks(); }, 1500);
         }
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [businessId, selectedBranchId]);
+    return () => {
+      supabase.removeChannel(channel);
+      if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
+    };
+  }, [businessId, selectedBranchId, statusFilter, typeFilter, flagFilter, dateFilter, searchQuery, showUrgentOnly, currentPage]);
 
   // URL state: urgent filtresi veya openFeedbackId
   useEffect(() => {
@@ -193,43 +333,115 @@ const FeedbackManagement = () => {
     };
   }, []);
 
-  const fetchFeedbacks = async (page = 1) => {
+  const fetchFeedbacks = async () => {
     if (!businessId) return;
     setLoading(true);
     try {
-      // 🟢 İlk olarak toplam sayıyı al (sayfalama için)
-      const { count } = await supabase
-        .from('feedbacks')
-        .select('id', { count: 'exact', head: true })
-        .eq('business_id', businessId)
-        .match(selectedBranchId !== 'all' ? { branch_id: selectedBranchId } : {});
+      // 🟢 SERVER-SIDE FILTER BUILDER
+      const buildQuery = (q) => {
+        let res = q.eq('business_id', businessId);
 
+        // Branch Filter
+        if (selectedBranchId !== 'all') res = res.eq('branch_id', selectedBranchId);
+
+        // Status & Urgent Filters
+        if (showUrgentOnly) {
+          res = res.eq('status', 'escalated');
+        } else if (statusFilter !== 'all') {
+          res = res.eq('status', statusFilter);
+        }
+
+        // Type Filter
+        if (typeFilter !== 'all') {
+          if (typeFilter === 'evaluation') {
+            res = res.in('feedback_type', ['evaluation', 'review', 'rating']);
+          } else {
+            res = res.eq('feedback_type', typeFilter);
+          }
+        }
+
+        // Flag Filters (VIP / Sensitive)
+        if (flagFilter === 'vip') res = res.eq('flag_vip_customer', true);
+        if (flagFilter === 'sensitive') res = res.eq('flag_sensitive_customer', true);
+
+        // Date Filter
+        if (dateFilter !== 'all') {
+          const today = new Date();
+          let startDate, endDate;
+          switch (dateFilter) {
+            case 'today': startDate = startOfDay(today); endDate = endOfDay(today); break;
+            case 'last7': startDate = subDays(today, 7); endDate = endOfDay(today); break;
+            case 'last30': startDate = subDays(today, 30); endDate = endOfDay(today); break;
+            case 'last90': startDate = subDays(today, 90); endDate = endOfDay(today); break;
+            case 'thisMonth': startDate = startOfMonth(today); endDate = endOfMonth(today); break;
+            case 'lastMonth': startDate = startOfMonth(subMonths(today, 1)); endDate = endOfMonth(subMonths(today, 1)); break;
+            default: break;
+          }
+          if (startDate) res = res.gte('created_at', startDate.toISOString());
+          if (endDate) res = res.lte('created_at', endDate.toISOString());
+        }
+
+        // Search Query
+        if (searchQuery.trim().length > 0) {
+          const term = searchQuery.trim();
+          // Note: We search in multiple columns
+          res = res.or(`message.ilike.%${term}%,customer_name.ilike.%${term}%,customer_email.ilike.%${term}%,customer_phone.ilike.%${term}%`);
+        }
+
+        return res;
+      };
+
+      // 🟢 1. Toplam sayıyı al (Sayfalama için filtreler dahil)
+      let countQuery = supabase.from('feedbacks').select('id', { count: 'exact', head: true });
+      countQuery = buildQuery(countQuery);
+      const { count, error: countErr } = await countQuery;
+      if (countErr) throw countErr;
       setTotalServerCount(count || 0);
 
-      // 🟢 Server-side pagination: Sayfaya göre range belirle
-      const rangeStart = (page - 1) * itemsPerPage;
+      // 🟢 2. Verileri çek
+      const rangeStart = (currentPage - 1) * itemsPerPage;
       const rangeEnd = rangeStart + itemsPerPage - 1;
 
-      let query = supabase.from('feedbacks').select(`
+      let dataQuery = supabase.from('feedbacks').select(`
           *,
           guest_contact_info,
           branches(id, branch_name_tr),
           customer_profiles(
             id, name, email, phone,
+            flag_vip_customer, flag_sensitive_customer, admin_note,
             users(first_name, last_name)
           ),
           manager_note_updater:manager_note_updated_by(first_name, last_name)
-        `)
-        .eq('business_id', businessId)
+        `);
+      dataQuery = buildQuery(dataQuery);
+      const { data: feedbacksData, error } = await dataQuery
         .order('created_at', { ascending: false })
         .range(rangeStart, rangeEnd);
 
-      if (selectedBranchId !== 'all') {
-        query = query.eq('branch_id', selectedBranchId);
-      }
-
-      const { data: feedbacksData, error } = await query;
       if (error) throw error;
+      let mergedFeedbacks = feedbacksData || [];
+
+      // 🔴 CROSS-MATCH: PID olmayan ama email olanlar için profil çek (Hybrid Detection)
+      const missingPidEmails = mergedFeedbacks
+        .filter(f => !f.customer_profile_id && f.customer_email && f.customer_email.length > 5)
+        .map(f => f.customer_email);
+
+      if (missingPidEmails.length > 0) {
+        const { data: matchedProfiles } = await supabase
+          .from('customer_profiles')
+          .select('*, users(first_name, last_name)')
+          .in('email', missingPidEmails);
+
+        if (matchedProfiles?.length > 0) {
+          mergedFeedbacks = mergedFeedbacks.map(f => {
+            if (!f.customer_profile_id && f.customer_email) {
+              const matched = matchedProfiles.find(p => p.email === f.customer_email);
+              if (matched) return { ...f, customer_profiles: matched };
+            }
+            return f;
+          });
+        }
+      }
 
       const { data: bizCustomers, error: bizError } = await supabase
         .from('business_customers')
@@ -238,11 +450,12 @@ const FeedbackManagement = () => {
 
       if (bizError) console.error("Business customers fetch error:", bizError);
 
-      const mergedFeedbacks = (feedbacksData || []).map(f => {
-        const bizData = bizCustomers?.find(bc => bc.customer_profile_id === f.customer_profile_id);
-        const effectiveVip = bizData ? bizData.is_vip : false;
-        const effectiveSensitive = bizData ? bizData.is_sensitive : false;
-        const effectiveNote = bizData ? bizData.manager_notes : '';
+      mergedFeedbacks = mergedFeedbacks.map(f => {
+        const profileId = f.customer_profile_id || f.customer_profiles?.id;
+        const bizData = bizCustomers?.find(bc => bc.customer_profile_id === profileId);
+        const effectiveVip = bizData ? bizData.is_vip : (f.flag_vip_customer || f.customer_profiles?.flag_vip_customer || false);
+        const effectiveSensitive = bizData ? bizData.is_sensitive : (f.flag_sensitive_customer || f.customer_profiles?.flag_sensitive_customer || false);
+        const effectiveNote = bizData ? bizData.manager_notes : (f.customer_profiles?.admin_note || '');
 
         return {
           ...f,
@@ -267,74 +480,9 @@ const FeedbackManagement = () => {
     }
   };
 
-  // 🟢 DAHA FAZLA YÜKLE (Infinite Scroll / Load More)
-  const loadMoreFeedbacks = async () => {
-    if (!businessId || isLoadingMore || !hasMoreData) return;
-    setIsLoadingMore(true);
-
-    try {
-      const nextPage = currentPage + 1;
-      const rangeStart = (nextPage - 1) * itemsPerPage;
-      const rangeEnd = rangeStart + itemsPerPage - 1;
-
-      let query = supabase.from('feedbacks').select(`
-          *,
-          guest_contact_info,
-          branches(id, branch_name_tr),
-          customer_profiles(
-            id, name, email, phone,
-            users(first_name, last_name)
-          ),
-          manager_note_updater:manager_note_updated_by(first_name, last_name)
-        `)
-        .eq('business_id', businessId)
-        .order('created_at', { ascending: false })
-        .range(rangeStart, rangeEnd);
-
-      if (selectedBranchId !== 'all') {
-        query = query.eq('branch_id', selectedBranchId);
-      }
-
-      const { data: newFeedbacks, error } = await query;
-      if (error) throw error;
-
-      const { data: bizCustomers } = await supabase
-        .from('business_customers')
-        .select('customer_profile_id, is_vip, is_sensitive, manager_notes')
-        .eq('business_id', businessId);
-
-      const mergedNew = (newFeedbacks || []).map(f => {
-        const bizData = bizCustomers?.find(bc => bc.customer_profile_id === f.customer_profile_id);
-        return {
-          ...f,
-          flag_vip_customer: bizData ? bizData.is_vip : false,
-          flag_sensitive_customer: bizData ? bizData.is_sensitive : false,
-          customer_profiles: {
-            ...(f.customer_profiles || {}),
-            flag_vip_customer: bizData ? bizData.is_vip : false,
-            flag_sensitive_customer: bizData ? bizData.is_sensitive : false,
-            admin_note: bizData ? bizData.manager_notes : '',
-            users: f.customer_profiles?.users
-          }
-        };
-      });
-
-      // Mevcut listeye ekle (scroll pozisyonu korunur)
-      setFeedbacks(prev => [...prev, ...mergedNew]);
-      setCurrentPage(nextPage);
-      setHasMoreData(newFeedbacks.length === itemsPerPage);
-
-    } catch (error) {
-      console.error(error);
-      toast({ variant: "destructive", title: "Hata", description: "Daha fazla veri yüklenemedi." });
-    } finally {
-      setIsLoadingMore(false);
-    }
-  };
-
   const handleRefresh = () => {
     setIsRefreshing(true);
-    fetchFeedbacks(currentPage).finally(() => setIsRefreshing(false));
+    fetchFeedbacks().finally(() => setIsRefreshing(false));
   };
 
   const handleFlagsUpdate = (profileId, newFlags, relatedEmail) => {
@@ -364,30 +512,17 @@ const FeedbackManagement = () => {
     }));
   };
 
-  const getStatusLabel = (s) => ({ new: 'Yeni', pending: 'Beklemede', in_progress: 'İşlemde', resolved: 'Çözüldü', escalated: 'Acil' }[s] || s);
 
-  const getTypeBadge = (type) => {
-    const styles = { complaint: "text-red-400 bg-red-900/20 border-red-900/30", suggestion: "text-blue-400 bg-blue-900/20 border-blue-900/30", evaluation: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", review: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", rating: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30" };
-    const labels = { complaint: "Şikayet", suggestion: "Öneri", evaluation: "Değerlendirme", review: "Değerlendirme", rating: "Değerlendirme" };
-    return <Badge variant="secondary" className={`text-xs px-2.5 py-1 ${styles[type] || "text-slate-400"}`}>{labels[type] || type}</Badge>;
-  };
-
-  const getStatusBadge = (status) => {
-    const styles = { new: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20", pending: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", in_progress: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20", resolved: "bg-green-500/10 text-green-500 border-green-500/20", escalated: "bg-red-500/10 text-red-500 border-red-500/20" };
-    const labels = { new: "Yeni", pending: "Beklemede", in_progress: "İşlemde", resolved: "Çözüldü", escalated: "Acil" };
-    return <Badge variant="outline" className={`text-[10px] h-5 px-1.5 whitespace-nowrap transition-colors ${styles[status] || "bg-slate-500/10 text-slate-500"}`}>{labels[status] || status}</Badge>;
-  };
-
-  const hasImages = (f) => ((f.feedback_images && f.feedback_images.length > 0) || (f.receipt_images && f.receipt_images.length > 0));
-
-  const toggleSelect = (id) => { setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]); };
+  const toggleSelect = React.useCallback((id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }, []);
 
   const handleSelectAll = () => {
-    const allSelected = paginatedFeedbacks.length > 0 && paginatedFeedbacks.every(f => selectedIds.includes(f.id));
+    const allSelected = filteredFeedbacks.length > 0 && filteredFeedbacks.every(f => selectedIds.includes(f.id));
     if (allSelected) {
       setSelectedIds([]);
     } else {
-      const pageIds = paginatedFeedbacks.map(f => f.id);
+      const pageIds = filteredFeedbacks.map(f => f.id);
       setSelectedIds(prev => [...new Set([...prev, ...pageIds])]);
     }
   };
@@ -417,65 +552,24 @@ const FeedbackManagement = () => {
     setLoading(false);
   };
 
+  // Client-side filtering remains only for complex cases or forcing visibility (highlighted items)
   const filteredFeedbacks = useMemo(() => {
+    // Note: Most filters are now moved to server-side in fetchFeedbacks.
+    // We keep client-side filtering here to bridge any potential sync gap
+    // or to force display of specific IDs (highlighted, etc.)
     return feedbacks.filter(f => {
-      if (f.id === highlightedId || f.id === targetScrollId || f.id === pendingFeedbackId) return true;
+      const isSpecial = f.id === highlightedId || f.id === targetScrollId || f.id === pendingFeedbackId;
+      if (isSpecial) return true;
 
-      const cName = getCustomerData(f, 'name') || '';
-      const cEmail = getCustomerData(f, 'email') || '';
-      const query = searchQuery.toLowerCase();
-
-      const matchesSearch = !searchQuery ||
-        f.message?.toLowerCase().includes(query) ||
-        cName.toLowerCase().includes(query) ||
-        cEmail.toLowerCase().includes(query);
-
-      if (!matchesSearch) return false;
-
-      const hasCustomerNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
-
-      if (showNotesOnly && !f.manager_note && !hasCustomerNote) return false;
-      if (showUrgentOnly && f.status !== 'escalated') return false;
-      if (statusFilter !== 'all' && f.status !== statusFilter) return false;
-      if (typeFilter !== 'all') {
-        if (typeFilter === 'evaluation') {
-          if (!['evaluation', 'review', 'rating'].includes(f.feedback_type)) return false;
-        } else {
-          if (f.feedback_type !== typeFilter) return false;
-        }
+      // Note: "showNotesOnly" is refined here as it depends on joined customer profile note
+      if (showNotesOnly) {
+        const hasCustomerNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
+        if (!f.manager_note && !hasCustomerNote) return false;
       }
-
-      const isVip = f.customer_profiles?.flag_vip_customer || f.flag_vip_customer;
-      const isSensitive = f.customer_profiles?.flag_sensitive_customer || f.flag_sensitive_customer;
-
-      if (flagFilter === 'vip' && !isVip) return false;
-      if (flagFilter === 'sensitive' && !isSensitive) return false;
-
-      if (dateFilter === 'all') return true;
-
-      const feedbackDate = new Date(f.created_at);
-      const today = new Date();
-      let startDate, endDate;
-      switch (dateFilter) {
-        case 'today': startDate = startOfDay(today); endDate = endOfDay(today); break;
-        case 'last7': startDate = subDays(today, 7); endDate = endOfDay(today); break;
-        case 'last30': startDate = subDays(today, 30); endDate = endOfDay(today); break;
-        case 'last90': startDate = subDays(today, 90); endDate = endOfDay(today); break;
-        case 'thisMonth': startDate = startOfMonth(today); endDate = endOfMonth(today); break;
-        case 'lastMonth': startDate = startOfMonth(subMonths(today, 1)); endDate = endOfMonth(subMonths(today, 1)); break;
-        default: break;
-      }
-      if (startDate && feedbackDate < startDate) return false;
-      if (endDate && feedbackDate > endDate) return false;
 
       return true;
     });
-  }, [feedbacks, searchQuery, statusFilter, typeFilter, flagFilter, dateFilter, showNotesOnly, showUrgentOnly, highlightedId, targetScrollId, pendingFeedbackId]);
-
-  const totalPages = Math.ceil(filteredFeedbacks.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedFeedbacks = filteredFeedbacks.slice(startIndex, endIndex);
+  }, [feedbacks, showNotesOnly, highlightedId, targetScrollId, pendingFeedbackId]);
 
   useEffect(() => {
     if (!targetScrollId && !highlightedId && !pendingFeedbackId) {
@@ -501,18 +595,18 @@ const FeedbackManagement = () => {
     }, 800);
   };
 
-  const handleFeedbackClick = (feedback) => {
+  const handleFeedbackClick = React.useCallback((feedback) => {
     setSelectedFeedback(feedback);
     setIsDetailModalOpen(true);
-  };
+  }, []);
 
-  const handleOpenCustomerProfile = (e, feedback) => {
+  const handleOpenCustomerProfile = React.useCallback((e, feedback) => {
     e.stopPropagation();
     const profileId = feedback.customer_profile_id || (feedback.customer_profiles?.id) || null;
     const profileEmail = getCustomerData(feedback, 'email');
     setSelectedCustomer({ id: profileId, email: profileEmail });
     setCustomerModalOpen(true);
-  };
+  }, []);
 
   return (
     <>
@@ -536,7 +630,12 @@ const FeedbackManagement = () => {
             {/* Arama Inputu: Mobilde col-span-2 (Tam genişlik) */}
             <div className="relative col-span-2 md:flex-1 md:min-w-[240px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <Input placeholder="Mesaj, isim, email veya telefon..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 bg-[#111827] border-slate-700 focus:border-indigo-500/50 focus:ring-indigo-500/20 h-10 transition-all rounded-lg text-slate-200 placeholder:text-slate-500 w-full" />
+              <Input
+                placeholder="Mesaj, isim, email veya telefon..."
+                value={localSearchQuery}
+                onChange={(e) => setLocalSearchQuery(e.target.value)}
+                className="pl-9 bg-[#111827] border-slate-700 focus:border-indigo-500/50 focus:ring-indigo-500/20 h-10 transition-all rounded-lg text-slate-200 placeholder:text-slate-500 w-full"
+              />
             </div>
 
             {/* Selects: Mobilde yan yana 2'li (varsayılan col-span-1), Masaüstünde esnek */}
@@ -546,14 +645,23 @@ const FeedbackManagement = () => {
             <Select value={dateFilter} onValueChange={setDateFilter}><SelectTrigger className="w-full md:w-[150px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><Calendar className="w-3.5 h-3.5 mr-2 text-indigo-400 shrink-0" /><span className="truncate">Tarih</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Zamanlar</SelectItem><SelectItem value="today">Bugün</SelectItem><SelectItem value="last7">Son 7 Gün</SelectItem><SelectItem value="last30">Son 30 Gün</SelectItem><SelectItem value="last90">Son 90 Gün</SelectItem><SelectItem value="thisMonth">Bu Ay</SelectItem><SelectItem value="lastMonth">Geçen Ay</SelectItem></SelectContent></Select>
 
             {/* Temizle Butonu: Mobilde tam satır (col-span-2) */}
-            <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('all'); setTypeFilter('all'); setFlagFilter('all'); setDateFilter('last30'); setSearchQuery(''); setShowNotesOnly(false); setShowUrgentOnly(false); }} className="col-span-2 md:col-span-1 h-10 px-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg justify-center"><Filter className="w-3.5 h-3.5 mr-1.5" />Temizle</Button>
+            <Button variant="ghost" size="sm" onClick={() => {
+              setStatusFilter('all');
+              setTypeFilter('all');
+              setFlagFilter('all');
+              setDateFilter('last30');
+              setLocalSearchQuery('');
+              setSearchQuery('');
+              setShowNotesOnly(false);
+              setShowUrgentOnly(false);
+            }} className="col-span-2 md:col-span-1 h-10 px-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg justify-center"><Filter className="w-3.5 h-3.5 mr-1.5" />Temizle</Button>
           </div>
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1 border-t border-slate-800/50">
             <div className="flex items-center space-x-2 border-r border-slate-700/50 pr-6 mr-2">
               <Checkbox
                 id="select-all"
-                checked={paginatedFeedbacks.length > 0 && paginatedFeedbacks.every(f => selectedIds.includes(f.id))}
+                checked={filteredFeedbacks.length > 0 && filteredFeedbacks.every(f => selectedIds.includes(f.id))}
                 onCheckedChange={handleSelectAll}
                 className="border-slate-500 data-[state=checked]:bg-indigo-500 w-4 h-4"
               />
@@ -598,193 +706,99 @@ const FeedbackManagement = () => {
             <>
               <div ref={feedbackListRef} className={cn("transition-opacity duration-300", isRefreshing && "opacity-50")}>
                 <div className="grid gap-3">
-                  {paginatedFeedbacks.map((f) => {
-                    const customerName = getCustomerData(f, 'name');
-                    const smartName = formatCustomerName(customerName);
-                    const isVip = f.customer_profiles?.flag_vip_customer || f.flag_vip_customer;
-                    const isSensitive = f.customer_profiles?.flag_sensitive_customer || f.flag_sensitive_customer;
-                    const hasCustomerProfileNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
-                    const rating = f.rating || f.overall_rating;
-                    const hasImgs = hasImages(f);
-                    const isEscalated = f.status === 'escalated';
-                    const hasManagerNote = !!f.manager_note;
-
-                    const hasGeneralEval = (Number(f.general_eval_rating) > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
-
-                    const isHighlighted = highlightedId === f.id;
-
-                    return (
-                      <div
-                        key={f.id}
-                        ref={(el) => { if (el) itemRefs.current[f.id] = el; }}
-                        className={cn(
-                          "flex gap-3 items-start transition-all duration-300 scroll-mt-32",
-                          isHighlighted ? "scale-[1.01]" : ""
-                        )}
-                      >
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggleSelect(f.id); }}
-                          className="mt-6 text-slate-600 hover:text-indigo-400 transition-colors shrink-0 p-1"
-                        >
-                          {selectedIds.includes(f.id)
-                            ? <CheckSquare className="w-6 h-6 text-indigo-500" />
-                            : <Square className="w-6 h-6" />}
-                        </button>
-
-                        <div
-                          onClick={() => handleFeedbackClick(f)}
-                          className={cn(
-                            "feedback-activity-card flex-1 group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border duration-200 ease-in-out",
-                            isHighlighted && "feedback-card-highlighted",
-                            isHighlighted
-                              ? "bg-teal-900/30 border-teal-500 shadow-[0_0_20px_rgba(20,184,166,0.25)] ring-2 ring-teal-500/50"
-                              : (isEscalated ? "feedback-row-escalated bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700"),
-                            selectedIds.includes(f.id) ? "border-indigo-500/50 bg-indigo-900/10" : ""
-                          )}
-                        >
-                          <div className="flex flex-col md:flex-row gap-4 items-start">
-                            <div className="flex-1 w-full min-w-0 pr-0 md:pr-4">
-                              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                {getTypeBadge(f.feedback_type)}
-                                {getStatusBadge(f.status)}
-                                <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0"><Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                                <Badge variant="outline" className="text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[200px]">{f.branches?.branch_name_tr || "Şube Bilinmiyor"}</Badge>
-                              </div>
-                              <div className="flex gap-3 mt-1">
-                                <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${f.feedback_type === 'complaint' ? 'bg-red-500' : f.feedback_type === 'suggestion' ? 'bg-blue-500' : 'bg-yellow-500'}`} />
-                                <div className="flex-1">
-                                  <p className="text-slate-200 text-sm line-clamp-2 leading-relaxed">{f.message || <span className="text-slate-600 italic">Mesaj içeriği yok</span>}</p>
-                                  {rating > 0 && (<div className="flex items-center gap-0.5 mt-1.5">{[...Array(5)].map((_, i) => (<Star key={i} className={`w-3 h-3 ${i < rating ? 'fill-yellow-500 text-yellow-500' : 'fill-none text-slate-700'}`} />))}</div>)}
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="w-full md:w-auto md:min-w-[200px] flex md:flex-col justify-between md:items-end gap-2 pl-0 md:pl-4 md:border-l border-slate-800/50 mt-4 md:mt-0">
-                              <div className="flex items-center gap-2 group/customer hover:bg-slate-800 p-1.5 rounded-lg -ml-1.5 md:ml-0 transition-colors mr-auto md:mr-0 cursor-pointer" onClick={(e) => handleOpenCustomerProfile(e, f)}>
-                                <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 group-hover/customer:border-indigo-500/50 transition-colors"><User className="w-4 h-4 text-slate-400 group-hover/customer:text-indigo-400" /></div>
-                                <div className="flex flex-col items-start md:items-end">
-                                  <span className={cn("text-sm font-medium transition-colors truncate max-w-[140px] flex items-center gap-1", hasCustomerProfileNote ? "text-blue-400 font-bold" : "text-slate-300 group-hover/customer:text-indigo-300")} title={hasCustomerProfileNote ? "Müşteri Notu Mevcut" : ""}>
-                                    {smartName}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
-                                {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
-
-                                {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
-                                {hasManagerNote && (<div className="feedback-note-icon flex items-center justify-center w-7 h-7 rounded-md bg-amber-500/25 text-amber-500 border-2 border-amber-500/50 shadow-sm" title="Yönetici notu var"><StickyNote className="w-4 h-4 fill-current" /></div>)}
-                                {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}
-                                {isSensitive && (<div className="flex items-center gap-1 px-3 py-1 bg-orange-900/30 rounded text-xs text-orange-300 border border-orange-500/30 font-medium"><AlertTriangle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Hassas</span></div>)}
-
-                                {/* 🟢 YENİ EKLENEN KISIM: MİSAFİR İLETİŞİM İKONU */}
-                                {f.guest_contact_info && (
-                                  <div
-                                    className="flex items-center justify-center w-7 h-7 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm"
-                                    title="Misafir İletişim İsteği Var"
-                                  >
-                                    <Phone className="w-3.5 h-3.5" />
-                                  </div>
-                                )}
-
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {filteredFeedbacks.map((f) => (
+                    <FeedbackCard
+                      key={f.id}
+                      ref={(el) => { if (el) itemRefs.current[f.id] = el; }}
+                      feedback={f}
+                      selectedIds={selectedIds}
+                      highlightedId={highlightedId}
+                      toggleSelect={toggleSelect}
+                      handleFeedbackClick={handleFeedbackClick}
+                      handleOpenCustomerProfile={handleOpenCustomerProfile}
+                    />
+                  ))}
                 </div>
 
                 {/* 🟢 DAHA FAZLA YÜKLE BUTONU (Server-side pagination) */}
               </div>
-
-              {/* 🟢 SERVER-SIDE STANDARD PAGINATION */}
-              {totalServerCount > itemsPerPage && (
-                <div className="flex flex-col items-center gap-4 mt-8 pb-8">
-
-                  <div className="flex items-center justify-center gap-2">
-                    {/* Önceki Sayfa */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const newPage = Math.max(1, currentPage - 1);
-                        setCurrentPage(newPage);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                        fetchFeedbacks(newPage);
-                      }}
-                      disabled={currentPage === 1 || loading}
-                      className="border-teal-500/30 text-teal-500 hover:bg-teal-500/10 disabled:opacity-30 h-9 w-9 p-0"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-
-                    {/* Sayfa Numaraları */}
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.ceil(totalServerCount / itemsPerPage) }, (_, i) => i + 1)
-                        .filter(page => {
-                          const totalPages = Math.ceil(totalServerCount / itemsPerPage);
-                          return (
-                            page === 1 ||
-                            page === totalPages ||
-                            (page >= currentPage - 1 && page <= currentPage + 1)
-                          );
-                        })
-                        .map((page, idx, arr) => {
-                          const showEllipsis = idx > 0 && page - arr[idx - 1] > 1;
-                          return (
-                            <React.Fragment key={page}>
-                              {showEllipsis && (
-                                <span className="text-slate-600 px-2">...</span>
-                              )}
-                              <Button
-                                variant={currentPage === page ? "default" : "ghost"}
-                                size="sm"
-                                onClick={() => {
-                                  setCurrentPage(page);
-                                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                                  fetchFeedbacks(page);
-                                }}
-                                className={cn(
-                                  "min-w-[36px] h-9 font-bold transition-all",
-                                  currentPage === page
-                                    ? "bg-teal-500 hover:bg-teal-600 text-slate-900 shadow-[0_0_15px_rgba(20,184,166,0.5)]"
-                                    : "text-slate-400 hover:text-white hover:bg-slate-800"
-                                )}
-                              >
-                                {page}
-                              </Button>
-                            </React.Fragment>
-                          );
-                        })}
-                    </div>
-
-                    {/* Sonraki Sayfa */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const totalPages = Math.ceil(totalServerCount / itemsPerPage);
-                        const newPage = Math.min(totalPages, currentPage + 1);
-                        setCurrentPage(newPage);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                        fetchFeedbacks(newPage);
-                      }}
-                      disabled={currentPage === Math.ceil(totalServerCount / itemsPerPage) || loading}
-                      className="border-teal-500/30 text-teal-500 hover:bg-teal-500/10 disabled:opacity-30 h-9 w-9 p-0"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  {/* Bilgi Metni */}
-                  <div className="text-center text-xs text-slate-500">
-                    Toplam <span className="text-teal-500 font-medium">{totalServerCount}</span> kayıttan <span className="text-slate-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalServerCount)}</span> arası gösteriliyor
-                  </div>
-                </div>
-              )}
             </>
+          )}
+
+          {/* 🟢 SERVER-SIDE STANDARD PAGINATION - Always visible if total > itemsPerPage */}
+          {totalServerCount > itemsPerPage && (
+            <div className="flex flex-col items-center gap-4 mt-8 pb-8">
+              <div className="flex items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newPage = Math.max(1, currentPage - 1);
+                    setCurrentPage(newPage);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === 1 || loading}
+                  className="border-teal-500/30 text-teal-500 hover:bg-teal-500/10 disabled:opacity-30 h-9 w-9 p-0"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.ceil(totalServerCount / itemsPerPage) }, (_, i) => i + 1)
+                    .filter(page => {
+                      const totalPages = Math.ceil(totalServerCount / itemsPerPage);
+                      return (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      );
+                    })
+                    .map((page, idx, arr) => {
+                      const showEllipsis = idx > 0 && page - arr[idx - 1] > 1;
+                      return (
+                        <React.Fragment key={page}>
+                          {showEllipsis && <span className="text-slate-600 px-2">...</span>}
+                          <Button
+                            variant={currentPage === page ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => {
+                              setCurrentPage(page);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={cn(
+                              "min-w-[36px] h-9 font-bold transition-all",
+                              currentPage === page
+                                ? "bg-teal-500 hover:bg-teal-600 text-slate-900 shadow-[0_0_15px_rgba(20,184,166,0.5)]"
+                                : "text-slate-400 hover:text-white hover:bg-slate-800"
+                            )}
+                          >
+                            {page}
+                          </Button>
+                        </React.Fragment>
+                      );
+                    })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const totalPages = Math.ceil(totalServerCount / itemsPerPage);
+                    const newPage = Math.min(totalPages, currentPage + 1);
+                    setCurrentPage(newPage);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === Math.ceil(totalServerCount / itemsPerPage) || loading}
+                  className="border-teal-500/30 text-teal-500 hover:bg-teal-500/10 disabled:opacity-30 h-9 w-9 p-0"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="text-center text-xs text-slate-500">
+                Toplam <span className="text-teal-500 font-medium">{totalServerCount}</span> kayıttan <span className="text-slate-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalServerCount)}</span> arası gösteriliyor
+              </div>
+            </div>
           )}
         </div>
 

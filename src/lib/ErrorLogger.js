@@ -8,30 +8,30 @@ const DEDUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 // generateErrorHash removed - using inline simple hashing
 
 /**
- * Check if error was recently logged (deduplication)
+ * Check if error was recently logged (deduplication) using LocalStorage for persistence
  */
 const isRecentlyLogged = (errorHash) => {
-    const lastLogged = errorCache.get(errorHash);
-    if (!lastLogged) return false;
+    try {
+        // Use sessionStorage for per-session throttling
+        // If user closes tab/browser, session clears -> new error can be reported
+        const cached = sessionStorage.getItem(`err_log_${errorHash}`);
+        if (!cached) return false;
 
-    const timeSinceLastLog = Date.now() - lastLogged;
-    return timeSinceLastLog < DEDUP_WINDOW_MS;
+        return true; // If it exists in session, it's already logged this session
+    } catch (e) {
+        return errorCache.get(errorHash) && (Date.now() - errorCache.get(errorHash) < DEDUP_WINDOW_MS);
+    }
 };
 
 /**
- * Mark error as logged
+ * Mark error as logged in LocalStorage
  */
 const markAsLogged = (errorHash) => {
-    errorCache.set(errorHash, Date.now());
-
-    // Cleanup old entries
-    if (errorCache.size > 100) {
-        const now = Date.now();
-        for (const [hash, timestamp] of errorCache.entries()) {
-            if (now - timestamp > DEDUP_WINDOW_MS) {
-                errorCache.delete(hash);
-            }
-        }
+    const now = Date.now();
+    try {
+        sessionStorage.setItem(`err_log_${errorHash}`, now.toString());
+    } catch (e) {
+        errorCache.set(errorHash, now);
     }
 };
 

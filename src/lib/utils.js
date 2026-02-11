@@ -100,20 +100,26 @@ export function formatCompactNumber(num) {
   }
   const absNum = Math.abs(num);
   const sign = num < 0 ? '-' : '';
+  const full = num.toLocaleString('tr-TR');
 
-  if (absNum >= 10000) {
+  // 10.000 altı her zaman tam sayı (Örn: 9.999)
+  if (absNum < 10000) {
+    return { display: full, full: full };
+  }
+
+  // 1.000.000 ve üzeri M formatı (Örn: 1.2M)
+  if (absNum >= 1000000) {
     return {
-      display: `${sign}${(absNum / 1000).toFixed(1)}K+`,
-      full: num.toLocaleString('tr-TR')
+      display: `${sign}${(absNum / 1000000).toFixed(1)}M`,
+      full: full
     };
   }
-  if (absNum >= 1000) {
-    return {
-      display: `${sign}${(absNum / 1000).toFixed(1)}K`,
-      full: num.toLocaleString('tr-TR')
-    };
-  }
-  return { display: num.toString(), full: num.toString() };
+
+  // 10.000 ve üzeri K formatı (Örn: 10.5K, 12.1K)
+  return {
+    display: `${sign}${(absNum / 1000).toFixed(1)}K`,
+    full: full
+  };
 }
 
 // 6. DELTA HESAPLAYICI (İstatistikler için artış/azalış)
@@ -139,9 +145,18 @@ export function calculateDelta(current, previous, metricType = 'total') {
   }
 
   // Yüzdelik Hesaplama
-  const percentage = Math.round((diff / previous) * 100);
+  let percentage = Math.round((diff / previous) * 100);
+
+  // 🟢 ENTERPRISE: 10000% gibi absürt değerleri engelle (UI bozulmasın)
+  const isExtreme = Math.abs(percentage) > 999;
+  if (isExtreme) {
+    percentage = percentage > 0 ? 999 : -999;
+  }
+
   const sign = percentage > 0 ? "+" : "";
-  const val = percentage === 0 ? "%0" : `${sign}%${Math.abs(percentage)}`;
+  const prefix = isExtreme ? (percentage > 0 ? ">" : "<") : ""; // >+%999 veya <-%999
+
+  const val = percentage === 0 ? "%0" : `${prefix}${sign}%${Math.abs(percentage)}`;
 
   let type = "neutral";
   if (percentage > 0) type = "increase";

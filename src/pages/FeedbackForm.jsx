@@ -319,15 +319,23 @@ export default function FeedbackForm() {
 
   // --- HANDLERS ---
   const handleStarClick = (starValue, isGeneral = false) => {
+    if (isGeneral) {
+      if (generalRating === starValue) {
+        setGeneralRating(0);
+        return;
+      }
+      setGeneralRating(starValue);
+    } else {
+      if (rating === starValue) {
+        setRating(0);
+        return;
+      }
+      setRating(starValue);
+    }
+
     if (starValue >= 3) {
       setAnimatingStar(starValue);
       setTimeout(() => setAnimatingStar(null), 400);
-    }
-
-    if (isGeneral) {
-      setGeneralRating(starValue);
-    } else {
-      setRating(starValue);
     }
   };
 
@@ -341,10 +349,10 @@ export default function FeedbackForm() {
     }
 
     const options = {
-      maxSizeMB: 1,
-      maxWidthOrHeight: 1920,
+      maxSizeMB: 0.8,
+      maxWidthOrHeight: 1280,
       useWebWorker: true,
-      initialQuality: 0.8
+      initialQuality: 0.7
     };
 
     for (const file of files) {
@@ -369,10 +377,10 @@ export default function FeedbackForm() {
     if (!file) return;
 
     const options = {
-      maxSizeMB: 1,
-      maxWidthOrHeight: 1920,
+      maxSizeMB: 0.8,
+      maxWidthOrHeight: 1280,
       useWebWorker: true,
-      initialQuality: 0.8
+      initialQuality: 0.7
     };
 
     try {
@@ -389,27 +397,40 @@ export default function FeedbackForm() {
   const isStepValid = () => {
     if (!selectedBranch) return false;
 
+    // 🟢 Genel değerledirme yıldız/mesaj mantığı: Metin varsa yıldız zorunlu.
+    const isGeneralEvalValid = () => {
+      if (generalComment.trim().length > 0) {
+        return generalRating > 0;
+      }
+      return true; // Metin yoksa yıldız opsiyonel
+    };
+
     if (feedbackType === 'complaint') {
       if (currentStep === 1) return hasReceipt ? !!receiptFile : !!visitDate;
       if (currentStep === 2) return message.trim().length >= 10;
       if (currentStep === 3) {
+        // Misafir iletişim kontrolü
         if (isGuest && wantsGuestContact) {
-          return guestName.trim().length > 1 && guestPhone.trim().length > 9;
+          if (!(guestName.trim().length > 1 && guestPhone.trim().length > 9)) return false;
         }
-        return true;
+        // Genel değerlendirme kontrolü
+        return isGeneralEvalValid();
       }
       return true;
     }
 
     if (feedbackType === 'suggestion') {
       if (currentStep === 1) return message.trim().length >= 10;
+      if (currentStep === 2) return isGeneralEvalValid();
       return true;
     }
 
     if (feedbackType === 'review') {
       if (currentStep === 1) return rating > 0;
+      if (currentStep === 2) return true; // Review final adımında mesaj opsiyonel, puan zaten 1. adımda alındı
       return true;
     }
+
     return true;
   };
 
@@ -669,7 +690,11 @@ export default function FeedbackForm() {
                   </div>
                   <textarea
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val.length <= 1000) setMessage(val);
+                    }}
+                    maxLength={1000}
                     placeholder={t.message.placeholder}
                     className="w-full h-full bg-transparent p-4 pl-12 text-base text-white placeholder:text-slate-500 resize-none outline-none"
                     autoFocus
@@ -778,11 +803,20 @@ export default function FeedbackForm() {
                     </div>
                     <textarea
                       value={generalComment}
-                      onChange={(e) => setGeneralComment(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val.length <= 500) setGeneralComment(val);
+                      }}
+                      maxLength={500}
                       placeholder={getDynamicPlaceholder(generalRating, t)}
                       className="w-full bg-slate-950/50 border border-slate-600/50 rounded-xl p-3 pl-10 text-sm text-white resize-none focus:ring-1 focus:ring-teal-500/50 focus:border-teal-500 transition-all placeholder:text-slate-600"
                       rows={3}
                     />
+                    <div className="flex justify-end mt-1">
+                      <span className={`text-[10px] ${generalComment.length >= 500 ? 'text-red-400' : 'text-slate-500'}`}>
+                        {generalComment.length}/500
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -795,10 +829,19 @@ export default function FeedbackForm() {
                   </div>
                   <textarea
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val.length <= 1000) setMessage(val);
+                    }}
+                    maxLength={1000}
                     placeholder={t.message.placeholder}
                     className="w-full h-full bg-transparent p-4 pl-12 text-white resize-none outline-none placeholder:text-slate-500"
                   />
+                  <div className="absolute bottom-2 right-4">
+                    <span className={`text-[10px] ${message.length >= 1000 ? 'text-red-400' : 'text-slate-500'}`}>
+                      {message.length}/1000
+                    </span>
+                  </div>
                 </div>
               )}
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useAdminContext } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import { format, startOfDay, endOfDay, parseISO, differenceInDays, sub } from 'date-fns';
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import DateRangePicker from '@/components/DateRangePicker';
+import { formatCompactNumber } from "@/lib/utils";
 
 // --- RENK PALETİ ---
 const COLORS = {
@@ -30,7 +31,7 @@ const COLORS = {
 const formatNumber = (num) => new Intl.NumberFormat('tr-TR').format(num);
 
 // --- YARDIMCI FONKSİYONLAR ---
-import { formatCompactNumber } from "@/lib/utils";
+// --- YARDIMCI FONKSİYONLAR ---
 
 // Rating (1-5) to Score (0-100) converter
 const calculateScore = (rating) => {
@@ -95,6 +96,17 @@ const getSmartInsight = (branch) => {
     };
   }
 
+  // Case 3.5: Strong Performance (Good Score, Consistent Volume)
+  if (score >= 80 && volume >= 15) {
+    return {
+      title: "🌟 Verimli Performans",
+      desc: "Şube gayet başarılı bir çizgide ilerliyor (Puan: " + score + "). Müşteri memnuniyeti yüksek ve veri akışı sağlıklı.",
+      suggestion: "Bu başarıyı sürdürülebilir kılmak için Google yorumlarına (Haritalara Geçiş) odaklanabilirsiniz.",
+      color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+      icon: CheckCircle
+    };
+  }
+
   // Case 4: Critical Operational Alarm (complaintRatio > 10% & ops < 60)
   if (complaintRatio > 0.1 && ops < 60) {
     return {
@@ -125,6 +137,17 @@ const getSmartInsight = (branch) => {
       suggestion: "Şube yöneticisini ve ekibini tebrik edebilir, bu başarıyı motivasyonu artırmak için ekiple paylaşabilirsiniz.",
       color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
       icon: Trophy
+    };
+  }
+
+  // Case 3.5: Strong Performance (Good Score, Consistent Volume)
+  if (score >= 80 && volume >= 15) {
+    return {
+      title: "🌟 Verimli Performans",
+      desc: "Şube gayet başarılı bir çizgide ilerliyor (Puan: " + score + "). Müşteri memnuniyeti yüksek ve veri akışı sağlıklı.",
+      suggestion: "Bu başarıyı sürdürülebilir kılmak için Google yorumlarına (Haritalara Geçiş) odaklanabilirsiniz.",
+      color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+      icon: CheckCircle
     };
   }
 
@@ -183,23 +206,33 @@ const CustomTooltip = ({ active, payload, label }) => {
 const KpiCard = ({ title, value, previousValue, icon: Icon, colorClass, suffix = "", inverseTrend = false }) => {
   let percentChange = 0;
   let trendDirection = "neutral";
+  let isExtreme = false;
+
   if (previousValue > 0) {
     percentChange = ((value - previousValue) / previousValue) * 100;
+
+    // 🟢 ENTERPRISE: 10000% gibi absürt değerleri engelle
+    if (Math.abs(percentChange) > 999) {
+      isExtreme = true;
+      percentChange = percentChange > 0 ? 999 : -999;
+    }
+
     trendDirection = percentChange > 0 ? 'up' : percentChange < 0 ? 'down' : 'neutral';
-  } else if (value > 0) { trendDirection = 'up'; percentChange = 100; }
+  } else if (value > 0) {
+    trendDirection = 'up';
+    percentChange = 100;
+  }
 
   const isGood = inverseTrend ? trendDirection === 'down' : trendDirection === 'up';
   const trendColor = trendDirection === 'neutral' ? "text-slate-400 bg-slate-800" : (isGood ? "text-emerald-400 bg-emerald-500/10" : "text-rose-400 bg-rose-500/10");
 
-  // 🟢 ENTERPRISE: Büyük sayılar için kompakt format (9.9K+) + Tooltip
+  // 🟢 ENTERPRISE: 10.000'e kadar tam sayı, sonrası için kompakt format (K)
   const numericValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value;
-  // Suffix varsa (örn: TL) sayısal değeri ayırıp formatlayalım, yoksa direkt formatlayalım
-  // Ancak suffix genelde "TL" gibi metinler, formatCompactNumber sadece sayı alır
-  // Bu yüzden suffix'i display string'e ekleyeceğiz
-  const formatted = formatCompactNumber(numericValue || 0);
-  const displayValue = `${formatted.display}${suffix}`;
-  const fullValue = `${formatted.full}${suffix}`;
-  const needsTooltip = formatted.display !== formatted.full;
+
+  const { display: formattedValue, full: fullValue } = formatCompactNumber(numericValue);
+
+  // Suffix varsa (örn: TL) sona ekle
+  const displayValue = `${formattedValue}${suffix}`;
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50 p-5 shadow-sm hover:border-slate-700 transition-all group">
@@ -207,8 +240,8 @@ const KpiCard = ({ title, value, previousValue, icon: Icon, colorClass, suffix =
         <div>
           <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{title}</p>
           <h3
-            className={`text-2xl font-bold text-white mt-1 ${needsTooltip ? 'cursor-help' : ''}`}
-            title={needsTooltip ? `Tam değer: ${fullValue}` : undefined}
+            className="text-2xl font-bold text-white mt-1"
+            title={numericValue >= 10000 ? `Tam değer: ${formatNumber(numericValue)}` : undefined}
           >
             {displayValue}
           </h3>
@@ -220,7 +253,7 @@ const KpiCard = ({ title, value, previousValue, icon: Icon, colorClass, suffix =
           {trendDirection === 'up' && <ArrowUpRight className="w-3 h-3" />}
           {trendDirection === 'down' && <ArrowDownRight className="w-3 h-3" />}
           {trendDirection === 'neutral' && <Minus className="w-3 h-3" />}
-          <span>{Math.abs(percentChange).toFixed(0)}%</span>
+          <span>{isExtreme ? '>' : ''}{Math.abs(percentChange).toFixed(0)}%</span>
         </div>
         <span className="text-[10px] text-slate-500">geçen döneme göre</span>
       </div>
@@ -406,6 +439,8 @@ const DetailedAnalytics = () => {
   const [loading, setLoading] = useState(true);
   const [feedbacks, setFeedbacks] = useState([]);
   const [prevFeedbacks, setPrevFeedbacks] = useState([]);
+  const [serverFeedbackCount, setServerFeedbackCount] = useState(null);
+  const [serverPrevFeedbackCount, setServerPrevFeedbackCount] = useState(null);
   const [trafficStats, setTrafficStats] = useState({ visits: 0, conversionRate: 0, qrCount: 0, webCount: 0, googleRedirects: 0 });
   const [trendViewMode, setTrendViewMode] = useState('total');
 
@@ -434,28 +469,63 @@ const DetailedAnalytics = () => {
       const prevFrom = sub(dateRange.from, { days: dayDiff });
       const prevTo = sub(dateRange.to, { days: dayDiff });
 
+      // 🟢 SERVER-SIDE COUNT: PostgREST 1000 sınırı atlatıcı
+      let countCurrQuery = supabase.from('feedbacks')
+        .select('*', { count: 'exact', head: true })
+        .eq('business_id', businessId)
+        .gte('created_at', startOfDay(dateRange.from).toISOString())
+        .lte('created_at', endOfDay(dateRange.to).toISOString());
+      if (selectedBranchId !== 'all') countCurrQuery = countCurrQuery.eq('branch_id', selectedBranchId);
+
+      let countPrevQuery = supabase.from('feedbacks')
+        .select('*', { count: 'exact', head: true })
+        .eq('business_id', businessId)
+        .gte('created_at', startOfDay(prevFrom).toISOString())
+        .lte('created_at', endOfDay(prevTo).toISOString());
+      if (selectedBranchId !== 'all') countPrevQuery = countPrevQuery.eq('branch_id', selectedBranchId);
+
       let queryCurr = supabase.from('feedbacks')
         .select('id, created_at, rating, general_eval_rating, feedback_type, status, branch_id, redirected_to_google, branches(branch_name_tr)')
         .eq('business_id', businessId)
         .gte('created_at', startOfDay(dateRange.from).toISOString())
-        .lte('created_at', endOfDay(dateRange.to).toISOString());
+        .lte('created_at', endOfDay(dateRange.to).toISOString())
+        .limit(100000);
 
       if (selectedBranchId !== 'all') queryCurr = queryCurr.eq('branch_id', selectedBranchId);
 
-      let queryPrev = supabase.from('feedbacks').select('id, rating, general_eval_rating, status, feedback_type').eq('business_id', businessId).gte('created_at', startOfDay(prevFrom).toISOString()).lte('created_at', endOfDay(prevTo).toISOString());
+      let queryPrev = supabase.from('feedbacks')
+        .select('id, rating, general_eval_rating, status, feedback_type')
+        .eq('business_id', businessId)
+        .gte('created_at', startOfDay(prevFrom).toISOString())
+        .lte('created_at', endOfDay(prevTo).toISOString())
+        .limit(100000);
+
       if (selectedBranchId !== 'all') queryPrev = queryPrev.eq('branch_id', selectedBranchId);
 
-      let qrTrafficQuery = supabase.from('qr_scans').select('id, branch_id', { count: 'exact' }).eq('business_id', businessId).gte('created_at', startOfDay(dateRange.from).toISOString()).lte('created_at', endOfDay(dateRange.to).toISOString());
-      let webTrafficQuery = supabase.from('page_views').select('id, branch_id', { count: 'exact' }).eq('business_id', businessId).eq('source', 'web').gte('created_at', startOfDay(dateRange.from).toISOString()).lte('created_at', endOfDay(dateRange.to).toISOString());
+      let qrTrafficQuery = supabase.from('qr_scans')
+        .select('id, branch_id', { count: 'exact' })
+        .eq('business_id', businessId)
+        .gte('created_at', startOfDay(dateRange.from).toISOString())
+        .lte('created_at', endOfDay(dateRange.to).toISOString())
+        .limit(100000);
 
-      if (selectedBranchId !== 'all') {
-        qrTrafficQuery = qrTrafficQuery.eq('branch_id', selectedBranchId);
-        webTrafficQuery = webTrafficQuery.eq('branch_id', selectedBranchId);
-      }
+      let webTrafficQuery = supabase.from('page_views')
+        .select('id, branch_id', { count: 'exact' })
+        .eq('business_id', businessId)
+        .eq('source', 'web')
+        .gte('created_at', startOfDay(dateRange.from).toISOString())
+        .lte('created_at', endOfDay(dateRange.to).toISOString())
+        .limit(100000);
 
-      const [resCurr, resPrev, resQrTraffic, resWebTraffic] = await Promise.all([queryCurr, queryPrev, qrTrafficQuery, webTrafficQuery]);
+      const [resCurr, resPrev, resQrTraffic, resWebTraffic, resCountCurr, resCountPrev] = await Promise.all([
+        queryCurr, queryPrev, qrTrafficQuery, webTrafficQuery, countCurrQuery, countPrevQuery
+      ]);
 
       if (resCurr.error) throw resCurr.error;
+
+      // 🟢 Server-side count (1000 limitine takılmaz)
+      setServerFeedbackCount(resCountCurr.count || 0);
+      setServerPrevFeedbackCount(resCountPrev.count || 0);
 
       const currData = resCurr.data || [];
       setFeedbacks(currData);
@@ -481,27 +551,34 @@ const DetailedAnalytics = () => {
     }
   }, [businessId, selectedBranchId, dateRange, toast]);
 
-  // 🟢 REALTIME (Anlık Güncelleme)
+  // 🟢 REALTIME (Anlık Güncelleme - DEBOUNCED)
+  const analyticsDebounceRef = useRef(null);
   useEffect(() => {
     fetchData();
     if (!businessId) return;
 
     const channel = supabase.channel('analytics-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks', filter: `business_id=eq.${businessId}` }, () => {
-        fetchData();
+        if (analyticsDebounceRef.current) clearTimeout(analyticsDebounceRef.current);
+        analyticsDebounceRef.current = setTimeout(() => fetchData(), 1500);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'qr_scans', filter: `business_id=eq.${businessId}` }, () => {
-        fetchData();
+        if (analyticsDebounceRef.current) clearTimeout(analyticsDebounceRef.current);
+        analyticsDebounceRef.current = setTimeout(() => fetchData(), 1500);
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+      if (analyticsDebounceRef.current) clearTimeout(analyticsDebounceRef.current);
+    };
   }, [businessId, fetchData]);
 
   // KPI
   const kpi = useMemo(() => {
-    const calc = (data) => {
-      const total = data.length;
+    const calc = (data, serverCount = null) => {
+      // 🟢 SERVER COUNT kullan (PostgREST 1000 sınırına takılmaz)
+      const total = serverCount !== null ? serverCount : data.length;
       if (total === 0) return { total: 0, loyaltyScore: 0, resolvedRate: 0, complaintCount: 0 };
       let totalScore = 0, scoreCount = 0;
       data.forEach(f => {
@@ -510,12 +587,12 @@ const DetailedAnalytics = () => {
       });
       const loyaltyScore = scoreCount > 0 ? (totalScore / scoreCount).toFixed(0) : 0;
       const resolvedCount = data.filter(f => f.status === 'resolved').length;
-      const resolvedRate = ((resolvedCount / total) * 100).toFixed(0);
+      const resolvedRate = total > 0 ? ((resolvedCount / total) * 100).toFixed(0) : 0;
       const complaintCount = data.filter(f => f.feedback_type === 'complaint' && f.status !== 'resolved').length;
       return { total, loyaltyScore, resolvedRate, complaintCount };
     };
-    return { curr: calc(feedbacks), prev: calc(prevFeedbacks) };
-  }, [feedbacks, prevFeedbacks]);
+    return { curr: calc(feedbacks, serverFeedbackCount), prev: calc(prevFeedbacks, serverPrevFeedbackCount) };
+  }, [feedbacks, prevFeedbacks, serverFeedbackCount, serverPrevFeedbackCount]);
 
   // CHART DATA
   const trendData = useMemo(() => {
@@ -774,7 +851,7 @@ const DetailedAnalytics = () => {
                     </div>
                   </div>
                   <div className="h-72 w-full min-h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                       {trendViewMode === 'total' ? (
                         <AreaChart data={trendData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                           <defs><linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.4} /><stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} /></linearGradient></defs>
@@ -862,7 +939,7 @@ const DetailedAnalytics = () => {
                   <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
                     {/* Pasta Grafik */}
                     <div className="relative w-52 h-52 shrink-0 flex items-center justify-center mx-auto md:mx-0">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <PieChart className="detail-analytics-pie">
                           <Pie
                             data={sourceData}

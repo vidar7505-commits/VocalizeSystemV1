@@ -2,67 +2,75 @@
 // Deploy with: supabase functions deploy send-error-email
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-// Rate limiting: max 10 emails per hour
-const emailCache = new Map()
-const MAX_EMAILS_PER_HOUR = 10
-const HOUR_IN_MS = 60 * 60 * 1000
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-const isRateLimited = () => {
-    const now = Date.now()
+// Global 24h Throttling Check
+const shouldSendEmail = async (errorCode, currentTimestamp) => {
+  try {
+    // Calculate 24h ago
+    const oneDayAgo = new Date(new Date(currentTimestamp).getTime() - 24 * 60 * 60 * 1000).toISOString()
 
-    // Clean old entries
-    for (const [timestamp] of emailCache.entries()) {
-        if (now - timestamp > HOUR_IN_MS) {
-            emailCache.delete(timestamp)
-        }
+    // Count CRITICAL errors with same code, created between (now-24h) and (current_error_time)
+    // We look for ANY error that happened BEFORE this one but within the window.
+    // If found, we skip sending email.
+    const { count, error } = await supabase
+      .from('client_errors')
+      .select('*', { count: 'exact', head: true })
+      .eq('error_code', errorCode)
+      .eq('severity', 'CRITICAL')
+      .gt('created_at', oneDayAgo)
+      .lt('created_at', currentTimestamp) // Strictly older than current
+
+    if (error) {
+      console.error('Db check error:', error)
+      return true // Fail checking -> Send email to be safe (or false to be safe? Default to send)
     }
 
-    return emailCache.size >= MAX_EMAILS_PER_HOUR
+    // If count > 0, it means there was a previous error in the window. Throttle.
+    return count === 0
+  } catch (e) {
+    console.error('Throttling check failed:', e)
+    return true
+  }
 }
 
 serve(async (req) => {
-    try {
-        // Only allow POST requests
-        if (req.method !== 'POST') {
-            return new Response(
-                JSON.stringify({ error: 'Method not allowed' }),
-                { status: 405, headers: { 'Content-Type': 'application/json' } }
-            )
-        }
+  try {
+    // Only allow POST requests
+    if (req.method !== 'POST') {
+      return new Response(
+        JSON.stringify({ error: 'Method not allowed' }),
+        { status: 405, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
-        // Check rate limiting
-        if (isRateLimited()) {
-            console.warn('Rate limit exceeded for error emails')
-            return new Response(
-                JSON.stringify({ error: 'Rate limit exceeded' }),
-                { status: 429, headers: { 'Content-Type': 'application/json' } }
-            )
-        }
+    const {
+      errorCode,
+      message,
+      stack,
+      url,
+      userAgent,
+      userId,
+      timestamp,
+      to
+    } = await req.json()
 
-        const {
-            errorCode,
-            message,
-            stack,
-            url,
-            userAgent,
-            userId,
-            timestamp,
-            to
-        } = await req.json()
+    // Validate required fields
+    if (!errorCode || !message || !to) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
-        // Validate required fields
-        if (!errorCode || !message || !to) {
-            return new Response(
-                JSON.stringify({ error: 'Missing required fields' }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            )
-        }
-
-        // Format email body
-        const emailHtml = `
+    // Format email body
+    const emailHtml = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -126,42 +134,39 @@ serve(async (req) => {
       </html>
     `
 
-        // Send email via Resend
-        const res = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${RESEND_API_KEY}`
-            },
-            body: JSON.stringify({
-                from: 'Vocalize Error Monitor <errors@vocalize.global>',
-                to: [to],
-                subject: `🚨 Kritik Hata: ${errorCode}`,
-                html: emailHtml
-            })
-        })
+    // Send email via Resend
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RESEND_API_KEY}`
+      },
+      body: JSON.stringify({
+        from: 'Vocalize Error Monitor <errors@vocalize.global>',
+        to: [to],
+        subject: `🚨 Kritik Hata: ${errorCode}`,
+        html: emailHtml
+      })
+    })
 
-        if (!res.ok) {
-            const error = await res.text()
-            console.error('Resend API error:', error)
-            throw new Error(`Failed to send email: ${error}`)
-        }
-
-        // Mark email as sent (for rate limiting)
-        emailCache.set(Date.now(), true)
-
-        const data = await res.json()
-
-        return new Response(
-            JSON.stringify({ success: true, emailId: data.id }),
-            { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-
-    } catch (error) {
-        console.error('Error in send-error-email function:', error)
-        return new Response(
-            JSON.stringify({ error: error.message }),
-            { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+    if (!res.ok) {
+      const error = await res.text()
+      console.error('Resend API error:', error)
+      throw new Error(`Failed to send email: ${error}`)
     }
+
+    const data = await res.json()
+
+    return new Response(
+      JSON.stringify({ success: true, emailId: data.id }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('Error in send-error-email function:', error)
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
 })

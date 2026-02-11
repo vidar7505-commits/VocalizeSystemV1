@@ -48,7 +48,10 @@ const AdminHeader = () => {
     businessId, businessName, branches, selectedBranchId, setSelectedBranchId,
     qrCount, loading, dateRange,
     isSpecialOffer, monthlyFeeOverride,
-    userRole, assignedBranchId, isBranchManager
+    userRole, assignedBranchId, isBranchManager,
+    // 🟢 Context-based Notification Data
+    notifications, unreadCount, escalatedCount,
+    markNotificationAsRead, markAllNotificationsAsRead, checkEscalatedStatus
   } = useAdminContext();
 
   const { user, signOut } = useAuth();
@@ -58,14 +61,12 @@ const AdminHeader = () => {
 
   // --- STATE YÖNETİMİ ---
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false); // Profil menüsü kontrolü
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
+  // 🟢 REMOVED: Local Notification State (notifications, unreadCount, escalatedCount) moved to Context
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [escalatedCount, setEscalatedCount] = useState(0);
   const [branchSearchQuery, setBranchSearchQuery] = useState('');
 
   // --- ŞUBE FİLTRELEME (Enterprise için 300+ şube desteği) ---
@@ -115,35 +116,6 @@ const AdminHeader = () => {
     }
   };
 
-  // --- VERİ ÇEKME FONKSİYONLARI ---
-  const checkEscalatedStatus = useCallback(async () => {
-    if (!businessId) return;
-    try {
-      let query = supabase.from('feedbacks')
-        .select('*', { count: 'exact', head: true })
-        .eq('business_id', businessId)
-        .eq('status', 'escalated');
-
-      if (isBranchManager && assignedBranchId) {
-        query = query.eq('branch_id', assignedBranchId);
-      }
-      const { count } = await query;
-      setEscalatedCount(count || 0);
-    } catch (e) {
-      console.error(e);
-    }
-  }, [businessId, isBranchManager, assignedBranchId]);
-
-  const fetchNotifications = useCallback(async () => {
-    if (!user || !businessId) return;
-    let query = supabase.from('notifications').select('*, feedbacks(feedback_type)').eq('user_id', user.id).eq('business_id', businessId);
-    if (isBranchManager && assignedBranchId) query = query.eq('branch_id', assignedBranchId);
-
-    const { data } = await query.order('created_at', { ascending: false }).limit(10);
-    setNotifications(data || []);
-    setUnreadCount((data || []).filter(n => !n.is_read).length);
-  }, [user, businessId, isBranchManager, assignedBranchId]);
-
   const getNotificationLabel = (n) => {
     const type = n.feedbacks?.feedback_type || n.feedback_type;
     if (type === 'complaint') return 'Yeni bir şikayetiniz var';
@@ -152,52 +124,24 @@ const AdminHeader = () => {
     return n.message || 'Yeni bildirim';
   };
 
-  useEffect(() => {
-    if (user && businessId) {
-      fetchNotifications();
-      checkEscalatedStatus();
-    }
-  }, [user, businessId, fetchNotifications, checkEscalatedStatus]);
-
-  useEffect(() => {
-    if (!user || !businessId) return;
-    const channel = supabase.channel('header-notifications')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (payload) => {
-        const newNotification = payload.new;
-        const isRelevant = isBranchManager ? newNotification.branch_id === assignedBranchId : newNotification.business_id === businessId;
-        if (isRelevant) {
-          setNotifications(prev => [newNotification, ...prev.slice(0, 9)]);
-          setUnreadCount(prev => prev + 1);
-          toast({ title: `Yeni Bildirim`, description: newNotification.message || 'Yeni bildirim.' });
-        }
-      }).subscribe();
-
-    const feedbackChannel = supabase.channel('header-feedback-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks', filter: `business_id=eq.${businessId}` }, () => {
-        checkEscalatedStatus();
-        fetchNotifications();
-      }).subscribe();
-
-    return () => { supabase.removeChannel(channel); supabase.removeChannel(feedbackChannel); };
-  }, [user, businessId, toast, isBranchManager, assignedBranchId, checkEscalatedStatus, fetchNotifications]);
+  // 🟢 REMOVED: All local data fetching and subscription logic (fetchNotifications, useEffects)
+  // Logic is now in AdminContext to prevent double-subscription and performance issues.
 
   const handleNotificationClick = async (notification) => {
     const targetId = notification.related_id || notification.feedback_id;
     if (!targetId) return;
     setNotificationOpen(false);
+
     if (!notification.is_read) {
-      setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      supabase.from('notifications').update({ is_read: true }).eq('id', notification.id).then();
+      // 🟢 Use Context Method
+      markNotificationAsRead(notification.id);
     }
     navigate('/admin-panel/feedbacks', { state: { openFeedbackId: targetId } });
   };
 
   const handleMarkAllAsRead = async () => {
-    await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    setUnreadCount(0);
-    toast({ title: 'Tüm bildirimler okundu.' });
+    // 🟢 Use Context Method
+    await markAllNotificationsAsRead();
   };
 
   const handleLogout = async () => { await signOut(); navigate('/'); };
