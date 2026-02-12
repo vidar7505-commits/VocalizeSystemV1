@@ -254,18 +254,25 @@ const FeedbackManagement = () => {
       navigate(location.pathname, { replace: true, state: {} });
       return;
     }
+
     if (location.state?.openFeedbackId) {
       const targetId = location.state.openFeedbackId;
       setPendingFeedbackId(targetId);
-      localStorage.setItem('vocalize_pending_feedback', targetId);
+      // 🟢 REMOVE: Do not persist in localStorage here. Rely on state.
+      // localStorage.setItem('vocalize_pending_feedback', targetId); 
       setModalOpenAttempts(0);
       navigate(location.pathname, { replace: true, state: {} });
     }
     else {
+      // 🟢 CONSUME-ONCE PATTERN: Read & Clear immediately
       const storedId = localStorage.getItem('vocalize_pending_feedback');
-      if (storedId && !pendingFeedbackId) {
-        setPendingFeedbackId(storedId);
-        setModalOpenAttempts(0);
+      if (storedId) {
+        if (!pendingFeedbackId) {
+          setPendingFeedbackId(storedId);
+          setModalOpenAttempts(0);
+        }
+        // 🟢 CRITICAL FIX: Remove immediately to prevent loops if app crashes later
+        localStorage.removeItem('vocalize_pending_feedback');
       }
     }
   }, [location.state, navigate, location.pathname, pendingFeedbackId]);
