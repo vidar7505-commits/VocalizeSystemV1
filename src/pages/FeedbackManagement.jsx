@@ -141,7 +141,7 @@ const FeedbackCard = React.memo(React.forwardRef(({
 }));
 
 const FeedbackManagement = () => {
-  const { businessId, selectedBranchId } = useAdminContext();
+  const { businessId, selectedBranchId, escalatedCount } = useAdminContext();
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
@@ -244,11 +244,7 @@ const FeedbackManagement = () => {
 
       // Sayfa yüklendiğinde de çalışsın
       setTimeout(() => {
-        if (feedbackListRef.current) {
-          const yOffset = -100; // Header offset
-          const y = feedbackListRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
-          window.scrollTo({ top: y, behavior: 'smooth' });
-        }
+        scrollToFeedbacks();
       }, 500);
 
       navigate(location.pathname, { replace: true, state: {} });
@@ -279,11 +275,12 @@ const FeedbackManagement = () => {
 
   // Mobilde acil filtresiyle gelindiğinde listeyi görünür yap
   useEffect(() => {
+    // 🟢 SCROLL TRIGGER: Wait for loading to finish and reference to exist
     if (mobileScrollToList && !loading && feedbacks.length >= 0 && feedbackListRef.current) {
       const t = setTimeout(() => {
-        feedbackListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrollToFeedbacks();
         setMobileScrollToList(false);
-      }, 300);
+      }, 100); // Small delay to ensure layout is stable
       return () => clearTimeout(t);
     }
   }, [mobileScrollToList, loading, feedbacks.length]);
@@ -605,30 +602,51 @@ const FeedbackManagement = () => {
     }
   }, [searchQuery, statusFilter, typeFilter, flagFilter, dateFilter, showNotesOnly, showUrgentOnly]);
 
-  const hasUrgentFeedbacks = useMemo(() => feedbacks.some(f => f.status === 'escalated'), [feedbacks]);
+  // 🟢 GLOBAL URGENT CHECK (Server-Side Count)
+  // feedback.some check was flawed because pagination hides urgent items on other pages.
+  const hasUrgentFeedbacks = escalatedCount > 0;
 
   // 🟢 ACİL SCROLL İŞLEMİ (Buton Tıklaması)
+  const scrollToFeedbacks = () => {
+    // 1. Container'ı bul (AdminLayout içindeki main: .overflow-y-auto)
+    // AdminLayout yapısında <main> etiketi scroll edilen asıl elementtir.
+    const mainContainer = document.querySelector('main');
+
+    if (feedbackListRef.current && mainContainer) {
+      // Container'a göre pozisyon hesapla
+      const listRect = feedbackListRef.current.getBoundingClientRect();
+      const mainRect = mainContainer.getBoundingClientRect();
+      const currentScrollTop = mainContainer.scrollTop;
+
+      // Hedef: Listenin tepesi container'ın tepesine gelsin (-20px pay)
+      // listRect.top - mainRect.top = Elementin container görünür alanının tepesine olan uzaklığı
+      const relativeTop = listRect.top - mainRect.top;
+      const targetScrollTop = currentScrollTop + relativeTop - 20;
+
+      mainContainer.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+    } else if (feedbackListRef.current) {
+      // Fallback (Layout yapısı değişirse veya main bulunamazsa)
+      feedbackListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const handleUrgentClick = () => {
     setShowUrgentOnly(true);
-    setIsRefreshing(true); // Dikkat çekmek için flulaştır
+    setIsRefreshing(true);
 
-    // Filtreleri sıfırla (Acil görünümünü bozmasınlar)
+    // Filtreleri sıfırla
     setStatusFilter('all');
     setTypeFilter('all');
     setFlagFilter('all');
     setDateFilter('all');
     setLocalSearchQuery('');
     setSearchQuery('');
-    setShowNotesOnly(false);
+
+    // 🟢 RACE CONDITION FIX: Use state-based trigger
+    setMobileScrollToList(true);
 
     setTimeout(() => {
       setIsRefreshing(false);
-      // Listeye yumuşakça kaydır
-      if (feedbackListRef.current) {
-        const yOffset = -100; // Header offset
-        const y = feedbackListRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
-        window.scrollTo({ top: y, behavior: 'smooth' });
-      }
     }, 500);
   };
 

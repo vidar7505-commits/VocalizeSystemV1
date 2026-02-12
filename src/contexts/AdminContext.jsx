@@ -213,13 +213,17 @@ export const AdminProvider = ({ children }) => {
 
       if (userRole === 'branch_manager' && assignedBranchId) {
         query = query.eq('branch_id', assignedBranchId);
+      } else if (selectedBranchId && selectedBranchId !== 'all') {
+        // 🟢 Owner selects a specific branch -> Only show urgent for that branch
+        query = query.eq('branch_id', selectedBranchId);
       }
+
       const { count } = await query;
       setEscalatedCount(count || 0);
     } catch (e) {
       console.error(e);
     }
-  }, [businessId, userRole, assignedBranchId]);
+  }, [businessId, userRole, assignedBranchId, selectedBranchId]);
 
   // 🟢 MARK AS READ HELPERS
   const markNotificationAsRead = useCallback(async (notificationId) => {
