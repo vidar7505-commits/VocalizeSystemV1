@@ -200,6 +200,9 @@ const FeedbackManagement = () => {
     };
   }, [localSearchQuery]);
 
+  // 🟢 Request ID to prevent race conditions
+  const fetchRequestId = useRef(0);
+
   // Main Data Fetcher - Triggered by filters or page changes
   useEffect(() => {
     if (!businessId) return;
@@ -225,6 +228,17 @@ const FeedbackManagement = () => {
   // URL state: urgent filtresi veya openFeedbackId
   useEffect(() => {
     if (location.state?.filter === 'urgent') {
+      // 🟢 ACİL DURUM: Tüm diğer filtreleri sıfırla ki sonuçlar doğru gelsin
+      setStatusFilter('all');
+      setTypeFilter('all');
+      setFlagFilter('all');
+      setDateFilter('all');
+      setLocalSearchQuery('');
+      setSearchQuery('');
+      setShowNotesOnly(false);
+      setPendingFeedbackId(null);
+      localStorage.removeItem('vocalize_pending_feedback');
+
       setShowUrgentOnly(true);
       if (typeof window !== 'undefined' && window.innerWidth < 768) setMobileScrollToList(true);
 
@@ -235,7 +249,7 @@ const FeedbackManagement = () => {
           const y = feedbackListRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
           window.scrollTo({ top: y, behavior: 'smooth' });
         }
-      }, 800);
+      }, 500);
 
       navigate(location.pathname, { replace: true, state: {} });
       return;
@@ -335,7 +349,10 @@ const FeedbackManagement = () => {
 
   const fetchFeedbacks = async () => {
     if (!businessId) return;
+
+    const currentRequestId = ++fetchRequestId.current;
     setLoading(true);
+
     try {
       // 🟢 SERVER-SIDE FILTER BUILDER
       const buildQuery = (q) => {
@@ -471,12 +488,16 @@ const FeedbackManagement = () => {
         };
       });
 
-      setFeedbacks(mergedFeedbacks);
+      if (currentRequestId === fetchRequestId.current) {
+        setFeedbacks(mergedFeedbacks);
+      }
     } catch (error) {
       console.error(error);
       toast({ variant: "destructive", title: "Bağlantı Hatası", description: "Verileriniz yüklenirken bir sorun oluştu. Lütfen sayfayı yenileyin." });
     } finally {
-      setLoading(false);
+      if (currentRequestId === fetchRequestId.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -584,15 +605,24 @@ const FeedbackManagement = () => {
     setShowUrgentOnly(true);
     setIsRefreshing(true); // Dikkat çekmek için flulaştır
 
+    // Filtreleri sıfırla (Acil görünümünü bozmasınlar)
+    setStatusFilter('all');
+    setTypeFilter('all');
+    setFlagFilter('all');
+    setDateFilter('all');
+    setLocalSearchQuery('');
+    setSearchQuery('');
+    setShowNotesOnly(false);
+
     setTimeout(() => {
       setIsRefreshing(false);
-      // Listeye yumuşakça kaydır - Custom scroll with offset
+      // Listeye yumuşakça kaydır
       if (feedbackListRef.current) {
-        const yOffset = -100;
+        const yOffset = -100; // Header offset
         const y = feedbackListRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
         window.scrollTo({ top: y, behavior: 'smooth' });
       }
-    }, 800);
+    }, 500);
   };
 
   const handleFeedbackClick = React.useCallback((feedback) => {
@@ -642,7 +672,7 @@ const FeedbackManagement = () => {
             <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-full md:w-[140px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">Durum:</span>{statusFilter === 'all' ? 'Tümü' : statusFilter === 'new' ? 'Yeni' : statusFilter === 'pending' ? 'Beklemede' : statusFilter === 'in_progress' ? 'İşlemde' : 'Çözüldü'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Durumlar</SelectItem><SelectItem value="new">Yeni</SelectItem><SelectItem value="pending">Beklemede</SelectItem><SelectItem value="in_progress">İşlemde</SelectItem><SelectItem value="resolved">Çözüldü</SelectItem></SelectContent></Select>
             <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-full md:w-[140px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">Tip:</span>{typeFilter === 'all' ? 'Tümü' : typeFilter === 'complaint' ? 'Şikayet' : typeFilter === 'suggestion' ? 'Öneri' : 'Değerlendirme'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Tipler</SelectItem><SelectItem value="complaint">Şikayet</SelectItem><SelectItem value="suggestion">Öneri</SelectItem><SelectItem value="evaluation">Değerlendirme</SelectItem></SelectContent></Select>
             <Select value={flagFilter} onValueChange={setFlagFilter}><SelectTrigger className="w-full md:w-[130px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">Bayrak:</span>{flagFilter === 'all' ? 'Tümü' : flagFilter === 'vip' ? 'VIP' : 'Hassas'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm (Bayrak)</SelectItem><SelectItem value="vip">VIP Müşteri</SelectItem><SelectItem value="sensitive">Hassas Müşteri</SelectItem></SelectContent></Select>
-            <Select value={dateFilter} onValueChange={setDateFilter}><SelectTrigger className="w-full md:w-[150px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><Calendar className="w-3.5 h-3.5 mr-2 text-indigo-400 shrink-0" /><span className="truncate">Tarih</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Zamanlar</SelectItem><SelectItem value="today">Bugün</SelectItem><SelectItem value="last7">Son 7 Gün</SelectItem><SelectItem value="last30">Son 30 Gün</SelectItem><SelectItem value="last90">Son 90 Gün</SelectItem><SelectItem value="thisMonth">Bu Ay</SelectItem><SelectItem value="lastMonth">Geçen Ay</SelectItem></SelectContent></Select>
+            <Select value={dateFilter} onValueChange={setDateFilter}><SelectTrigger className="w-full md:w-[150px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><Calendar className="w-3.5 h-3.5 mr-2 text-indigo-400 shrink-0" /><span className="truncate">{{ 'all': 'Tüm Zamanlar', 'today': 'Bugün', 'last7': 'Son 7 Gün', 'last30': 'Son 30 Gün', 'last90': 'Son 90 Gün', 'thisMonth': 'Bu Ay', 'lastMonth': 'Geçen Ay' }[dateFilter] || 'Tarih'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Zamanlar</SelectItem><SelectItem value="today">Bugün</SelectItem><SelectItem value="last7">Son 7 Gün</SelectItem><SelectItem value="last30">Son 30 Gün</SelectItem><SelectItem value="last90">Son 90 Gün</SelectItem><SelectItem value="thisMonth">Bu Ay</SelectItem><SelectItem value="lastMonth">Geçen Ay</SelectItem></SelectContent></Select>
 
             {/* Temizle Butonu: Mobilde tam satır (col-span-2) */}
             <Button variant="ghost" size="sm" onClick={() => {

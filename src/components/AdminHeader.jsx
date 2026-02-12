@@ -256,7 +256,7 @@ const AdminHeader = () => {
                         <AlertOctagon className="w-4 h-4 shrink-0 mt-1 text-red-500 animate-pulse" />
                         <div className="flex-grow">
                           <p className="text-sm text-red-200 font-bold">Acil Durum</p>
-                          <p className="text-xs text-red-300 mt-1">{escalatedCount} acil bildirim.</p>
+                          <p className="text-xs text-red-300 mt-1">{escalatedCount} acil bildirim bekliyor.</p>
                         </div>
                       </div>
                     )}

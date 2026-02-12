@@ -12,7 +12,7 @@ import {
   AlertTriangle, Lightbulb, Home, List, TrendingUp, Menu, QrCode, Info, AlertCircle, Filter,
   MessageCircle, Loader2, Image as ImageIcon, Upload, PieChart, BarChart, Activity, UserPlus, LogIn,
   Building2, CheckCircle2, ChevronRight, Edit2, Maximize2, KeyRound, Shield, HelpCircle, ArrowRight,
-  Send, AlertOctagon, FileText, Pin
+  Send, AlertOctagon, FileText, Pin, Search, ChevronLeft
 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
@@ -57,6 +57,7 @@ export default function CustomerPanel() {
   const [authDefaultTab, setAuthDefaultTab] = useState('login');
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showBranchSelector, setShowBranchSelector] = useState(false);
   const [showGuestWarningModal, setShowGuestWarningModal] = useState(false);
   const [pendingFeedbackType, setPendingFeedbackType] = useState(null);
   const [dontShowGuestWarning, setDontShowGuestWarning] = useState(false);
@@ -84,13 +85,14 @@ export default function CustomerPanel() {
   const [qrInfo, setQrInfo] = useState(null);
   const [userProfile, setUserProfile] = useState({});
   const [selectedBusinessForBranches, setSelectedBusinessForBranches] = useState(null);
-  const [showBranchSelector, setShowBranchSelector] = useState(false);
-
   // 🟢 Branch Selector Logic
   const [branchSearchTerm, setBranchSearchTerm] = useState('');
+  const [branchPage, setBranchPage] = useState(1);
+  const branchesPerPage = 5;
   const [recentBranches, setRecentBranches] = useState([]); // Array of {id, is_pinned, last_interaction_at}
   const [userLocation, setUserLocation] = useState(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [isBranchesLoading, setIsBranchesLoading] = useState(false);
 
   // 🟢 Filter Popover Control
   const [filterOpen, setFilterOpen] = useState(false);
@@ -161,6 +163,9 @@ export default function CustomerPanel() {
           newUrl.searchParams.delete('from_qr');
           newUrl.searchParams.delete('qr');
           newUrl.searchParams.delete('guest');
+          useEffect(() => {
+            setBranchPage(1);
+          }, [branchSearchTerm, selectedBusinessForBranches]);
           window.history.replaceState(null, '', newUrl.toString());
         }
       });
@@ -430,6 +435,28 @@ export default function CustomerPanel() {
   }, [user]);
 
   const loadPersistedQrs = useCallback(async () => {
+    // 🟢 GUEST MODE: Load pins from localStorage
+    if (isGuest) {
+      try {
+        const storedPins = localStorage.getItem('vocalize_guest_pinned_branches');
+        if (storedPins) {
+          const pinnedBranchIds = JSON.parse(storedPins);
+          // Convert to same format as DB records for UI consistency
+          const guestRecentBranches = pinnedBranchIds.map(id => ({
+            id: id,
+            is_pinned: true,
+            last_interaction_at: new Date().toISOString() // Mock date for sorting
+          }));
+          setRecentBranches(guestRecentBranches);
+        } else {
+          setRecentBranches([]);
+        }
+      } catch (e) {
+        console.error("Guest pins load error:", e);
+      }
+      return;
+    }
+
     if (!user?.email) return;
     try {
       const { data, error } = await supabase
@@ -473,7 +500,7 @@ export default function CustomerPanel() {
     } catch (err) {
       console.error('Error loading persisted QRs:', err);
     }
-  }, [user]);
+  }, [user, isGuest]);
 
   useEffect(() => {
     if (user && !isGuest) {
@@ -673,7 +700,16 @@ export default function CustomerPanel() {
 
   const handleBusinessCardClick = async (businessId) => {
     try {
+      // 🟢 1. Open Modal Immediately
+      setShowBranchSelector(true);
+      setSelectedBusinessForBranches(businessId);
+      setBranchPage(1);
+      setBranchSearchTerm('');
+      setIsBranchesLoading(true);
+
+      // Async Operations
       await persistVisitedBusiness(businessId);
+      await loadPersistedQrs(); // Will handle loading guest pins too
 
       const { data: branchesData, error } = await supabase
         .from('branches')
@@ -689,13 +725,10 @@ export default function CustomerPanel() {
           description: language === 'tr' ? 'Bu işletme için şube bulunamadı' : 'No branches found for this business',
           variant: "destructive"
         });
-        return;
+        // Don't close modal immediately to avoid jarring UX, maybe show empty state
+      } else {
+        setBranches(branchesData);
       }
-
-      setBranches(branchesData);
-      setSelectedBusinessForBranches(businessId);
-      setShowBranchSelector(true);
-
     } catch (err) {
       console.error('Error loading branches:', err);
       toast({
@@ -703,28 +736,39 @@ export default function CustomerPanel() {
         description: language === 'tr' ? 'Şubeler yüklenirken hata oluştu' : 'Error loading branches',
         variant: "destructive"
       });
+    } finally {
+      setIsBranchesLoading(false);
     }
   };
 
   const handleBranchSelectForFeedback = async (branchId) => {
-    setShowBranchSelector(false);
+    try {
+      // 1. Close modal immediately
+      setShowBranchSelector(false);
 
-    setSelectedBusiness(selectedBusinessForBranches);
-    setSelectedBranch(branchId);
+      // 2. Persist to localStorage for fallback
+      localStorage.setItem('vocalize_last_business', selectedBusinessForBranches);
+      localStorage.setItem('vocalize_last_branch', branchId);
 
-    localStorage.setItem('vocalize_last_business', selectedBusinessForBranches);
-    localStorage.setItem('vocalize_last_branch', branchId);
+      // 3. Update URL parameters - this will trigger the main useEffect to update state
+      // This avoids race conditions between manual state update and URL-triggered update
+      const params = new URLSearchParams(searchParams);
+      params.set('business', selectedBusinessForBranches);
+      params.set('branch', branchId);
+      params.set('lang', language);
+      if (isGuest) params.set('guest', 'true');
 
-    const params = new URLSearchParams(searchParams);
-    params.set('business', selectedBusinessForBranches);
-    params.set('branch', branchId);
-    params.set('lang', language);
-    if (isGuest) params.set('guest', 'true');
+      // Navigate with replace: false to allow back button
+      navigate(`${location.pathname}?${params.toString()}`, { replace: false });
 
-    navigate(`${location.pathname}?${params.toString()}`);
-
-    // 🟢 Persist branch selection to DB for registered users
-    await persistBranchInteraction(selectedBusinessForBranches, branchId);
+      // 4. Persist branch interaction (async)
+      // For guests, we don't persist interaction to DB unless we want to track anonymous usage later
+      if (!isGuest) {
+        await persistBranchInteraction(selectedBusinessForBranches, branchId);
+      }
+    } catch (error) {
+      console.error('Error in handleBranchSelectForFeedback:', error);
+    }
   };
 
   // Persist branch interaction (manual selection or QR scan)
@@ -784,8 +828,43 @@ export default function CustomerPanel() {
 
   // Toggle branch pin status
   const toggleBranchPin = useCallback(async (branchId) => {
+    // 🟢 GUEST MODE: Pin to localStorage
+    if (isGuest) {
+      try {
+        const storedPins = localStorage.getItem('vocalize_guest_pinned_branches');
+        let pinnedBranchIds = storedPins ? JSON.parse(storedPins) : [];
+        let newPinStatus = false;
+
+        if (pinnedBranchIds.includes(branchId)) {
+          // Unpin
+          pinnedBranchIds = pinnedBranchIds.filter(id => id !== branchId);
+          newPinStatus = false;
+        } else {
+          // Pin
+          pinnedBranchIds.push(branchId);
+          newPinStatus = true;
+        }
+
+        localStorage.setItem('vocalize_guest_pinned_branches', JSON.stringify(pinnedBranchIds));
+
+        // Update UI immediately
+        await loadPersistedQrs(); // Reloads from localStorage for guests
+
+        toast({
+          title: newPinStatus ? (language === 'tr' ? 'Sabitlendi' : 'Pinned') : (language === 'tr' ? 'Sabitlemeden Kaldırıldı' : 'Unpinned'),
+          description: newPinStatus ? (language === 'tr' ? 'Şube sabitlendi' : 'Branch pinned') : (language === 'tr' ? 'Şube sabitlikten çıkarıldı' : 'Branch unpinned'),
+          className: "bg-teal-600 text-white border-none"
+        });
+      } catch (e) {
+        console.error("Guest pin toggle error:", e);
+        toast({ title: "Hata", description: "Pin işlemi başarısız.", variant: "destructive" });
+      }
+      return;
+    }
+
+    // 🔴 REGISTERED USER MODE: Pin to Supabase
     const targetEmail = authUser?.email || user?.email;
-    if (!targetEmail || isGuest) return;
+    if (!targetEmail) return;
 
     try {
       // Find current branch record for this user
@@ -801,11 +880,28 @@ export default function CustomerPanel() {
         return;
       }
 
+      // If record doesn't exist, we need to create it first (e.g. pinned from search without visiting)
       if (!existing) {
+        // Create a placeholder record for the pin
+        const { error: insertError } = await supabase
+          .from('customer_qr_scans')
+          .insert({
+            customer_email: targetEmail,
+            business_id: selectedBusinessForBranches, // Assuming context is available
+            branch_id: branchId,
+            qr_code: 'manual_pin',
+            is_pinned: true,
+            last_interaction_at: new Date().toISOString(),
+            last_scan_at: new Date().toISOString()
+          });
+
+        if (insertError) throw insertError;
+
+        await loadPersistedQrs();
         toast({
-          title: language === 'tr' ? 'Uyarı' : 'Warning',
-          description: language === 'tr' ? 'Önce bu şubeyi seçmelisiniz' : 'Please select this branch first',
-          variant: "destructive"
+          title: language === 'tr' ? 'Sabitlendi' : 'Pinned',
+          description: language === 'tr' ? 'Şube sabitlendi' : 'Branch pinned',
+          className: "bg-teal-600 text-white border-none"
         });
         return;
       }
@@ -832,7 +928,7 @@ export default function CustomerPanel() {
     } catch (err) {
       console.error('Error toggling pin:', err);
     }
-  }, [authUser, user, isGuest, language, toast, supabase, loadPersistedQrs]);
+  }, [authUser, user, isGuest, language, toast, supabase, loadPersistedQrs, selectedBusinessForBranches]);
 
   // Helper: Geolocation
   const handleGeolocation = () => {
@@ -860,23 +956,53 @@ export default function CustomerPanel() {
   };
 
 
+
+  // Reset page when search term or business changes
+  useEffect(() => {
+    setBranchPage(1);
+  }, [branchSearchTerm, selectedBusinessForBranches]);
+
   const filteredBranchesForModal = useMemo(() => {
     let result = branches;
+
+    // Filter by search term
     if (branchSearchTerm.trim()) {
       const query = branchSearchTerm.toLowerCase('tr');
       result = result.filter(b => b.branch_name_tr.toLowerCase('tr').includes(query));
     }
+
+    // Sort ONLY by recent interactions (last_interaction_at), NOT by pin status
+    // Pin status is used for DISPLAY SECTIONS, not for sorting
+    result = [...result].sort((a, b) => {
+      const aData = recentBranches.find(rb => rb.id === a.id);
+      const bData = recentBranches.find(rb => rb.id === b.id);
+
+      const aRecent = aData?.last_interaction_at;
+      const bRecent = bData?.last_interaction_at;
+
+      // 1. Recent interactions first (newest first)
+      if (aRecent && !bRecent) return -1;
+      if (!aRecent && bRecent) return 1;
+
+      if (aRecent && bRecent) {
+        return new Date(bRecent) - new Date(aRecent);
+      }
+
+      // 2. If neither has recent interaction, sort alphabetically
+      return a.branch_name_tr.localeCompare(b.branch_name_tr, 'tr');
+    });
+
+    // Apply distance info if location is available
     if (userLocation) {
-      result = [...result].sort((a, b) => {
-        const coordsA = getBranchCoords(a);
-        const coordsB = getBranchCoords(b);
-        const distA = coordsA ? calculateDistance(userLocation.lat, userLocation.lng, coordsA.lat, coordsA.lng) : Infinity;
-        const distB = coordsB ? calculateDistance(userLocation.lat, userLocation.lng, coordsB.lat, coordsB.lng) : Infinity;
-        return distA - distB;
+      result = result.map(branch => {
+        const coords = getBranchCoords(branch);
+        const distance = coords ? calculateDistance(userLocation.lat, userLocation.lng, coords.lat, coords.lng) : Infinity;
+        return { ...branch, distance_km: distance, distance_text: distance !== Infinity ? `${distance.toFixed(1)} km` : null };
       });
     }
+
     return result;
-  }, [branches, branchSearchTerm, userLocation]);
+  }, [branches, branchSearchTerm, userLocation, recentBranches]);
 
   const proceedToFeedback = (type) => {
     if (!selectedBusiness && !fromQR) {
@@ -1522,123 +1648,177 @@ export default function CustomerPanel() {
       <AuthModal isOpen={showAuthModal} onClose={handleAuthModalClose} defaultTab={authDefaultTab} defaultRole="customer" />
 
       <Dialog open={showBranchSelector} onOpenChange={setShowBranchSelector}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
-              <Building2 className="h-6 w-6 text-teal-500" />
-              {selectedBusinessForBranches ? `${businesses.find(b => b.id === selectedBusinessForBranches)?.business_name} ` : ''}{t.branchSelection}
+        <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-md rounded-2xl p-0 overflow-hidden shadow-2xl">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">
+              {businesses.find(b => b.id === selectedBusinessForBranches)?.business_name || (language === 'tr' ? 'İşletme' : 'Business')} - {language === 'tr' ? 'Şube Seçin' : 'Select Branch'}
             </DialogTitle>
-            <DialogDescription className="text-slate-400">
-              {language === 'tr' ? 'Lütfen işlem yapmak istediğiniz şubeyi seçiniz.' : 'Please select the branch you want to proceed with.'}
+            <DialogDescription className="text-slate-400 text-sm">
+              {language === 'tr' ? 'Geri bildirim vermek istediğiniz şubeyi seçin.' : 'Please select the branch you want to leave feedback for.'}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-4">
-            {/* Search Bar */}
-            <div className="flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-2 border border-slate-700 focus-within:border-teal-500 transition-colors">
-              <Filter className="h-4 w-4 text-slate-400" />
+
+          <div className="px-6 pb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
               <input
                 type="text"
-                placeholder={language === 'tr' ? "Şube veya ilçe ara..." : "Search branch..."}
+                placeholder={language === 'tr' ? "Şube ara..." : "Search branch..."}
+                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50 transition-all placeholder:text-slate-600"
                 value={branchSearchTerm}
                 onChange={(e) => setBranchSearchTerm(e.target.value)}
-                className="bg-transparent border-none outline-none text-white w-full text-sm placeholder:text-slate-500"
-                autoFocus
               />
-              <button onClick={handleGeolocation} className={cn("p-1.5 rounded-md transition-colors", isLocating || userLocation ? "text-teal-400 bg-teal-500/10" : "text-slate-400 hover:text-white hover:bg-slate-700")}>
-                <MapPin className={cn("h-4 w-4", isLocating && "animate-pulse")} />
-              </button>
-            </div>
-
-            <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-slate-700">
-              {/* 🟢 Top 3: Pinned/Recent Branches */}
-              {!branchSearchTerm && recentBranches.length > 0 && !isGuest && (
-                <div className="mb-4">
-                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
-                    {language === 'tr' ? 'Hızlı Erişim (İlk 3)' : 'Quick Access (Top 3)'}
-                  </div>
-                  {recentBranches.slice(0, 3).map(branchData => {
-                    const b = branches.find(branch => branch.id === branchData.id);
-                    if (!b) return null;
-                    return (
-                      <div
-                        key={`recent-${b.id}`}
-                        className="w-full bg-slate-800/50 border border-slate-700/50 hover:border-teal-500/50 text-white p-3 rounded-lg transition-all group mb-2"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <button
-                            onClick={() => handleBranchSelectForFeedback(b.id)}
-                            className="flex-1 text-left"
-                          >
-                            <span className="font-medium group-hover:text-teal-300 transition-colors flex items-center gap-2">
-                              {branchData.is_pinned ? (
-                                <Pin className="h-3 w-3 text-teal-500 fill-teal-500" />
-                              ) : (
-                                <TrendingUp className="h-3 w-3 text-teal-500" />
-                              )}
-                              {b.branch_name_tr}
-                            </span>
-                          </button>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleBranchPin(b.id);
-                              }}
-                              className="p-1.5 rounded-md hover:bg-slate-700 transition-colors"
-                              title={branchData.is_pinned ? (language === 'tr' ? 'Sabitlemeden kaldır' : 'Unpin') : (language === 'tr' ? 'Sabitle' : 'Pin')}
-                            >
-                              <Pin className={cn("h-4 w-4 transition-colors", branchData.is_pinned ? "text-teal-500 fill-teal-500" : "text-slate-400 hover:text-teal-500")} />
-                            </button>
-                            <button
-                              onClick={() => handleBranchSelectForFeedback(b.id)}
-                              className="p-1"
-                            >
-                              <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-teal-400 transition-all" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Filtered List */}
-              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
-                {userLocation ? (language === 'tr' ? 'Mesafeye Göre' : 'By Distance') : (language === 'tr' ? 'Tüm Şubeler' : 'All Branches')} ({filteredBranchesForModal.length})
-              </div>
-
-              {filteredBranchesForModal.slice(0, 50).map((branch) => (
-                <button
-                  key={branch.id}
-                  onClick={() => handleBranchSelectForFeedback(branch.id)}
-                  className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-teal-500 text-white p-4 rounded-lg transition-all text-left group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium group-hover:text-teal-300 transition-colors">
-                      {branch.branch_name_tr}
-                    </span>
-                    <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-teal-400 transition-all group-hover:translate-x-1" />
-                  </div>
-                </button>
-              ))}
-
-              {filteredBranchesForModal.length === 0 && (
-                <div className="text-center py-8 text-slate-500">
-                  {language === 'tr' ? 'Sonuç bulunamadı' : 'No results found'}
-                </div>
-              )}
             </div>
           </div>
-          <DialogFooter>
+
+          <div className="max-h-[400px] overflow-y-auto px-6 pb-6 space-y-4 scrollbar-thin scrollbar-thumb-slate-700">
+            {isBranchesLoading ? (
+              <div className="flex flex-col items-center justify-center py-10">
+                <Loader2 className="h-8 w-8 text-teal-500 animate-spin mb-3" />
+                <p className="text-slate-400 text-sm">{language === 'tr' ? 'Şubeler yükleniyor...' : 'Loading branches...'}</p>
+              </div>
+            ) : (() => {
+              // Separate branches into pinned and non-pinned
+              const pinnedBranches = filteredBranchesForModal.filter(b => {
+                const data = recentBranches.find(rb => rb.id === b.id);
+                return data?.is_pinned === true;
+              });
+
+              const nonPinnedBranches = filteredBranchesForModal.filter(b => {
+                const data = recentBranches.find(rb => rb.id === b.id);
+                return !data || data.is_pinned !== true;
+              });
+
+              // Calculate pagination for non-pinned branches only
+              const totalNonPinned = nonPinnedBranches.length;
+              const paginatedNonPinned = nonPinnedBranches.slice(
+                (branchPage - 1) * branchesPerPage,
+                branchPage * branchesPerPage
+              );
+
+              const renderBranch = (branch) => {
+                const branchData = recentBranches.find(rb => rb.id === branch.id);
+                const isPinned = branchData?.is_pinned || false;
+
+                return (
+                  <div key={branch.id} className="w-full bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-teal-500/50 text-white p-4 rounded-xl transition-all flex items-center justify-between group shadow-sm">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleBranchSelectForFeedback(branch.id);
+                      }}
+                      className="flex-1 text-left flex items-center justify-between"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-semibold group-hover:text-teal-300 transition-colors">
+                          {branch.branch_name_tr}
+                        </span>
+                        {branch.distance_text && (
+                          <span className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                            <MapPin className="h-3 w-3" /> {branch.distance_text}
+                          </span>
+                        )}
+                      </div>
+                      <div className="bg-slate-700 p-2 rounded-lg">
+                        <ChevronRight className="h-5 w-5 text-teal-400 transition-all group-hover:translate-x-1" />
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleBranchPin(branch.id);
+                      }}
+                      className="ml-3 p-2 hover:bg-slate-600 rounded-lg transition-colors"
+                    >
+                      <Pin className={`h-4 w-4 ${isPinned ? 'text-teal-400 fill-teal-400' : 'text-slate-500 hover:text-teal-400'}`} />
+                    </button>
+                  </div>
+                );
+              };
+
+              return (
+                <>
+                  {/* Pinned Branches Section */}
+                  {pinnedBranches.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-4 h-[1px] bg-slate-800"></span>
+                        {language === 'tr' ? 'Pinlenmiş Şubeler' : 'Pinned Branches'} ({pinnedBranches.length})
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        {pinnedBranches.map(renderBranch)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recent Branches Section (Paginated) */}
+                  {nonPinnedBranches.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-4 h-[1px] bg-slate-800"></span>
+                        {language === 'tr' ? 'Tüm Şubeler' : 'All Branches'} ({totalNonPinned})
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        {paginatedNonPinned.map(renderBranch)}
+                      </div>
+
+                      {/* Pagination Controls */}
+                      {totalNonPinned > branchesPerPage && (
+                        <div className="flex items-center justify-between pt-4 border-t border-slate-800/50 mt-2">
+                          <button
+                            disabled={branchPage === 1}
+                            onClick={() => setBranchPage(prev => Math.max(1, prev - 1))}
+                            className="flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-teal-400 disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            {language === 'tr' ? 'Önceki' : 'Prev'}
+                          </button>
+
+                          <div className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">
+                            {branchPage} / {Math.ceil(totalNonPinned / branchesPerPage)}
+                          </div>
+
+                          <button
+                            disabled={branchPage >= Math.ceil(totalNonPinned / branchesPerPage)}
+                            onClick={() => setBranchPage(prev => prev + 1)}
+                            className="flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-teal-400 disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
+                          >
+                            {language === 'tr' ? 'Sonraki' : 'Next'}
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Empty State */}
+                  {filteredBranchesForModal.length === 0 && (
+                    <div className="text-center py-10">
+                      <div className="bg-slate-800/50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Search className="h-6 w-6 text-slate-600" />
+                      </div>
+                      <p className="text-slate-500 text-sm">
+                        {language === 'tr' ? 'Aradığınız kriterde şube bulunamadı.' : 'No branches found matching your search.'}
+                      </p>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+          <div className="px-6 py-4 border-t border-slate-800">
             <Button
               onClick={() => setShowBranchSelector(false)}
               variant="outline"
-              className="bg-slate-700 border-slate-600 hover:bg-slate-600 text-white w-full"
+              className="w-full bg-slate-700 border-slate-600 text-slate-300 hover:text-white hover:bg-slate-600"
             >
-              {t.cancel}
+              {language === 'tr' ? 'İptal' : 'Cancel'}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

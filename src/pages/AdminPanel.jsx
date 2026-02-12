@@ -654,7 +654,7 @@ const AdminPanel = () => {
               <Button variant="outline" size="icon" onClick={handleRefreshFeedbacks} disabled={isRefreshing} className="bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-teal-400 hover:border-teal-500/50 hover:shadow-[0_0_15px_rgba(45,212,191,0.2)] transition-all duration-300">
                 <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
               </Button>
-              <Button variant="ghost" className="text-slate-400 hover:text-white" onClick={() => navigate('/admin-panel/feedbacks')}>Tümünü Gör <ChevronRight className="w-4 h-4 ml-1" /></Button>
+              <Button variant="ghost" className="text-slate-400 hover:text-purple-400 hover:bg-purple-400/10 font-medium transition-all" onClick={() => navigate('/admin-panel/feedbacks')}>Tümünü Gör <ChevronRight className="w-4 h-4 ml-1" /></Button>
             </div>
           </div>
 

@@ -244,11 +244,13 @@ const AuthModal = React.memo(({
         });
 
         onClose();
+        // Hesaba giriş başarılı
         setTimeout(() => {
+          const search = window.location.search;
           if (data.user?.user_metadata?.user_type === 'manager') {
-            navigate('/admin-panel', { replace: true });
+            navigate(`/admin-panel${search}`, { replace: true });
           } else {
-            navigate('/customer-panel', { replace: true });
+            navigate(`/customer-panel${search}`, { replace: true });
           }
         }, 300);
       }
@@ -305,12 +307,12 @@ const AuthModal = React.memo(({
           });
 
           onClose();
-
           setTimeout(() => {
+            const search = window.location.search;
             if (activeRole === 'manager') {
-              navigate('/admin-panel', { replace: true });
+              navigate(`/admin-panel${search}`, { replace: true });
             } else {
-              navigate('/customer-panel', { replace: true });
+              navigate(`/customer-panel${search}`, { replace: true });
             }
           }, 800);
         } else {
