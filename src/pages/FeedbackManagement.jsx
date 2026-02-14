@@ -90,6 +90,11 @@ const FeedbackCard = React.memo(React.forwardRef(({
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               {getTypeBadge(f.feedback_type)}
               {getStatusBadge(f.status)}
+              {f.customer_age_group && (
+                <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-indigo-500/10 text-indigo-400 border-indigo-500/20 whitespace-nowrap">
+                  {f.customer_age_group} Yaş
+                </Badge>
+              )}
               <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0"><Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
               <Badge variant="outline" className="text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[200px]">{f.branches?.branch_name_tr || "Şube Bilinmiyor"}</Badge>
             </div>

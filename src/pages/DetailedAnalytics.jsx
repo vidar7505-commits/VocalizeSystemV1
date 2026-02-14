@@ -11,11 +11,11 @@ import {
   TrendingUp, CheckCircle, AlertTriangle, Activity, QrCode,
   Minus, ArrowUpRight, ArrowDownRight, BarChart3, Heart, Zap,
   Filter, Link as LinkIcon, Info, Trophy, MapPin, X, Sparkles, Target, MessageSquare, Scale,
-  Search, ChevronLeft, ChevronRight
+  Search, ChevronLeft, ChevronRight, Users
 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { cn, formatCustomerName, getCustomerData, formatCompactNumber, formatNumber, fetchDeep } from "@/lib/utils";
 import DateRangePicker from '@/components/DateRangePicker';
-import { formatCompactNumber } from "@/lib/utils";
 
 // --- RENK PALETİ ---
 const COLORS = {
@@ -27,8 +27,6 @@ const COLORS = {
   google: '#EA4335',    // Google Red
   slate: '#64748b'
 };
-
-const formatNumber = (num) => new Intl.NumberFormat('tr-TR').format(num);
 
 // --- YARDIMCI FONKSİYONLAR ---
 // --- YARDIMCI FONKSİYONLAR ---
@@ -175,25 +173,27 @@ const InfoTooltip = ({ text }) => {
   );
 };
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, isLight = false }) => {
   if (active && payload && payload.length) {
     const totalValue = payload.find(p => p.dataKey === 'total')?.value ||
       payload.reduce((acc, curr) => acc + (typeof curr.value === 'number' ? curr.value : 0), 0);
     return (
-      <div className="bg-slate-900/95 backdrop-blur border border-slate-700 p-3 rounded-lg shadow-xl text-xs z-50 min-w-[160px]">
-        <p className="font-bold text-slate-200 mb-2 border-b border-slate-700 pb-1">{label}</p>
+      <div className={`${isLight ? 'bg-white/95 border-slate-200' : 'bg-slate-900/95 border-slate-700'} backdrop-blur border p-3 rounded-lg shadow-xl text-xs z-50 min-w-[160px]`}>
+        <p className={`font-bold ${isLight ? 'text-slate-800 border-slate-200' : 'text-slate-200 border-slate-700'} mb-2 border-b pb-1`}>{label}</p>
         <div className="flex justify-between mb-2">
-          <span className="text-slate-400">Toplam</span>
-          <span className="text-white font-bold">{totalValue}</span>
+          <span className={isLight ? 'text-slate-500' : 'text-slate-400'}>Toplam</span>
+          <span className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold`}>{totalValue}</span>
         </div>
         <div className="space-y-1">
           {payload.slice().reverse().map((p, i) => (
             <div key={i} className="flex justify-between gap-3">
               <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color || p.fill }}></div>
-                <span className="text-slate-300 capitalize">{p.name === 'complaint' ? 'Şikayet' : p.name === 'suggestion' ? 'Öneri' : p.name === 'evaluation' ? 'Değerlendirme' : p.name}</span>
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color || p.fill }}></div>
+                <span className="capitalize font-medium" style={{ color: p.color || p.fill }}>
+                  {p.name === 'complaint' ? 'Şikayet' : p.name === 'suggestion' ? 'Öneri' : p.name === 'evaluation' ? 'Değerlendirme' : p.name}
+                </span>
               </div>
-              <span className="text-white font-mono font-bold">{formatNumber(p.value)}</span>
+              <span className="font-mono font-bold" style={{ color: p.color || p.fill }}>{formatNumber(p.value)}</span>
             </div>
           ))}
         </div>
@@ -203,66 +203,95 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const KpiCard = ({ title, value, previousValue, icon: Icon, colorClass, suffix = "", inverseTrend = false }) => {
+const KpiCard = ({ title, value, previousValue, icon: Icon, colorClass, suffix = "", inverseTrend = false, hideTrend = false }) => {
   let percentChange = 0;
   let trendDirection = "neutral";
   let isExtreme = false;
 
   if (previousValue > 0) {
     percentChange = ((value - previousValue) / previousValue) * 100;
-
-    // 🟢 ENTERPRISE: 10000% gibi absürt değerleri engelle
-    if (Math.abs(percentChange) > 999) {
-      isExtreme = true;
-      percentChange = percentChange > 0 ? 999 : -999;
-    }
-
     trendDirection = percentChange > 0 ? 'up' : percentChange < 0 ? 'down' : 'neutral';
   } else if (value > 0) {
     trendDirection = 'up';
-    percentChange = 100;
+    // 🟢 infinity logic
+    percentChange = Infinity;
   }
 
   const isGood = inverseTrend ? trendDirection === 'down' : trendDirection === 'up';
   const trendColor = trendDirection === 'neutral' ? "text-slate-400 bg-slate-800" : (isGood ? "text-emerald-400 bg-emerald-500/10" : "text-rose-400 bg-rose-500/10");
 
-  // 🟢 ENTERPRISE: 10.000'e kadar tam sayı, sonrası için kompakt format (K)
   const numericValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value;
-
-  const { display: formattedValue, full: fullValue } = formatCompactNumber(numericValue);
-
-  // Suffix varsa (örn: TL) sona ekle
+  const { display: formattedValue } = formatCompactNumber(numericValue);
   const displayValue = `${formattedValue}${suffix}`;
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50 p-5 shadow-sm hover:border-slate-700 transition-all group">
+    <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50 p-5 shadow-sm hover:border-slate-700 transition-all group flex flex-col justify-between h-full">
       <div className="flex justify-between items-start mb-3">
         <div>
           <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{title}</p>
-          <h3
-            className="text-2xl font-bold text-white mt-1"
-            title={numericValue >= 10000 ? `Tam değer: ${formatNumber(numericValue)}` : undefined}
-          >
+          <h3 className="text-2xl font-bold text-white mt-1">
             {displayValue}
           </h3>
         </div>
         <div className={`p-2 rounded-lg bg-slate-900 border border-slate-800 ${colorClass}`}><Icon className="h-5 w-5" /></div>
       </div>
-      <div className="flex items-center gap-2">
-        <div className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded ${trendColor}`}>
-          {trendDirection === 'up' && <ArrowUpRight className="w-3 h-3" />}
-          {trendDirection === 'down' && <ArrowDownRight className="w-3 h-3" />}
-          {trendDirection === 'neutral' && <Minus className="w-3 h-3" />}
-          <span>{isExtreme ? '>' : ''}{Math.abs(percentChange).toFixed(0)}%</span>
+
+      <div className="flex items-center gap-2 min-h-[22px]">
+        {hideTrend ? (
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-800/50 border border-slate-700/50">
+            <div className="w-1 h-1 rounded-full bg-slate-500 animate-pulse" />
+            <span className="text-[9px] font-medium text-slate-500 uppercase tracking-tight">Kayıt başlangıcından itibaren</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded ${trendColor}`}>
+              {trendDirection === 'up' && <ArrowUpRight className="w-3 h-3" />}
+              {trendDirection === 'down' && <ArrowDownRight className="w-3 h-3" />}
+              {trendDirection === 'neutral' && <Minus className="w-3 h-3" />}
+              <span>{percentChange === Infinity ? '∞' : `${Math.abs(percentChange).toFixed(0)}%`}</span>
+            </div>
+            <span className="text-[10px] text-slate-500">
+              {percentChange === Infinity ? 'Yeni Veri' : 'geçen döneme göre'}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const SplitKpiCard = ({ title, value1, label1, icon1: Icon1, color1, value2, label2, icon2: Icon2, color2 }) => {
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50 p-5 shadow-sm hover:border-slate-700 transition-all group h-full flex flex-col justify-between">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{title}</p>
         </div>
-        <span className="text-[10px] text-slate-500">geçen döneme göre</span>
+        <div className="flex gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+          <Icon1 className={`h-4 w-4 ${color1}`} />
+          <Icon2 className={`h-4 w-4 ${color2}`} />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1">
+          <p className="text-[9px] text-slate-500 uppercase font-medium mb-1">{label1}</p>
+          <div className={`text-2xl font-extrabold ${color1}`}>%{value1}</div>
+        </div>
+
+        <div className="w-px h-10 bg-slate-800 rotate-[15deg] self-center opacity-50" />
+
+        <div className="flex-1 text-right">
+          <p className="text-[9px] text-slate-500 uppercase font-medium mb-1">{label2}</p>
+          <div className={`text-2xl font-extrabold ${color2}`}>%{value2}</div>
+        </div>
       </div>
     </div>
   );
 };
 
 // 🟢 ŞUBE DETAY MODALI
-const BranchDetailModal = ({ isOpen, onClose, branch }) => {
+const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], isLight = false }) => {
   if (!isOpen || !branch) return null;
 
   const insight = getSmartInsight(branch);
@@ -277,27 +306,75 @@ const BranchDetailModal = ({ isOpen, onClose, branch }) => {
 
   let gapStatus = { text: "Mükemmel Uyum", color: "text-green-400", barColor: "bg-green-500" };
   if (perceptionGap > 20) gapStatus = { text: "Beklenti Karşılanmıyor", color: "text-red-400", barColor: "bg-red-500" };
-  else if (perceptionGap > 10) gapStatus = { text: "Beklenti Altında", color: "text-orange-400", barColor: "bg-orange-500" };
   else if (perceptionGap < -5) gapStatus = { text: "Beklenti Üzeri", color: "text-emerald-400", barColor: "bg-emerald-400" };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#0f172a] border border-slate-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+  // 🟢 DEMOGRAFİK ANALİZ (MODAL İÇİN)
+  const ageData = useMemo(() => {
+    const ageGroups = ['18-', '18-24', '25-34', '35-44', '45-54', '55+'];
+    const counts = { '18-': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55+': 0 };
+    branchesFeedbacks.forEach(f => {
+      if (f.customer_age_group && counts[f.customer_age_group] !== undefined) {
+        counts[f.customer_age_group]++;
+      }
+    });
+    return ageGroups.map(name => ({ name, value: counts[name] }));
+  }, [branchesFeedbacks]);
 
-        <div className="bg-slate-900/80 backdrop-blur p-6 border-b border-slate-800 flex justify-between items-start sticky top-0 z-10">
+  const ageSentiment = useMemo(() => {
+    const ageGroups = ['18-', '18-24', '25-34', '35-44', '45-54', '55+'];
+    const scores = {};
+    branchesFeedbacks.forEach(f => {
+      if (f.customer_age_group && (f.rating || f.general_eval_rating)) {
+        if (!scores[f.customer_age_group]) scores[f.customer_age_group] = { sum: 0, count: 0 };
+        const score = getWeightedScore(f.rating, f.general_eval_rating);
+        if (score > 0) {
+          scores[f.customer_age_group].sum += (f.rating || f.general_eval_rating || 0);
+          scores[f.customer_age_group].count++;
+        }
+      }
+    });
+    return ageGroups.map(name => ({
+      name,
+      score: scores[name]?.count > 0 ? (scores[name].sum / scores[name].count).toFixed(1) : "0.0"
+    }));
+  }, [branchesFeedbacks]);
+
+  // Şube saatlik yaş aktivitesi
+  const branchHourlyAge = useMemo(() => {
+    const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+    const ageGroups = ['18-', '18-24', '25-34', '35-44', '45-54', '55+'];
+    const bStats = hours.map(h => {
+      const entry = { hour: `${h}:00` };
+      ageGroups.forEach(age => { entry[age] = 0; });
+      return entry;
+    });
+    branchesFeedbacks.forEach(f => {
+      if (f.customer_age_group && ageGroups.includes(f.customer_age_group)) {
+        const h = new Date(f.created_at).getHours();
+        bStats[h][f.customer_age_group]++;
+      }
+    });
+    return bStats;
+  }, [branchesFeedbacks]);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+      <div className={`${isLight ? 'bg-white border-slate-200' : 'bg-[#0f172a] border-slate-700'} w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative flex flex-col max-h-[90vh]`} onClick={(e) => e.stopPropagation()}>
+
+        <div className={`${isLight ? 'bg-slate-50' : 'bg-slate-900/80'} backdrop-blur p-6 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'} flex justify-between items-start sticky top-0 z-10`}>
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h2 className="text-2xl font-bold text-white">{branch.name}</h2>
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-slate-800 border border-slate-700 text-slate-300">
+              <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>{branch.name}</h2>
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold ${isLight ? 'bg-slate-100 border-slate-200 text-slate-600' : 'bg-slate-800 border-slate-700 text-slate-300'}`}>
                 <span>Lig Puanı:</span>
-                <span className={Number(branch.vocalizeScore) >= 80 ? 'text-amber-400' : 'text-white'}>{branch.vocalizeScore}</span>
+                <span className={Number(branch.vocalizeScore) >= 80 ? 'text-amber-500' : (isLight ? 'text-slate-900' : 'text-white')}>{branch.vocalizeScore}</span>
               </div>
             </div>
             <p className="text-slate-400 text-sm flex items-center gap-1">
               <Activity className="w-3.5 h-3.5" /> Şube Performans Karnesi
             </p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
+          <button onClick={onClose} className={`p-2 rounded-full ${isLight ? 'bg-slate-200 hover:bg-slate-300 text-slate-600' : 'bg-slate-800 hover:bg-slate-700 text-slate-400'} hover:text-white transition-colors`}>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -325,12 +402,12 @@ const BranchDetailModal = ({ isOpen, onClose, branch }) => {
           </div>
 
           {/* MARKA VS DENEYİM (LAZER EFEKTLİ BAR) */}
-          <div className="bg-slate-900/50 rounded-xl p-5 border border-slate-800">
+          <div className={`${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-900/50 border-slate-800'} rounded-xl p-5 border transition-all`}>
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+              <h3 className={`text-sm font-bold ${isLight ? 'text-slate-700' : 'text-slate-300'} flex items-center gap-2`}>
                 <Zap className="w-4 h-4 text-sky-400" /> Beklenti & Deneyim Dengesi
               </h3>
-              <span className={`text-[10px] font-bold px-2 py-1 rounded bg-slate-950 border border-slate-800 ${gapStatus.color}`}>
+              <span className={`text-[10px] font-bold px-2 py-1 rounded border ${isLight ? 'bg-white border-slate-200' : 'bg-slate-950 border-slate-800'} ${gapStatus.color}`}>
                 {gapStatus.text}
               </span>
             </div>
@@ -365,19 +442,19 @@ const BranchDetailModal = ({ isOpen, onClose, branch }) => {
 
                   {/* Beklenti Noktası */}
                   <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center z-10" style={{ left: `${perception}%`, transform: 'translate(-50%, -50%)' }}>
-                    <span className="absolute -top-8 text-[9px] text-slate-500 font-bold uppercase tracking-tighter bg-slate-900 px-1 py-0.5 rounded border border-slate-800 whitespace-nowrap">Beklenti</span>
-                    <div className="w-4 h-4 rounded-full bg-slate-800 border-4 border-yellow-500 shadow-lg"></div>
+                    <span className={`absolute -top-8 text-[9px] ${isLight ? 'text-slate-600 bg-white border-slate-200' : 'text-slate-500 bg-slate-900 border-slate-800'} font-bold uppercase tracking-tighter px-1 py-0.5 rounded border whitespace-nowrap`}>Beklenti</span>
+                    <div className={`w-4 h-4 rounded-full ${isLight ? 'bg-white border-slate-100' : 'bg-slate-800'} border-4 border-yellow-500 shadow-lg`}></div>
                     <span className="absolute -bottom-6 text-[10px] font-bold text-yellow-500">{perception}</span>
                   </div>
 
                   {/* Deneyim Noktası */}
                   <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center z-20" style={{ left: `${experience}%`, transform: 'translate(-50%, -50%)' }}>
-                    <span className="absolute -top-8 text-[9px] text-sky-400 font-bold uppercase tracking-tighter bg-slate-900 px-1 py-0.5 rounded border border-slate-800 whitespace-nowrap">Gerçekleşen</span>
+                    <span className={`absolute -top-8 text-[9px] text-sky-500 font-bold uppercase tracking-tighter ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'} px-1 py-0.5 rounded border whitespace-nowrap`}>Gerçekleşen</span>
                     <div className="relative">
-                      <div className="w-5 h-5 rounded-full bg-sky-500 border-2 border-white shadow-lg z-10"></div>
+                      <div className={`w-5 h-5 rounded-full bg-sky-500 border-2 ${isLight ? 'border-sky-100' : 'border-white'} shadow-lg z-10`}></div>
                       <div className="absolute inset-0 bg-sky-400 rounded-full animate-pulse opacity-50 blur-sm"></div>
                     </div>
-                    <span className="absolute -bottom-6 text-[10px] font-bold text-white">{experience}</span>
+                    <span className={`absolute -bottom-6 text-[10px] font-bold ${isLight ? 'text-sky-600' : 'text-white'}`}>{experience}</span>
                   </div>
                 </>
               )}
@@ -394,34 +471,171 @@ const BranchDetailModal = ({ isOpen, onClose, branch }) => {
 
           {/* DİĞER VERİLER (GRID) */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 flex flex-col items-center justify-center gap-1">
-              <span className="text-2xl font-bold text-green-400">%{branch.happyRate}</span>
-              <span className="text-[10px] text-slate-400 uppercase font-medium">Mutlu</span>
+            <div className={`${isLight ? 'bg-slate-100/50 border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} p-4 rounded-xl border flex flex-col items-center justify-center gap-1`}>
+              <span className="text-2xl font-bold text-green-500">%{branch.happyRate}</span>
+              <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase font-medium`}>Mutlu</span>
             </div>
-            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 flex flex-col items-center justify-center gap-1">
-              <span className="text-2xl font-bold text-yellow-400">%{branch.neutralRate}</span>
-              <span className="text-[10px] text-slate-400 uppercase font-medium">Nötr</span>
+            <div className={`${isLight ? 'bg-slate-100/50 border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} p-4 rounded-xl border flex flex-col items-center justify-center gap-1`}>
+              <span className="text-2xl font-bold text-yellow-500">%{branch.neutralRate}</span>
+              <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase font-medium`}>Nötr</span>
             </div>
-            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 flex flex-col items-center justify-center gap-1">
-              <span className="text-2xl font-bold text-red-400">%{branch.riskyRate}</span>
-              <span className="text-[10px] text-slate-400 uppercase font-medium">Mutsuz</span>
+            <div className={`${isLight ? 'bg-slate-100/50 border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} p-4 rounded-xl border flex flex-col items-center justify-center gap-1`}>
+              <span className="text-2xl font-bold text-red-500">%{branch.riskyRate}</span>
+              <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase font-medium`}>Mutsuz</span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+            <div className={`flex items-center justify-between p-4 ${isLight ? 'bg-slate-100/50 border-slate-200' : 'bg-slate-900/50 border-slate-800'} rounded-xl border`}>
               <div className="flex flex-col">
-                <span className="text-xs text-slate-400 uppercase font-medium">Haritalara Geçiş</span>
-                <span className="text-white font-bold text-xl">{branch.googleClicks} <span className="text-sm font-normal text-slate-500">Kişi</span></span>
+                <span className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase font-medium`}>Haritalara Geçiş</span>
+                <span className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-xl`}>{branch.googleClicks} <span className="text-sm font-normal text-slate-500">Kişi</span></span>
               </div>
-              <div className="p-2 bg-slate-800 rounded-lg text-red-400"><MapPin className="w-5 h-5" /></div>
+              <div className={`p-2 ${isLight ? 'bg-white border-slate-200' : 'bg-slate-800'} rounded-lg text-red-500 shadow-sm`}><MapPin className="w-5 h-5" /></div>
             </div>
-            <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+            <div className={`flex items-center justify-between p-4 ${isLight ? 'bg-slate-100/50 border-slate-200' : 'bg-slate-900/50 border-slate-800'} rounded-xl border`}>
               <div className="flex flex-col">
-                <span className="text-xs text-slate-400 uppercase font-medium">Çözüm Hızı</span>
-                <span className="text-white font-bold text-xl">%{branch.operationScore}</span>
+                <span className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase font-medium`}>Çözüm Hızı</span>
+                <span className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-xl`}>%{branch.operationScore}</span>
               </div>
-              <div className="p-2 bg-slate-800 rounded-lg text-green-400"><CheckCircle className="w-5 h-5" /></div>
+              <div className={`p-2 ${isLight ? 'bg-white border-slate-200' : 'bg-slate-800'} rounded-lg text-green-500 shadow-sm`}><CheckCircle className="w-5 h-5" /></div>
+            </div>
+          </div>
+
+          {/* Şube Saatlik Analiz (YENİ) */}
+          <div className={`mt-4 ${isLight ? 'bg-slate-100/30 border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} p-4 rounded-xl border transition-all`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-purple-400" />
+                <p className={`text-[10px] ${isLight ? 'text-slate-600' : 'text-slate-500'} uppercase font-bold`}>Zaman Dilimine Göre Aktivite</p>
+              </div>
+              <InfoTooltip text="Bu şubedeki gün içi aktivite yoğunluğunun yaş gruplarına göre kırılımı." />
+            </div>
+            <div className="h-40 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={branchHourlyAge} margin={{ left: -30, bottom: -10 }}>
+                  <defs>
+                    <filter id="modalBarShadow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="blur" />
+                      <feOffset in="blur" dx="0" dy="1" result="offsetBlur" />
+                      <feComponentTransfer>
+                        <feFuncA type="linear" slope="0.3" />
+                      </feComponentTransfer>
+                      <feMerge>
+                        <feMergeNode />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <XAxis dataKey="hour" fontSize={8} tickLine={false} stroke={isLight ? "#64748b" : "#94a3b8"} interval={3} />
+                  <YAxis fontSize={8} tickLine={false} stroke={isLight ? "#64748b" : "#94a3b8"} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isLight ? '#fff' : '#0f172a',
+                      borderColor: isLight ? '#e2e8f0' : '#334155',
+                      borderRadius: '12px',
+                      color: isLight ? '#1e293b' : '#fff'
+                    }}
+                    itemStyle={{ color: isLight ? '#1e293b' : '#fff', fontSize: '10px', fontWeight: 'bold' }}
+                    labelStyle={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '10px', fontWeight: 'bold' }}
+                    cursor={{ fill: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' }}
+                  />
+                  <Bar dataKey="18-" stackId="a" fill={COLORS.purple} filter="url(#modalBarShadow)" />
+                  <Bar dataKey="18-24" stackId="a" fill={COLORS.primary} filter="url(#modalBarShadow)" />
+                  <Bar dataKey="25-34" stackId="a" fill={COLORS.success} filter="url(#modalBarShadow)" />
+                  <Bar dataKey="35-44" stackId="a" fill={COLORS.warning} filter="url(#modalBarShadow)" />
+                  <Bar dataKey="45-54" stackId="a" fill={COLORS.danger} filter="url(#modalBarShadow)" />
+                  <Bar dataKey="55+" stackId="a" fill={COLORS.slate} radius={[2, 2, 0, 0]} filter="url(#modalBarShadow)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* 👥 ŞUBE DEMOGRAFİK ANALİZ (YENİ) */}
+          <div className={`border-t ${isLight ? 'border-slate-200' : 'border-slate-800'} pt-6`}>
+            <h3 className={`text-sm font-bold ${isLight ? 'text-slate-800' : 'text-slate-300'} mb-4 flex items-center gap-2`}>
+              <Users className="w-4 h-4 text-indigo-400" /> Şube Müşteri Profili
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Yaş Dağılımı */}
+              <div className={`${isLight ? 'bg-slate-100/30' : 'bg-slate-900/50'} p-4 rounded-xl border ${isLight ? 'border-slate-200' : 'border-slate-800'} transition-all`}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className={`text-[10px] ${isLight ? 'text-slate-600' : 'text-slate-500'} uppercase font-bold`}>Kitle Dağılımı</p>
+                  <InfoTooltip text="Bu şubede geri bildirim bırakan müşterilerin yaş gruplarına göre sayısal dağılımı." />
+                </div>
+                <div className="h-40">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={ageData} cx="50%" cy="50%" innerRadius={0} outerRadius={50} paddingAngle={2} dataKey="value">
+                        {ageData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={[COLORS.purple, COLORS.primary, COLORS.success, COLORS.warning, COLORS.danger, COLORS.slate][index % 6]} strokeWidth={0} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: isLight ? '#fff' : '#0f172a',
+                          borderColor: isLight ? '#e2e8f0' : '#334155',
+                          borderRadius: '12px',
+                          color: isLight ? '#1e293b' : '#fff'
+                        }}
+                        itemStyle={{ color: isLight ? '#1e293b' : '#fff' }}
+                        formatter={(val, name, props) => {
+                          const color = props.payload.fill || props.payload.color;
+                          return [
+                            <span style={{ color, fontWeight: 'bold' }}>{val} İşlem</span>,
+                            <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: 'bold' }}>Grup: {props.payload.name}</span>
+                          ];
+                        }}
+                      />
+                      <Legend layout="horizontal" verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ fontSize: '10px', color: isLight ? '#64748b' : '#94a3b8', paddingTop: '10px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Yaş Bazlı Memnuniyet */}
+              <div className={`${isLight ? 'bg-slate-100/30' : 'bg-slate-900/50'} p-4 rounded-xl border ${isLight ? 'border-slate-200' : 'border-slate-800'} transition-all`}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className={`text-[10px] ${isLight ? 'text-slate-600' : 'text-slate-500'} uppercase font-bold`}>Yaş vs Memnuniyet</p>
+                  <InfoTooltip text="Farklı yaş gruplarının bu şubeye verdiği ortalama deneyim puanı." />
+                </div>
+                <div className="h-40">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={ageSentiment} layout="vertical" margin={{ left: -10, right: 10 }}>
+                      <XAxis type="number" domain={[0, 5]} hide />
+                      <YAxis dataKey="name" type="category" stroke={isLight ? "#1e293b" : "#fff"} fontSize={10} fontWeight="bold" width={40} tickLine={false} axisLine={false} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: isLight ? '#fff' : '#0f172a',
+                          borderColor: isLight ? '#e2e8f0' : '#334155',
+                          borderRadius: '12px',
+                          color: isLight ? '#1e293b' : '#fff'
+                        }}
+                        itemStyle={{ color: isLight ? '#1e293b' : '#fff' }}
+                        formatter={(val, name, props) => {
+                          const color = props.payload.fill || props.payload.color;
+                          return [
+                            <span style={{ color, fontWeight: 'bold' }}>{val} / 5.0</span>,
+                            <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: 'bold' }}>Puan</span>
+                          ];
+                        }}
+                      />
+                      <Bar dataKey="score" barSize={10} radius={[0, 4, 4, 0]}>
+                        {ageSentiment.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={Number(entry.score) >= 4 ? COLORS.success : (Number(entry.score) >= 3 ? COLORS.warning : COLORS.danger)} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-lg">
+              <p className="text-xs text-indigo-300 text-center">
+                Bu şubenin en aktif müşteri grubu: <span className="font-bold underline text-white">{branch.dominantAge}</span>
+              </p>
             </div>
           </div>
 
@@ -449,10 +663,20 @@ const DetailedAnalytics = () => {
   // 🟢 ŞUBE LİGİ SAYFALAMA & ARAMA (Enterprise 300+ şube desteği)
   const [leaderboardPage, setLeaderboardPage] = useState(1);
   const [leaderboardSearch, setLeaderboardSearch] = useState('');
+  const [allBranches, setAllBranches] = useState([]); // 🟢 Veri olsun olmasın tüm şubeler
   const leaderboardItemsPerPage = 20;
 
   const [dateRange, setDateRange] = useState({ from: new Date(2020, 0, 1), to: new Date() });
   const [preset, setPreset] = useState('allTime');
+  const [isLight, setIsLight] = useState(localStorage.getItem('acta_theme') === 'light');
+
+  useEffect(() => {
+    const handleThemeChange = () => {
+      setIsLight(localStorage.getItem('acta_theme') === 'light');
+    };
+    window.addEventListener('theme-change', handleThemeChange);
+    return () => window.removeEventListener('theme-change', handleThemeChange);
+  }, []);
 
   useEffect(() => {
     if (businessCreatedAt && preset === 'allTime') {
@@ -469,7 +693,15 @@ const DetailedAnalytics = () => {
       const prevFrom = sub(dateRange.from, { days: dayDiff });
       const prevTo = sub(dateRange.to, { days: dayDiff });
 
-      // 🟢 SERVER-SIDE COUNT: PostgREST 1000 sınırı atlatıcı
+      // 🟢 1. FETCH ALL BRANCHES (Leaderboard için)
+      const { data: bData, error: bErr } = await supabase
+        .from('branches')
+        .select('id, branch_name_tr, is_active')
+        .eq('business_id', businessId)
+        .eq('is_active', true);
+      if (!bErr) setAllBranches(bData || []);
+
+      // 🟢 2. COUNTS (Single hit)
       let countCurrQuery = supabase.from('feedbacks')
         .select('*', { count: 'exact', head: true })
         .eq('business_id', businessId)
@@ -484,68 +716,59 @@ const DetailedAnalytics = () => {
         .lte('created_at', endOfDay(prevTo).toISOString());
       if (selectedBranchId !== 'all') countPrevQuery = countPrevQuery.eq('branch_id', selectedBranchId);
 
-      let queryCurr = supabase.from('feedbacks')
-        .select('id, created_at, rating, general_eval_rating, feedback_type, status, branch_id, redirected_to_google, branches(branch_name_tr)')
-        .eq('business_id', businessId)
-        .gte('created_at', startOfDay(dateRange.from).toISOString())
-        .lte('created_at', endOfDay(dateRange.to).toISOString())
-        .limit(100000);
+      const [resCountCurr, resCountPrev] = await Promise.all([countCurrQuery, countPrevQuery]);
 
-      if (selectedBranchId !== 'all') queryCurr = queryCurr.eq('branch_id', selectedBranchId);
-
-      let queryPrev = supabase.from('feedbacks')
-        .select('id, rating, general_eval_rating, status, feedback_type')
-        .eq('business_id', businessId)
-        .gte('created_at', startOfDay(prevFrom).toISOString())
-        .lte('created_at', endOfDay(prevTo).toISOString())
-        .limit(100000);
-
-      if (selectedBranchId !== 'all') queryPrev = queryPrev.eq('branch_id', selectedBranchId);
-
-      let qrTrafficQuery = supabase.from('qr_scans')
-        .select('id, branch_id', { count: 'exact' })
-        .eq('business_id', businessId)
-        .gte('created_at', startOfDay(dateRange.from).toISOString())
-        .lte('created_at', endOfDay(dateRange.to).toISOString())
-        .limit(100000);
-
-      let webTrafficQuery = supabase.from('page_views')
-        .select('id, branch_id', { count: 'exact' })
-        .eq('business_id', businessId)
-        .eq('source', 'web')
-        .gte('created_at', startOfDay(dateRange.from).toISOString())
-        .lte('created_at', endOfDay(dateRange.to).toISOString())
-        .limit(100000);
-
-      const [resCurr, resPrev, resQrTraffic, resWebTraffic, resCountCurr, resCountPrev] = await Promise.all([
-        queryCurr, queryPrev, qrTrafficQuery, webTrafficQuery, countCurrQuery, countPrevQuery
-      ]);
-
-      if (resCurr.error) throw resCurr.error;
-
-      // 🟢 Server-side count (1000 limitine takılmaz)
       setServerFeedbackCount(resCountCurr.count || 0);
       setServerPrevFeedbackCount(resCountPrev.count || 0);
 
-      const currData = resCurr.data || [];
-      setFeedbacks(currData);
-      setPrevFeedbacks(resPrev.data || []);
+      // 🟢 3. DEEP FETCH FEEDBACKS
+      const queryCurr = supabase.from('feedbacks')
+        .select('id, created_at, rating, general_eval_rating, feedback_type, status, branch_id, redirected_to_google, customer_age_group, customer_email, branches(branch_name_tr)')
+        .eq('business_id', businessId)
+        .gte('created_at', startOfDay(dateRange.from).toISOString())
+        .lte('created_at', endOfDay(dateRange.to).toISOString());
 
-      const qrCount = resQrTraffic.count || 0;
-      const webCount = resWebTraffic.count || 0;
-      const googleRedirects = currData.filter(f => f.redirected_to_google).length;
+      const queryPrev = supabase.from('feedbacks')
+        .select('id, rating, general_eval_rating, status, feedback_type, branch_id')
+        .eq('business_id', businessId)
+        .gte('created_at', startOfDay(prevFrom).toISOString())
+        .lte('created_at', endOfDay(prevTo).toISOString());
 
+      const feedbacksCurr = await fetchDeep(selectedBranchId !== 'all' ? queryCurr.eq('branch_id', selectedBranchId) : queryCurr);
+      const feedbacksPrev = await fetchDeep(selectedBranchId !== 'all' ? queryPrev.eq('branch_id', selectedBranchId) : queryPrev);
+
+      setFeedbacks(feedbacksCurr);
+      setPrevFeedbacks(feedbacksPrev);
+
+      // 🟢 4. TRAFFIC COUNTS
+      const qrTrafficQuery = supabase.from('qr_scans')
+        .select('id', { count: 'exact', head: true })
+        .eq('business_id', businessId)
+        .gte('created_at', startOfDay(dateRange.from).toISOString())
+        .lte('created_at', endOfDay(dateRange.to).toISOString());
+
+      const webTrafficQuery = supabase.from('page_views')
+        .select('id', { count: 'exact', head: true })
+        .eq('business_id', businessId)
+        .eq('source', 'web')
+        .gte('created_at', startOfDay(dateRange.from).toISOString())
+        .lte('created_at', endOfDay(dateRange.to).toISOString());
+
+      const [resQr, resWeb] = await Promise.all([qrTrafficQuery, webTrafficQuery]);
+
+      const qrCount = resQr.count || 0;
+      const webCount = resWeb.count || 0;
       const totalVisits = qrCount + webCount;
-      const actionCount = currData.length;
+      const googleRedirects = feedbacksCurr.filter(f => f.redirected_to_google).length;
 
       setTrafficStats({
         visits: totalVisits, qrCount, webCount, googleRedirects,
-        conversionRate: totalVisits > 0 ? ((actionCount / totalVisits) * 100).toFixed(1) : 0
+        conversionRate: totalVisits > 0 ? ((feedbacksCurr.length / totalVisits) * 100).toFixed(1) : 0
       });
 
     } catch (err) {
       console.error(err);
-      toast({ variant: "destructive", title: "Bağlantı Hatası", description: "Verileriniz yüklenirken bir sorun oluştu. Lütfen sayfayı yenileyin veya birkaç dakika sonra tekrar deneyin." });
+      toast({ variant: "destructive", title: "Bağlantı Hatası", description: "Verileriniz yüklenirken bir sorun oluştu." });
     } finally {
       setLoading(false);
     }
@@ -579,17 +802,32 @@ const DetailedAnalytics = () => {
     const calc = (data, serverCount = null) => {
       // 🟢 SERVER COUNT kullan (PostgREST 1000 sınırına takılmaz)
       const total = serverCount !== null ? serverCount : data.length;
-      if (total === 0) return { total: 0, loyaltyScore: 0, resolvedRate: 0, complaintCount: 0 };
+      if (total === 0) return { total: 0, uniqueUsers: 0, loyaltyScore: 0, resolvedRate: 0, complaintCount: 0 };
+
       let totalScore = 0, scoreCount = 0;
+      const uniqueEmails = new Set();
+      let anonymousCount = 0;
+
       data.forEach(f => {
         const s = getWeightedScore(f.rating, f.general_eval_rating);
         if (s > 0 || f.rating || f.general_eval_rating) { totalScore += s; scoreCount++; }
+
+        // 🟢 UNIQUE USER CALCULATION (Dedup registered, count anonymous as 1 each)
+        if (f.customer_email) {
+          uniqueEmails.add(f.customer_email);
+        } else {
+          anonymousCount++;
+        }
       });
+
+      const uniqueUsers = uniqueEmails.size + anonymousCount;
       const loyaltyScore = scoreCount > 0 ? (totalScore / scoreCount).toFixed(0) : 0;
       const resolvedCount = data.filter(f => f.status === 'resolved').length;
       const resolvedRate = total > 0 ? ((resolvedCount / total) * 100).toFixed(0) : 0;
       const complaintCount = data.filter(f => f.feedback_type === 'complaint' && f.status !== 'resolved').length;
-      return { total, loyaltyScore, resolvedRate, complaintCount };
+      const pendingComplaintRate = total > 0 ? ((complaintCount / total) * 100).toFixed(0) : 0;
+
+      return { total, uniqueUsers, loyaltyScore, resolvedRate, complaintCount, pendingComplaintRate };
     };
     return { curr: calc(feedbacks, serverFeedbackCount), prev: calc(prevFeedbacks, serverPrevFeedbackCount) };
   }, [feedbacks, prevFeedbacks, serverFeedbackCount, serverPrevFeedbackCount]);
@@ -640,6 +878,108 @@ const DetailedAnalytics = () => {
     ];
   }, [feedbacks]);
 
+  // 🟢 DEMOGRAFİK ZEKÂ VERİLERİ
+
+  // 1. Yaş vs Kategori (Feedback Type) Heatmap/Stacked
+  const ageCategoryData = useMemo(() => {
+    const raw = { '18-': { c: 0, s: 0, r: 0 }, '18-24': { c: 0, s: 0, r: 0 }, '25-34': { c: 0, s: 0, r: 0 }, '35-44': { c: 0, s: 0, r: 0 }, '45-54': { c: 0, s: 0, r: 0 }, '55+': { c: 0, s: 0, r: 0 } };
+    feedbacks.forEach(f => {
+      if (f.customer_age_group && raw[f.customer_age_group]) {
+        const typeKey = f.feedback_type === 'complaint' ? 'c' : (f.feedback_type === 'suggestion' ? 's' : 'r');
+        raw[f.customer_age_group][typeKey]++;
+      }
+    });
+    return Object.entries(raw).map(([age, counts]) => ({
+      name: age,
+      complaint: counts.c,
+      suggestion: counts.s,
+      review: counts.r
+    }));
+  }, [feedbacks]);
+
+  // 2. Yaş Bazlı Memnuniyet & Brand Loyalty Score
+  const ageSentimentData = useMemo(() => {
+    const scores = { '18-': { total: 0, count: 0 }, '18-24': { total: 0, count: 0 }, '25-34': { total: 0, count: 0 }, '35-44': { total: 0, count: 0 }, '45-54': { total: 0, count: 0 }, '55+': { total: 0, count: 0 } };
+    feedbacks.forEach(f => {
+      if (f.customer_age_group && scores[f.customer_age_group]) {
+        const rating = f.general_eval_rating || f.rating || 0;
+        if (rating > 0) {
+          scores[f.customer_age_group].total += rating;
+          scores[f.customer_age_group].count++;
+        }
+      }
+    });
+    return Object.entries(scores).map(([age, data]) => ({
+      name: age,
+      score: data.count > 0 ? (data.total / data.count).toFixed(1) : 0,
+      count: data.count
+    }));
+  }, [feedbacks]);
+
+  // 3. Canlı Kitle (Son 24 Saat)
+  const liveAudience = useMemo(() => {
+    const now = new Date();
+    const oneDayAgo = sub(now, { hours: 24 });
+    const recent = feedbacks.filter(f => new Date(f.created_at) >= oneDayAgo && f.customer_age_group);
+
+    const counts = {};
+    recent.forEach(f => { counts[f.customer_age_group] = (counts[f.customer_age_group] || 0) + 1; });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([age, count]) => ({ age, count }));
+  }, [feedbacks]);
+
+  // 🟢 YAŞ DAĞILIMI VERİSİ
+  const ageStats = useMemo(() => {
+    const uniqueUsersPerAge = { '18-': new Set(), '18-24': new Set(), '25-34': new Set(), '35-44': new Set(), '45-54': new Set(), '55+': new Set() };
+    const anonymousCounts = { '18-': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55+': 0 };
+
+    feedbacks.forEach(f => {
+      if (f.customer_age_group && uniqueUsersPerAge[f.customer_age_group] !== undefined) {
+        if (f.customer_email) {
+          uniqueUsersPerAge[f.customer_age_group].add(f.customer_email);
+        } else {
+          anonymousCounts[f.customer_age_group]++;
+        }
+      }
+    });
+
+    const data = Object.keys(uniqueUsersPerAge).map(age => {
+      const count = uniqueUsersPerAge[age].size + anonymousCounts[age];
+      return { name: age, value: count };
+    });
+
+    const total = data.reduce((acc, curr) => acc + curr.value, 0);
+
+    // Add percentage
+    const finalData = data.map(item => ({
+      ...item,
+      percent: total > 0 ? ((item.value / total) * 100).toFixed(1) : 0
+    }));
+
+    return { data: finalData, total };
+  }, [feedbacks]);
+
+  // 4. Saatlik Yaş Bazlı Aktivite
+  const hourlyAgeStats = useMemo(() => {
+    const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+    const ageGroups = ['18-', '18-24', '25-34', '35-44', '45-54', '55+'];
+
+    // Initialize structure
+    const stats = hours.map(h => {
+      const entry = { hour: `${h}:00` };
+      ageGroups.forEach(age => { entry[age] = 0; });
+      return entry;
+    });
+
+    feedbacks.forEach(f => {
+      if (f.customer_age_group && ageGroups.includes(f.customer_age_group)) {
+        const hour = new Date(f.created_at).getHours();
+        stats[hour][f.customer_age_group]++;
+      }
+    });
+
+    return stats;
+  }, [feedbacks]);
+
   const sourceData = useMemo(() => [
     { name: 'QR Kod', value: trafficStats.qrCount, color: COLORS.success },
     { name: 'Web/Link', value: trafficStats.webCount, color: COLORS.primary }
@@ -650,10 +990,11 @@ const DetailedAnalytics = () => {
     if (selectedBranchId !== 'all') return null;
     const map = {};
 
-    feedbacks.forEach(f => {
-      const bName = f.branches?.branch_name_tr || 'Bilinmiyor';
-      if (!map[bName]) map[bName] = {
-        name: bName,
+    // 🟢 Initialize map with all branches (Ensures visibility)
+    allBranches.forEach(b => {
+      map[b.branch_name_tr] = {
+        name: b.branch_name_tr,
+        branch_id: b.id,
         total: 0,
         resolved: 0,
         complaints: 0,
@@ -662,8 +1003,29 @@ const DetailedAnalytics = () => {
         googleClicks: 0,
         happy: 0, neutral: 0, risky: 0,
         ratingSum: 0, ratingCount: 0,
-        generalSum: 0, generalCount: 0
+        generalSum: 0, generalCount: 0,
+        ageCounts: {}
       };
+    });
+
+    feedbacks.forEach(f => {
+      const bName = f.branches?.branch_name_tr || 'Bilinmiyor';
+      if (!map[bName]) {
+        // Fallback for branches not in allBranches list
+        map[bName] = {
+          name: bName,
+          total: 0,
+          resolved: 0,
+          complaints: 0,
+          scoreSum: 0,
+          scoreCount: 0,
+          googleClicks: 0,
+          happy: 0, neutral: 0, risky: 0,
+          ratingSum: 0, ratingCount: 0,
+          generalSum: 0, generalCount: 0,
+          ageCounts: {}
+        };
+      }
 
       const item = map[bName];
       item.total += 1;
@@ -681,6 +1043,10 @@ const DetailedAnalytics = () => {
 
         if (f.rating) { item.ratingSum += (f.rating - 1) * 25; item.ratingCount += 1; }
         if (f.general_eval_rating) { item.generalSum += (f.general_eval_rating - 1) * 25; item.generalCount += 1; }
+      }
+
+      if (f.customer_age_group) {
+        item.ageCounts[f.customer_age_group] = (item.ageCounts[f.customer_age_group] || 0) + 1;
       }
     });
 
@@ -708,7 +1074,8 @@ const DetailedAnalytics = () => {
         trafficScore: trafficScore.toFixed(0),
         vocalizeScore: vocalizeScore.toFixed(0),
         happyRate, neutralRate, riskyRate,
-        instantExperience, brandPerception
+        instantExperience, brandPerception,
+        dominantAge: Object.entries(b.ageCounts).sort((x, y) => y[1] - x[1])[0]?.[0] || '-'
       };
     }).sort((a, b) => b.vocalizeScore - a.vocalizeScore);
   }, [feedbacks, selectedBranchId]);
@@ -755,7 +1122,8 @@ const DetailedAnalytics = () => {
       ratingSum: 0,
       ratingCount: 0,
       generalSum: 0,
-      generalCount: 0
+      generalCount: 0,
+      ageCounts: {}
     };
 
     const agg = feedbacks.reduce((acc, f) => {
@@ -778,6 +1146,9 @@ const DetailedAnalytics = () => {
           acc.generalCount += 1;
         }
       }
+      if (f.customer_age_group) {
+        acc.ageCounts[f.customer_age_group] = (acc.ageCounts[f.customer_age_group] || 0) + 1;
+      }
       return acc;
     }, base);
 
@@ -796,18 +1167,20 @@ const DetailedAnalytics = () => {
       trafficScore: trafficScore.toFixed(0),
       vocalizeScore: vocalizeScore.toFixed(0),
       instantExperience,
-      brandPerception
+      brandPerception,
+      dominantAge: Object.entries(agg.ageCounts).sort((x, y) => y[1] - x[1])[0]?.[0] || '-',
+      ageCounts: agg.ageCounts
     };
   }, [feedbacks, selectedBranchId, leaderboardData]);
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-slate-200 pb-32 pt-24 lg:pt-0 font-sans selection:bg-sky-500/30">
+    <div className={`min-h-screen ${isLight ? 'bg-slate-50' : 'bg-[#0f172a]'} ${isLight ? 'text-slate-900' : 'text-slate-200'} pb-32 pt-24 lg:pt-0 font-sans selection:bg-sky-500/30 transition-colors duration-300`}>
       <div className="mx-auto max-w-7xl px-4 pt-8 lg:px-8">
 
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
+            <h1 className={`text-3xl font-extrabold ${isLight ? 'text-slate-900' : 'text-white'} flex items-center gap-3`}>
               <BarChart3 className="w-8 h-8 text-sky-500" />
               Performans Analizi
             </h1>
@@ -822,14 +1195,49 @@ const DetailedAnalytics = () => {
 
         {/* KPI KARTLARI */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-          <KpiCard title="Toplam Bildirim" value={kpi.curr.total} previousValue={kpi.prev.total} icon={Activity} colorClass="text-sky-400" />
-          <KpiCard title="Sadakat Skoru" value={kpi.curr.loyaltyScore} previousValue={kpi.prev.loyaltyScore} icon={Heart} colorClass="text-pink-400" suffix="/100" />
-          <KpiCard title="Çözüm Başarısı" value={kpi.curr.resolvedRate} previousValue={kpi.prev.resolvedRate} suffix="%" icon={CheckCircle} colorClass="text-green-400" />
-          <KpiCard title="Bekleyen Şikayet" value={kpi.curr.complaintCount} previousValue={kpi.prev.complaintCount} icon={AlertTriangle} colorClass="text-red-400" inverseTrend={true} />
+          <KpiCard
+            title="Toplam Etkileşim"
+            value={kpi.curr.total}
+            previousValue={kpi.prev.total}
+            icon={Activity}
+            colorClass="text-sky-400 group-hover:text-sky-300"
+            hideTrend={preset === 'allTime'}
+          />
+          <KpiCard
+            title="Tekil Kullanıcı"
+            value={kpi.curr.uniqueUsers}
+            previousValue={kpi.prev.uniqueUsers}
+            icon={Users}
+            colorClass="text-indigo-400 group-hover:text-indigo-300"
+            hideTrend={preset === 'allTime'}
+          />
+          <KpiCard
+            title="Sadakat Skoru"
+            value={kpi.curr.loyaltyScore}
+            previousValue={kpi.prev.loyaltyScore}
+            icon={Heart}
+            suffix="/100"
+            colorClass="text-pink-400 group-hover:text-pink-300"
+            hideTrend={preset === 'allTime'}
+          />
+          <SplitKpiCard
+            title="Operasyonel Performans"
+            label1="Çözüm Başarısı"
+            value1={kpi.curr.resolvedRate}
+            icon1={CheckCircle}
+            color1="text-emerald-400"
+            label2="Bekleyen Şikayet"
+            value2={kpi.curr.pendingComplaintRate}
+            icon2={AlertTriangle}
+            color2="text-rose-400"
+          />
         </div>
 
         {loading ? (
-          <div className="py-32 flex flex-col items-center justify-center text-slate-500 gap-4"><div className="w-12 h-12 border-4 border-slate-800 border-t-sky-500 rounded-full animate-spin"></div><p className="text-sm font-medium animate-pulse">Analizler hazırlanıyor...</p></div>
+          <div className="py-32 flex flex-col items-center justify-center text-slate-500 gap-4">
+            <div className="w-12 h-12 border-4 border-slate-800 border-t-sky-500 rounded-full animate-spin"></div>
+            <p className="text-sm font-medium animate-pulse">Veriler Hesaplanıyor...</p>
+          </div>
         ) : (
           <div className="space-y-8">
 
@@ -838,14 +1246,13 @@ const DetailedAnalytics = () => {
 
               {/* 1. Trend & Marka Algısı */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Sol: Trend Grafiği */}
-                <div className="lg:col-span-2 bg-slate-900/50 border border-slate-800 rounded-2xl p-6 shadow-lg">
+                <div className={`lg:col-span-2 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 shadow-lg transition-all`}>
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                    <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                    <h3 className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-lg flex items-center gap-2`}>
                       <TrendingUp className="w-5 h-5 text-sky-400" />
                       Bildirim Trendi
                     </h3>
-                    <div className="flex bg-[#0f172a] p-1 rounded-lg border border-slate-800 shrink-0">
+                    <div className={`flex ${isLight ? 'bg-slate-100 border-slate-200' : 'bg-[#0f172a] border-slate-800'} p-1 rounded-lg border shrink-0`}>
                       <button onClick={() => setTrendViewMode('total')} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${trendViewMode === 'total' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Genel</button>
                       <button onClick={() => setTrendViewMode('breakdown')} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${trendViewMode === 'breakdown' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Detaylı</button>
                     </div>
@@ -855,19 +1262,19 @@ const DetailedAnalytics = () => {
                       {trendViewMode === 'total' ? (
                         <AreaChart data={trendData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                           <defs><linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.4} /><stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} /></linearGradient></defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.4} />
-                          <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} dy={10} minTickGap={30} />
-                          <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                          <Tooltip content={<CustomTooltip />} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "#e2e8f0" : "#334155"} vertical={false} opacity={0.4} />
+                          <XAxis dataKey="name" stroke={isLight ? "#64748b" : "#94a3b8"} fontSize={12} tickLine={false} axisLine={false} dy={10} minTickGap={30} />
+                          <YAxis stroke={isLight ? "#64748b" : "#94a3b8"} fontSize={12} tickLine={false} axisLine={false} />
+                          <Tooltip content={<CustomTooltip isLight={isLight} />} />
                           <Area type="monotone" dataKey="total" name="Bildirim" stroke={COLORS.primary} strokeWidth={3} fill="url(#colorTrend)" />
                         </AreaChart>
                       ) : (
                         <BarChart data={trendData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.4} />
-                          <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} dy={10} minTickGap={30} />
-                          <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" iconSize={8} formatter={(value) => <span className="mr-4">{value}</span>} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "#e2e8f0" : "#334155"} vertical={false} opacity={0.4} />
+                          <XAxis dataKey="name" stroke={isLight ? "#64748b" : "#94a3b8"} fontSize={12} tickLine={false} axisLine={false} dy={10} minTickGap={30} />
+                          <YAxis stroke={isLight ? "#64748b" : "#94a3b8"} fontSize={12} tickLine={false} axisLine={false} />
+                          <Tooltip content={<CustomTooltip isLight={isLight} />} />
+                          <Legend wrapperStyle={{ paddingTop: '20px', color: isLight ? '#475569' : '#94a3b8' }} iconType="circle" iconSize={8} formatter={(value) => <span className="mr-4">{value}</span>} />
                           <Bar dataKey="complaint" name="Şikayet" stackId="a" fill={COLORS.danger} barSize={20} />
                           <Bar dataKey="suggestion" name="Öneri" stackId="a" fill={COLORS.primary} barSize={20} />
                           <Bar dataKey="evaluation" name="Değerlendirme" stackId="a" fill={COLORS.warning} radius={[4, 4, 0, 0]} barSize={20} />
@@ -877,44 +1284,38 @@ const DetailedAnalytics = () => {
                   </div>
                 </div>
 
-                {/* Sağ: Marka vs Deneyim (RESTORE EDİLDİ) */}
-                <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                <div className={`${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 flex flex-col justify-between transition-all`}>
                   <div>
-                    <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                    <h3 className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-lg flex items-center gap-2`}>
                       <Zap className="w-5 h-5 text-yellow-400" />
                       Marka vs Deneyim
                     </h3>
                     <p className="text-slate-400 text-xs mt-1 mb-8">
                       Müşterinin aklındaki "Marka" ile o an yaşadığı "Hizmet" arasındaki fark.
                     </p>
-
                     <div className="space-y-6">
-                      {/* Genel Algı */}
                       <div>
                         <div className="flex justify-between text-sm mb-2">
-                          <span className="text-slate-300">Genel Algı (Marka)</span>
-                          <span className="text-white font-bold">{loyaltyComparison.general}%</span>
+                          <span className={`${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Genel Algı (Marka)</span>
+                          <span className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>{loyaltyComparison.general}%</span>
                         </div>
-                        <div className="detail-analytics-bar-wrap h-4 bg-slate-900 rounded-full border border-slate-700/50">
+                        <div className={`detail-analytics-bar-wrap h-4 ${isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-900 border-slate-700/50'} rounded-full border`}>
                           <div className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full" style={{ width: `${loyaltyComparison.general}%` }}></div>
                         </div>
                       </div>
-
-                      {/* Anlık Deneyim */}
                       <div>
                         <div className="flex justify-between text-sm mb-2">
-                          <span className="text-slate-300">Anlık Deneyim (Hizmet)</span>
-                          <span className="text-white font-bold">{loyaltyComparison.instant}%</span>
+                          <span className={`${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Anlık Deneyim (Hizmet)</span>
+                          <span className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>{loyaltyComparison.instant}%</span>
                         </div>
-                        <div className="detail-analytics-bar-wrap h-4 bg-slate-900 rounded-full border border-slate-700/50">
+                        <div className={`detail-analytics-bar-wrap h-4 ${isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-900 border-slate-700/50'} rounded-full border`}>
                           <div className="h-full bg-gradient-to-r from-sky-500 to-blue-500 rounded-full" style={{ width: `${loyaltyComparison.instant}%` }}></div>
                         </div>
                       </div>
                     </div>
                   </div>
-
-                  <div className="mt-6 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                    <p className="text-xs text-slate-400 text-center leading-relaxed">
+                  <div className={`mt-6 p-3 ${isLight ? 'bg-slate-50 border-slate-100' : 'bg-slate-800/50 border-slate-700/50'} rounded-xl border`}>
+                    <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'} text-center leading-relaxed`}>
                       {Number(loyaltyComparison.general) > Number(loyaltyComparison.instant)
                         ? "⚠️ Dikkat: Marka beklentisi yüksek, ancak son hizmet deneyimleri bu beklentinin altında kalıyor."
                         : "✅ Harika: Sunduğunuz hizmet, müşterinin marka beklentisinin üzerine çıkıyor."}
@@ -923,151 +1324,345 @@ const DetailedAnalytics = () => {
                 </div>
               </div>
 
-              {/* 2. Trafik & Duygu */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                {/* TRAFİK VE DÖNÜŞÜM KARTI (GRID TASARIM) */}
-                <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 relative flex flex-col">
+              {/* 2. Trafik, Duygu ve Yaş Dağılımı */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className={`lg:col-span-1 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 relative flex flex-col transition-all`}>
                   <div className="flex items-center gap-2 mb-6">
                     <Filter className="w-5 h-5 text-purple-400" />
                     <div>
-                      <h3 className="text-white font-bold text-lg">Trafik & Dönüşüm Hunisi</h3>
-                      <p className="text-slate-400 text-xs">Müşterilerin form doldurma ve Google'a geçiş yolculuğu.</p>
+                      <h3 className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-lg`}>Trafik & Dönüşüm Hunisi</h3>
+                      <p className={`${isLight ? 'text-slate-500' : 'text-slate-400'} text-xs text-balance`}>Müşteri yolculuğu hunisi.</p>
                     </div>
                   </div>
-
-                  <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
-                    {/* Pasta Grafik */}
-                    <div className="relative w-52 h-52 shrink-0 flex items-center justify-center mx-auto md:mx-0">
+                  <div className="flex flex-col xl:flex-row gap-6 items-center lg:items-start">
+                    <div className="relative w-40 h-40 shrink-0 flex items-center justify-center mx-auto lg:mx-0">
                       <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <PieChart className="detail-analytics-pie">
-                          <Pie
-                            data={sourceData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
-                            paddingAngle={5}
-                            dataKey="value"
-                            stroke="rgba(255,255,255,0.15)"
-                            strokeWidth={1.5}
-                          >
+                          <Pie data={sourceData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value" stroke="rgba(255,255,255,0.05)" strokeWidth={1}>
                             {sourceData.map((entry, index) => (
-                              <Cell
-                                key={`cell-${index}`}
-                                fill={entry.color}
-                                stroke="rgba(0,0,0,0.06)"
-                                strokeWidth={1}
-                              />
+                              <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Pie>
                           <Tooltip
-                            formatter={(value, name) => [
-                              value,
-                              name === 'QR Kod' ? 'QR Kod' : 'Web/Link'
-                            ]}
+                            contentStyle={{
+                              backgroundColor: isLight ? '#fff' : '#0f172a',
+                              borderColor: isLight ? '#e2e8f0' : '#334155',
+                              borderRadius: '12px',
+                              color: isLight ? '#1e293b' : '#fff'
+                            }}
+                            itemStyle={{ color: isLight ? '#1e293b' : '#fff', fontSize: '12px', fontWeight: 'bold' }}
+                            labelStyle={{ display: 'none' }}
+                            formatter={(val, name, props) => {
+                              const color = props.payload.color || props.payload.fill;
+                              return [
+                                <span style={{ color }}>{val}</span>,
+                                <span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>{name === 'QR Kod' ? 'QR Okutma' : 'Web Link'}</span>
+                              ];
+                            }}
                           />
                         </PieChart>
                       </ResponsiveContainer>
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span className="text-lg font-bold text-white">{formatNumber(trafficStats.visits)}</span>
-                        <span className="text-[9px] text-slate-500 uppercase">Ziyaret</span>
+                        <span className={`text-xl font-extrabold ${isLight ? 'text-slate-900' : 'text-white'}`}>{formatNumber(trafficStats.visits)}</span>
+                        <span className={`text-[8px] ${isLight ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-tighter`}>Ziyaret</span>
                       </div>
                     </div>
-
-                    {/* Sağ Taraf: Grid Kartlar */}
-                    <div className="flex-1 grid grid-cols-2 gap-3 content-start">
-                      {/* QR */}
-                      <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800 flex flex-col items-center text-center justify-center">
-                        <QrCode className="w-5 h-5 text-green-500 mb-1" />
-                        <span className="text-lg font-bold text-white leading-none">{trafficStats.qrCount}</span>
-                        <span className="text-[10px] text-slate-500 mt-1">QR Okutma</span>
+                    <div className="flex-1 grid grid-cols-2 gap-2 w-full">
+                      <div className={`p-2.5 rounded-lg border ${isLight ? 'bg-slate-50 border-slate-100' : 'bg-slate-900/50 border-slate-800/50'} flex flex-col items-center text-center justify-center`}>
+                        <QrCode className="w-4 h-4 text-green-500 mb-1" />
+                        <span className={`text-base font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-none`}>{trafficStats.qrCount}</span>
+                        <span className={`text-[9px] ${isLight ? 'text-slate-400' : 'text-slate-500'} mt-1 whitespace-nowrap`}>QR Okutma</span>
                       </div>
-                      {/* Link */}
-                      <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800 flex flex-col items-center text-center justify-center">
-                        <LinkIcon className="w-5 h-5 text-sky-500 mb-1" />
-                        <span className="text-lg font-bold text-white leading-none">{trafficStats.webCount}</span>
-                        <span className="text-[10px] text-slate-500 mt-1">Web Link</span>
+                      <div className={`p-2.5 rounded-lg border ${isLight ? 'bg-slate-50 border-slate-100' : 'bg-slate-900/50 border-slate-800/50'} flex flex-col items-center text-center justify-center`}>
+                        <LinkIcon className="w-4 h-4 text-sky-500 mb-1" />
+                        <span className={`text-base font-bold ${isLight ? 'text-slate-900' : 'text-white'} leading-none`}>{trafficStats.webCount}</span>
+                        <span className={`text-[9px] ${isLight ? 'text-slate-400' : 'text-slate-500'} mt-1 whitespace-nowrap`}>Web Link</span>
                       </div>
-                      {/* Form Dönüşüm */}
-                      <div className="bg-purple-500/10 p-3 rounded-lg border border-purple-500/20 flex flex-col items-center text-center justify-center group relative cursor-help">
-                        <div className="absolute top-2 right-2"><InfoTooltip text="Sayfayı ziyaret eden her 100 kişiden kaçı formu tamamladı?" /></div>
-                        <Activity className="w-5 h-5 text-purple-400 mb-1" />
-                        <span className="text-lg font-bold text-white leading-none">%{trafficStats.conversionRate}</span>
-                        <div className="flex items-center gap-1 mt-1">
-                          <span className="text-[10px] text-purple-300">Form Dönüşüm</span>
-                        </div>
+                      <div className="bg-purple-500/10 p-2.5 rounded-lg border border-purple-500/20 flex flex-col items-center text-center justify-center group relative cursor-help">
+                        <div className="absolute top-1 right-1"><InfoTooltip text="Sayfayı ziyaret eden her 100 kişiden kaçı formu tamamladı?" /></div>
+                        <Activity className="w-4 h-4 text-purple-400 mb-1" />
+                        <span className="text-base font-bold text-white leading-none">%{trafficStats.conversionRate}</span>
+                        <span className="text-[9px] text-purple-300 mt-1 whitespace-nowrap">Dönüşüm</span>
                       </div>
-                      {/* Google Geçiş (Vurgulu) */}
-                      <div className="bg-red-500/10 p-3 rounded-lg border border-red-500/20 flex flex-col items-center text-center justify-center cursor-help relative">
-                        <div className="absolute top-2 right-2"><InfoTooltip text="Formu doldurduktan sonra Google Maps yorum sayfasına yönlenen müşteri sayısı." /></div>
-                        <MapPin className="w-5 h-5 text-red-400 mb-1" />
-                        <span className="text-lg font-bold text-white leading-none">{trafficStats.googleRedirects}</span>
-                        <div className="flex items-center gap-1 mt-1">
-                          <span className="text-[10px] text-red-300">Haritalara Geçiş</span>
-                        </div>
+                      <div className="bg-red-500/10 p-2.5 rounded-lg border border-red-500/20 flex flex-col items-center text-center justify-center cursor-help relative">
+                        <div className="absolute top-1 right-1"><InfoTooltip text="Formu doldurduktan sonra Google Maps yorum sayfasına yönlenen müşteri sayısı." /></div>
+                        <MapPin className="w-4 h-4 text-red-400 mb-1" />
+                        <span className="text-base font-bold text-white leading-none">{trafficStats.googleRedirects}</span>
+                        <span className="text-[9px] text-red-300 mt-1 whitespace-nowrap">Haritalar</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* DUYGU ANALİZİ */}
-                <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
-                  <div className="flex items-center gap-2 mb-6"><TrendingUp className="w-5 h-5 text-yellow-400" /><div><h3 className="text-white font-bold text-lg">Genel Memnuniyet</h3><p className="text-slate-400 text-xs">Müşteri geri bildirim tonu dağılımı.</p></div></div>
-                  <div className="space-y-6">
+                <div className={`lg:col-span-2 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 transition-all`}>
+                  <div className="flex items-center gap-2 mb-6">
+                    <TrendingUp className="w-5 h-5 text-yellow-400" />
+                    <div>
+                      <h3 className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-lg flex items-center gap-2`}>
+                        Genel Memnuniyet
+                        <span className={`${isLight ? 'text-slate-400' : 'text-slate-500'} font-normal text-xs ml-1`}>(Toplam: {formatNumber(serverFeedbackCount)} İşlem)</span>
+                      </h3>
+                      <p className={`${isLight ? 'text-slate-500' : 'text-slate-400'} text-xs`}>Müşteri geri bildirim tonu dağılımı.</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-5">
                     {sentimentData.map((item, idx) => (
-                      <div key={idx}>
-                        <div className="flex justify-between items-end mb-2"><span className="text-sm font-medium text-slate-300">{item.label}</span><div className="text-right leading-none"><span className="text-lg font-bold text-white">{item.percent}%</span><span className="text-xs text-slate-500 ml-1">({item.count})</span></div></div>
-                        <div className="detail-analytics-bar-wrap h-2.5 w-full bg-slate-800 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-1000" style={{ width: `${item.percent}%`, backgroundColor: item.color }}></div></div>
+                      <div key={idx} className="flex flex-col justify-center">
+                        <div className="flex justify-between items-end mb-1.5">
+                          <span className="text-sm font-medium text-slate-300">{item.label}</span>
+                          <div className="text-right leading-none">
+                            <span className="text-xl font-bold text-white">%{item.percent}</span>
+                            <span className="text-[10px] text-slate-500 uppercase ml-2 tracking-tighter">({item.count} İşlem)</span>
+                          </div>
+                        </div>
+                        <div className={`detail-analytics-bar-wrap h-3 w-full ${isLight ? 'bg-slate-100' : 'bg-slate-800'} rounded-full overflow-hidden`}>
+                          <div className="h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_currentColor] opacity-90" style={{ width: `${item.percent}%`, backgroundColor: item.color }}></div>
+                        </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* 🟢 SAATLİK YOĞUNLUK ANALİZİ (YENİ) - TAM GENİŞLİK */}
+                <div className={`lg:col-span-3 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 transition-all`}>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-indigo-400" />
+                      <div>
+                        <h3 className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-lg`}>Zaman Dilimine Göre Aktivite</h3>
+                        <p className={`${isLight ? 'text-slate-500' : 'text-slate-400'} text-xs`}>Seçili tarih aralığında günün saatlerine göre aktivite yoğunluğu.</p>
+                      </div>
+                    </div>
+                    <InfoTooltip text="Seçili tarih aralığı boyunca hangi yaş grubunun günün hangi saatinde daha yoğun geri bildirim gönderdiğini gösterir." />
+                  </div>
+                  <div className="h-[280px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={hourlyAgeStats} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <filter id="barShadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
+                            <feOffset in="blur" dx="0" dy="1" result="offsetBlur" />
+                            <feComponentTransfer>
+                              <feFuncA type="linear" slope="0.3" />
+                            </feComponentTransfer>
+                            <feMerge>
+                              <feMergeNode />
+                              <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                          </filter>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isLight ? "#e2e8f0" : "#334155"} opacity={0.3} />
+                        <XAxis dataKey="hour" stroke={isLight ? "#64748b" : "#94a3b8"} fontSize={10} tickLine={false} axisLine={false} />
+                        <YAxis stroke={isLight ? "#64748b" : "#94a3b8"} fontSize={10} tickLine={false} axisLine={false} />
+                        <Tooltip
+                          cursor={{ fill: 'transparent' }}
+                          contentStyle={{
+                            backgroundColor: isLight ? '#fff' : '#0f172a',
+                            borderColor: isLight ? '#e2e8f0' : '#334155',
+                            borderRadius: '12px',
+                            border: `1px solid ${isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
+                            color: isLight ? '#1e293b' : '#fff'
+                          }}
+                          itemStyle={{ color: isLight ? '#1e293b' : '#fff', fontSize: '12px', fontWeight: 'bold' }}
+                          labelStyle={{ color: isLight ? '#64748b' : '#94a3b8', marginBottom: '8px', fontWeight: 'bold' }}
+                        />
+                        <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', paddingTop: '10px', color: isLight ? '#475569' : '#94a3b8' }} />
+                        <Bar dataKey="18-" stackId="a" fill={COLORS.purple} filter="url(#barShadow)" />
+                        <Bar dataKey="18-24" stackId="a" fill={COLORS.primary} filter="url(#barShadow)" />
+                        <Bar dataKey="25-34" stackId="a" fill={COLORS.success} filter="url(#barShadow)" />
+                        <Bar dataKey="35-44" stackId="a" fill={COLORS.warning} filter="url(#barShadow)" />
+                        <Bar dataKey="45-54" stackId="a" fill={COLORS.danger} filter="url(#barShadow)" />
+                        <Bar dataKey="55+" stackId="a" fill={COLORS.slate} radius={[4, 4, 0, 0]} filter="url(#barShadow)" />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* 🏆 ŞUBE LİDERLİK TABLOSU (SAYFALAMALI & ARAMALI) */}
-            {selectedBranchId === 'all' && leaderboardData && leaderboardData.length > 1 && (
-              <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 relative overflow-visible z-0 mb-8 shadow-lg">
+            {/* 🟢 DEMOGRAFİK ZEKÂ (YENİ BÖLÜM) */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+                  <Users className="w-6 h-6 text-indigo-400" />
+                </div>
+                <div>
+                  <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Demografik Zekâ</h2>
+                  <p className={`${isLight ? 'text-slate-500' : 'text-slate-400'} text-sm`}>Yaş gruplarına göre davranış ve memnuniyet analizi.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* 1. Yaş Dağılımı (Mevcut) */}
+                <div className={`${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 flex flex-col transition-all`}>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-lg`}>Kitle Dağılımı</h3>
+                    <div className="flex items-center gap-2">
+                      <InfoTooltip text="Müşterilerin yaş grubu bazlı genel dağılımı." />
+                      {liveAudience.length > 0 && (
+                        <div className="flex items-center gap-2 px-2 py-1 bg-green-900/30 border border-green-800 rounded text-[10px] text-green-400 animate-pulse">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                          Canlı
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {ageStats.total > 0 ? (
+                    <div className="flex-1 min-h-[200px] flex flex-col justify-center">
+                      <ResponsiveContainer width="100%" height={220}>
+                        <PieChart>
+                          <Pie data={ageStats.data} cx="50%" cy="50%" innerRadius={0} outerRadius={80} paddingAngle={2} dataKey="value">
+                            {ageStats.data.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={[COLORS.purple, COLORS.primary, COLORS.success, COLORS.warning, COLORS.danger, COLORS.slate][index % 6]} strokeWidth={0} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: isLight ? '#fff' : '#0f172a',
+                              borderColor: isLight ? '#e2e8f0' : '#334155',
+                              borderRadius: '12px',
+                              color: isLight ? '#1e293b' : '#fff'
+                            }}
+                            itemStyle={{ color: isLight ? '#1e293b' : '#fff', fontSize: '12px', fontWeight: 'bold' }}
+                            labelStyle={{ display: 'none' }}
+                            formatter={(value, name, props) => {
+                              const color = props.payload.fill || props.payload.color;
+                              return [
+                                <span style={{ color }}>{value} Kişi</span>,
+                                <span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Yaş: {name}</span>
+                              ];
+                            }}
+                          />
+                          <Legend layout="horizontal" verticalAlign="bottom" align="center" iconSize={8} wrapperStyle={{ fontSize: '11px', color: isLight ? '#475569' : '#94a3b8', paddingTop: '20px' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-500 py-10 opacity-50">
+                      <Users className="w-12 h-12 mb-2" />
+                      <p className="text-sm">Henüz yeterli demografik veri toplanmadı.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Yaş vs Memnuniyet (Brand Loyalty) */}
+                <div className={`${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 flex flex-col transition-all`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-lg`}>Marka Sadakati Skoru</h3>
+                    <InfoTooltip text="Yaş gruplarının işletmenize verdiği ortalama puanlar (0-5)." />
+                  </div>
+                  <p className="text-slate-400 text-xs mb-6">Yaş gruplarının ortalama memnuniyet puanı.</p>
+                  <div className="flex-1 min-h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={ageSentimentData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={isLight ? "#e2e8f0" : "#334155"} opacity={0.3} />
+                        <XAxis
+                          type="number"
+                          domain={[0, 5]}
+                          stroke={isLight ? "#64748b" : "#94a3b8"}
+                          fontSize={10}
+                          tickLine={false}
+                          axisLine={false}
+                          ticks={[0, 1, 2, 3, 4, 5]}
+                          tickFormatter={(val) => `${val} ⭐`}
+                        />
+                        <YAxis dataKey="name" type="category" stroke={isLight ? "#1e293b" : "#fff"} fontSize={12} fontWeight="bold" width={50} tickLine={false} axisLine={false} />
+                        <Tooltip
+                          cursor={{ fill: 'transparent' }}
+                          contentStyle={{
+                            backgroundColor: isLight ? '#fff' : '#0f172a',
+                            borderColor: isLight ? '#e2e8f0' : '#334155',
+                            borderRadius: '12px',
+                            color: isLight ? '#1e293b' : '#fff'
+                          }}
+                          itemStyle={{ color: isLight ? '#1e293b' : '#fff', fontSize: '12px', fontWeight: 'bold' }}
+                          labelStyle={{ color: isLight ? '#64748b' : '#94a3b8' }}
+                          formatter={(val, name, props) => {
+                            const color = props.payload.fill || props.color || (isLight ? '#1e293b' : '#fff');
+                            return [
+                              <span style={{ color }}>{val} / 5.0</span>,
+                              <span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Ort. Puan</span>
+                            ];
+                          }}
+                        />
+                        <Bar dataKey="score" name="Puan" barSize={12} radius={[0, 4, 4, 0]}>
+                          {ageSentimentData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={Number(entry.score) >= 4 ? COLORS.success : (Number(entry.score) >= 3 ? COLORS.warning : COLORS.danger)} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* 3. İlgi Alanları (Category Heatmap) */}
+                <div className={`${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 flex flex-col transition-all`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-lg`}>Yaş Gruplarına Göre Form Dağılımı</h3>
+                    <InfoTooltip text="Yaş gruplarının hangi geri bildirim türlerini (Şikayet, Öneri, Değerlendirme) tercih ettiğini gösterir." />
+                  </div>
+                  <p className="text-slate-400 text-xs mb-6">Yaş gruplarına göre form türü dağılımı.</p>
+                  <div className="flex-1 min-h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={ageCategoryData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "#e2e8f0" : "#334155"} vertical={false} opacity={0.3} />
+                        <XAxis dataKey="name" stroke={isLight ? "#64748b" : "#94a3b8"} fontSize={11} tickLine={false} axisLine={false} />
+                        <YAxis stroke={isLight ? "#64748b" : "#94a3b8"} fontSize={11} tickLine={false} axisLine={false} />
+                        <Tooltip content={<CustomTooltip isLight={isLight} />} />
+                        <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', paddingTop: '10px', color: isLight ? '#475569' : '#94a3b8' }} />
+                        <Bar dataKey="complaint" name="Şikayet" stackId="a" fill={COLORS.danger} barSize={20} />
+                        <Bar dataKey="suggestion" name="Öneri" stackId="a" fill={COLORS.primary} barSize={20} />
+                        <Bar dataKey="review" name="Değerlendirme" stackId="a" fill={COLORS.warning} radius={[4, 4, 0, 0]} barSize={20} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {selectedBranchId === 'all' && leaderboardData && leaderboardData.length > 0 && (
+              <div className={`${isLight ? 'bg-white border-slate-200 shadow-md' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 relative overflow-visible z-0 mb-8 shadow-lg transition-all`}>
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
                   <div className="flex items-center gap-2">
                     <Trophy className="w-6 h-6 text-amber-400" />
                     <div>
-                      <h3 className="text-white font-bold text-lg">Şube Performans Ligi</h3>
-                      <p className="text-slate-400 text-xs">Şubelerinizin detaylı karşılaştırması. ({leaderboardData.length} şube)</p>
+                      <h3 className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-lg`}>Şube Performans Ligi</h3>
+                      <p className={`${isLight ? 'text-slate-500' : 'text-slate-400'} text-xs`}>Şubelerinizin detaylı karşılaştırması. ({leaderboardData.length} şube)</p>
                     </div>
                   </div>
 
                   {/* 🔍 ARAMA KUTUSU */}
                   <div className="relative w-full md:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isLight ? 'text-slate-400' : 'text-slate-500'}`} />
                     <input
                       type="text"
                       placeholder="Şube ara..."
                       value={leaderboardSearch}
                       onChange={(e) => setLeaderboardSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-colors"
+                      className={`w-full pl-10 pr-4 py-2.5 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-900 border-slate-700'} border rounded-lg text-sm ${isLight ? 'text-slate-900' : 'text-white'} placeholder:text-slate-500 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-colors`}
                     />
                   </div>
                 </div>
 
                 {/* AĞIRLIK LEJANTI */}
-                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-slate-900/50 p-2 rounded-lg border border-slate-800/50 mb-4">
+                <div className={`flex flex-col sm:flex-row gap-3 items-start sm:items-center ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-900/50 border-slate-800/50'} p-2 rounded-lg border mb-4`}>
                   <span className="text-[10px] uppercase font-bold text-slate-500 ml-1 flex items-center gap-1"><Scale className="w-3 h-3" /> Hesaplama Ağırlığı:</span>
                   <div className="flex flex-wrap gap-3">
                     <div className="flex items-center gap-1.5 cursor-help group">
                       <div className="w-2 h-2 rounded-full bg-green-500 group-hover:scale-110 transition-transform"></div>
-                      <span className="text-[10px] text-slate-400 font-medium group-hover:text-white transition-colors">Kalite %40</span>
+                      <span className={`text-[10px] ${isLight ? 'text-slate-600 group-hover:text-slate-900' : 'text-slate-400 group-hover:text-white'} font-medium transition-colors`}>Kalite %40</span>
                       <InfoTooltip text="Müşterilerin verdiği yıldız ve puanların ortalaması." />
                     </div>
                     <div className="flex items-center gap-1.5 cursor-help group">
                       <div className="w-2 h-2 rounded-full bg-blue-500 group-hover:scale-110 transition-transform"></div>
-                      <span className="text-[10px] text-slate-400 font-medium group-hover:text-white transition-colors">Operasyon %30</span>
+                      <span className={`text-[10px] ${isLight ? 'text-slate-600 group-hover:text-slate-900' : 'text-slate-400 group-hover:text-white'} font-medium transition-colors`}>Operasyon %30</span>
                       <InfoTooltip text="Şikayetlerin çözüme kavuşturulma hızı ve oranı." />
                     </div>
                     <div className="flex items-center gap-1.5 cursor-help group">
                       <div className="w-2 h-2 rounded-full bg-purple-500 group-hover:scale-110 transition-transform"></div>
-                      <span className="text-[10px] text-slate-400 font-medium group-hover:text-white transition-colors">Veri Payı %30</span>
+                      <span className={`text-[10px] ${isLight ? 'text-slate-600 group-hover:text-slate-900' : 'text-slate-400 group-hover:text-white'} font-medium transition-colors`}>Veri Payı %30</span>
                       <InfoTooltip text="Bu şubenin, toplam geri bildirim havuzundaki payı. (Diğer şubelere kıyasla ne kadar veri ürettiği)." />
                     </div>
                   </div>
@@ -1075,28 +1670,31 @@ const DetailedAnalytics = () => {
 
                 <div className="overflow-x-auto pb-4 relative z-0">
                   <table className="branch-league-table w-full min-w-[800px] text-left text-sm text-slate-400 border-collapse">
-                    <thead className="bg-[#0f172a] text-xs uppercase font-bold text-slate-500 tracking-wider">
+                    <thead className={`${isLight ? 'bg-slate-100/50' : 'bg-[#0f172a]'} text-xs uppercase font-bold ${isLight ? 'text-slate-600' : 'text-slate-500'} tracking-wider`}>
                       <tr>
-                        <th className="px-6 py-4 rounded-l-lg border-r border-slate-800/50">Sıra</th>
-                        <th className="px-6 py-4 border-r border-slate-800/50">Şube Adı</th>
-                        <th className="px-6 py-4 border-r border-slate-800/50 text-center">
+                        <th className={`px-6 py-4 rounded-l-lg border-r ${isLight ? 'border-slate-200' : 'border-slate-800/50'}`}>Sıra</th>
+                        <th className={`px-6 py-4 border-r ${isLight ? 'border-slate-200' : 'border-slate-800/50'}`}>Şube Adı</th>
+                        <th className={`px-6 py-4 border-r ${isLight ? 'border-slate-200' : 'border-slate-800/50'} text-center`}>
                           <div className="flex items-center justify-center gap-1">Toplam <MessageSquare className="w-3 h-3 text-slate-500" /></div>
                         </th>
-                        <th className="px-6 py-4 text-center border-r border-slate-800/50 bg-slate-900/50 text-sky-400 cursor-help">
+                        <th className={`px-6 py-4 text-center border-r ${isLight ? 'border-slate-200' : 'border-slate-800/50'} ${isLight ? 'bg-slate-100/30' : 'bg-slate-900/50'} text-sky-500 cursor-help`}>
                           <div className="flex items-center justify-center gap-1">🏆 Lig Puanı <InfoTooltip text="Kalite, Operasyon ve Veri Payı puanlarının ağırlıklı ortalaması." /></div>
                         </th>
-                        <th className="px-6 py-4 text-center border-r border-slate-800/50 cursor-help">
+                        <th className={`px-6 py-4 text-center border-r ${isLight ? 'border-slate-200' : 'border-slate-800/50'} cursor-help`}>
                           <div className="flex items-center justify-center gap-1">⭐ Kalite <InfoTooltip text="Yıldız puan ortalaması." /></div>
                         </th>
-                        <th className="px-6 py-4 text-center border-r border-slate-800/50 cursor-help">
+                        <th className={`px-6 py-4 text-center border-r ${isLight ? 'border-slate-200' : 'border-slate-800/50'} cursor-help`}>
                           <div className="flex items-center justify-center gap-1">⚡ Çözüm <InfoTooltip text="Şikayet çözüm oranı." /></div>
+                        </th>
+                        <th className="px-6 py-4 text-center rounded-r-lg cursor-help">
+                          <div className="flex items-center justify-center gap-1">👥 Kitle <InfoTooltip text="Baskın yaş grubu." /></div>
                         </th>
                         <th className="px-6 py-4 text-center rounded-r-lg cursor-help">
                           <div className="flex items-center justify-center gap-1">🗺️ Harita <InfoTooltip text="Mutlu ayrılıp Google'a gidenler." /></div>
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/50">
+                    <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
                       {paginatedLeaderboard.map((branch, i) => {
                         // Gerçek sıra numarasını hesapla (sayfalama ile)
                         const actualRank = filteredLeaderboard.indexOf(branch) + 1;
@@ -1105,7 +1703,7 @@ const DetailedAnalytics = () => {
                           <tr
                             key={branch.name}
                             onClick={() => setSelectedModalBranch(branch)}
-                            className={`cursor-pointer transition-all duration-200 group ${isFirst ? 'bg-amber-500/5 hover:bg-amber-500/10' : 'hover:bg-slate-800/60'}`}
+                            className={`cursor-pointer transition-all duration-200 group ${isFirst ? (isLight ? 'bg-amber-500/10 hover:bg-amber-500/20' : 'bg-amber-500/5 hover:bg-amber-500/10') : (isLight ? 'hover:bg-slate-100' : 'hover:bg-slate-800/60')}`}
                           >
                             <td className="px-6 py-4 border-r border-slate-800/50 font-bold text-white relative">
                               {isFirst ? <span className="text-2xl drop-shadow-lg">🥇</span> : <span className="text-slate-500">#{actualRank}</span>}
@@ -1127,6 +1725,9 @@ const DetailedAnalytics = () => {
                             </td>
                             <td className="px-6 py-4 text-center border-r border-slate-800/50">
                               <span className={`font-bold ${Number(branch.operationScore) < 50 ? 'text-red-400' : 'text-green-400'}`}>%{branch.operationScore}</span>
+                            </td>
+                            <td className="px-6 py-4 text-center border-r border-slate-800/50">
+                              <span className="text-xs font-bold bg-slate-800 px-2 py-1 rounded text-teal-400 border border-slate-700">{branch.dominantAge}</span>
                             </td>
                             <td className="px-6 py-4 text-center">
                               <div className="flex items-center justify-center gap-2">
@@ -1215,11 +1816,13 @@ const DetailedAnalytics = () => {
           </div>
         )}
 
-        {/* 🟢 ŞUBE DETAY MODALI (Akıllı Teşhis + Gap Analizi) */}
+        {/* 🟢 ŞUBE DETAY MODALI (Akıllı Teşhis + Gap Analizi + Demografik) */}
         <BranchDetailModal
           isOpen={!!selectedModalBranch}
           onClose={() => setSelectedModalBranch(null)}
           branch={selectedModalBranch}
+          branchesFeedbacks={feedbacks.filter(f => f.branch_id === selectedModalBranch?.branch_id || f.branches?.branch_name_tr === selectedModalBranch?.name)}
+          isLight={isLight}
         />
       </div>
     </div>

@@ -122,6 +122,8 @@ export function formatCompactNumber(num) {
   };
 }
 
+export const formatNumber = (num) => new Intl.NumberFormat('tr-TR').format(num);
+
 // 6. DELTA HESAPLAYICI (İstatistikler için artış/azalış)
 export function calculateDelta(current, previous, metricType = 'total') {
   const isRating = metricType === 'rating';
@@ -129,7 +131,7 @@ export function calculateDelta(current, previous, metricType = 'total') {
   // Geçmiş veri yoksa
   if (!previous || previous === 0) {
     if (!current || current === 0) return { val: "-", type: "neutral" };
-    return { val: "+%100", type: "increase" };
+    return { val: "∞", type: "increase" };
   }
 
   const diff = current - previous;
@@ -147,24 +149,37 @@ export function calculateDelta(current, previous, metricType = 'total') {
   // Yüzdelik Hesaplama
   let percentage = Math.round((diff / previous) * 100);
 
-  // 🟢 ENTERPRISE: 10000% gibi absürt değerleri engelle (UI bozulmasın)
-  const isExtreme = Math.abs(percentage) > 999;
-  if (isExtreme) {
-    percentage = percentage > 0 ? 999 : -999;
-  }
-
   const sign = percentage > 0 ? "+" : "";
-  const prefix = isExtreme ? (percentage > 0 ? ">" : "<") : ""; // >+%999 veya <-%999
-
-  const val = percentage === 0 ? "%0" : `${prefix}${sign}%${Math.abs(percentage)}`;
+  const val = percentage === 0 ? "%0" : `${sign}%${Math.abs(percentage)}`;
 
   let type = "neutral";
   if (percentage > 0) type = "increase";
   if (percentage < 0) type = "decrease";
 
-  // Şikayet sayısı arttıysa bu "kötü" (decrease color logic) bir şeydir, 
-  // ama burada matematiksel artışı (increase) dönüyoruz. 
-  // Rengi component içinde (SparklineCard) yönetiyoruz.
-
   return { val, type };
+}
+
+// 7. DEEP FETCHING HELPER (PostgREST 1000 limit bypass)
+export async function fetchDeep(query, pageSize = 1000) {
+  let allData = [];
+  let from = 0;
+  let to = pageSize - 1;
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data, error } = await query.range(from, to);
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      hasMore = false;
+    } else {
+      allData = [...allData, ...data];
+      if (data.length < pageSize) {
+        hasMore = false;
+      } else {
+        from += pageSize;
+        to += pageSize;
+      }
+    }
+  }
+  return allData;
 }

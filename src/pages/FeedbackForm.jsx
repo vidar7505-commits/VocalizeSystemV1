@@ -266,6 +266,7 @@ export default function FeedbackForm() {
   const [wantsGuestContact, setWantsGuestContact] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
+  const [customerAgeGroup, setCustomerAgeGroup] = useState(null);
 
   const t = TEXTS[language] || TEXTS.tr;
 
@@ -278,6 +279,20 @@ export default function FeedbackForm() {
           setLanguage(langParam);
         } else if (storedLang) {
           setLanguage(storedLang);
+        }
+
+        // 🟢 Age Group Retrieval
+        if (isGuest) {
+          const age = localStorage.getItem('vocalize_customer_age_group');
+          if (age) setCustomerAgeGroup(age);
+        } else if (user) {
+          // Fetch profile to get age
+          const { data: profile } = await supabase
+            .from('customer_profiles')
+            .select('age_group')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (profile?.age_group) setCustomerAgeGroup(profile.age_group);
         }
 
         const validTypes = ['complaint', 'suggestion', 'review'];
@@ -518,6 +533,8 @@ export default function FeedbackForm() {
           name: guestName,
           phone: guestPhone
         } : null,
+
+        customer_age_group: customerAgeGroup, // 🟢 Add age group
 
         status: 'new',
         lang: language

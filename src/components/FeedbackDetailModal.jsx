@@ -280,6 +280,13 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
                 <div className="flex items-center gap-2 text-slate-300"><Phone className="w-3.5 h-3.5 text-slate-500" /> <span className={!displayPhone || displayPhone === '-' ? "text-slate-500 italic" : ""}>{displayPhone}</span></div>
                 <div className="flex items-center gap-2 text-slate-300"><Building2 className="w-3.5 h-3.5 text-slate-500" /> {feedback.branches?.branch_name_tr || 'Bilinmiyor'}</div>
                 <div className="flex items-center gap-2 text-slate-300"><Calendar className="w-3.5 h-3.5 text-slate-500" /> {new Date(feedback.created_at).toLocaleString('tr-TR')}</div>
+                {feedback.customer_age_group && (
+                  <div className="flex items-center gap-2 text-slate-300 col-span-2">
+                    <User className="w-3.5 h-3.5 text-slate-500" />
+                    <span className="text-slate-500 mr-1">Yaş Grubu:</span>
+                    <span className="font-medium text-indigo-300">{feedback.customer_age_group}</span>
+                  </div>
+                )}
               </div>
             </div>
 

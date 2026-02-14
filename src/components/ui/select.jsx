@@ -110,6 +110,7 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          key="select-content"
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -5 }}

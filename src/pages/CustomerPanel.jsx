@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
-import { cn } from '@/lib/utils';
+import { cn, formatCustomerName, getCustomerData, calculateDelta, formatCompactNumber, fetchDeep } from "@/lib/utils";
 import AuthModal from '@/components/AuthModal';
+import AgeSelectionModal from '@/components/AgeSelectionModal';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -62,6 +63,7 @@ export default function CustomerPanel() {
   const [pendingFeedbackType, setPendingFeedbackType] = useState(null);
   const [dontShowGuestWarning, setDontShowGuestWarning] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
+  const [showAgeModal, setShowAgeModal] = useState(false);
 
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
 
@@ -224,10 +226,31 @@ export default function CustomerPanel() {
           setUserProfile({
             name: profile?.name || metaName || 'Kullanıcı',
             email: authUser.email,
-            phone: profile?.phone || authUser.user_metadata?.phone
+            email: authUser.email,
+            phone: profile?.phone || authUser.user_metadata?.phone,
+            age_group: profile?.age_group // 🟢 Add age_group to state
           });
+
+          if (!profile?.age_group && !userProfile.age_group) {
+            setTimeout(() => {
+              // Double check state before showing
+              if (!userProfile.age_group) setShowAgeModal(true);
+            }, 2000);
+          }
         } else if (isGuestUser) {
           setUser(null);
+        }
+
+        // 🟢 Age Check Logic
+        if (isGuestUser) {
+          const storedAge = localStorage.getItem('vocalize_customer_age_group');
+          if (!storedAge) {
+            // Küçük bir gecikme ile modalı açalım ki sayfa yüklensin
+            setTimeout(() => setShowAgeModal(true), 1500);
+          }
+        } else if (authUser) {
+          // Auth user profile check is done below after profile fetch
+          // We need to wait for profile to be set, so we'll do this in a separate useEffect depending on userProfile
         }
 
         // 🟢 URL parametreleri PRIMARY, localStorage FALLBACK
@@ -328,14 +351,14 @@ export default function CustomerPanel() {
   const fetchBranches = useCallback(async (businessId) => {
     if (!businessId) return;
     try {
-      const { data, error } = await supabase
+      const query = supabase
         .from('branches')
         .select('*')
         .eq('business_id', businessId)
         .eq('is_active', true);
 
-      if (error) throw error;
-      setBranches(data || []);
+      const allBranchesList = await fetchDeep(query);
+      setBranches(allBranchesList);
     } catch (error) {
       console.error('Error fetching branches:', error);
     }
@@ -520,6 +543,68 @@ export default function CustomerPanel() {
       persistQrScan(businessParam, branchParam, qrParam);
     }
   }, [qrParam, businessParam, branchParam, persistQrScan, authLoading]);
+
+
+
+  const handleAgeSelect = async (ageGroup) => {
+    try {
+      if (isGuest) {
+        localStorage.setItem('vocalize_customer_age_group', ageGroup);
+        setShowAgeModal(false);
+        toast({
+          title: "Teşekkürler",
+          description: "Seçiminiz kaydedildi.",
+          className: "bg-teal-600 text-white border-none"
+        });
+      } else if (user) {
+        const { error } = await supabase
+          .from('customer_profiles')
+          .update({ age_group: ageGroup })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        // 🟢 RETROACTIVE UPDATE (Background)
+        // Update all past feedbacks of this user that have no age group
+        if (user.email) {
+          supabase.from('feedbacks')
+            .update({ customer_age_group: ageGroup })
+            .eq('customer_email', user.email)
+            .is('customer_age_group', null)
+            .then(({ error }) => {
+              if (error) console.error("Retroactive update failed:", error);
+              else console.log("Retroactive update success");
+            });
+        }
+
+        setShowAgeModal(false);
+        toast({
+          title: "Teşekkürler",
+          description: "Profiliniz güncellendi.",
+          className: "bg-teal-600 text-white border-none"
+        });
+
+        // Update local state if we add age_group to it
+        setUserProfile(prev => ({ ...prev, age_group: ageGroup }));
+      }
+
+      // Resume pending action if any
+      if (pendingFeedbackType) {
+        // Use timeout to allow state updates/modal close to settle
+        setTimeout(() => {
+          proceedToFeedback(pendingFeedbackType);
+          setPendingFeedbackType(null);
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Age update error:', error);
+      toast({
+        title: "Hata",
+        description: "Bir hata oluştu.",
+        variant: "destructive"
+      });
+    }
+  };
 
   useEffect(() => {
     if (isLoading && (businessParam || branchParam)) return;
@@ -1005,6 +1090,22 @@ export default function CustomerPanel() {
   }, [branches, branchSearchTerm, userLocation, recentBranches]);
 
   const proceedToFeedback = (type) => {
+    // 🟢 Age Check Validation
+    if (isGuest) {
+      if (!localStorage.getItem('vocalize_customer_age_group')) {
+        setPendingFeedbackType(type);
+        setShowAgeModal(true);
+        return;
+      }
+    } else if (user) {
+      // userProfile.age_group might be updated locally in handleAgeSelect
+      if (!userProfile?.age_group) {
+        setPendingFeedbackType(type);
+        setShowAgeModal(true);
+        return;
+      }
+    }
+
     if (!selectedBusiness && !fromQR) {
       toast({ title: t.warningTitle || "Uyarı", description: t.selectBusiness, className: "bg-slate-800 text-white border-none" });
       return;
@@ -1999,6 +2100,15 @@ export default function CustomerPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AgeSelectionModal
+        isOpen={showAgeModal}
+        onClose={() => {
+          // If they close without selecting, we might want to remind them later or just let them be.
+          // For now, let's close it.
+          setShowAgeModal(false);
+        }}
+        onSelect={handleAgeSelect}
+      />
     </div >
   );
 }

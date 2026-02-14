@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList, AreaChart, Area } from 'recharts';
 import { subDays, startOfDay, endOfDay, subMonths, startOfMonth } from 'date-fns';
-import { cn, formatCustomerName, getCustomerData, calculateDelta, formatCompactNumber } from "@/lib/utils";
+import { cn, formatCustomerName, getCustomerData, calculateDelta, formatCompactNumber, fetchDeep } from "@/lib/utils";
 import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
 
@@ -27,7 +27,7 @@ import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 
 
 
-const SparklineCard = React.memo(({ title, value, delta, deltaType, icon: Icon, colorClass, sparkData, loading, isInverseMetric = false }) => {
+const SparklineCard = React.memo(({ title, value, delta, deltaType, icon: Icon, colorClass, sparkData, loading, isInverseMetric = false, hideDelta = false }) => {
   let sentimentColor = "bg-slate-800 text-slate-400 border-slate-700";
   let TrendIcon = Minus;
 
@@ -70,15 +70,19 @@ const SparklineCard = React.memo(({ title, value, delta, deltaType, icon: Icon, 
           <Icon className={`w-5 h-5 ${colorClass.replace('bg-', 'text-')}`} />
         </div>
       </div>
-      <div className="relative z-20 flex items-center gap-2 mt-1">
-        {!loading && (
-          <div className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${sentimentColor}`}>
-            <TrendIcon className="w-3 h-3" />
-            <span>{delta}</span>
-          </div>
-        )}
-        <span className="text-xs text-slate-500">geçen döneme göre</span>
-      </div>
+      {!hideDelta && (
+        <div className="relative z-20 flex items-center gap-2 mt-1">
+          {!loading && (
+            <div className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${sentimentColor}`}>
+              <TrendIcon className="w-3 h-3" />
+              <span>{delta}</span>
+            </div>
+          )}
+          <span className="text-xs text-slate-500">
+            {delta === '∞' ? 'Yeni Veri' : 'geçen döneme göre'}
+          </span>
+        </div>
+      )}
       <div className="absolute bottom-0 left-0 right-0 h-24 opacity-20 pointer-events-none z-10 group-hover:opacity-30 transition-opacity">
         {!loading && sparkData && (
           <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -251,12 +255,10 @@ const AdminPanel = () => {
       let query = supabase.from('feedbacks')
         .select('id, created_at, status, feedback_type, rating, general_eval_rating, resolved_at')
         .eq('business_id', businessId)
-        .gte('created_at', prevStart.toISOString())
-        .limit(100000);
+        .gte('created_at', prevStart.toISOString());
       if (selectedBranchId !== 'all') query = query.eq('branch_id', selectedBranchId);
 
-      const { data: rawData, error } = await query;
-      if (error) throw error;
+      const rawData = await fetchDeep(query);
 
       const currentData = rawData.filter(f => new Date(f.created_at) >= currentStart);
       const prevData = rawData.filter(f => new Date(f.created_at) < currentStart && new Date(f.created_at) >= prevStart);
@@ -370,7 +372,7 @@ const AdminPanel = () => {
             manager_note, flag_vip_customer, flag_sensitive_customer,
             feedback_images, image_urls, receipt_images, receipt_url, product_image_url,
             general_eval_rating, general_eval_comment, manager_note_updated_at, manager_note_updated_by,
-            business_id, branch_id, resolved_at, updated_at,
+            business_id, branch_id, resolved_at, updated_at, customer_age_group,
             branches (id, branch_name_tr),
             customer_profiles (
               id, name, email, phone, customer_number, created_at, updated_at, 
@@ -388,7 +390,7 @@ const AdminPanel = () => {
             manager_note, flag_vip_customer, flag_sensitive_customer,
             feedback_images, image_urls, receipt_images, receipt_url, product_image_url,
             general_eval_rating, general_eval_comment, manager_note_updated_at, manager_note_updated_by,
-            business_id, branch_id, resolved_at, updated_at,
+            business_id, branch_id, resolved_at, updated_at, customer_age_group,
             branches (id, branch_name_tr),
             customer_profiles (
               id, name, email, phone, customer_number, created_at, updated_at, 
@@ -583,10 +585,10 @@ const AdminPanel = () => {
 
       {/* 1. KPI KARTLARI */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <SparklineCard title="Toplam Bildirim" value={`${metrics.total.value}`} delta={metrics.total.delta} deltaType={metrics.total.type} icon={MessageSquare} colorClass="bg-blue-500" sparkData={sparklineData.total} loading={loading} />
-        <SparklineCard title="Bekleyen Şikayet" value={`${metrics.complaints.value}`} delta={metrics.complaints.delta} deltaType={metrics.complaints.type} icon={AlertTriangle} colorClass="bg-red-500" sparkData={sparklineData.complaints} loading={loading} isInverseMetric={true} />
-        <SparklineCard title="Çözülenler" value={`${metrics.resolved.value}`} delta={metrics.resolved.delta} deltaType={metrics.resolved.type} icon={CheckCircle2} colorClass="bg-green-500" sparkData={sparklineData.resolved} loading={loading} />
-        <SparklineCard title="Ort. Puan" value={metrics.rating.value} delta={metrics.rating.delta} deltaType={metrics.rating.type} icon={Star} colorClass="bg-yellow-500" sparkData={sparklineData.rating} loading={loading} />
+        <SparklineCard title="Toplam Bildirim" value={`${metrics.total.value}`} delta={metrics.total.delta} deltaType={metrics.total.type} icon={MessageSquare} colorClass="bg-blue-500" sparkData={sparklineData.total} loading={loading} hideDelta={dateRange === 'all'} />
+        <SparklineCard title="Bekleyen Şikayet" value={`${metrics.complaints.value}`} delta={metrics.complaints.delta} deltaType={metrics.complaints.type} icon={AlertTriangle} colorClass="bg-red-500" sparkData={sparklineData.complaints} loading={loading} isInverseMetric={true} hideDelta={dateRange === 'all'} />
+        <SparklineCard title="Çözülenler" value={`${metrics.resolved.value}`} delta={metrics.resolved.delta} deltaType={metrics.resolved.type} icon={CheckCircle2} colorClass="bg-green-500" sparkData={sparklineData.resolved} loading={loading} hideDelta={dateRange === 'all'} />
+        <SparklineCard title="Ort. Puan" value={metrics.rating.value} delta={metrics.rating.delta} deltaType={metrics.rating.type} icon={Star} colorClass="bg-yellow-500" sparkData={sparklineData.rating} loading={loading} hideDelta={dateRange === 'all'} />
       </div>
 
       {/* 2. GRAFİKLER */}
@@ -682,6 +684,11 @@ const AdminPanel = () => {
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             {getTypeBadge(f.feedback_type)}
                             {getStatusBadge(f.status)}
+                            {f.customer_age_group && (
+                              <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-indigo-500/10 text-indigo-400 border-indigo-500/20 whitespace-nowrap">
+                                {f.customer_age_group} Yaş
+                              </Badge>
+                            )}
                             <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0"><Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                             <Badge variant="outline" className="text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[200px]">{f.branches?.branch_name_tr || "Şube Bilinmiyor"}</Badge>
                           </div>

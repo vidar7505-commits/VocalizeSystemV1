@@ -241,8 +241,14 @@ const AdminHeader = () => {
             </Button>
             <AnimatePresence>
               {notificationOpen && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}
-                  className="absolute top-full right-0 mt-2 w-80 bg-slate-800 border border-slate-700/50 rounded-lg shadow-2xl z-50">
+                <motion.div
+                  key="notifications-panel"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute top-full right-0 mt-2 w-80 bg-slate-800 border border-slate-700/50 rounded-lg shadow-2xl z-50"
+                >
                   <div className="flex items-center justify-between px-4 py-3 bg-slate-700/50 border-b border-slate-700/50">
                     <h3 className="text-white font-bold text-sm">Bildirimler</h3>
                     <div className="flex items-center gap-2">
