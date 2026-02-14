@@ -619,7 +619,7 @@ const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], is
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={ageSentiment} layout="vertical" margin={{ left: -10, right: 10 }}>
                       <XAxis type="number" domain={[0, 5]} hide />
-                      <YAxis dataKey="name" type="category" stroke={isLight ? "#1e293b" : "#fff"} fontSize={10} fontWeight="bold" width={40} tickLine={false} axisLine={false} />
+                      <YAxis dataKey="name" type="category" stroke={isLight ? "#1e293b" : "#fff"} fontSize={10} fontWeight="bold" width={60} tickLine={false} axisLine={false} />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: isLight ? '#fff' : '#0f172a',
@@ -638,7 +638,7 @@ const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], is
                       />
                       <Bar dataKey="score" barSize={10} radius={[0, 4, 4, 0]}>
                         {ageSentiment.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={Number(entry.score) >= 4 ? COLORS.success : (Number(entry.score) >= 3 ? COLORS.warning : COLORS.danger)} />
+                          <Cell key={`cell-${index}`} fill={[COLORS.purple, COLORS.primary, COLORS.success, COLORS.warning, COLORS.danger, COLORS.slate][index % 6]} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -1629,7 +1629,7 @@ const DetailedAnalytics = () => {
                           ticks={[0, 1, 2, 3, 4, 5]}
                           tickFormatter={(val) => `${val} ⭐`}
                         />
-                        <YAxis dataKey="name" type="category" stroke={isLight ? "#1e293b" : "#fff"} fontSize={12} fontWeight="bold" width={50} tickLine={false} axisLine={false} />
+                        <YAxis dataKey="name" type="category" stroke={isLight ? "#1e293b" : "#fff"} fontSize={12} fontWeight="bold" width={60} tickLine={false} axisLine={false} />
                         <Tooltip
                           cursor={{ fill: 'transparent' }}
                           contentStyle={{
@@ -1650,7 +1650,7 @@ const DetailedAnalytics = () => {
                         />
                         <Bar dataKey="score" name="Puan" barSize={12} radius={[0, 4, 4, 0]}>
                           {ageSentimentData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={Number(entry.score) >= 4 ? COLORS.success : (Number(entry.score) >= 3 ? COLORS.warning : COLORS.danger)} />
+                            <Cell key={`cell-${index}`} fill={[COLORS.purple, COLORS.primary, COLORS.success, COLORS.warning, COLORS.danger, COLORS.slate][index % 6]} />
                           ))}
                         </Bar>
                       </BarChart>
