@@ -173,6 +173,27 @@ const InfoTooltip = ({ text }) => {
   );
 };
 
+const ActivityTooltip = ({ active, payload, label, isLight }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className={`p-2.5 rounded-xl border ${isLight ? 'bg-white border-slate-200 shadow-xl' : 'bg-slate-900 border-slate-800 shadow-2xl'} min-w-[100px]`}>
+        <p className={`text-[9px] font-black mb-1 opacity-50 uppercase tracking-tighter ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>{label}</p>
+        <div className="space-y-0.5">
+          {payload.map((entry, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: entry.color }}></div>
+              <span className="text-[11px] font-bold" style={{ color: entry.color }}>
+                {entry.name} : {entry.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 const CustomTooltip = ({ active, payload, label, isLight = false }) => {
   if (active && payload && payload.length) {
     const totalValue = payload.find(p => p.dataKey === 'total')?.value ||
@@ -530,14 +551,8 @@ const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], is
                   <XAxis dataKey="hour" fontSize={8} tickLine={false} stroke={isLight ? "#64748b" : "#94a3b8"} interval={3} />
                   <YAxis fontSize={8} tickLine={false} stroke={isLight ? "#64748b" : "#94a3b8"} />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: isLight ? '#fff' : '#0f172a',
-                      borderColor: isLight ? '#e2e8f0' : '#334155',
-                      borderRadius: '12px',
-                      color: isLight ? '#1e293b' : '#fff'
-                    }}
-                    itemStyle={{ color: isLight ? '#1e293b' : '#fff', fontSize: '10px', fontWeight: 'bold' }}
-                    labelStyle={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '10px', fontWeight: 'bold' }}
+                    content={<ActivityTooltip isLight={isLight} />}
+                    shared={false}
                     cursor={{ fill: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' }}
                   />
                   <Bar dataKey="18-" stackId="a" fill={COLORS.purple} filter="url(#modalBarShadow)" />
@@ -657,6 +672,9 @@ const DetailedAnalytics = () => {
   const [serverPrevFeedbackCount, setServerPrevFeedbackCount] = useState(null);
   const [trafficStats, setTrafficStats] = useState({ visits: 0, conversionRate: 0, qrCount: 0, webCount: 0, googleRedirects: 0 });
   const [trendViewMode, setTrendViewMode] = useState('total');
+  const [audienceViewMode, setAudienceViewMode] = useState('filtered');
+
+  const [totalAgeStats, setTotalAgeStats] = useState({ data: [], total: 0 });
 
   const [selectedModalBranch, setSelectedModalBranch] = useState(null);
 
@@ -764,6 +782,38 @@ const DetailedAnalytics = () => {
       setTrafficStats({
         visits: totalVisits, qrCount, webCount, googleRedirects,
         conversionRate: totalVisits > 0 ? ((feedbacksCurr.length / totalVisits) * 100).toFixed(1) : 0
+      });
+
+      // 🟢 5. FETCH TOTAL AGE STATS (ALL TIME - For Demographic Chart Toggle)
+      const allTimeQuery = supabase.from('feedbacks')
+        .select('customer_age_group, customer_email')
+        .eq('business_id', businessId);
+
+      const allTimeBranchQuery = selectedBranchId !== 'all' ? allTimeQuery.eq('branch_id', selectedBranchId) : allTimeQuery;
+      const allTimeFeedbacks = await fetchDeep(allTimeBranchQuery);
+
+      const uniqueUsersTotal = { '18-': new Set(), '18-24': new Set(), '25-34': new Set(), '35-44': new Set(), '45-54': new Set(), '55+': new Set() };
+      const anonymousTotal = { '18-': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55+': 0 };
+
+      allTimeFeedbacks.forEach(f => {
+        if (f.customer_age_group && uniqueUsersTotal[f.customer_age_group] !== undefined) {
+          if (f.customer_email) uniqueUsersTotal[f.customer_age_group].add(f.customer_email);
+          else anonymousTotal[f.customer_age_group]++;
+        }
+      });
+
+      const totalData = Object.keys(uniqueUsersTotal).map(age => ({
+        name: age,
+        value: uniqueUsersTotal[age].size + anonymousTotal[age]
+      }));
+      const totalCount = totalData.reduce((acc, curr) => acc + curr.value, 0);
+
+      setTotalAgeStats({
+        data: totalData.map(item => ({
+          ...item,
+          percent: totalCount > 0 ? ((item.value / totalCount) * 100).toFixed(1) : 0
+        })),
+        total: totalCount
       });
 
     } catch (err) {
@@ -1455,16 +1505,9 @@ const DetailedAnalytics = () => {
                         <XAxis dataKey="hour" stroke={isLight ? "#64748b" : "#94a3b8"} fontSize={10} tickLine={false} axisLine={false} />
                         <YAxis stroke={isLight ? "#64748b" : "#94a3b8"} fontSize={10} tickLine={false} axisLine={false} />
                         <Tooltip
+                          content={<ActivityTooltip isLight={isLight} />}
+                          shared={false}
                           cursor={{ fill: 'transparent' }}
-                          contentStyle={{
-                            backgroundColor: isLight ? '#fff' : '#0f172a',
-                            borderColor: isLight ? '#e2e8f0' : '#334155',
-                            borderRadius: '12px',
-                            border: `1px solid ${isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)'}`,
-                            color: isLight ? '#1e293b' : '#fff'
-                          }}
-                          itemStyle={{ color: isLight ? '#1e293b' : '#fff', fontSize: '12px', fontWeight: 'bold' }}
-                          labelStyle={{ color: isLight ? '#64748b' : '#94a3b8', marginBottom: '8px', fontWeight: 'bold' }}
                         />
                         <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', paddingTop: '10px', color: isLight ? '#475569' : '#94a3b8' }} />
                         <Bar dataKey="18-" stackId="a" fill={COLORS.purple} filter="url(#barShadow)" />
@@ -1496,23 +1539,42 @@ const DetailedAnalytics = () => {
 
                 {/* 1. Yaş Dağılımı (Mevcut) */}
                 <div className={`${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 flex flex-col transition-all`}>
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-lg`}>Kitle Dağılımı</h3>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
                     <div className="flex items-center gap-2">
+                      <h3 className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-lg`}>Kitle Dağılımı</h3>
                       <InfoTooltip text="Müşterilerin yaş grubu bazlı genel dağılımı." />
-                      {liveAudience.length > 0 && (
-                        <div className="flex items-center gap-2 px-2 py-1 bg-green-900/30 border border-green-800 rounded text-[10px] text-green-400 animate-pulse">
-                          <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                          Canlı
-                        </div>
-                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 p-1 bg-slate-900/50 border border-slate-800 rounded-lg self-end sm:self-auto">
+                      <button
+                        onClick={() => setAudienceViewMode('filtered')}
+                        className={`px-2.5 py-1 text-[10px] uppercase font-bold rounded-md transition-all ${audienceViewMode === 'filtered' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                      >
+                        Filtre
+                      </button>
+                      <button
+                        onClick={() => setAudienceViewMode('all')}
+                        className={`px-2.5 py-1 text-[10px] uppercase font-bold rounded-md transition-all ${audienceViewMode === 'all' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                      >
+                        Tümü
+                      </button>
                     </div>
                   </div>
-                  {ageStats.total > 0 ? (
+                  {audienceViewMode === 'filtered' && liveAudience.length > 0 && (
+                    <div className="flex items-center gap-2 px-2 py-1 bg-green-900/30 border border-green-800 rounded text-[10px] text-green-400 animate-pulse w-max mb-4">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                      Anlık Geri Bildirim Akışı
+                    </div>
+                  )}
+
+                  {(audienceViewMode === 'filtered' ? ageStats.total : totalAgeStats.total) > 0 ? (
                     <div className="flex-1 min-h-[200px] flex flex-col justify-center">
                       <ResponsiveContainer width="100%" height={220}>
                         <PieChart>
-                          <Pie data={ageStats.data} cx="50%" cy="50%" innerRadius={0} outerRadius={80} paddingAngle={2} dataKey="value">
+                          <Pie
+                            data={audienceViewMode === 'filtered' ? ageStats.data : totalAgeStats.data}
+                            cx="50%" cy="50%" innerRadius={0} outerRadius={80} paddingAngle={2} dataKey="value"
+                          >
                             {ageStats.data.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={[COLORS.purple, COLORS.primary, COLORS.success, COLORS.warning, COLORS.danger, COLORS.slate][index % 6]} strokeWidth={0} />
                             ))}
