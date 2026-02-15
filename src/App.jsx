@@ -19,6 +19,7 @@ const NotificationHistory = lazy(() => import('@/pages/NotificationHistory'));
 const CustomerDetail = lazy(() => import('@/pages/CustomerDetail'));
 const UpdatePassword = lazy(() => import('@/pages/UpdatePassword'));
 const ErrorTestPage = lazy(() => import('@/pages/ErrorTestPage'));
+const BulkSetupWizard = lazy(() => import('@/pages/BulkSetupWizard'));
 
 // Loading component
 // Loading component
@@ -135,6 +136,7 @@ function App() {
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="notifications" element={<NotificationHistory />} />
                   <Route path="customers/:id" element={<CustomerDetail />} />
+                  <Route path="bulk-setup" element={<BulkSetupWizard />} />
                 </Route>
               </Route>
             </Routes>

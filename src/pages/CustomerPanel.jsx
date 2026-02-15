@@ -231,10 +231,10 @@ export default function CustomerPanel() {
             age_group: profile?.age_group // 🟢 Add age_group to state
           });
 
-          if (!profile?.age_group && !userProfile.age_group) {
+          // 🟢 FIX: Only check Supabase profile, not local state (race condition)
+          if (!profile?.age_group) {
             setTimeout(() => {
-              // Double check state before showing
-              if (!userProfile.age_group) setShowAgeModal(true);
+              setShowAgeModal(true);
             }, 2000);
           }
         } else if (isGuestUser) {
@@ -557,10 +557,18 @@ export default function CustomerPanel() {
           className: "bg-teal-600 text-white border-none"
         });
       } else if (user) {
+        // 🟢 FIX: Use UPSERT instead of UPDATE to create profile if it doesn't exist
         const { error } = await supabase
           .from('customer_profiles')
-          .update({ age_group: ageGroup })
-          .eq('user_id', user.id);
+          .upsert({
+            user_id: user.id,
+            email: user.email,
+            age_group: ageGroup,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id',
+            ignoreDuplicates: false
+          });
 
         if (error) throw error;
 
@@ -2102,11 +2110,6 @@ export default function CustomerPanel() {
       </Dialog>
       <AgeSelectionModal
         isOpen={showAgeModal}
-        onClose={() => {
-          // If they close without selecting, we might want to remind them later or just let them be.
-          // For now, let's close it.
-          setShowAgeModal(false);
-        }}
         onSelect={handleAgeSelect}
       />
     </div >

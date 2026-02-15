@@ -7,7 +7,7 @@ const AGE_GROUPS = [
     '18-', '18-24', '25-34', '35-44', '45-54', '55+'
 ];
 
-export default function AgeSelectionModal({ isOpen, onClose, onSelect }) {
+export default function AgeSelectionModal({ isOpen, onSelect }) {
     if (!isOpen) return null;
 
     // 🟢 MANDATORY: Prevent closing by clicking outside or pressing escape
@@ -22,6 +22,7 @@ export default function AgeSelectionModal({ isOpen, onClose, onSelect }) {
                 className="bg-[#0f172a] border-slate-700 text-white w-[90vw] max-w-sm p-6 rounded-xl focus:outline-none"
                 onInteractOutside={(e) => e.preventDefault()}
                 onEscapeKeyDown={(e) => e.preventDefault()}
+                hideCloseButton={true}
             >
                 <div className="sr-only">
                     <DialogTitle>Yaş Grubu Seçimi</DialogTitle>
