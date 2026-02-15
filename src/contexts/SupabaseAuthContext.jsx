@@ -21,6 +21,13 @@ export const AuthProvider = ({ children }) => {
     setUser(session?.user ?? null);
     if (session?.user) {
       setIsGuest(false);
+      localStorage.removeItem('vocalize_guest_mode');
+    } else {
+      // Check if guest mode was previously active
+      const guestMode = localStorage.getItem('vocalize_guest_mode');
+      if (guestMode === 'true') {
+        setIsGuest(true);
+      }
     }
     setLoading(false);
   }, []);
