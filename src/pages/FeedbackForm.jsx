@@ -544,6 +544,13 @@ export default function FeedbackForm() {
       setCurrentFeedbackId(data.id);
       setShowSuccessModal(true);
 
+      // 🟢 Point C: Clear guest mode flag after successful feedback
+      // This ensures the next user on the same device isn't automatically treated as a guest
+      if (isGuest) {
+        localStorage.removeItem('vocalize_guest_mode');
+        localStorage.removeItem('vocalize_guest_warning_dismissed');
+      }
+
     } catch (error) {
       toast({ title: t.submit.error, description: error.message, variant: "destructive" });
     } finally {
