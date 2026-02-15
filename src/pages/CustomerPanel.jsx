@@ -226,29 +226,14 @@ export default function CustomerPanel() {
           setUserProfile({
             name: profile?.name || metaName || 'Kullanıcı',
             email: authUser.email,
-            email: authUser.email,
             phone: profile?.phone || authUser.user_metadata?.phone,
             age_group: profile?.age_group // 🟢 Add age_group to state
           });
-
-          // 🟢 FIX: Only check Supabase profile, not local state (race condition)
-          if (!profile?.age_group) {
-            setTimeout(() => {
-              setShowAgeModal(true);
-            }, 2000);
-          }
         } else if (isGuestUser) {
           setUser(null);
         }
 
-        // 🟢 Age Check Logic
-        if (isGuestUser) {
-          const storedAge = localStorage.getItem('vocalize_customer_age_group');
-          if (!storedAge) {
-            // Küçük bir gecikme ile modalı açalım ki sayfa yüklensin
-            setTimeout(() => setShowAgeModal(true), 1500);
-          }
-        } else if (authUser) {
+        if (authUser) {
           // Auth user profile check is done below after profile fetch
           // We need to wait for profile to be set, so we'll do this in a separate useEffect depending on userProfile
         }
@@ -308,7 +293,25 @@ export default function CustomerPanel() {
     };
 
     init();
-  }, [authUser, authLoading]); // Reduced dependencies to prevent loops
+  }, [authUser, authLoading, location.search]); // 🟢 location.search added to handle guest login/param changes
+
+  // 🟢 AUTOMATIC AGE MODAL TRIGGER
+  // Decoupled from init to ensure it only runs after loading is complete and state is settled
+  useEffect(() => {
+    if (isLoading || authLoading || showAgeModal) return;
+
+    if (isGuest) {
+      const storedAge = localStorage.getItem('vocalize_customer_age_group');
+      if (!storedAge) {
+        setShowAgeModal(true);
+      }
+    } else if (user) {
+      // For registered users, we check the profile data we just fetched
+      if (!userProfile?.age_group) {
+        setShowAgeModal(true);
+      }
+    }
+  }, [isLoading, authLoading, isGuest, user, userProfile, showAgeModal]);
 
   const fetchBusinesses = useCallback(async () => {
     try {
