@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -15,10 +15,6 @@ import { tr, enUS } from 'date-fns/locale';
 import BranchSelector from '@/components/BranchSelector';
 import imageCompression from 'browser-image-compression';
 import { useTranslation } from 'react-i18next';
-
-// ============================================================================
-// STATIC DATA & HELPERS
-// ============================================================================
 
 const getEmojiForRating = (rating, emojis) => emojis[rating] || '';
 
@@ -60,164 +56,6 @@ const getCurrentLocalISOString = () => {
   return localDate.toISOString().slice(0, 16);
 };
 
-/* MOVED TO translation.json
-const TEXTS = {
-  tr: {
-    errorLoad: "Veri yüklenirken sorun oluştu.",
-    limitExceeded: "Sınır Aşıldı",
-    limitDesc: (remaining) => `En fazla 3 görsel yükleyebilirsiniz.`,
-    fileTooLarge: "Dosya Çok Büyük",
-    fileTooLargeDesc: (name) => `${name} 5MB'dan küçük olmalıdır.`,
-    back: "Geri",
-    next: "İleri",
-    titles: {
-      complaint: "Şikayet Bildir", complaintSub: "Sorunu çözelim.",
-      suggestion: "Öneride Bulun", suggestionSub: "Fikirleriniz değerli.",
-      review: "Değerlendir", reviewSub: "Deneyiminizi puanlayın.",
-      default: "Geri Bildirim", defaultSub: "Görüşlerinizi paylaşın"
-    },
-
-    // 🟢 ADIM BAŞLIKLARI VE AÇIKLAMALARI
-    stepsUI: {
-      evidenceTitle: "Kanıt & Zaman",
-      evidenceDesc: "İşleminizi hızlandırmak için detay verin.",
-      problemTitle: "Sorun Nedir?",
-      suggestionTitle: "Öneriniz Nedir?",
-      problemDesc: "Lütfen detaylıca açıklayınız.",
-      rateTitle: "Puanlayın",
-      rateDesc: "Hizmetimizden ne kadar memnun kaldınız?",
-      finalTitle: "Son Dokunuşlar",
-      finalDesc: "Eklemek istedikleriniz var mı?",
-      branchLabel: "Şube",
-      addPhoto: "Ekle",
-      extraImages: "Ek Görseller"
-    },
-
-    infoBanner: "Geri bildiriminiz anında yöneticiye iletilir.",
-    businessLabel: "İşletme",
-    branch: { label: "Şube Seçin", placeholder: "Şube Seçiniz", auto: "QR ile otomatik seçildi" },
-    receipt: {
-      label: "Alışveriş Fişiniz Var mı?", noReceipt: "Fişim Yok", hasReceipt: "Fişim Var",
-      uploadLabel: "Fiş Görseli", placeholder: "Fiş Fotoğrafı Yükle", uploaded: "Yüklendi",
-      dateLabel: "Ne Zaman Ziyaret Ettiniz?",
-    },
-    message: { label: "Açıklama", placeholder: "Lütfen detayları buraya yazın...", minChars: "En az 10 karakter" },
-    rating: { label: "Memnuniyetiniz", emojis: { 1: '😞 Çok Kötü', 2: '😟 Kötü', 3: '😐 İdare Eder', 4: '😊 Memnun Kaldım', 5: '🤩 Harikaydı!' } },
-    reactions: {
-      oneStar: "Çok üzgünüz 😔 Bunu telafi etmek için derhal incelemeye alacağız.",
-      twoStar: "Beklentinizin altında kaldığımız için üzgünüz. Kendimizi geliştireceğiz.",
-      threeStar: "Daha iyisini yapabiliriz. Geri bildiriminizle büyüyoruz.",
-      fourStar: "Teşekkürler! Mükemmele ulaşmak için çalışmaya devam edeceğiz. 💪",
-      fiveStar: "Muhteşemsiniz! Günümüzü güzelleştirdiniz, desteğiniz için teşekkürler! 🌟"
-    },
-    general: {
-      title: "İşletme Hakkındaki Genel Deneyiminiz",
-      placeholder: "Mekan, hizmet veya atmosfer hakkında eklemek istedikleriniz...",
-      placeholderLow: "Lütfen nerede hata yaptığımızı bize anlatın, düzeltmek istiyoruz...",
-      placeholderMid: "Sizce neyi daha iyi yapabilirdik?",
-      placeholderHigh: "En çok neyi beğendiğinizi anlatın (Hizmet, Lezzet, Ortam?)..."
-    },
-    images: { label: "Ek Görseller (Opsiyonel)", placeholder: "Fotoğraf Ekle", sub: "Max 3 adet", uploaded: "görsel seçildi" },
-    submit: { sending: "Gönderiliyor...", send: "Gönder", error: "Hata oluştu.", errorValidation: "Lütfen gerekli alanları doldurun." },
-    success: {
-      title: "Teşekkürler!",
-      defaultTitle: "Harika!",
-      desc: (name) => `Bildiriminiz ${name} yönetimine iletildi.`,
-      defaultDesc: "Geri bildiriminiz başarıyla iletildi.",
-      footer: "Bizi tercih ettiğiniz için teşekkürler.",
-      button: "Kapat",
-      homeButton: "Ana Sayfaya Dön"
-    },
-    google: {
-      title: "Harikasınız! 🤩",
-      copyAlert: "Yorumunuzu sizin için kopyaladık! 📋",
-      desc: "Bu güzel deneyiminizi Google'da paylaşarak diğer müşterilere de ilham vermek ister misiniz? Yapıştırmanız yeterli.",
-      yesButton: "Google'da Paylaş",
-      noButton: "Hayır, Teşekkürler",
-      instaButton: "Bizi Instagram'da Takip Et",
-      copiedToast: "Yorum kopyalandı! Google'a yönlendiriliyorsunuz..."
-    },
-    steps: "Adım"
-  },
-  en: {
-    errorLoad: "Error loading data.",
-    limitExceeded: "Limit Exceeded",
-    limitDesc: (remaining) => `Max 3 images allowed.`,
-    fileTooLarge: "File Too Large",
-    fileTooLargeDesc: (name) => `${name} must be smaller than 5MB.`,
-    back: "Back",
-    next: "Next",
-    titles: {
-      complaint: "Report Issue", complaintSub: "Let's fix it.",
-      suggestion: "Make Suggestion", suggestionSub: "Your ideas matter.",
-      review: "Rate Experience", reviewSub: "Rate your experience.",
-      default: "Feedback", defaultSub: "Share your thoughts"
-    },
-
-    stepsUI: {
-      evidenceTitle: "Evidence & Time",
-      evidenceDesc: "Provide details to speed up the process.",
-      problemTitle: "What is the issue?",
-      suggestionTitle: "What is your suggestion?",
-      problemDesc: "Please explain in detail.",
-      rateTitle: "Rate Us",
-      rateDesc: "How satisfied were you with our service?",
-      finalTitle: "Final Touches",
-      finalDesc: "Anything else you'd like to add?",
-      branchLabel: "Branch",
-      addPhoto: "Add",
-      extraImages: "Additional Images"
-    },
-
-    infoBanner: "Sent instantly to the manager.",
-    businessLabel: "Business",
-    branch: { label: "Select Branch", placeholder: "Select Branch", auto: "Auto-selected via QR" },
-    receipt: {
-      label: "Do you have a receipt?", noReceipt: "No Receipt", hasReceipt: "Have Receipt",
-      uploadLabel: "Receipt Image", placeholder: "Upload Receipt",
-      uploaded: "Uploaded",
-      dateLabel: "When did you visit?",
-    },
-    message: { label: "Description", placeholder: "Please provide details...", minChars: "Min 10 chars" },
-    rating: { label: "Satisfaction", emojis: { 1: '😞 Very Bad', 2: '😟 Bad', 3: '😐 Average', 4: '😊 Good', 5: '😍 Excellent' } },
-    reactions: {
-      oneStar: "We are very sorry 😔 We will investigate immediately to make it right.",
-      twoStar: "We apologize for falling below expectations. We will improve ourselves.",
-      threeStar: "We can do better. We grow with your feedback.",
-      fourStar: "Thank you! We will continue working to reach perfection. 💪",
-      fiveStar: "You are awesome! You made our day, thank you for your support! 🌟"
-    },
-    general: {
-      title: "Your General Experience with the Business",
-      placeholder: "Anything you'd like to add about the venue, service, or atmosphere...",
-      placeholderLow: "Please tell us where we went wrong, we want to fix it...",
-      placeholderMid: "What could we have done better?",
-      placeholderHigh: "Tell us what you liked best (Service, Taste, Ambiance?)..."
-    },
-    images: { label: "Images (Optional)", placeholder: "Add Photo", sub: "Max 3 images", uploaded: "images selected" },
-    submit: { sending: "Sending...", send: "Send", error: "Error occurred.", errorValidation: "Please fill required fields." },
-    success: {
-      title: "Thank You!",
-      defaultTitle: "Awesome!",
-      desc: (name) => `Sent to ${name} management.`,
-      defaultDesc: "Your feedback has been sent successfully.",
-      footer: "Thanks for choosing us.",
-      button: "Close",
-      homeButton: "Return to Home"
-    },
-    google: {
-      title: "You're Awesome! 🤩",
-      copyAlert: "We copied your feedback for you! 📋",
-      desc: "Would you like to empower us by sharing this great experience with others on Google? Just paste it.",
-      yesButton: "Share on Google",
-      noButton: "No, Thanks",
-      instaButton: "Follow us on Instagram",
-      copiedToast: "Copied! Redirecting..."
-    },
-    steps: "Step"
-  }
-};
-
 export default function FeedbackForm() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -225,7 +63,6 @@ export default function FeedbackForm() {
   const { toast } = useToast();
   const { user, isGuest } = useAuth();
 
-  // Params
   const typeParam = searchParams.get('type');
   const businessParam = searchParams.get('business');
   const branchParam = searchParams.get('branch');
@@ -233,7 +70,6 @@ export default function FeedbackForm() {
   const langParam = searchParams.get('lang');
   const guestParam = searchParams.get('guest');
 
-  // STATE
   const language = i18n.language.split('-')[0] || 'tr';
   const [feedbackType, setFeedbackType] = useState('complaint');
   const [currentStep, setCurrentStep] = useState(1);
@@ -255,8 +91,6 @@ export default function FeedbackForm() {
   const [generalComment, setGeneralComment] = useState('');
   const [feedbackImages, setFeedbackImages] = useState([]);
 
-  const [imageModalOpen, setImageModalOpen] = useState(false);
-  const [imageModalSrc, setImageModalSrc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [googleRedirectUrl, setGoogleRedirectUrl] = useState(null);
@@ -265,7 +99,6 @@ export default function FeedbackForm() {
 
   const [animatingStar, setAnimatingStar] = useState(null);
 
-  // 🟢 YENİ STATE'LER (MİSAFİR İLETİŞİM)
   const [wantsGuestContact, setWantsGuestContact] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
@@ -273,7 +106,6 @@ export default function FeedbackForm() {
 
   const tf = useMemo(() => t('form', { returnObjects: true }), [t]);
 
-  // --- INITIALIZATION ---
   useEffect(() => {
     const init = async () => {
       try {
@@ -281,12 +113,10 @@ export default function FeedbackForm() {
           i18n.changeLanguage(langParam);
         }
 
-        // 🟢 Age Group Retrieval
         if (isGuest) {
           const age = localStorage.getItem('vocalize_customer_age_group');
           if (age) setCustomerAgeGroup(age);
         } else if (user) {
-          // Fetch profile to get age
           const { data: profile } = await supabase
             .from('customer_profiles')
             .select('age_group')
@@ -330,9 +160,8 @@ export default function FeedbackForm() {
       }
     };
     init();
-  }, [typeParam, businessParam, branchParam, langParam]);
+  }, [typeParam, businessParam, branchParam, langParam, isGuest, user, i18n]);
 
-  // --- HANDLERS ---
   const handleStarClick = (starValue, isGeneral = false) => {
     if (isGeneral) {
       if (generalRating === starValue) {
@@ -354,8 +183,6 @@ export default function FeedbackForm() {
     }
   };
 
-  // ... (inside component)
-
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length + feedbackImages.length > 3) {
@@ -371,7 +198,7 @@ export default function FeedbackForm() {
     };
 
     for (const file of files) {
-      if (file.size > 20 * 1024 * 1024) { // 20MB raw limit
+      if (file.size > 20 * 1024 * 1024) {
         toast({ title: tf.fileTooLarge, variant: "destructive" });
         continue;
       }
@@ -381,7 +208,6 @@ export default function FeedbackForm() {
         setFeedbackImages(prev => [...prev, { file: compressedFile, preview: URL.createObjectURL(compressedFile) }]);
       } catch (error) {
         console.error("Image compression error:", error);
-        // Fallback to original if compression fails
         setFeedbackImages(prev => [...prev, { file, preview: URL.createObjectURL(file) }]);
       }
     }
@@ -412,23 +238,20 @@ export default function FeedbackForm() {
   const isStepValid = () => {
     if (!selectedBranch) return false;
 
-    // 🟢 Genel değerledirme yıldız/mesaj mantığı: Metin varsa yıldız zorunlu.
     const isGeneralEvalValid = () => {
       if (generalComment.trim().length > 0) {
         return generalRating > 0;
       }
-      return true; // Metin yoksa yıldız opsiyonel
+      return true;
     };
 
     if (feedbackType === 'complaint') {
       if (currentStep === 1) return hasReceipt ? !!receiptFile : !!visitDate;
       if (currentStep === 2) return message.trim().length >= 10;
       if (currentStep === 3) {
-        // Misafir iletişim kontrolü
         if (isGuest && wantsGuestContact) {
           if (!(guestName.trim().length > 1 && guestPhone.trim().length > 9)) return false;
         }
-        // Genel değerlendirme kontrolü
         return isGeneralEvalValid();
       }
       return true;
@@ -442,7 +265,7 @@ export default function FeedbackForm() {
 
     if (feedbackType === 'review') {
       if (currentStep === 1) return rating > 0;
-      if (currentStep === 2) return true; // Review final adımında mesaj opsiyonel, puan zaten 1. adımda alındı
+      if (currentStep === 2) return true;
       return true;
     }
 
@@ -451,7 +274,7 @@ export default function FeedbackForm() {
 
   const handleNext = () => {
     if (isStepValid()) setCurrentStep(prev => Math.min(prev + 1, totalSteps));
-    else toast({ title: t('common.error'), description: tf.submit.errorValidation, variant: "destructive", className: "top-10" });
+    else toast({ title: t('common.error'), description: tf.submit.errorValidation, variant: "destructive" });
   };
 
   const handleBack = () => {
@@ -491,7 +314,6 @@ export default function FeedbackForm() {
       const calculatedOverallRating = feedbackType === 'review' ? rating : (generalRating > 0 ? generalRating : 5);
       const actualRating = feedbackType === 'review' ? rating : generalRating;
 
-      // 🟢 GOOGLE VE INSTAGRAM YÖNLENDİRME
       if (feedbackType !== 'complaint') {
         if (actualRating >= 4 && currentBranch?.google_review_url) {
           setGoogleRedirectUrl(currentBranch.google_review_url);
@@ -527,15 +349,11 @@ export default function FeedbackForm() {
         general_eval_comment: generalComment.trim() || null,
         customer_email: isGuest ? null : (user?.email || null),
         customer_name: isGuest ? t('customer.anonymous') : (user?.user_metadata?.full_name || t('customer.customer')),
-
-        // 🟢 MİSAFİR İLETİŞİM BİLGİSİ
         guest_contact_info: (isGuest && wantsGuestContact && (guestName || guestPhone)) ? {
           name: guestName,
           phone: guestPhone
         } : null,
-
-        customer_age_group: customerAgeGroup, // 🟢 Add age group
-
+        customer_age_group: customerAgeGroup,
         status: 'new',
         lang: language
       }).select().single();
@@ -544,8 +362,6 @@ export default function FeedbackForm() {
       setCurrentFeedbackId(data.id);
       setShowSuccessModal(true);
 
-      // 🟢 Point C: Clear guest mode flag after successful feedback
-      // This ensures the next user on the same device isn't automatically treated as a guest
       if (isGuest) {
         localStorage.removeItem('vocalize_guest_mode');
         localStorage.removeItem('vocalize_guest_warning_dismissed');
@@ -601,7 +417,6 @@ export default function FeedbackForm() {
   return (
     <div className="h-dvh w-full bg-[#0f172a] text-white flex flex-col overflow-hidden relative">
 
-      {/* 1. HEADER (Fixed) */}
       <div className="flex-none pt-safe px-4 pb-2 bg-[#0f172a] z-10">
         <div className="flex justify-between items-center py-3">
           <button onClick={handleBack} className="p-2 -ml-2 text-slate-300 hover:text-white rounded-full hover:bg-slate-800 transition-colors">
@@ -613,23 +428,19 @@ export default function FeedbackForm() {
         {renderStepIndicator()}
       </div>
 
-      {/* 2. SCROLLABLE CONTENT AREA (Flex-1) */}
       <div className="flex-1 overflow-y-auto px-4 pb-4 scroll-smooth">
         <div className="max-w-md mx-auto h-full flex flex-col pt-6 min-h-[400px]">
 
-          {/* STEP 1: COMPLAINT (Evidence) */}
           {feedbackType === 'complaint' && currentStep === 1 && (
             <div className="step-content space-y-6">
               <div className="text-center space-y-2 mb-8">
                 <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
                   <CalendarIcon className="h-8 w-8 text-red-500" />
                 </div>
-                {/* 🟢 DİNAMİK METİNLER */}
                 <h2 className="text-2xl font-bold text-white">{tf.stepsUI.evidenceTitle}</h2>
                 <p className="text-slate-400">{tf.stepsUI.evidenceDesc}</p>
               </div>
 
-              {/* Branch Selector */}
               {branches.length > 1 && (
                 <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
                   <BranchSelector
@@ -660,7 +471,7 @@ export default function FeedbackForm() {
                     <input type="file" className="hidden" accept="image/*" onChange={handleReceiptUpload} />
                     {receiptPreview ? (
                       <div className="relative">
-                        <img src={receiptPreview} className="h-48 w-full object-contain rounded-lg mx-auto" />
+                        <img src={receiptPreview} className="h-48 w-full object-contain rounded-lg mx-auto" alt="Receipt Preview" />
                         <button onClick={(e) => { e.preventDefault(); setReceiptFile(null); setReceiptPreview(null); }} className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"><X className="h-4 w-4 text-white" /></button>
                       </div>
                     ) : (
@@ -685,7 +496,6 @@ export default function FeedbackForm() {
                     />
                     <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 pointer-events-none" />
                   </div>
-                  {/* 🟢 TÜRKÇE FORMATLANMIŞ TARİH */}
                   {visitDate && (
                     <div className="mt-3 flex items-center gap-2 text-teal-400 text-sm font-medium bg-teal-500/10 p-3 rounded-lg border border-teal-500/20">
                       <Clock className="w-4 h-4 shrink-0" />
@@ -697,7 +507,6 @@ export default function FeedbackForm() {
             </div>
           )}
 
-          {/* STEP 2: COMPLAINT / STEP 1: SUGGESTION */}
           {((feedbackType === 'complaint' && currentStep === 2) || (feedbackType === 'suggestion' && currentStep === 1)) && (
             <div className="step-content space-y-6 h-full flex flex-col">
               <div className="text-center space-y-2 flex-shrink-0">
@@ -728,7 +537,6 @@ export default function FeedbackForm() {
             </div>
           )}
 
-          {/* STEP 1: REVIEW (Rating) */}
           {feedbackType === 'review' && currentStep === 1 && (
             <div className="step-content flex flex-col items-center justify-center space-y-8 py-10">
               <div className="text-center space-y-2">
@@ -766,7 +574,6 @@ export default function FeedbackForm() {
             </div>
           )}
 
-          {/* FINAL STEP: EXTRAS */}
           {((feedbackType === 'complaint' && currentStep === 3) || (feedbackType === 'suggestion' && currentStep === 2) || (feedbackType === 'review' && currentStep === 2)) && (
             <div className="step-content space-y-6 pb-20">
               <div className="text-center mb-4">
@@ -774,7 +581,6 @@ export default function FeedbackForm() {
                 <p className="text-slate-400">{tf.stepsUI.finalDesc}</p>
               </div>
 
-              {/* Optional General Rating & Comment */}
               {feedbackType !== 'review' && (
                 <div
                   className={cn(
@@ -786,7 +592,7 @@ export default function FeedbackForm() {
                   )}
                 >
                   <div className="text-center">
-                    <label className="text-sm text-slate-300 mb-3 block font-medium">{tf.general.title} ({t('common.optional', { defaultValue: 'Opsiyonel' })})</label>
+                    <label className="text-sm text-slate-300 mb-3 block font-medium">{tf.general.title} ({t('common.optional', { defaultValue: 'Optional' })})</label>
                     <div className="flex justify-center gap-4">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -844,7 +650,6 @@ export default function FeedbackForm() {
                 </div>
               )}
 
-              {/* Optional Message (For Review) */}
               {feedbackType === 'review' && (
                 <div className="relative h-32 bg-slate-800/30 border border-slate-700 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-transparent transition-all">
                   <div className="absolute top-4 left-4 text-slate-500 pointer-events-none">
@@ -868,7 +673,6 @@ export default function FeedbackForm() {
                 </div>
               )}
 
-              {/* Photo Upload */}
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="text-sm font-medium text-slate-300">{tf.stepsUI.extraImages}</label>
@@ -877,7 +681,7 @@ export default function FeedbackForm() {
                 <div className="grid grid-cols-4 gap-2">
                   {feedbackImages.map((img, i) => (
                     <div key={i} className="relative aspect-square bg-black rounded-lg overflow-hidden border border-slate-700 group">
-                      <img src={img.preview} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                      <img src={img.preview} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt="Feedback Preview" />
                       <button onClick={() => setFeedbackImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-0 right-0 bg-red-500 p-1"><X className="w-3 h-3 text-white" /></button>
                     </div>
                   ))}
@@ -891,7 +695,6 @@ export default function FeedbackForm() {
                 </div>
               </div>
 
-              {/* 🟢 MİSAFİR İLETİŞİM ALANI (Güncellenmiş Formatlı Hali) */}
               {isGuest && feedbackType === 'complaint' && (
                 <div className="bg-orange-900/10 border border-orange-500/20 rounded-xl p-4 mt-6 animate-in fade-in slide-in-from-bottom-2">
                   <div className="flex items-start gap-3">
@@ -919,9 +722,7 @@ export default function FeedbackForm() {
                               type="text"
                               value={guestName}
                               onChange={(e) => {
-                                // Sadece harfleri al, baş harfleri büyüt
                                 const val = e.target.value;
-                                // Regex: Kelime başındaki harfleri bul ve Türkçe uyumlu büyüt
                                 const formatted = val.replace(/(^|\s)[a-zğüşiöç]/g, (c) => c.toLocaleUpperCase('tr-TR'));
                                 setGuestName(formatted);
                               }}
@@ -935,7 +736,6 @@ export default function FeedbackForm() {
                               type="tel"
                               value={guestPhone}
                               onChange={(e) => {
-                                // Sadece rakam ve + işaretine izin ver (yabancı numaralar için)
                                 const val = e.target.value.replace(/[^0-9+]/g, '');
                                 setGuestPhone(val);
                               }}
@@ -963,7 +763,6 @@ export default function FeedbackForm() {
         </div>
       </div>
 
-      {/* 3. FOOTER */}
       <div className="flex-none p-4 pb-safe bg-[#0f172a] border-t border-slate-800 z-20">
         <Button
           onClick={currentStep === totalSteps ? submitFeedback : handleNext}
@@ -982,7 +781,6 @@ export default function FeedbackForm() {
         </Button>
       </div>
 
-      {/* SUCCESS MODAL */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
           <div className="bg-[#1e293b] w-full max-w-sm rounded-3xl p-8 text-center border border-slate-700 shadow-2xl relative overflow-hidden">
@@ -993,14 +791,13 @@ export default function FeedbackForm() {
             </div>
 
             <h2 className="text-3xl font-bold text-white mb-2">
-              {googleRedirectUrl ? tf.google.title : (googleRedirectUrl ? tf.success.defaultTitle : tf.success.title)}
+              {googleRedirectUrl ? tf.google.title : tf.success.title}
             </h2>
 
             <p className="text-slate-400 mb-8 text-lg">
-              {googleRedirectUrl ? tf.google.desc : (googleRedirectUrl ? tf.success.defaultDesc : t('form.success.desc', { name: businessName || "management" }))}
+              {googleRedirectUrl ? tf.google.desc : t('form.success.desc', { name: businessName || "management" })}
             </p>
 
-            {/* 🟢 GOOGLE MODU (4-5 Yıldız) */}
             {googleRedirectUrl && (
               <div className="space-y-4">
                 <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center animate-in zoom-in duration-500">
@@ -1012,7 +809,6 @@ export default function FeedbackForm() {
                   {tf.google.yesButton}
                 </Button>
 
-                {/* Google varsa, Instagram onun altında belirir */}
                 {instagramRedirectUrl && (
                   <Button onClick={() => window.open(instagramRedirectUrl, '_blank')} variant="outline" className="w-full border-pink-500/30 text-pink-400 hover:bg-pink-500/10 h-12 rounded-xl border-2 transition-all duration-300">
                     <Instagram className="w-4 h-4 mr-2 stroke-[2.5px]" /> {tf.google.instaButton}
@@ -1025,7 +821,6 @@ export default function FeedbackForm() {
               </div>
             )}
 
-            {/* 🟢 SADECE INSTAGRAM MODU (3 Yıldız / Google Yoksa) */}
             {!googleRedirectUrl && instagramRedirectUrl && (
               <div className="space-y-4">
                 <Button onClick={() => window.open(instagramRedirectUrl, '_blank')} className="w-full bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] hover:opacity-90 text-white h-14 rounded-xl font-bold text-lg shadow-xl shadow-pink-600/20 transition-all duration-300">
@@ -1037,7 +832,6 @@ export default function FeedbackForm() {
               </div>
             )}
 
-            {/* 🟢 STANDART MOD (Hiçbiri Yoksa / Şikayet / Düşük Puan) */}
             {!googleRedirectUrl && !instagramRedirectUrl && (
               <Button onClick={() => navigate('/customer-panel')} className="w-full bg-slate-700 hover:bg-slate-600 h-12 rounded-xl text-white font-bold">
                 {tf.success.homeButton}
