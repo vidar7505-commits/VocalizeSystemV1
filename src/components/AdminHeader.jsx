@@ -24,26 +24,29 @@ import { useToast } from "@/components/ui/use-toast";
 import { AnimatePresence, motion } from 'framer-motion';
 import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './LanguageSwitcher';
 
-const formatTimeAgo = (dateString) => {
+const formatTimeAgo = (dateString, t) => {
   if (!dateString) return '';
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now - date) / 1000);
   let interval = seconds / 31536000;
-  if (interval > 1) return `${Math.floor(interval)} yıl önce`;
+  if (interval > 1) return `${Math.floor(interval)} ${t('common.yearsAgo')}`;
   interval = seconds / 2592000;
-  if (interval > 1) return `${Math.floor(interval)} ay önce`;
+  if (interval > 1) return `${Math.floor(interval)} ${t('common.monthsAgo')}`;
   interval = seconds / 86400;
-  if (interval > 1) return `${Math.floor(interval)} gün önce`;
+  if (interval > 1) return `${Math.floor(interval)} ${t('common.daysAgo')}`;
   interval = seconds / 3600;
-  if (interval > 1) return `${Math.floor(interval)} sa önce`;
+  if (interval > 1) return `${Math.floor(interval)} ${t('common.hoursAgo')}`;
   interval = seconds / 60;
-  if (interval > 1) return `${Math.floor(interval)} dk önce`;
-  return `${Math.floor(seconds)} sn önce`;
+  if (interval > 1) return `${Math.floor(interval)} ${t('common.minutesAgo')}`;
+  return `${Math.floor(seconds)} ${t('common.secondsAgo')}`;
 };
 
 const AdminHeader = () => {
+  const { t, i18n } = useTranslation();
   const {
     businessId, businessName, branches, selectedBranchId, setSelectedBranchId,
     qrCount, loading, dateRange,
@@ -118,10 +121,10 @@ const AdminHeader = () => {
 
   const getNotificationLabel = (n) => {
     const type = n.feedbacks?.feedback_type || n.feedback_type;
-    if (type === 'complaint') return 'Yeni bir şikayetiniz var';
-    if (type === 'suggestion') return 'Yeni bir öneriniz var';
-    if (type === 'evaluation' || type === 'review' || type === 'rating') return 'Yeni bir değerlendirmeniz var';
-    return n.message || 'Yeni bildirim';
+    if (type === 'complaint') return t('admin.header.newComplaint', { defaultValue: 'Yeni bir şikayetiniz var' });
+    if (type === 'suggestion') return t('admin.header.newSuggestion', { defaultValue: 'Yeni bir öneriniz var' });
+    if (type === 'evaluation' || type === 'review' || type === 'rating') return t('admin.header.newEvaluation', { defaultValue: 'Yeni bir değerlendirmeniz var' });
+    return n.message || t('admin.header.newNotification', { defaultValue: 'Yeni bildirim' });
   };
 
   // 🟢 REMOVED: All local data fetching and subscription logic (fetchNotifications, useEffects)
@@ -147,14 +150,21 @@ const AdminHeader = () => {
   const handleLogout = async () => { await signOut(); navigate('/'); };
 
   const getSelectedBranchLabel = () => {
-    if (selectedBranchId === 'all') return 'Tüm Şubeler';
+    if (selectedBranchId === 'all') return t('admin.header.allBranches');
     const branch = branches.find(b => b.id === selectedBranchId);
-    return branch ? branch.branch_name_tr : 'Tüm Şubeler';
+    return branch ? branch.branch_name_tr : t('admin.header.allBranches');
   };
 
   const getQrDateLabel = () => {
-    const labels = { 'today': 'Bugün', 'last7': 'Son 7 Gün', 'last30': 'Son 30 Gün', 'last90': 'Son 90 Gün', 'thisMonth': 'Bu Ay', 'allTime': 'Tüm Zamanlar' };
-    return labels[dateRange] || 'Son 7 Gün';
+    const labels = {
+      'today': t('customer.today', { defaultValue: 'Bugün' }),
+      'last7': t('customer.last7', { defaultValue: 'Son 7 Gün' }),
+      'last30': t('customer.last30', { defaultValue: 'Son 30 Gün' }),
+      'last90': t('customer.last90', { defaultValue: 'Son 90 Gün' }),
+      'thisMonth': t('customer.thisMonth', { defaultValue: 'Bu Ay' }),
+      'allTime': t('customer.all', { defaultValue: 'Tüm Zamanlar' })
+    };
+    return labels[dateRange] || t('customer.last7');
   };
 
   // Badge Config Logic (Kısaltıldı, aynen duruyor)
@@ -193,7 +203,7 @@ const AdminHeader = () => {
                 <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-200 font-semibold text-base h-10 hover:bg-slate-700 transition-colors">
                   <div className="flex items-center gap-2 truncate">
                     <Building2 className="h-4 w-4 text-slate-400 shrink-0" />
-                    <SelectValue placeholder="Şube Seçiniz">{getSelectedBranchLabel()}</SelectValue>
+                    <SelectValue placeholder={t('admin.header.selectBranch')}>{getSelectedBranchLabel()}</SelectValue>
                   </div>
                 </SelectTrigger>
                 <SelectContent className="bg-slate-800 border-slate-700 text-white max-h-[300px]">
@@ -204,7 +214,7 @@ const AdminHeader = () => {
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                         <input
                           type="text"
-                          placeholder="Şube ara..."
+                          placeholder={t('admin.header.searchBranch')}
                           value={branchSearchQuery}
                           onChange={(e) => setBranchSearchQuery(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
@@ -216,7 +226,7 @@ const AdminHeader = () => {
                   )}
                   <SelectItem value="all">Tüm Şubeler</SelectItem>
                   {filteredBranches.length === 0 && branchSearchQuery && (
-                    <div className="p-3 text-center text-slate-500 text-sm">Şube bulunamadı</div>
+                    <div className="p-3 text-center text-slate-500 text-sm">{t('admin.header.noBranchFound')}</div>
                   )}
                   {filteredBranches.map((branch) => <SelectItem key={branch.id} value={branch.id}>{branch.branch_name_tr}</SelectItem>)}
                 </SelectContent>
@@ -226,10 +236,12 @@ const AdminHeader = () => {
         </div>
 
         <div className="flex items-center gap-4">
+          <LanguageSwitcher showName={false} className="h-10 w-12 px-0" />
+
           <div className="flex items-center gap-3 bg-slate-800/50 border border-teal-500/30 rounded-lg px-4 py-2 hover:bg-slate-700/50 transition-colors">
             <QrCode className="h-5 w-5 text-teal-400" />
             <span className="text-sm font-semibold text-teal-300 whitespace-nowrap">
-              {getQrDateLabel()}: <span className="text-white font-bold">{loading ? '...' : qrCount}</span> Tarama
+              {getQrDateLabel()}: <span className="text-white font-bold">{loading ? '...' : qrCount}</span> {t('admin.header.scans', { defaultValue: 'Tarama' })}
             </span>
           </div>
 
@@ -250,9 +262,9 @@ const AdminHeader = () => {
                   className="absolute top-full right-0 mt-2 w-80 bg-slate-800 border border-slate-700/50 rounded-lg shadow-2xl z-50"
                 >
                   <div className="flex items-center justify-between px-4 py-3 bg-slate-700/50 border-b border-slate-700/50">
-                    <h3 className="text-white font-bold text-sm">Bildirimler</h3>
+                    <h3 className="text-white font-bold text-sm">{t('admin.header.notifications')}</h3>
                     <div className="flex items-center gap-2">
-                      {unreadCount > 0 && <button onClick={handleMarkAllAsRead} className="p-1 text-slate-400 hover:text-white"><CheckCheck className="w-4 h-4" /></button>}
+                      {unreadCount > 0 && <button onClick={handleMarkAllAsRead} title={t('admin.header.markAllRead')} className="p-1 text-slate-400 hover:text-white"><CheckCheck className="w-4 h-4" /></button>}
                       <button onClick={() => setNotificationOpen(false)} className="p-1 text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
                     </div>
                   </div>
@@ -261,8 +273,8 @@ const AdminHeader = () => {
                       <div onClick={() => { navigate('/admin-panel/feedbacks', { state: { filter: 'urgent' } }); setNotificationOpen(false); }} className="flex items-start gap-3 p-3 border-b border-slate-700/30 bg-red-950/30 hover:bg-red-900/40 cursor-pointer">
                         <AlertOctagon className="w-4 h-4 shrink-0 mt-1 text-red-500 animate-pulse" />
                         <div className="flex-grow">
-                          <p className="text-sm text-red-200 font-bold">Acil Durum</p>
-                          <p className="text-xs text-red-300 mt-1">{escalatedCount} acil bildirim bekliyor.</p>
+                          <p className="text-sm text-red-200 font-bold">{t('feedbackDetail.detail.urgent')}</p>
+                          <p className="text-xs text-red-300 mt-1">{t('admin.dashboard.urgentActionCount', { count: escalatedCount, defaultValue: `${escalatedCount} acil bildirim bekliyor.` })}</p>
                         </div>
                       </div>
                     )}
@@ -279,10 +291,10 @@ const AdminHeader = () => {
                           </div>
                         </div>
                       ))
-                    ) : escalatedCount === 0 ? (<p className="text-slate-400 text-sm text-center py-8">Bildirim yok.</p>) : null}
+                    ) : escalatedCount === 0 ? (<p className="text-slate-400 text-sm text-center py-8">{t('admin.header.noNotifications')}</p>) : null}
                   </div>
                   <div className="px-4 py-3 bg-slate-700/50 border-t border-slate-700/50 text-center">
-                    <button onClick={() => { navigate('/admin-panel/notifications'); setNotificationOpen(false); }} className="text-teal-400 hover:text-teal-300 text-sm font-medium w-full">Tümünü Gör</button>
+                    <button onClick={() => { navigate('/admin-panel/notifications'); setNotificationOpen(false); }} className="text-teal-400 hover:text-teal-300 text-sm font-medium w-full">{t('admin.header.viewAll')}</button>
                   </div>
                 </motion.div>
               )}
@@ -295,31 +307,31 @@ const AdminHeader = () => {
               <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-full"><User className="h-5 w-5" /></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-slate-800 border-slate-700 text-white">
-              <DropdownMenuLabel>Hesabım</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('admin.header.myAccount')}</DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-slate-700" />
-              <DropdownMenuItem onClick={() => navigate('/admin-panel/settings')} className="cursor-pointer focus:bg-slate-700 focus:text-white">Ayarlar</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/admin-panel/settings')} className="cursor-pointer focus:bg-slate-700 focus:text-white">{t('admin.header.settings')}</DropdownMenuItem>
 
               {/* TEMA DEĞİŞTİR (Kapanmayı önler) */}
               <DropdownMenuItem
                 onSelect={(e) => { e.preventDefault(); toggleTheme(e); }}
                 className="cursor-pointer focus:bg-slate-700 focus:text-white flex justify-between items-center group"
               >
-                <span>Görünüm</span>
+                <span>{t('admin.header.appearance')}</span>
                 {theme === 'dark' ? (
                   <div className="flex items-center gap-2 text-slate-400 group-hover:text-white">
-                    <span className="text-xs">Koyu</span>
+                    <span className="text-xs">{t('admin.header.themeDark')}</span>
                     <Moon className="h-4 w-4" />
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-yellow-400 group-hover:text-yellow-300">
-                    <span className="text-xs">Açık</span>
+                    <span className="text-xs">{t('admin.header.themeLight')}</span>
                     <Sun className="h-4 w-4" />
                   </div>
                 )}
               </DropdownMenuItem>
 
               <DropdownMenuItem onClick={handleLogout} className="logout-menuitem text-red-400 focus:bg-red-900/20 focus:text-red-300 cursor-pointer">
-                <LogOut className="mr-2 h-4 w-4" />Çıkış Yap
+                <LogOut className="mr-2 h-4 w-4" />{t('admin.header.logout')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 import {
     Dialog,
@@ -14,12 +15,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 const DeleteAccountModal = ({
     isOpen,
     onOpenChange,
-    language,
     deleteAccountConfirmed,
     setDeleteAccountConfirmed,
     handleSoftDeleteAccount,
     isDeletingAccount,
 }) => {
+    const { t } = useTranslation();
+
     return (
         <Dialog open={isOpen} onOpenChange={(open) => {
             onOpenChange(open);
@@ -29,12 +31,10 @@ const DeleteAccountModal = ({
                 <DialogHeader>
                     <DialogTitle className="text-red-500 flex items-center gap-2 text-xl">
                         <AlertTriangle className="h-6 w-6" />
-                        {language === 'tr' ? 'Hesabınızı Silmek Üzeresiniz' : 'You Are About To Delete Your Account'}
+                        {t('customer.settings.deleteModal.title')}
                     </DialogTitle>
                     <DialogDescription className="text-slate-300 mt-2">
-                        {language === 'tr'
-                            ? 'Bu işlem geri alınamaz. Hesabınız silindiğinde tüm geri bildirim geçmişiniz, profil bilgileriniz ve ayarlarınız kalıcı olarak silinecektir.'
-                            : 'This action cannot be undone. All your feedback history, profile information, and settings will be permanently deleted.'}
+                        {t('customer.settings.deleteModal.description')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -47,9 +47,7 @@ const DeleteAccountModal = ({
                             className="mt-1 border-red-400 data-[state=checked]:bg-red-500 data-[state=checked]:text-white"
                         />
                         <label htmlFor="finalDeleteConfirm" className="text-sm text-red-200 cursor-pointer leading-tight">
-                            {language === 'tr'
-                                ? 'Sonuçları anlıyorum ve hesabımı kalıcı olarak silmeyi onaylıyorum.'
-                                : 'I understand the consequences and confirm the permanent deletion of my account.'}
+                            {t('customer.settings.deleteModal.checkbox')}
                         </label>
                     </div>
                 </div>
@@ -60,7 +58,7 @@ const DeleteAccountModal = ({
                         variant="outline"
                         className="bg-slate-700 border-slate-600 hover:bg-slate-600 text-white"
                     >
-                        {language === 'tr' ? 'Vazgeç' : 'Cancel'}
+                        {t('customer.settings.deleteModal.cancel')}
                     </Button>
                     <Button
                         onClick={handleSoftDeleteAccount}
@@ -70,12 +68,12 @@ const DeleteAccountModal = ({
                         {isDeletingAccount ? (
                             <>
                                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                {language === 'tr' ? 'Siliniyor...' : 'Deleting...'}
+                                {t('customer.settings.deleteModal.deleting')}
                             </>
                         ) : (
                             <>
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                {language === 'tr' ? 'Evet, Hesabımı Sil' : 'Yes, Delete My Account'}
+                                {t('customer.settings.deleteModal.delete')}
                             </>
                         )}
                     </Button>

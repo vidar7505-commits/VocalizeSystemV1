@@ -13,7 +13,11 @@ i18n
   .use(initReactI18next)
   // Konfigürasyon
   .init({
-    fallbackLng: 'tr', // Varsayılan dil Türkçe
+    fallbackLng: {
+      'tr-TR': ['tr'],
+      'tr': ['tr'],
+      'default': ['en']
+    },
     debug: false, // Geliştirme sırasında true yapabilirsiniz
     
     // Dil algılama sırası
@@ -35,6 +39,10 @@ i18n
 
     // Desteklenen diller
     supportedLngs: ['tr', 'en'],
+    nonExplicitWhitelist: true,
+
+    // Whitelist mantığı: Desteklenmeyen bir dil algılanırsa İngilizce'ye dön
+    load: 'languageOnly',
     
     // Namespace
     ns: ['translation'],
@@ -44,5 +52,9 @@ i18n
       useSuspense: true, // Loading fallback için
     }
   });
+
+i18n.on('languageChanged', (lng) => {
+  document.documentElement.lang = lng.split('-')[0];
+});
 
 export default i18n;

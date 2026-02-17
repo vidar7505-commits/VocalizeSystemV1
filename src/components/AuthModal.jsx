@@ -10,18 +10,19 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Lock, Mail, Phone, User, Building2, ArrowLeft, KeyRound, ArrowRight } from 'lucide-react';
 import { TERMS_CONTENT, KVKK_CONTENT } from '@/constants/legalTexts';
+import { useTranslation } from 'react-i18next';
 
 const CUSTOMER_LOGO_URL = "faviconbeyaz.png";
 const ADMIN_LOGO_URL = "faviconmain.png";
 
-const translateError = (errorMsg) => {
-  if (!errorMsg) return "Bir hata oluştu.";
-  if (errorMsg.includes("Invalid login credentials")) return "E-posta veya şifre hatalı.";
-  if (errorMsg.includes("User already registered")) return "Bu e-posta adresi zaten kayıtlı.";
-  if (errorMsg.includes("Password should be at least")) return "Şifre en az 6 karakter olmalıdır.";
-  if (errorMsg.includes("manager code")) return "Geçersiz veya kullanılmış yönetici kodu.";
-  if (errorMsg.includes("Database error")) return "Sistem hatası. Lütfen yönetici kodunu kontrol edin."; // Veritabanı hatası çevirisi eklendi
-  return "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.";
+const translateError = (errorMsg, t) => {
+  if (!errorMsg) return t('common.error');
+  if (errorMsg.includes("Invalid login credentials")) return t('auth.invalidCredentials', { defaultValue: 'E-posta veya şifre hatalı.' });
+  if (errorMsg.includes("User already registered")) return t('auth.alreadyRegistered', { defaultValue: 'Bu e-posta adresi zaten kayıtlı.' });
+  if (errorMsg.includes("Password should be at least")) return t('auth.passwordLength', { defaultValue: 'Şifre en az 6 karakter olmalıdır.' });
+  if (errorMsg.includes("manager code")) return t('auth.invalidManagerCode', { defaultValue: 'Geçersiz veya kullanılmış yönetici kodu.' });
+  if (errorMsg.includes("Database error")) return t('auth.databaseError', { defaultValue: 'Sistem hatası. Lütfen yönetici kodunu kontrol edin.' });
+  return t('auth.processError', { defaultValue: 'İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.' });
 };
 
 // 🟢 Title Case Dönüştürücü Fonksiyonu - Türkçe Karakterleri Destekler
@@ -39,30 +40,32 @@ const toTitleCase = (str) => {
 };
 
 // ✅ Legal Modal Component
-const LegalModal = React.memo(({ open, onOpenChange, activeLegalTab, setActiveLegalTab, legalAccepted, setLegalAccepted }) => {
+const LegalModal = React.memo(({ open, onOpenChange, activeLegalTab, setActiveLegalTab, legalAccepted, setLegalAccepted, t, i18n }) => {
   if (!open) return null;
+
+  const currentLang = i18n.language.startsWith('tr') ? 'tr' : 'en';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[#0f172a] border-slate-700 text-white sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
         <div className="sr-only">
-          <DialogTitle>Yasal Bilgilendirme</DialogTitle>
-          <DialogDescription>Kullanım Koşulları ve KVKK Metinleri</DialogDescription>
+          <DialogTitle>{t('landing.footer.kvkk')}</DialogTitle>
+          <DialogDescription>{t('landing.footer.terms')}</DialogDescription>
         </div>
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-white">Yasal Bilgilendirme</h3>
+          <h3 className="text-xl font-bold text-white">{t('landing.footer.kvkk')} / {t('landing.footer.terms')}</h3>
         </div>
         <Tabs value={activeLegalTab} onValueChange={setActiveLegalTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-slate-800">
             <TabsTrigger value="terms" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-              Kullanım Koşulları
+              {t('landing.footer.terms')}
             </TabsTrigger>
             <TabsTrigger value="kvkk" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-              KVKK & Gizlilik
+              {t('landing.footer.kvkk')}
             </TabsTrigger>
           </TabsList>
           <div className="mt-4 p-4 bg-slate-900/50 rounded-lg border border-slate-800 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap font-sans text-justify max-h-96 overflow-y-auto">
-            {activeLegalTab === 'terms' ? TERMS_CONTENT : KVKK_CONTENT}
+            {activeLegalTab === 'terms' ? TERMS_CONTENT[currentLang] : KVKK_CONTENT[currentLang]}
           </div>
         </Tabs>
         <div className="flex justify-end gap-2 mt-6">
@@ -71,7 +74,7 @@ const LegalModal = React.memo(({ open, onOpenChange, activeLegalTab, setActiveLe
             onClick={() => onOpenChange(false)}
             className="bg-slate-700 hover:bg-slate-600 text-white"
           >
-            Kapat
+            {t('common.close')}
           </Button>
           <Button
             onClick={() => {
@@ -80,7 +83,7 @@ const LegalModal = React.memo(({ open, onOpenChange, activeLegalTab, setActiveLe
             }}
             className="bg-teal-600 hover:bg-teal-700 text-white"
           >
-            Okudum, Onaylıyorum
+            {t('common.confirm')}
           </Button>
         </div>
       </DialogContent>
@@ -97,6 +100,7 @@ const AuthModal = React.memo(({
   showGuestOption = false,
   onGuestContinue
 }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [viewMode, setViewMode] = useState('auth');
   const [activeRole, setActiveRole] = useState(defaultRole);
@@ -180,8 +184,8 @@ const AuthModal = React.memo(({
       // loginAsGuest zaten localStorage set ediyor
 
       toast({
-        title: "Misafir Girişi Başarılı",
-        description: "Yönlendiriliyorsunuz...",
+        title: t('auth.loginSuccess'),
+        description: t('common.loading'),
         className: "bg-teal-600 text-white border-none"
       });
 
@@ -196,7 +200,7 @@ const AuthModal = React.memo(({
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     if (!formData.email) {
-      toast({ title: "Hata", description: "Lütfen e-posta adresinizi girin.", variant: "destructive" });
+      toast({ title: t('common.error'), description: t('customer.support.errorEmail'), variant: "destructive" });
       return;
     }
     setIsLoading(true);
@@ -208,8 +212,8 @@ const AuthModal = React.memo(({
       if (error) throw error;
 
       toast({
-        title: "E-posta Gönderildi",
-        description: "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. Lütfen spam kutunuzu da kontrol edin.",
+        title: t('auth.resetSuccess'),
+        description: t('auth.resetSuccessDesc'),
         className: "bg-teal-600 text-white border-none"
       });
 
@@ -218,7 +222,7 @@ const AuthModal = React.memo(({
       setFormData(prev => ({ ...prev, email: '' }));
     } catch (error) {
       console.error("Password reset error:", error);
-      toast({ title: "Hata", description: translateError(error.message), variant: "destructive" });
+      toast({ title: t('common.error'), description: translateError(error.message, t), variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -238,8 +242,8 @@ const AuthModal = React.memo(({
         if (error) throw error;
 
         toast({
-          title: "Giriş Başarılı",
-          description: "Hoş geldiniz! Yönlendiriliyorsunuz...",
+          title: t('auth.loginSuccess'),
+          description: t('common.loading'),
           className: "bg-teal-600 text-white border-none"
         });
 
@@ -256,25 +260,25 @@ const AuthModal = React.memo(({
       }
       else {
         if (!legalAccepted) {
-          toast({ title: "Hata", description: "Lütfen yasal metinleri onaylayınız.", variant: "destructive" });
+          toast({ title: t('common.error'), description: t('auth.legal'), variant: "destructive" });
           setIsLoading(false);
           return;
         }
 
         if (!validateFullName(formData.fullName)) {
-          toast({ title: "Hata", description: "Lütfen isim ve soyisim giriniz (örn: Emir Yılmaz).", variant: "destructive" });
+          toast({ title: t('common.error'), description: t('common.validation.required') + ': ' + t('auth.fullName'), variant: "destructive" });
           setIsLoading(false);
           return;
         }
 
         if (!validatePassword(formData.password)) {
-          toast({ title: "Hata", description: "Şifre 6-12 karakter arasında olmalıdır.", variant: "destructive" });
+          toast({ title: t('common.error'), description: t('auth.password'), variant: "destructive" });
           setIsLoading(false);
           return;
         }
 
         if (!validatePhone(formData.phone)) {
-          toast({ title: "Hata", description: "Telefon numarası 05xxxxxxxxx formatında olmalıdır (11 haneli).", variant: "destructive" });
+          toast({ title: t('common.error'), description: t('common.validation.required') + ': ' + t('auth.phone'), variant: "destructive" });
           setIsLoading(false);
           return;
         }
@@ -301,8 +305,8 @@ const AuthModal = React.memo(({
 
         if (signupData.session) {
           toast({
-            title: "Kayıt Başarılı",
-            description: "Hesabınız oluşturuldu, yönlendiriliyorsunuz...",
+            title: t('auth.registerSuccess'),
+            description: t('common.loading'),
             className: "bg-teal-600 text-white border-none"
           });
 
@@ -317,8 +321,8 @@ const AuthModal = React.memo(({
           }, 800);
         } else {
           toast({
-            title: "Kayıt Başarılı",
-            description: "Lütfen e-posta adresinizi doğrulayın. Gelen kutunuzu kontrol edin.",
+            title: t('auth.registerSuccess'),
+            description: t('auth.verifyEmail'),
             className: "bg-teal-600 text-white border-none"
           });
           onClose();
@@ -326,7 +330,7 @@ const AuthModal = React.memo(({
       }
     } catch (error) {
       console.error("Auth error:", error);
-      toast({ title: "Hata", description: translateError(error.message), variant: "destructive" });
+      toast({ title: t('common.error'), description: translateError(error.message, t), variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -339,8 +343,8 @@ const AuthModal = React.memo(({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="bg-[#0f172a] border-slate-700 text-white w-[95vw] max-w-md p-0 max-h-[85vh] flex flex-col rounded-xl md:rounded-lg overflow-hidden gap-0">
           <div className="sr-only">
-            <DialogTitle>{activeTab === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}</DialogTitle>
-            <DialogDescription>Giriş yap veya yeni hesap oluştur.</DialogDescription>
+            <DialogTitle>{activeTab === 'login' ? t('auth.login') : t('auth.register')}</DialogTitle>
+            <DialogDescription>{t('auth.login')} / {t('auth.register')}</DialogDescription>
           </div>
           <div className="relative flex-shrink-0">
             {/* Header: Mobilde Küçültüldü (h-28), Masaüstünde Normal (h-40) */}
@@ -368,14 +372,14 @@ const AuthModal = React.memo(({
                   className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors mb-2"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Geri Dön
+                  {t('auth.backToLogin')}
                 </button>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                   <Input
                     name="email"
                     type="email"
-                    placeholder="E-posta Adresi"
+                    placeholder={t('auth.email')}
                     autoComplete="email"
                     value={formData.email}
                     onChange={handleInputChange}
@@ -392,12 +396,12 @@ const AuthModal = React.memo(({
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Gönderiliyor...
+                      {t('common.sending')}
                     </>
                   ) : (
                     <>
                       <KeyRound className="h-4 w-4 mr-2" />
-                      Sıfırlama Bağlantısı Gönder
+                      {t('auth.sendResetLink')}
                     </>
                   )}
                 </Button>
@@ -406,14 +410,14 @@ const AuthModal = React.memo(({
               <>
                 <Tabs value={activeRole} onValueChange={setActiveRole} className="w-full mb-4">
                   <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 p-1">
-                    <TabsTrigger value="customer" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white transition-colors duration-300">Müşteri</TabsTrigger>
-                    <TabsTrigger value="manager" className="data-[state=active]:bg-teal-600 data-[state=active]:text-white transition-colors duration-300">Yönetici</TabsTrigger>
+                    <TabsTrigger value="customer" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white transition-colors duration-300">{t('auth.customer')}</TabsTrigger>
+                    <TabsTrigger value="manager" className="data-[state=active]:bg-teal-600 data-[state=active]:text-white transition-colors duration-300">{t('auth.manager')}</TabsTrigger>
                   </TabsList>
                 </Tabs>
 
                 <div className="flex bg-slate-800 rounded-lg p-1 gap-1 mb-4">
-                  <button onClick={() => setActiveTab('login')} className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors font-medium duration-200 ${activeTab === 'login' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Giriş</button>
-                  <button onClick={() => setActiveTab('register')} className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors font-medium duration-200 ${activeTab === 'register' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>Kayıt Ol</button>
+                  <button onClick={() => setActiveTab('login')} className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors font-medium duration-200 ${activeTab === 'login' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>{t('auth.login')}</button>
+                  <button onClick={() => setActiveTab('register')} className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors font-medium duration-200 ${activeTab === 'register' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}>{t('auth.register')}</button>
                 </div>
 
                 <form onSubmit={handleAuth} className="space-y-4">
@@ -424,7 +428,7 @@ const AuthModal = React.memo(({
                       <div className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700/60 rounded-xl p-4 shadow-lg mb-6 flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-2">
                           <div className="text-sm text-slate-300 font-medium leading-tight">
-                            Üyelikle uğraşmak <br className="hidden sm:block" /> istemiyor musun?
+                            {t('auth.guestOption')}
                           </div>
                           <Button
                             type="button"
@@ -432,12 +436,12 @@ const AuthModal = React.memo(({
                             size="sm"
                             className="bg-teal-600 hover:bg-teal-700 text-white font-semibold transition-all duration-200 whitespace-nowrap h-10 px-5 shadow-md shadow-teal-900/20 shrink-0"
                           >
-                            Misafir Girişi <ArrowRight className="ml-1.5 h-4 w-4" />
+                            {t('auth.guestButton')} <ArrowRight className="ml-1.5 h-4 w-4" />
                           </Button>
                         </div>
                         <div className="border-t border-slate-700/50 pt-2">
                           <p className="text-[10px] text-slate-500 text-center leading-relaxed">
-                            Devam ederek <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('terms'); }}>Kullanım Koşulları</span> ve <span className="cursor-pointer hover:text-teal-400 underline decoration-slate-600 underline-offset-2 transition-colors" onClick={(e) => { e.preventDefault(); openLegal('kvkk'); }}>KVKK Metni</span>'ni kabul etmiş sayılırsınız.
+                            {t('auth.guestLegal')}
                           </p>
                         </div>
                       </div>
@@ -446,7 +450,7 @@ const AuthModal = React.memo(({
                         <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-700"></span></div>
                         <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
                           <span className="bg-[#0f172a] px-3 text-slate-500">
-                            {activeTab === 'login' ? 'Veya Kayıt Ol' : 'Veya Giriş Yap'}
+                            {activeTab === 'login' ? t('auth.register') : t('auth.login')}
                           </span>
                         </div>
                       </div>
@@ -458,7 +462,7 @@ const AuthModal = React.memo(({
                       <div className="relative">
                         <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                         <Input
-                          name="fullName" placeholder="İsim Soyisim"
+                          name="fullName" placeholder={t('auth.fullName')}
                           className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
                           value={formData.fullName}
                           onChange={handleInputChange}
@@ -473,7 +477,7 @@ const AuthModal = React.memo(({
                         <div className="relative">
                           <Building2 className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                           <Input
-                            name="managerCode" placeholder="Yönetici Kodu (MGR_...)"
+                            name="managerCode" placeholder={t('auth.managerCode')}
                             className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
                             value={formData.managerCode} onChange={handleInputChange}
                             autoComplete="off"
@@ -487,7 +491,7 @@ const AuthModal = React.memo(({
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                       <Input
-                        name="email" type="email" placeholder="E-posta Adresi"
+                        name="email" type="email" placeholder={t('auth.email')}
                         autoComplete="username"
                         className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
                         value={formData.email} onChange={handleInputChange} required />
@@ -496,16 +500,16 @@ const AuthModal = React.memo(({
                       <div className="relative">
                         <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                         <Input
-                          name="phone" type="tel" placeholder="Telefon (05...)"
+                          name="phone" type="tel" placeholder={t('auth.phone')}
                           autoComplete="tel"
                           className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
-                          value={formData.phone} onChange={handleInputChange} required pattern="05[0-9]{9}" title="Telefon numarası 05 ile başlamalı ve 11 haneli olmalıdır." />
+                          value={formData.phone} onChange={handleInputChange} required pattern="05[0-9]{9}" title={t('auth.phone')} />
                       </div>
                     )}
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                       <Input
-                        name="password" type="password" placeholder="Şifre (6-12 karakter)"
+                        name="password" type="password" placeholder={t('auth.password')}
                         autoComplete={activeTab === 'register' ? "new-password" : "current-password"}
                         className={`pl-10 h-11 bg-slate-800 border-slate-700 focus-visible:border-slate-600 transition-all ${activeRole === 'customer' ? 'focus-visible:ring-orange-600' : 'focus-visible:ring-teal-600'}`}
                         value={formData.password} onChange={handleInputChange} required minLength="6" maxLength="12" />
@@ -514,7 +518,7 @@ const AuthModal = React.memo(({
 
                   {activeTab === 'login' && (
                     <div className="flex justify-end pt-2">
-                      <button type="button" onClick={() => setViewMode('forgot-password')} className={`text-xs text-slate-400 transition-colors flex items-center gap-1 ${activeRole === 'customer' ? 'hover:text-orange-500' : 'hover:text-teal-500'}`}><KeyRound className="w-3 h-3" /> Şifremi Unuttum?</button>
+                      <button type="button" onClick={() => setViewMode('forgot-password')} className={`text-xs text-slate-400 transition-colors flex items-center gap-1 ${activeRole === 'customer' ? 'hover:text-orange-500' : 'hover:text-teal-500'}`}><KeyRound className="w-3 h-3" /> {t('auth.forgotPassword')}</button>
                     </div>
                   )}
 
@@ -525,7 +529,7 @@ const AuthModal = React.memo(({
                         className={`mt-1 border-slate-500 ${activeRole === 'customer' ? 'data-[state=checked]:bg-orange-600 data-[state=checked]:border-orange-600' : 'data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600'}`} />
                       <div className="grid gap-1.5 leading-none">
                         <label htmlFor="legal-check" className="text-xs text-slate-400 font-medium leading-relaxed">
-                          Kayıt olarak <span className={`cursor-pointer hover:underline transition-colors ${activeRole === 'customer' ? 'text-orange-500 hover:text-orange-400' : 'text-teal-500 hover:text-teal-400'}`} onClick={(e) => { e.preventDefault(); openLegal('terms'); }}>Kullanım Koşulları</span> ve <span className={`cursor-pointer hover:underline transition-colors ${activeRole === 'customer' ? 'text-orange-500 hover:text-orange-400' : 'text-teal-500 hover:text-teal-400'}`} onClick={(e) => { e.preventDefault(); openLegal('kvkk'); }}>KVKK Aydınlatma Metni</span>'ni okuduğumu ve kabul ettiğimi onaylıyorum.
+                          {t('auth.legal')}
                         </label>
                       </div>
                     </div>
@@ -535,10 +539,10 @@ const AuthModal = React.memo(({
                     {isLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        {activeTab === 'login' ? 'Giriş Yapılıyor...' : 'Hesap Oluşturuluyor...'}
+                        {activeTab === 'login' ? t('common.sending') : t('common.loading')}
                       </>
                     ) : (
-                      activeTab === 'login' ? 'Giriş Yap' : 'Hesap Oluştur'
+                      activeTab === 'login' ? t('auth.login') : t('auth.register')
                     )}
                   </Button>
                 </form>
@@ -556,6 +560,8 @@ const AuthModal = React.memo(({
           setActiveLegalTab={setActiveLegalTab}
           legalAccepted={legalAccepted}
           setLegalAccepted={setLegalAccepted}
+          t={t}
+          i18n={i18n}
         />
       )}
     </>

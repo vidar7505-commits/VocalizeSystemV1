@@ -19,6 +19,7 @@ import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
 
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
+import { useTranslation } from 'react-i18next';
 
 // --- HELPER COMPONENTS ---
 
@@ -28,6 +29,7 @@ import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 
 
 const SparklineCard = React.memo(({ title, value, delta, deltaType, icon: Icon, colorClass, sparkData, loading, isInverseMetric = false, hideDelta = false }) => {
+  const { t } = useTranslation();
   let sentimentColor = "bg-slate-800 text-slate-400 border-slate-700";
   let TrendIcon = Minus;
 
@@ -43,10 +45,11 @@ const SparklineCard = React.memo(({ title, value, delta, deltaType, icon: Icon, 
       : "bg-rose-950/30 text-rose-400 border-rose-500/20";
   }
 
+  const { i18n } = useTranslation();
   // 🟢 ENTERPRISE: 10.000'e kadar tam sayı, sonrası için kompakt format (K)
   const numericValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value;
 
-  const { display: displayValue, full: fullValue } = formatCompactNumber(numericValue);
+  const { display: displayValue, full: fullValue } = formatCompactNumber(numericValue, i18n.language);
 
   const needsTooltip = numericValue >= 10000;
 
@@ -75,11 +78,11 @@ const SparklineCard = React.memo(({ title, value, delta, deltaType, icon: Icon, 
           {!loading && (
             <div className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${sentimentColor}`}>
               <TrendIcon className="w-3 h-3" />
-              <span>{delta}</span>
+              <span translate="no">{delta}</span>
             </div>
           )}
           <span className="text-xs text-slate-500">
-            {delta === '∞' ? 'Yeni Veri' : 'geçen döneme göre'}
+            {delta === '∞' ? t('admin.dashboard.metrics.newData') : t('admin.dashboard.metrics.vsLastPeriod')}
           </span>
         </div>
       )}
@@ -102,15 +105,27 @@ const SparklineCard = React.memo(({ title, value, delta, deltaType, icon: Icon, 
   );
 });
 
-const getTypeBadge = (type) => {
+const getTypeBadge = (type, t) => {
   const styles = { complaint: "text-red-400 bg-red-900/20 border-red-900/30", suggestion: "text-blue-400 bg-blue-900/20 border-blue-900/30", evaluation: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", review: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", rating: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30" };
-  const labels = { complaint: "Şikayet", suggestion: "Öneri", evaluation: "Değerlendirme", review: "Değerlendirme", rating: "Değerlendirme" };
+  const labels = {
+    complaint: t('feedbackDetail.types.complaint'),
+    suggestion: t('feedbackDetail.types.suggestion'),
+    evaluation: t('feedbackDetail.types.evaluation'),
+    review: t('feedbackDetail.types.review'),
+    rating: t('feedbackDetail.types.rating')
+  };
   return <Badge variant="secondary" className={`text-xs px-2.5 py-1 ${styles[type] || "text-slate-400"}`}>{labels[type] || type}</Badge>;
 };
 
-const getStatusBadge = (status) => {
+const getStatusBadge = (status, t) => {
   const styles = { new: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20", pending: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", in_progress: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20", resolved: "bg-green-500/10 text-green-500 border-green-500/20", escalated: "bg-red-500/10 text-red-500 border-red-500/20" };
-  const labels = { new: "Yeni", pending: "Beklemede", in_progress: "İşlemde", resolved: "Çözüldü", escalated: "Acil" };
+  const labels = {
+    new: t('feedbackDetail.statuses.new'),
+    pending: t('feedbackDetail.statuses.pending'),
+    in_progress: t('feedbackDetail.statuses.in_progress'),
+    resolved: t('feedbackDetail.statuses.resolved'),
+    escalated: t('feedbackDetail.statuses.escalated')
+  };
   return <Badge variant="outline" className={`text-[10px] h-5 px-1.5 whitespace-nowrap transition-colors ${styles[status] || "bg-slate-500/10 text-slate-500"}`}>{labels[status] || status}</Badge>;
 };
 
@@ -142,6 +157,7 @@ const ChartTooltip = React.memo(({ active, payload, formatter }) => {
 // --- MAIN COMPONENT ---
 
 const AdminPanel = () => {
+  const { t } = useTranslation();
   const {
     businessId,
     selectedBranchId,
@@ -161,7 +177,7 @@ const AdminPanel = () => {
     total: { value: 0, delta: '0%', type: 'neutral' },
     complaints: { value: 0, delta: '0%', type: 'neutral' },
     resolved: { value: 0, delta: '0%', type: 'neutral' },
-    rating: { value: '0.0', delta: '0.0 Puan', type: 'neutral' },
+    rating: { value: '0.0', delta: '0.0', type: 'neutral' },
   });
 
   const [sparklineData, setSparklineData] = useState({ total: [], complaints: [], resolved: [], rating: [] });
@@ -195,15 +211,15 @@ const AdminPanel = () => {
   }, [location.state, recentFeedbacks]);
 
   const displayTitle = selectedBranchId === 'all'
-    ? "Ana Panel"
-    : branches.find(b => b.id === selectedBranchId)?.branch_name_tr || "Ana Panel";
+    ? t('admin.dashboard.title')
+    : branches.find(b => b.id === selectedBranchId)?.branch_name_tr || t('admin.dashboard.title');
 
   const dateOptions = {
-    'today': 'Bugün',
-    'last7': 'Son 7 Gün',
-    'last30': 'Son 30 Gün',
-    'thisMonth': 'Bu Ay',
-    'all': 'Tüm Zamanlar'
+    'today': t('customer.today'),
+    'last7': t('customer.last7'),
+    'last30': t('customer.last30'),
+    'thisMonth': t('customer.thisMonth'),
+    'all': t('customer.all')
   };
 
   const getDateIntervals = useCallback(() => {
@@ -346,11 +362,11 @@ const AdminPanel = () => {
         if (r && starCounts[r] !== undefined) starCounts[r]++;
       });
       setRatingDistribution([
-        { name: '5 Yıldız', count: starCounts[5], fill: '#22c55e' },
-        { name: '4 Yıldız', count: starCounts[4], fill: '#4ade80' },
-        { name: '3 Yıldız', count: starCounts[3], fill: '#facc15' },
-        { name: '2 Yıldız', count: starCounts[2], fill: '#f87171' },
-        { name: '1 Yıldız', count: starCounts[1], fill: '#ef4444' },
+        { name: '5 ' + t('feedbackDetail.types.rating'), count: starCounts[5], fill: '#22c55e' },
+        { name: '4 ' + t('feedbackDetail.types.rating'), count: starCounts[4], fill: '#4ade80' },
+        { name: '3 ' + t('feedbackDetail.types.rating'), count: starCounts[3], fill: '#facc15' },
+        { name: '2 ' + t('feedbackDetail.types.rating'), count: starCounts[2], fill: '#f87171' },
+        { name: '1 ' + t('feedbackDetail.types.rating'), count: starCounts[1], fill: '#ef4444' },
       ]);
 
       const typeCounts = {
@@ -359,9 +375,9 @@ const AdminPanel = () => {
         evaluation: currentData.filter(f => ['evaluation', 'rating', 'review'].includes(f.feedback_type)).length
       };
       setFeedbackTypeDistribution([
-        { name: 'Şikayet', count: typeCounts.complaint, fill: '#ef4444' },
-        { name: 'Öneri', count: typeCounts.suggestion, fill: '#3b82f6' },
-        { name: 'Değerlendirme', count: typeCounts.evaluation, fill: '#eab308' }
+        { name: t('feedbackDetail.types.complaint'), count: typeCounts.complaint, fill: '#ef4444' },
+        { name: t('feedbackDetail.types.suggestion'), count: typeCounts.suggestion, fill: '#3b82f6' },
+        { name: t('feedbackDetail.types.evaluation'), count: typeCounts.evaluation, fill: '#eab308' }
       ]);
 
       // 2. RECENT FEEDBACKS (GÜNCELLENMİŞ SORGULU HALİ)
@@ -485,7 +501,7 @@ const AdminPanel = () => {
 
     } catch (error) {
       console.error("Dashboard data fetch error:", error);
-      toast({ variant: "destructive", title: "Bağlantı Hatası", description: "Verileriniz yüklenirken bir sorun oluştu. Lütfen sayfayı yenileyin." });
+      toast({ variant: "destructive", title: t('admin.feedbacks.fetchErrorTitle'), description: t('admin.feedbacks.fetchErrorDesc') });
     } finally {
       setLoading(false);
       setLoadingFeedbacks(false);
@@ -566,7 +582,7 @@ const AdminPanel = () => {
       <div className="mt-4 flex flex-col justify-between gap-6 md:mt-0 md:flex-row md:items-start mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">{displayTitle}</h1>
-          <p className="text-slate-400 text-sm">İşletmenizin anlık performansını ve son aktiviteleri takip edin</p>
+          <p className="text-slate-400 text-sm">{t('admin.dashboard.subtitle')}</p>
         </div>
         <div className="w-full md:w-48 shrink-0">
           <Select value={dateRange} onValueChange={setDateRange}>
@@ -578,17 +594,17 @@ const AdminPanel = () => {
 
       {hasUrgentFeedbacks && (
         <div className="acil-durum-box bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between shadow-[0_0_15px_rgba(220,38,38,0.3)] mb-6">
-          <div className="flex items-center gap-3 animate-pulse"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
-          <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shrink-0" onClick={handleInspectUrgent}>İncele</Button>
+          <div className="flex items-center gap-3 animate-pulse"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">{t('admin.dashboard.urgentAction')}</h3><p className="text-red-300/80 text-xs">{t('admin.dashboard.urgentActionDesc')}</p></div></div>
+          <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shrink-0" onClick={handleInspectUrgent}>{t('admin.dashboard.inspect')}</Button>
         </div>
       )}
 
       {/* 1. KPI KARTLARI */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <SparklineCard title="Toplam Bildirim" value={`${metrics.total.value}`} delta={metrics.total.delta} deltaType={metrics.total.type} icon={MessageSquare} colorClass="bg-blue-500" sparkData={sparklineData.total} loading={loading} hideDelta={dateRange === 'all'} />
-        <SparklineCard title="Bekleyen Şikayet" value={`${metrics.complaints.value}`} delta={metrics.complaints.delta} deltaType={metrics.complaints.type} icon={AlertTriangle} colorClass="bg-red-500" sparkData={sparklineData.complaints} loading={loading} isInverseMetric={true} hideDelta={dateRange === 'all'} />
-        <SparklineCard title="Çözülenler" value={`${metrics.resolved.value}`} delta={metrics.resolved.delta} deltaType={metrics.resolved.type} icon={CheckCircle2} colorClass="bg-green-500" sparkData={sparklineData.resolved} loading={loading} hideDelta={dateRange === 'all'} />
-        <SparklineCard title="Ort. Puan" value={metrics.rating.value} delta={metrics.rating.delta} deltaType={metrics.rating.type} icon={Star} colorClass="bg-yellow-500" sparkData={sparklineData.rating} loading={loading} hideDelta={dateRange === 'all'} />
+        <SparklineCard title={t('admin.dashboard.metrics.total')} value={`${metrics.total.value}`} delta={metrics.total.delta} deltaType={metrics.total.type} icon={MessageSquare} colorClass="bg-blue-500" sparkData={sparklineData.total} loading={loading} hideDelta={dateRange === 'all'} />
+        <SparklineCard title={t('admin.dashboard.metrics.pending')} value={`${metrics.complaints.value}`} delta={metrics.complaints.delta} deltaType={metrics.complaints.type} icon={AlertTriangle} colorClass="bg-red-500" sparkData={sparklineData.complaints} loading={loading} isInverseMetric={true} hideDelta={dateRange === 'all'} />
+        <SparklineCard title={t('admin.dashboard.metrics.resolved')} value={`${metrics.resolved.value}`} delta={metrics.resolved.delta} deltaType={metrics.resolved.type} icon={CheckCircle2} colorClass="bg-green-500" sparkData={sparklineData.resolved} loading={loading} hideDelta={dateRange === 'all'} />
+        <SparklineCard title={t('admin.dashboard.metrics.avgRating')} value={metrics.rating.value} delta={metrics.rating.delta} deltaType={metrics.rating.type} icon={Star} colorClass="bg-yellow-500" sparkData={sparklineData.rating} loading={loading} hideDelta={dateRange === 'all'} />
       </div>
 
       {/* 2. GRAFİKLER */}
@@ -598,20 +614,20 @@ const AdminPanel = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div className="flex items-center">
                 <div>
-                  <h2 className="text-white font-bold text-xl mb-1">Hızlı Bakış</h2>
-                  <p className="text-slate-400 text-sm">Gelen bildirimlerin dağılımı</p>
+                  <h2 className="text-white font-bold text-xl mb-1">{t('admin.dashboard.quickLook')}</h2>
+                  <p className="text-slate-400 text-sm">{t('admin.dashboard.distributionDesc')}</p>
                 </div>
               </div>
               <TabsList className="bg-slate-800 border-slate-700 w-full grid grid-cols-2 h-auto p-1 sm:w-auto sm:flex sm:h-10">
-                <TabsTrigger value="stars" className="text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white text-xs sm:text-sm transition-all"><Star className="w-4 h-4 mr-2" />Yıldız Dağılımı</TabsTrigger>
-                <TabsTrigger value="types" className="text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white text-xs sm:text-sm transition-all"><MessageSquare className="w-4 h-4 mr-2" />Form Türleri</TabsTrigger>
+                <TabsTrigger value="stars" className="text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white text-xs sm:text-sm transition-all"><Star className="w-4 h-4 mr-2" />{t('admin.dashboard.starDistribution')}</TabsTrigger>
+                <TabsTrigger value="types" className="text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white text-xs sm:text-sm transition-all"><MessageSquare className="w-4 h-4 mr-2" />{t('admin.dashboard.formTypes')}</TabsTrigger>
               </TabsList>
             </div>
 
             <TabsContent value="stars" className="mt-0">
               <div className="admin-panel-chart w-full h-[250px] sm:h-[300px]">
                 {loading ? (<div className="h-full w-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-slate-500 animate-spin" /></div>) : !hasData ? (
-                  <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><Star className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz değerlendirme almadınız</h3></div>
+                  <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><Star className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">{t('admin.dashboard.noEvaluation')}</h3></div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <RechartsBarChart layout="vertical" data={ratingDistribution} margin={{ top: 5, right: 30, left: 0, bottom: 5 }} barSize={24}>
@@ -629,7 +645,7 @@ const AdminPanel = () => {
             <TabsContent value="types" className="mt-0">
               <div className="admin-panel-chart w-full h-[250px] sm:h-[300px]">
                 {loading ? (<div className="h-full w-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-slate-500 animate-spin" /></div>) : !hasData ? (
-                  <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><MessageSquare className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">Henüz geri bildirim almadınız</h3></div>
+                  <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg bg-slate-950/50"><MessageSquare className="w-12 h-12 text-slate-600 mb-3 opacity-50" /><h3 className="text-lg font-medium text-slate-300">{t('admin.dashboard.noFeedback')}</h3></div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <RechartsBarChart layout="vertical" data={feedbackTypeDistribution} margin={{ top: 5, right: 30, left: 0, bottom: 5 }} barSize={24}>
@@ -651,21 +667,21 @@ const AdminPanel = () => {
       <ComponentErrorBoundary name="Recent Activities">
         <div ref={feedbackSectionRef} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden p-6 relative group">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-white">Son Aktiviteler</h2>
+            <h2 className="text-xl font-bold text-white">{t('admin.dashboard.recentActivities')}</h2>
             <div className="flex gap-2">
               <Button variant="outline" size="icon" onClick={handleRefreshFeedbacks} disabled={isRefreshing} className="bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-teal-400 hover:border-teal-500/50 hover:shadow-[0_0_15px_rgba(45,212,191,0.2)] transition-all duration-300">
                 <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
               </Button>
-              <Button variant="ghost" className="text-slate-400 hover:text-purple-400 hover:bg-purple-400/10 font-medium transition-all" onClick={() => navigate('/admin-panel/feedbacks')}>Tümünü Gör <ChevronRight className="w-4 h-4 ml-1" /></Button>
+              <Button variant="ghost" className="text-slate-400 hover:text-purple-400 hover:bg-purple-400/10 font-medium transition-all" onClick={() => navigate('/admin-panel/feedbacks')}>{t('admin.dashboard.seeAll')} <ChevronRight className="w-4 h-4 ml-1" /></Button>
             </div>
           </div>
 
           <div className={cn("transition-opacity duration-300", loadingFeedbacks ? "opacity-50 pointer-events-none" : "opacity-100")}>
-            {loadingFeedbacks && !recentFeedbacks.length ? (<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>) : recentFeedbacks.length === 0 ? (<div className="text-center py-8 text-slate-500">Henüz aktivite yok.</div>) : (
+            {loadingFeedbacks && !recentFeedbacks.length ? (<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>) : recentFeedbacks.length === 0 ? (<div className="text-center py-8 text-slate-500">{t('admin.dashboard.noActivity')}</div>) : (
               <div className="space-y-3">
                 {recentFeedbacks.map((f) => {
                   const customerName = getCustomerData(f, 'name');
-                  const smartName = formatCustomerName(customerName);
+                  const smartName = formatCustomerName(customerName, t('customer.guest'));
 
                   const isVip = f.flag_vip_customer || f.customer_profiles?.flag_vip_customer;
                   const isSensitive = f.flag_sensitive_customer || f.customer_profiles?.flag_sensitive_customer;
@@ -682,20 +698,20 @@ const AdminPanel = () => {
                       <div className="flex flex-col md:flex-row gap-4 items-start">
                         <div className="flex-1 w-full min-w-0 pr-0 md:pr-4">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            {getTypeBadge(f.feedback_type)}
-                            {getStatusBadge(f.status)}
+                            {getTypeBadge(f.feedback_type, t)}
+                            {getStatusBadge(f.status, t)}
                             {f.customer_age_group && (
                               <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-indigo-500/10 text-indigo-400 border-indigo-500/20 whitespace-nowrap">
-                                {f.customer_age_group} Yaş
+                                {f.customer_age_group} {t('feedbackDetail.ageGroup')}
                               </Badge>
                             )}
-                            <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0"><Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                            <Badge variant="outline" className="text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[200px]">{f.branches?.branch_name_tr || "Şube Bilinmiyor"}</Badge>
+                            <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0" translate="no"><Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleString(i18n.language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                            <Badge variant="outline" className="text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[200px]" translate="no">{f.branches?.branch_name_tr || t('customer.unknown')}</Badge>
                           </div>
                           <div className="flex gap-3 mt-1">
                             <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${f.feedback_type === 'complaint' ? 'bg-red-500' : f.feedback_type === 'suggestion' ? 'bg-blue-500' : 'bg-yellow-500'}`} />
                             <div className="flex-1 min-w-0">
-                              <p className="text-slate-200 text-sm line-clamp-2 leading-relaxed break-all">{f.message || <span className="text-slate-600 italic">Mesaj içeriği yok</span>}</p>
+                              <p className="text-slate-200 text-sm line-clamp-2 leading-relaxed break-all">{f.message || <span className="text-slate-600 italic">{t('admin.feedbacks.noMessage')}</span>}</p>
                               {/* 🟢 YILDIZ SADECE GENEL DEĞERLENDİRME VEYA REVIEW İSE */}
                               {(f.feedback_type === 'review' || Number(f.general_eval_rating) > 0) && rating > 0 && (
                                 <div className="flex items-center gap-0.5 mt-1.5">
@@ -711,15 +727,15 @@ const AdminPanel = () => {
                           <div className="flex items-center gap-2 group/customer hover:bg-slate-800 p-1.5 rounded-lg -ml-1.5 md:ml-0 transition-colors mr-auto md:mr-0 cursor-pointer" onClick={(e) => handleOpenCustomerProfile(e, f)}>
                             <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 group-hover/customer:border-indigo-500/50 transition-colors"><User className="w-4 h-4 text-slate-400 group-hover/customer:text-indigo-400" /></div>
                             <div className="flex flex-col items-start md:items-end">
-                              <span className={cn("text-sm font-medium transition-colors truncate max-w-[140px] flex items-center gap-1", hasCustomerProfileNote ? "text-blue-400 font-bold" : "text-slate-300 group-hover/customer:text-indigo-300")} title={hasCustomerProfileNote ? "Müşteri Notu Mevcut" : customerName}>
+                              <span className={cn("text-sm font-medium transition-colors truncate max-w-[140px] flex items-center gap-1", hasCustomerProfileNote ? "text-blue-400 font-bold" : "text-slate-300 group-hover/customer:text-indigo-300")} title={hasCustomerProfileNote ? t('admin.feedbacks.customerNotePresent') : customerName}>
                                 {smartName}
                               </span>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
-                            {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
-                            {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
-                            {hasManagerNote && (<div className="feedback-note-icon flex items-center justify-center w-7 h-7 rounded-md bg-amber-500/25 text-amber-500 border-2 border-amber-500/50 shadow-sm" title="Yönetici notu var"><StickyNote className="w-4 h-4 fill-current" /></div>)}
+                            {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">{t('admin.feedbacks.generalEvalShort')}</span></div>)}
+                            {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">{t('admin.feedbacks.image')}</span></div>)}
+                            {hasManagerNote && (<div className="feedback-note-icon flex items-center justify-center w-7 h-7 rounded-md bg-amber-500/25 text-amber-500 border-2 border-amber-500/50 shadow-sm" title={t('feedbackDetail.detail.managerNote')}><StickyNote className="w-4 h-4 fill-current" /></div>)}
                             {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}
                             {isSensitive && (<div className="flex items-center gap-1 px-3 py-1 bg-orange-900/30 rounded text-xs text-orange-300 border border-orange-500/30 font-medium"><AlertTriangle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Hassas</span></div>)}
 
@@ -727,7 +743,7 @@ const AdminPanel = () => {
                             {f.guest_contact_info && (
                               <div
                                 className="flex items-center justify-center w-7 h-7 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm"
-                                title="Misafir İletişim İsteği Var"
+                                title={t('feedbackDetail.detail.guestRequest')}
                               >
                                 <Phone className="w-3.5 h-3.5" />
                               </div>

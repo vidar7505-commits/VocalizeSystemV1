@@ -23,7 +23,8 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
-import { texts } from './customer/customerTranslations';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import {
   isOlderThan48Hours, getStatusBadge, formatDate,
   extractCoordsFromMapsUrl, calculateDistance, getBranchCoords
@@ -52,7 +53,9 @@ export default function CustomerPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
   const [user, setUser] = useState(null);
-  const [language, setLanguage] = useState(() => localStorage.getItem('vocalize_lang') || 'tr');
+  const { t, i18n } = useTranslation();
+  const language = i18n.language.split('-')[0] || 'tr';
+  const setLanguage = (newLang) => i18n.changeLanguage(newLang);
 
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [authDefaultTab, setAuthDefaultTab] = useState('login');
@@ -119,6 +122,9 @@ export default function CustomerPanel() {
   const branchName = branches.find(b => b.id === selectedBranch)?.branch_name_tr || qrInfo?.branch_name;
 
   const lastLoggedRef = useRef({ business: null, branch: null });
+
+  // Use translation helper
+  const T = useCallback((key, opts = {}) => t(`customer.${key}`, { ...opts, returnObjects: true }), [t]);
 
   // 🟢 ANALYTICS (GÜNCELLENDİ: QR ve WEB AYRILDI + iOS localStorage backup)
   useEffect(() => {
@@ -189,10 +195,12 @@ export default function CustomerPanel() {
   }, [businessParam, branchParam, qrParam, location.pathname]);
 
 
-  const t = useMemo(() => texts[language] || texts.tr, [language]);
+  // Existing 't' variable was used for translations.
+  // We'll replace it with T calls or rebind it.
+  const tc = useMemo(() => t('customer', { returnObjects: true }) || {}, [t]);
 
   useEffect(() => {
-    localStorage.setItem('vocalize_lang', language);
+    // Sync with localStorage is already handled by i18next-browser-languagedetector
   }, [language]);
 
   // --- INITIALIZATION ---
@@ -224,7 +232,7 @@ export default function CustomerPanel() {
             (authUser.user_metadata?.first_name ? `${authUser.user_metadata.first_name} ${authUser.user_metadata.last_name}` : '');
 
           setUserProfile({
-            name: profile?.name || metaName || 'Kullanıcı',
+            name: profile?.name || metaName || t('customer.user'),
             email: authUser.email,
             phone: profile?.phone || authUser.user_metadata?.phone,
             age_group: profile?.age_group // 🟢 Add age_group to state
@@ -610,8 +618,8 @@ export default function CustomerPanel() {
     } catch (error) {
       console.error('Age update error:', error);
       toast({
-        title: "Hata",
-        description: "Bir hata oluştu.",
+        title: t('common.error'),
+        description: t('customer.support.errorDesc'),
         variant: "destructive"
       });
     }
@@ -719,7 +727,7 @@ export default function CustomerPanel() {
 
       const branchCounts = {};
       feedbacks.forEach(f => {
-        const branchName = f.branches?.branch_name_tr || t.unknown;
+        const branchName = f.branches?.branch_name_tr || tc.unknown;
         branchCounts[branchName] = (branchCounts[branchName] || 0) + 1;
       });
       const topBranch = Object.keys(branchCounts).sort((a, b) => branchCounts[b] - branchCounts[a])[0] || '';
@@ -733,17 +741,17 @@ export default function CustomerPanel() {
       feedbacks
         .filter(f => f.feedback_type === 'complaint')
         .forEach(f => {
-          const branchName = f.branches?.branch_name_tr || t.unknown;
+          const branchName = f.branches?.branch_name_tr || tc.unknown;
           complaintsByBranch[branchName] = (complaintsByBranch[branchName] || 0) + 1;
         });
       const worstBranch = Object.keys(complaintsByBranch).sort((a, b) => complaintsByBranch[b] - complaintsByBranch[a])[0] || '';
       const worstBranchCount = complaintsByBranch[worstBranch] || 0;
 
-      let userTitle = t.userTitle.newVoice;
+      let userTitle = tc.userTitle.newVoice;
       if (total >= 6 && total < 20) {
-        userTitle = t.userTitle.experiencedObserver;
+        userTitle = tc.userTitle.experiencedObserver;
       } else if (total >= 20) {
-        userTitle = t.userTitle.vocalizAmbassador;
+        userTitle = tc.userTitle.vocalizAmbassador;
       }
 
       setStats({
@@ -817,8 +825,8 @@ export default function CustomerPanel() {
 
       if (!branchesData || branchesData.length === 0) {
         toast({
-          title: language === 'tr' ? 'Uyarı' : 'Warning',
-          description: language === 'tr' ? 'Bu işletme için şube bulunamadı' : 'No branches found for this business',
+          title: t('common.error'),
+          description: t('admin.header.noBranchFound'),
           variant: "destructive"
         });
         // Don't close modal immediately to avoid jarring UX, maybe show empty state
@@ -828,7 +836,7 @@ export default function CustomerPanel() {
     } catch (err) {
       console.error('Error loading branches:', err);
       toast({
-        title: language === 'tr' ? 'Hata' : 'Error',
+        title: t('common.error'),
         description: language === 'tr' ? 'Şubeler yüklenirken hata oluştu' : 'Error loading branches',
         variant: "destructive"
       });
@@ -947,7 +955,7 @@ export default function CustomerPanel() {
         await loadPersistedQrs(); // Reloads from localStorage for guests
 
         toast({
-          title: newPinStatus ? (language === 'tr' ? 'Sabitlendi' : 'Pinned') : (language === 'tr' ? 'Sabitlemeden Kaldırıldı' : 'Unpinned'),
+          title: newPinStatus ? t('common.success') : t('common.success'),
           description: newPinStatus ? (language === 'tr' ? 'Şube sabitlendi' : 'Branch pinned') : (language === 'tr' ? 'Şube sabitlikten çıkarıldı' : 'Branch unpinned'),
           className: "bg-teal-600 text-white border-none"
         });
@@ -995,7 +1003,7 @@ export default function CustomerPanel() {
 
         await loadPersistedQrs();
         toast({
-          title: language === 'tr' ? 'Sabitlendi' : 'Pinned',
+          title: t('common.success'),
           description: language === 'tr' ? 'Şube sabitlendi' : 'Branch pinned',
           className: "bg-teal-600 text-white border-none"
         });
@@ -1014,7 +1022,7 @@ export default function CustomerPanel() {
         await loadPersistedQrs();
 
         toast({
-          title: newPinStatus ? (language === 'tr' ? 'Sabitlendi' : 'Pinned') : (language === 'tr' ? 'Sabitlemeden Kaldırıldı' : 'Unpinned'),
+          title: t('common.success'),
           description: newPinStatus ? (language === 'tr' ? 'Şube sabitlendi' : 'Branch pinned') : (language === 'tr' ? 'Şube sabitlikten çıkarıldı' : 'Branch unpinned'),
           className: "bg-teal-600 text-white border-none"
         });
@@ -1118,14 +1126,14 @@ export default function CustomerPanel() {
     }
 
     if (!selectedBusiness && !fromQR) {
-      toast({ title: t.warningTitle || "Uyarı", description: t.selectBusiness, className: "bg-slate-800 text-white border-none" });
+      toast({ title: tc.warningTitle || "Uyarı", description: tc.selectBusiness, className: "bg-slate-800 text-white border-none" });
       return;
     }
     const targetBusiness = selectedBusiness || qrInfo?.business_id;
     const targetBranch = selectedBranch || qrInfo?.branch_id;
 
     if (!targetBusiness || !targetBranch) {
-      toast({ title: "Hata", description: "İşletme bilgisi eksik.", variant: "destructive" });
+      toast({ title: t('common.error'), description: t('common.noData'), variant: "destructive" });
       return;
     }
 
@@ -1191,7 +1199,7 @@ export default function CustomerPanel() {
   const handleBusinessSuggestion = async (e) => {
     e.preventDefault();
     if (!suggestedBusinessName.trim() || !suggestedBusinessLocation.trim()) {
-      toast({ title: t.businessSuggestion.errorMsg, variant: "destructive" });
+      toast({ title: tc.businessSuggestion.errorMsg, variant: "destructive" });
       return;
     }
     setSuggestingBusiness(true);
@@ -1203,12 +1211,12 @@ export default function CustomerPanel() {
         origin: 'business_suggestion'
       });
       if (error) throw error;
-      toast({ title: t.businessSuggestion.successMsg, className: "bg-teal-600 text-white border-none" });
+      toast({ title: tc.businessSuggestion.successMsg, className: "bg-teal-600 text-white border-none" });
       setSuggestedBusinessName('');
       setSuggestedBusinessLocation('');
     } catch (err) {
       console.error('Error:', err);
-      toast({ title: language === 'tr' ? 'Hata' : 'Error', description: language === 'tr' ? 'Bir hata oluştu, lütfen tekrar deneyin.' : 'An error occurred, please try again.', variant: "destructive" });
+      toast({ title: t('common.error'), description: t('customer.support.errorDesc'), variant: "destructive" });
     } finally {
       setSuggestingBusiness(false);
     }
@@ -1261,8 +1269,8 @@ export default function CustomerPanel() {
     <div className="bg-slate-900/50 border border-dashed border-slate-700 rounded-xl p-8 md:p-12 text-center animate-in fade-in zoom-in-95 duration-500">
       <div className="bg-slate-800/80 p-6 rounded-full inline-flex mb-6">{icon || <UserPlus className="h-10 w-10 text-teal-500" />}</div>
       <h3 className="text-xl md:text-2xl font-bold text-white mb-3 break-words">{title}</h3>
-      <p className="text-slate-400 mb-8 max-w-lg mx-auto break-words leading-relaxed">{t.guestCTA.subtext}</p>
-      <Button onClick={handleRegisterClick} className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-6 rounded-xl font-bold text-lg hover:scale-105"><UserPlus className="mr-2 h-5 w-5" /> {t.guestCTA.button}</Button>
+      <p className="text-slate-400 mb-8 max-w-lg mx-auto break-words leading-relaxed">{tc.guestCTA.subtext}</p>
+      <Button onClick={handleRegisterClick} className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-6 rounded-xl font-bold text-lg hover:scale-105"><UserPlus className="mr-2 h-5 w-5" /> {tc.guestCTA.button}</Button>
     </div>
   );
 
@@ -1271,9 +1279,9 @@ export default function CustomerPanel() {
       <div className="bg-slate-800/80 p-8 rounded-full inline-flex mb-6 shadow-lg">
         <QrCode className="h-12 w-12 text-teal-500 animate-pulse" />
       </div>
-      <h3 className="text-2xl md:text-3xl font-bold text-white mb-4 break-words">{t.noVisitedBusiness}</h3>
+      <h3 className="text-2xl md:text-3xl font-bold text-white mb-4 break-words">{tc.noVisitedBusiness}</h3>
       <p className="text-slate-400 mb-2 max-w-lg mx-auto break-words leading-relaxed text-base">
-        {t.startWithQR}
+        {tc.startWithQR}
       </p>
       <p className="text-slate-500 text-sm max-w-lg mx-auto break-words leading-relaxed">
         {language === 'tr' ? 'İşletmelerin QR kodlarını okutarak başlayabilirsiniz.' : 'You can get started by scanning QR codes from businesses.'}
@@ -1296,23 +1304,20 @@ export default function CustomerPanel() {
             <div className="flex items-center gap-3"><img src={logoUrl} alt="Vocalize" className="h-10 w-10 md:h-12 md:w-12 object-contain" /><h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Vocalize</h1></div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex bg-slate-800 rounded-lg p-1">
-              <button onClick={() => setLanguage('tr')} className={`px-2 md:px-3 py-1 text-xs md:text-sm rounded-md transition-colors font-medium ${language === 'tr' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'}`}>TR</button>
-              <button onClick={() => setLanguage('en')} className={`px-2 md:px-3 py-1 text-xs md:text-sm rounded-md transition-colors font-medium ${language === 'en' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'}`}>EN</button>
-            </div>
+            <LanguageSwitcher showName={false} className="h-9 w-12 px-0" />
           </div>
         </div>
       </header>
 
       <aside className={`hidden md:flex flex-col fixed left-0 top-16 h-[calc(100vh-4rem)] bg-slate-900 border-r border-slate-800 z-20 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-0 overflow-hidden'}`}>
         <nav className="p-4 space-y-2 flex-1">
-          <button onClick={() => setCurrentView('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${currentView === 'dashboard' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><Home className="h-5 w-5" /><span>{t.home}</span></button>
-          <button onClick={() => setCurrentView('feedbacks')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${currentView === 'feedbacks' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><List className="h-5 w-5" /><span>{t.myFeedbacks}</span></button>
-          <button onClick={() => setCurrentView('stats')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${currentView === 'stats' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><TrendingUp className="h-5 w-5" /><span>{t.stats}</span></button>
+          <button onClick={() => setCurrentView('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${currentView === 'dashboard' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><Home className="h-5 w-5" /><span>{tc.home}</span></button>
+          <button onClick={() => setCurrentView('feedbacks')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${currentView === 'feedbacks' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><List className="h-5 w-5" /><span>{tc.myFeedbacks}</span></button>
+          <button onClick={() => setCurrentView('stats')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${currentView === 'stats' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><TrendingUp className="h-5 w-5" /><span>{tc.stats}</span></button>
         </nav>
         <div className="p-4 border-t border-slate-800 bg-slate-900/50 space-y-2">
-          <button onClick={() => setSupportModalOpen(true)} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors font-medium"><MessageCircle className="h-5 w-5 text-teal-500" /><span>{t.supportItem}</span></button>
-          <button onClick={() => setShowSettingsModal(true)} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors font-medium"><Settings className="h-5 w-5" /><span>Ayarlar</span></button>
+          <button onClick={() => setSupportModalOpen(true)} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors font-medium"><MessageCircle className="h-5 w-5 text-teal-500" /><span>{tc.supportItem}</span></button>
+          <button onClick={() => setShowSettingsModal(true)} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors font-medium"><Settings className="h-5 w-5" /><span>{t('common.settings')}</span></button>
         </div>
       </aside>
 
@@ -1322,8 +1327,8 @@ export default function CustomerPanel() {
             <div className="animate-in fade-in duration-500">
               <ComponentErrorBoundary name="Dashboard Header">
                 <div className="mb-8">
-                  <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 break-words">{isGuest ? t.guestWelcome : `${t.welcome}${user?.user_metadata?.first_name ? ', ' + user.user_metadata.first_name : ''}`}</h1>
-                  <p className="text-slate-400 text-sm md:text-base">{t.subtitle}</p>
+                  <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 break-words">{isGuest ? tc.guestWelcome : `${tc.welcome}${user?.user_metadata?.first_name ? ', ' + user.user_metadata.first_name : ''}`}</h1>
+                  <p className="text-slate-400 text-sm md:text-base">{tc.subtitle}</p>
                 </div>
               </ComponentErrorBoundary>
 
@@ -1333,7 +1338,7 @@ export default function CustomerPanel() {
                     <div className="flex items-center gap-4">
                       <div className="bg-green-500/20 p-3 rounded-full shrink-0"><Building2 className="h-8 w-8 text-green-400" /></div>
                       <div>
-                        <h3 className="text-white font-bold text-lg break-words">{businessName || 'İşletme Seçili'}</h3>
+                        <h3 className="text-white font-bold text-lg break-words">{businessName || t('customer.businessSelected')}</h3>
                         {branchName && <p className="text-green-200 text-sm break-words">{branchName}</p>}
                         <button
                           onClick={() => {
@@ -1352,7 +1357,7 @@ export default function CustomerPanel() {
                           }}
                           className="text-xs text-green-300 underline hover:text-green-200 mt-1 block"
                         >
-                          {t.changeInfo}
+                          {tc.changeInfo}
                         </button>
                       </div>
                     </div>
@@ -1368,8 +1373,8 @@ export default function CustomerPanel() {
                             <AlertTriangle className="h-7 w-7 text-red-100 group-hover:text-white transition-colors" />
                           </div>
                           <div className="text-left">
-                            <h3 className="font-bold text-red-50 text-base group-hover:text-white transition-colors">{t.complaint}</h3>
-                            <p className="text-xs text-red-100/80 group-hover:text-red-50 transition-colors">{t.complaintDesc}</p>
+                            <h3 className="font-bold text-red-50 text-base group-hover:text-white transition-colors">{tc.complaint}</h3>
+                            <p className="text-xs text-red-100/80 group-hover:text-red-50 transition-colors">{tc.complaintDesc}</p>
                           </div>
                         </div>
                       </button>
@@ -1384,8 +1389,8 @@ export default function CustomerPanel() {
                             <Lightbulb className="h-7 w-7 text-blue-100 group-hover:text-white transition-colors" />
                           </div>
                           <div className="text-left">
-                            <h3 className="font-bold text-blue-50 text-base group-hover:text-white transition-colors">{t.suggestion}</h3>
-                            <p className="text-xs text-blue-100/80 group-hover:text-blue-50 transition-colors">{t.suggestionDesc}</p>
+                            <h3 className="font-bold text-blue-50 text-base group-hover:text-white transition-colors">{tc.suggestion}</h3>
+                            <p className="text-xs text-blue-100/80 group-hover:text-blue-50 transition-colors">{tc.suggestionDesc}</p>
                           </div>
                         </div>
                       </button>
@@ -1400,8 +1405,8 @@ export default function CustomerPanel() {
                             <Star className="h-7 w-7 text-yellow-100 group-hover:text-white transition-colors" />
                           </div>
                           <div className="text-left">
-                            <h3 className="font-bold text-yellow-50 text-base group-hover:text-white transition-colors">{t.review}</h3>
-                            <p className="text-xs text-yellow-100/80 group-hover:text-yellow-50 transition-colors">{t.reviewDesc}</p>
+                            <h3 className="font-bold text-yellow-50 text-base group-hover:text-white transition-colors">{tc.review}</h3>
+                            <p className="text-xs text-yellow-100/80 group-hover:text-yellow-50 transition-colors">{tc.reviewDesc}</p>
                           </div>
                         </div>
                       </button>
@@ -1409,11 +1414,11 @@ export default function CustomerPanel() {
                   </div>
                 ) : (
                   <>
-                    <div className="bg-slate-800/30 border border-slate-700/20 rounded-lg p-4 mb-6"><div className="text-slate-400 text-sm leading-relaxed text-center space-y-1"><p>{t.qrAutoDetect1}</p><p>{t.qrAutoDetect2}</p><p className="text-slate-500 text-xs opacity-70">{t.qrAutoDetect3}</p></div></div>
+                    <div className="bg-slate-800/30 border border-slate-700/20 rounded-lg p-4 mb-6"><div className="text-slate-400 text-sm leading-relaxed text-center space-y-1"><p>{tc.qrAutoDetect1}</p><p>{tc.qrAutoDetect2}</p><p className="text-slate-500 text-xs opacity-70">{tc.qrAutoDetect3}</p></div></div>
 
                     <div className="mb-8 relative group">
 
-                      <h2 className="text-2xl font-bold text-white mb-6">{t.visitedBusinesses}</h2>
+                      <h2 className="text-2xl font-bold text-white mb-6">{tc.visitedBusinesses}</h2>
                       {businesses.length === 0 ? (
                         <EmptyStateVisitedBusinesses />
                       ) : (
@@ -1434,7 +1439,7 @@ export default function CustomerPanel() {
                                 {biz.business_name}
                               </h3>
                               <p className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
-                                {t.selectBranchForFeedback}
+                                {tc.selectBranchForFeedback}
                               </p>
                             </button>
                           ))}
@@ -1446,7 +1451,7 @@ export default function CustomerPanel() {
                       <>
                         <div className="bg-slate-800/30 border border-slate-700/20 rounded-lg p-4 my-8">
                           <div className="text-slate-400 text-sm leading-relaxed text-center">
-                            <p>{t.infoBox}</p>
+                            <p>{tc.infoBox}</p>
                           </div>
                         </div>
                       </>
@@ -1462,9 +1467,9 @@ export default function CustomerPanel() {
                     <div className="flex items-start gap-4">
                       <Info className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1" />
                       <div>
-                        <h3 className="text-white font-semibold mb-2">{t.guestTracking}</h3>
-                        <p className="text-slate-300 text-sm mb-4 break-words">{t.guestTrackingDesc}</p>
-                        <button onClick={handleRegisterClick} className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">{t.register}</button>
+                        <h3 className="text-white font-semibold mb-2">{tc.guestTracking}</h3>
+                        <p className="text-slate-300 text-sm mb-4 break-words">{tc.guestTrackingDesc}</p>
+                        <button onClick={handleRegisterClick} className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">{tc.register}</button>
                       </div>
                     </div>
                   </div>
@@ -1474,7 +1479,7 @@ export default function CustomerPanel() {
               {businesses.length > 0 && (
                 <div className="mt-8 bg-red-500/20 border-l-4 border-red-500 p-4 rounded-r-lg flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-300 break-words leading-relaxed">{t.warningText}</p>
+                  <p className="text-sm text-red-300 break-words leading-relaxed">{tc.warningText}</p>
                 </div>
               )}
             </div>
@@ -1483,46 +1488,46 @@ export default function CustomerPanel() {
           {currentView === 'feedbacks' && (
             <div className="animate-in fade-in duration-500">
               <ComponentErrorBoundary name="Feedbacks Header & Filters">
-                <div className="mb-8"><h1 className="text-3xl md:text-4xl font-bold text-white mb-2 break-words">{t.myFeedbacks}</h1><p className="text-slate-400">{t.allFeedbacks}</p></div>
+                <div className="mb-8"><h1 className="text-3xl md:text-4xl font-bold text-white mb-2 break-words">{tc.myFeedbacks}</h1><p className="text-slate-400">{tc.allFeedbacks}</p></div>
                 {isGuest ? null : (
                   <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 mb-6 flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
                     <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4 flex-1">
-                      <div className="flex flex-col w-full md:max-w-xs"><label className="text-xs text-slate-400 mb-1 font-semibold uppercase ml-1">{t.formType}</label><div className="relative"><select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition appearance-none pr-10 font-medium"><option value="all">{t.all}</option><option value="complaint">🔴 {t.complaintBadge}</option><option value="suggestion">💡 {t.suggestionBadge}</option><option value="review">⭐ {t.reviewBadge}</option></select><ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" /></div></div>
+                      <div className="flex flex-col w-full md:max-w-xs"><label className="text-xs text-slate-400 mb-1 font-semibold uppercase ml-1">{tc.formType}</label><div className="relative"><select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition appearance-none pr-10 font-medium"><option value="all">{tc.all}</option><option value="complaint">🔴 {tc.complaintBadge}</option><option value="suggestion">💡 {tc.suggestionBadge}</option><option value="review">⭐ {tc.reviewBadge}</option></select><ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" /></div></div>
                     </div>
                     <div className="w-full md:w-auto">
                       <Popover>
                         <PopoverTrigger asChild>
                           <button className={`w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 ${activeFilterCount > 0 ? 'bg-teal-600 text-white hover:bg-teal-700 shadow-lg shadow-teal-900/20' : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'}`}>
-                            <Filter className="h-4 w-4" /><span>{t.advancedFilter}</span>{activeFilterCount > 0 && <span className="bg-teal-500/20 text-teal-400 border border-teal-500/30 text-xs font-bold px-2 py-0.5 rounded-full ml-1">{activeFilterCount}</span>}
+                            <Filter className="h-4 w-4" /><span>{tc.advancedFilter}</span>{activeFilterCount > 0 && <span className="bg-teal-500/20 text-teal-400 border border-teal-500/30 text-xs font-bold px-2 py-0.5 rounded-full ml-1">{activeFilterCount}</span>}
                           </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 bg-slate-800 border-slate-700 text-white p-4">
                           <div className="space-y-4">
                             <div className="space-y-2">
-                              <h4 className="font-medium text-sm text-slate-300">{t.branch}</h4>
+                              <h4 className="font-medium text-sm text-slate-300">{tc.branch}</h4>
                               <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-md px-3 py-2 text-sm text-white">
-                                <option value="all">{t.filterAllBranches}</option>
+                                <option value="all">{tc.filterAllBranches}</option>
                                 {uniqueBranches.map(b => (<option key={b} value={b}>{b}</option>))}
                               </select>
                             </div>
                             <div className="space-y-2">
-                              <h4 className="font-medium text-sm text-slate-300">{t.status}</h4>
+                              <h4 className="font-medium text-sm text-slate-300">{tc.status}</h4>
                               <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-md px-3 py-2 text-sm text-white">
-                                <option value="all">{t.filterAllStatuses}</option>
-                                <option value="new">{t.delivered}</option>
-                                <option value="in_progress">{t.reviewing}</option>
-                                <option value="resolved">{t.resolved}</option>
+                                <option value="all">{tc.filterAllStatuses}</option>
+                                <option value="new">{tc.delivered}</option>
+                                <option value="in_progress">{tc.reviewing}</option>
+                                <option value="resolved">{tc.resolved}</option>
                               </select>
                             </div>
                             <div className="space-y-2">
-                              <h4 className="font-medium text-sm text-slate-300">{t.sortBy}</h4>
+                              <h4 className="font-medium text-sm text-slate-300">{tc.sortBy}</h4>
                               <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded-md px-3 py-2 text-sm text-white">
-                                <option value="newest">{t.newest}</option>
-                                <option value="oldest">{t.oldest}</option>
+                                <option value="newest">{tc.newest}</option>
+                                <option value="oldest">{tc.oldest}</option>
                               </select>
                             </div>
                             <div className="pt-2">
-                              <Button variant="outline" size="sm" onClick={() => { setFilterBranch('all'); setFilterStatus('all'); setSortOrder('newest'); }} className="w-full border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white h-8 text-xs">{t.cancel}</Button>
+                              <Button variant="outline" size="sm" onClick={() => { setFilterBranch('all'); setFilterStatus('all'); setSortOrder('newest'); }} className="w-full border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white h-8 text-xs">{tc.cancel}</Button>
                             </div>
                           </div>
                         </PopoverContent>
@@ -1534,23 +1539,23 @@ export default function CustomerPanel() {
 
               <ComponentErrorBoundary name="Feedbacks List">
                 {isGuest ? (
-                  <GuestCTA title={t.guestCTA.feedbackTitle} />
+                  <GuestCTA title={tc.guestCTA.feedbackTitle} />
                 ) : (
                   <div className="relative group">
 
                     {feedbackList.length === 0 ? (
                       <div className="bg-slate-900/50 border border-dashed border-slate-700 rounded-xl p-12 text-center">
                         <MessageSquare className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-white mb-2 break-words">{t.noFeedbacks}</h3>
-                        <p className="text-slate-400 mb-6 break-words">{t.sendFirstFeedback}</p>
-                        <button onClick={() => setCurrentView('dashboard')} className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-semibold transition">{t.sendFeedbackBtn}</button>
+                        <h3 className="text-xl font-semibold text-white mb-2 break-words">{tc.noFeedbacks}</h3>
+                        <p className="text-slate-400 mb-6 break-words">{tc.sendFirstFeedback}</p>
+                        <button onClick={() => setCurrentView('dashboard')} className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-semibold transition">{tc.sendFeedbackBtn}</button>
                       </div>
                     ) : (
                       <div className="space-y-4">
                         {filteredAndSortedFeedbacks.length === 0 ? (
                           <div className="text-center py-12 bg-slate-900 rounded-lg border border-slate-800">
                             <Filter className="h-12 w-12 text-slate-600 mx-auto mb-3" />
-                            <p className="text-slate-400 font-medium">Seçilen filtrelerle eşleşen geri bildirim bulunamadı.</p>
+                            <p className="text-slate-400 font-medium">{t('customer.noFilteredFeedback')}</p>
                           </div>
                         ) : (
                           filteredAndSortedFeedbacks.map((feedback) => (
@@ -1558,11 +1563,11 @@ export default function CustomerPanel() {
                               <div className="p-4">
                                 <div className="flex items-center justify-between mb-3 gap-4">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border ${feedback.feedback_type === 'complaint' ? 'bg-red-500/10 text-red-400 border-red-500/20' : feedback.feedback_type === 'suggestion' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'}`}>{feedback.feedback_type === 'complaint' ? `🔴 ${t.complaintBadge}` : feedback.feedback_type === 'suggestion' ? `💡 ${t.suggestionBadge}` : `⭐ ${t.reviewBadge}`}</span>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border ${getStatusBadge(feedback, t).color === 'blue' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : getStatusBadge(feedback, t).color === 'orange' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-green-500/10 text-green-400 border-green-500/20'}`}>{getStatusBadge(feedback, t).icon} {getStatusBadge(feedback, t).label}</span>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border ${feedback.feedback_type === 'complaint' ? 'bg-red-500/10 text-red-400 border-red-500/20' : feedback.feedback_type === 'suggestion' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'}`}>{feedback.feedback_type === 'complaint' ? `🔴 ${tc.complaintBadge}` : feedback.feedback_type === 'suggestion' ? `💡 ${tc.suggestionBadge}` : `⭐ ${tc.reviewBadge}`}</span>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border ${getStatusBadge(feedback, tc).color === 'blue' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : getStatusBadge(feedback, tc).color === 'orange' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-green-500/10 text-green-400 border-green-500/20'}`}>{getStatusBadge(feedback, tc).icon} {getStatusBadge(feedback, tc).label}</span>
                                     {(feedback.general_eval_rating || feedback.general_eval_comment) && (
                                       <span className="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border bg-teal-500/10 text-teal-400 border-teal-500/20">
-                                        🌟 {language === 'tr' ? 'Genel Değ.' : 'Gen. Eval.'}
+                                        🌟 {t('customer.generalEvalShort', { defaultValue: language === 'tr' ? 'Genel Değ.' : 'Gen. Eval.' })}
                                       </span>
                                     )}
                                   </div>
@@ -1576,7 +1581,7 @@ export default function CustomerPanel() {
                                     <span className="text-sm text-slate-500 whitespace-nowrap">{formatDate(feedback.created_at, language)}</span>
                                   </div>
                                 </div>
-                                <p className="text-sm text-slate-400 mb-2 break-words">📍 {feedback.branches?.branch_name_tr || t.unknown}</p>
+                                <p className="text-sm text-slate-400 mb-2 break-words" translate="no">📍 {feedback.branches?.branch_name_tr || tc.unknown}</p>
                                 {feedback.rating && <div className="flex items-center gap-0.5 mb-2">{[...Array(5)].map((_, i) => <Star key={i} className={`h-4 w-4 ${i < feedback.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-600'}`} />)}</div>}
                                 {feedback.message && <p className="text-slate-300 text-sm line-clamp-2 break-all leading-relaxed">{feedback.message}</p>}
                               </div>
@@ -1597,7 +1602,7 @@ export default function CustomerPanel() {
                 <div className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative group">
 
                   <div className="flex items-center gap-3 flex-wrap">
-                    <h1 className="text-3xl md:text-4xl font-bold text-white break-words">{t.stats}</h1>
+                    <h1 className="text-3xl md:text-4xl font-bold text-white break-words">{tc.stats}</h1>
                     {!isGuest && stats.userTitle && (
                       <Popover open={showTitleInfo} onOpenChange={setShowTitleInfo}>
                         <PopoverTrigger asChild>
@@ -1612,20 +1617,20 @@ export default function CustomerPanel() {
                               <h4 className="font-bold text-teal-300 text-sm">{stats.userTitle}</h4>
                             </div>
                             <p className="text-slate-300 text-xs leading-relaxed">
-                              {stats.userTitle === t.userTitle.vocalizAmbassador
-                                ? t.userTitleInfo.vocalizAmbassadorDesc
-                                : stats.userTitle === t.userTitle.experiencedObserver
-                                  ? t.userTitleInfo.experiencedObserverDesc
-                                  : t.userTitleInfo.newVoiceDesc}
+                              {stats.userTitle === tc.userTitle.vocalizAmbassador
+                                ? tc.userTitleInfo.vocalizAmbassadorDesc
+                                : stats.userTitle === tc.userTitle.experiencedObserver
+                                  ? tc.userTitleInfo.experiencedObserverDesc
+                                  : tc.userTitleInfo.newVoiceDesc}
                             </p>
                             <div className="pt-2 border-t border-slate-800">
-                              <p className="text-slate-400 text-xs font-medium mb-1">{t.userTitleInfo.nextLevel}</p>
+                              <p className="text-slate-400 text-xs font-medium mb-1">{tc.userTitleInfo.nextLevel}</p>
                               <p className="text-teal-400 text-xs">
-                                {stats.userTitle === t.userTitle.vocalizAmbassador
-                                  ? t.userTitleInfo.maxLevel
-                                  : stats.userTitle === t.userTitle.experiencedObserver
-                                    ? t.userTitleInfo.nextLevelExperienced
-                                    : t.userTitleInfo.nextLevelNewVoice}
+                                {stats.userTitle === tc.userTitle.vocalizAmbassador
+                                  ? tc.userTitleInfo.maxLevel
+                                  : stats.userTitle === tc.userTitle.experiencedObserver
+                                    ? tc.userTitleInfo.nextLevelExperienced
+                                    : tc.userTitleInfo.nextLevelNewVoice}
                               </p>
                             </div>
                           </div>
@@ -1639,11 +1644,11 @@ export default function CustomerPanel() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <ComponentErrorBoundary name="Stats Main Chart & KPIs">
                   {isGuest ? (
-                    <GuestCTA title={t.guestCTA.statsTitle} icon={<TrendingUp className="h-10 w-10 text-teal-500" />} />
+                    <GuestCTA title={tc.guestCTA.statsTitle} icon={<TrendingUp className="h-10 w-10 text-teal-500" />} />
                   ) : stats.total === 0 ? (
                     <div className="text-center py-16 bg-slate-900 rounded-lg border border-slate-800">
                       <BarChart className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-                      <p className="text-slate-400 font-medium text-lg">{t.statsPage.noData}</p>
+                      <p className="text-slate-400 font-medium text-lg">{tc.statsPage.noData}</p>
                     </div>
                   ) : (
                     <>
@@ -1658,22 +1663,22 @@ export default function CustomerPanel() {
                         }} className="w-48 h-48 rounded-full flex items-center justify-center mb-6 relative shadow-lg">
                           <div className="w-40 h-40 rounded-full bg-slate-900 flex flex-col items-center justify-center border-4 border-slate-900">
                             <p className="text-3xl font-bold text-white">{stats.total}</p>
-                            <p className="text-xs text-slate-400 mt-1">{t.totalFeedbacksCount}</p>
+                            <p className="text-xs text-slate-400 mt-1">{tc.totalFeedbacksCount}</p>
                           </div>
                         </div>
 
                         <div className="w-full space-y-2 mt-2">
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0"></div>
-                            <span className="text-sm text-slate-300">{t.complaintBadge}: {stats.complaints}</span>
+                            <span className="text-sm text-slate-300">{tc.complaintBadge}: {stats.complaints}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full bg-blue-500 flex-shrink-0"></div>
-                            <span className="text-sm text-slate-300">{t.suggestionBadge}: {stats.suggestions}</span>
+                            <span className="text-sm text-slate-300">{tc.suggestionBadge}: {stats.suggestions}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full bg-yellow-500 flex-shrink-0"></div>
-                            <span className="text-sm text-slate-300">{t.reviewBadge}: {stats.reviews}</span>
+                            <span className="text-sm text-slate-300">{tc.reviewBadge}: {stats.reviews}</span>
                           </div>
                         </div>
                       </div>
@@ -1682,7 +1687,7 @@ export default function CustomerPanel() {
 
                         <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-5 shadow-lg hover:border-yellow-500/30 transition-all duration-300 group">
                           <div className="flex items-start justify-between mb-3">
-                            <h3 className="text-sm font-semibold text-slate-300 group-hover:text-yellow-300 transition-colors">{t.avgRating}</h3>
+                            <h3 className="text-sm font-semibold text-slate-300 group-hover:text-yellow-300 transition-colors">{tc.avgRating}</h3>
                             <Star className="h-5 w-5 text-yellow-500 group-hover:scale-110 transition-transform" />
                           </div>
                           <p className="text-3xl font-bold text-white mb-1">{stats.avgRating ? stats.avgRating.toFixed(1) : '0.0'}</p>
@@ -1691,20 +1696,20 @@ export default function CustomerPanel() {
 
                         <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-5 shadow-lg hover:border-green-500/30 transition-all duration-300 group">
                           <div className="flex items-start justify-between mb-3">
-                            <h3 className="text-sm font-semibold text-slate-300 group-hover:text-green-300 transition-colors">{t.mostVisited}</h3>
+                            <h3 className="text-sm font-semibold text-slate-300 group-hover:text-green-300 transition-colors">{tc.mostVisited}</h3>
                             <MapPin className="h-5 w-5 text-green-500 group-hover:scale-110 transition-transform" />
                           </div>
-                          <p className="text-base font-bold text-white truncate mb-1" title={stats.topBranch}>{stats.topBranch || t.unknown}</p>
-                          <p className="text-xs text-slate-500">{stats.topBranchCount} {t.visits}</p>
+                          <p className="text-base font-bold text-white truncate mb-1" title={stats.topBranch}>{stats.topBranch || tc.unknown}</p>
+                          <p className="text-xs text-slate-500">{stats.topBranchCount} {tc.visits}</p>
                         </div>
 
                         <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-5 shadow-lg hover:border-red-500/30 transition-all duration-300 group">
                           <div className="flex items-start justify-between mb-3">
-                            <h3 className="text-sm font-semibold text-slate-300 group-hover:text-red-300 transition-colors">{language === 'tr' ? 'En Çok Sorun' : 'Most Issues'}</h3>
+                            <h3 className="text-sm font-semibold text-slate-300 group-hover:text-red-300 transition-colors">{t('admin.analytics.leaderboard.resolution')}</h3>
                             <AlertTriangle className="h-5 w-5 text-red-500 group-hover:scale-110 transition-transform" />
                           </div>
-                          <p className="text-base font-bold text-white truncate mb-1" title={stats.worstBranch}>{stats.worstBranch || t.unknown}</p>
-                          <p className="text-xs text-slate-500">{stats.worstBranchCount} {t.complaintBadge}</p>
+                          <p className="text-base font-bold text-white truncate mb-1" title={stats.worstBranch}>{stats.worstBranch || tc.unknown}</p>
+                          <p className="text-xs text-slate-500">{stats.worstBranchCount} {tc.complaintBadge}</p>
                         </div>
                       </div>
                     </>
@@ -1715,16 +1720,16 @@ export default function CustomerPanel() {
                   <div className="lg:col-span-1 bg-gradient-to-br from-teal-600/20 to-teal-700/10 border border-teal-500/30 rounded-xl p-6 shadow-lg hover:border-teal-500/50 transition-all duration-300">
                     <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                       <Building2 className="h-5 w-5 text-teal-400" />
-                      {t.businessSuggestion.title}
+                      {tc.businessSuggestion.title}
                     </h3>
                     <form onSubmit={handleBusinessSuggestion} className="space-y-3">
                       <div>
-                        <label className="text-xs text-slate-300 font-semibold mb-1.5 block">{t.businessSuggestion.businessName}</label>
-                        <Input type="text" placeholder={t.businessSuggestion.businessNamePlaceholder} value={suggestedBusinessName} onChange={(e) => setSuggestedBusinessName(e.target.value)} className="bg-slate-800/80 border-slate-700 text-white text-sm focus:border-teal-500 focus:ring-teal-500/20" required />
+                        <label className="text-xs text-slate-300 font-semibold mb-1.5 block">{tc.businessSuggestion.businessName}</label>
+                        <Input type="text" placeholder={tc.businessSuggestion.businessNamePlaceholder} value={suggestedBusinessName} onChange={(e) => setSuggestedBusinessName(e.target.value)} className="bg-slate-800/80 border-slate-700 text-white text-sm focus:border-teal-500 focus:ring-teal-500/20" required />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-300 font-semibold mb-1.5 block">{t.businessSuggestion.location}</label>
-                        <Input type="text" placeholder={t.businessSuggestion.locationPlaceholder} value={suggestedBusinessLocation} onChange={(e) => setSuggestedBusinessLocation(e.target.value)} className="bg-slate-800/80 border-slate-700 text-white text-sm focus:border-teal-500 focus:ring-teal-500/20" required />
+                        <label className="text-xs text-slate-300 font-semibold mb-1.5 block">{tc.businessSuggestion.location}</label>
+                        <Input type="text" placeholder={tc.businessSuggestion.locationPlaceholder} value={suggestedBusinessLocation} onChange={(e) => setSuggestedBusinessLocation(e.target.value)} className="bg-slate-800/80 border-slate-700 text-white text-sm focus:border-teal-500 focus:ring-teal-500/20" required />
                       </div>
                       <Button type="submit" disabled={suggestingBusiness} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold mt-4 shadow-lg shadow-teal-900/20 hover:shadow-teal-900/40 transition-all">
                         {suggestingBusiness ? (
@@ -1735,7 +1740,7 @@ export default function CustomerPanel() {
                         ) : (
                           <>
                             <Building2 className="h-4 w-4 mr-2" />
-                            {t.businessSuggestion.suggest}
+                            {tc.businessSuggestion.suggest}
                           </>
                         )}
                       </Button>
@@ -1750,10 +1755,10 @@ export default function CustomerPanel() {
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-30">
         <div className="flex items-center justify-around py-3">
-          <button onClick={() => setCurrentView('dashboard')} className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${currentView === 'dashboard' ? 'text-teal-400' : 'text-slate-400 hover:text-white'}`}><Home className="h-6 w-6" /><span className="text-xs font-medium">{t.home}</span></button>
-          <button onClick={() => setCurrentView('feedbacks')} className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${currentView === 'feedbacks' ? 'text-teal-400' : 'text-slate-400 hover:text-white'}`}><List className="h-6 w-6" /><span className="text-xs font-medium">{t.notifications}</span></button>
-          <button onClick={() => setCurrentView('stats')} className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${currentView === 'stats' ? 'text-teal-400' : 'text-slate-400 hover:text-white'}`}><TrendingUp className="h-6 w-6" /><span className="text-xs font-medium">{t.statistics}</span></button>
-          <button onClick={() => setShowSettingsModal(true)} className="flex flex-col items-center gap-1 px-4 py-2 text-slate-400 hover:text-white transition-colors"><Settings className="h-6 w-6" /><span className="text-xs font-medium">Ayarlar</span></button>
+          <button onClick={() => setCurrentView('dashboard')} className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${currentView === 'dashboard' ? 'text-teal-400' : 'text-slate-400 hover:text-white'}`}><Home className="h-6 w-6" /><span className="text-xs font-medium">{tc.home}</span></button>
+          <button onClick={() => setCurrentView('feedbacks')} className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${currentView === 'feedbacks' ? 'text-teal-400' : 'text-slate-400 hover:text-white'}`}><List className="h-6 w-6" /><span className="text-xs font-medium">{tc.notifications}</span></button>
+          <button onClick={() => setCurrentView('stats')} className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${currentView === 'stats' ? 'text-teal-400' : 'text-slate-400 hover:text-white'}`}><TrendingUp className="h-6 w-6" /><span className="text-xs font-medium">{tc.statistics}</span></button>
+          <button onClick={() => setShowSettingsModal(true)} className="flex flex-col items-center gap-1 px-4 py-2 text-slate-400 hover:text-white transition-colors"><Settings className="h-6 w-6" /><span className="text-xs font-medium">{t('common.settings')}</span></button>
         </div>
       </nav>
 
@@ -1763,10 +1768,10 @@ export default function CustomerPanel() {
         <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-md rounded-2xl p-0 overflow-hidden shadow-2xl">
           <DialogHeader className="p-6 pb-2">
             <DialogTitle className="text-xl font-bold bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">
-              {businesses.find(b => b.id === selectedBusinessForBranches)?.business_name || (language === 'tr' ? 'İşletme' : 'Business')} - {language === 'tr' ? 'Şube Seçin' : 'Select Branch'}
+              {businesses.find(b => b.id === selectedBusinessForBranches)?.business_name || t('landing.pricing.plan1.priceTitle')} - {t('customer.branchSelection')}
             </DialogTitle>
             <DialogDescription className="text-slate-400 text-sm">
-              {language === 'tr' ? 'Geri bildirim vermek istediğiniz şubeyi seçin.' : 'Please select the branch you want to leave feedback for.'}
+              {t('customer.selectBranchForFeedback')}
             </DialogDescription>
           </DialogHeader>
 
@@ -1775,7 +1780,7 @@ export default function CustomerPanel() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
               <input
                 type="text"
-                placeholder={language === 'tr' ? "Şube ara..." : "Search branch..."}
+                placeholder={t('admin.header.searchBranch')}
                 className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50 transition-all placeholder:text-slate-600"
                 value={branchSearchTerm}
                 onChange={(e) => setBranchSearchTerm(e.target.value)}
@@ -1787,7 +1792,7 @@ export default function CustomerPanel() {
             {isBranchesLoading ? (
               <div className="flex flex-col items-center justify-center py-10">
                 <Loader2 className="h-8 w-8 text-teal-500 animate-spin mb-3" />
-                <p className="text-slate-400 text-sm">{language === 'tr' ? 'Şubeler yükleniyor...' : 'Loading branches...'}</p>
+                <p className="text-slate-400 text-sm">{t('customer.loading')}</p>
               </div>
             ) : (() => {
               // Separate branches into pinned and non-pinned
@@ -1859,7 +1864,7 @@ export default function CustomerPanel() {
                     <div className="space-y-2">
                       <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                         <span className="w-4 h-[1px] bg-slate-800"></span>
-                        {language === 'tr' ? 'Pinlenmiş Şubeler' : 'Pinned Branches'} ({pinnedBranches.length})
+                        {t('customer.branchSelector.pinnedBranches')} ({pinnedBranches.length})
                       </div>
                       <div className="grid grid-cols-1 gap-2">
                         {pinnedBranches.map(renderBranch)}
@@ -1872,7 +1877,7 @@ export default function CustomerPanel() {
                     <div className="space-y-2">
                       <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                         <span className="w-4 h-[1px] bg-slate-800"></span>
-                        {language === 'tr' ? 'Tüm Şubeler' : 'All Branches'} ({totalNonPinned})
+                        {t('customer.filterAllBranches')} ({totalNonPinned})
                       </div>
                       <div className="grid grid-cols-1 gap-2">
                         {paginatedNonPinned.map(renderBranch)}
@@ -1887,7 +1892,7 @@ export default function CustomerPanel() {
                             className="flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-teal-400 disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
                           >
                             <ChevronLeft className="h-4 w-4" />
-                            {language === 'tr' ? 'Önceki' : 'Prev'}
+                            {t('common.back')}
                           </button>
 
                           <div className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">
@@ -1899,7 +1904,7 @@ export default function CustomerPanel() {
                             onClick={() => setBranchPage(prev => prev + 1)}
                             className="flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-teal-400 disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
                           >
-                            {language === 'tr' ? 'Sonraki' : 'Next'}
+                            {t('common.next')}
                             <ChevronRight className="h-4 w-4" />
                           </button>
                         </div>
@@ -1914,7 +1919,7 @@ export default function CustomerPanel() {
                         <Search className="h-6 w-6 text-slate-600" />
                       </div>
                       <p className="text-slate-500 text-sm">
-                        {language === 'tr' ? 'Aradığınız kriterde şube bulunamadı.' : 'No branches found matching your search.'}
+                        {t('admin.analytics.leaderboard.noResult')}
                       </p>
                     </div>
                   )}
@@ -1928,7 +1933,7 @@ export default function CustomerPanel() {
               variant="outline"
               className="w-full bg-slate-700 border-slate-600 text-slate-300 hover:text-white hover:bg-slate-600"
             >
-              {language === 'tr' ? 'İptal' : 'Cancel'}
+              {t('common.cancel')}
             </Button>
           </div>
         </DialogContent>
@@ -1942,10 +1947,10 @@ export default function CustomerPanel() {
           <DialogHeader className="px-6 pt-4 pb-2 border-b border-slate-800 flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
               <MessageCircle className="h-6 w-6 text-teal-500" />
-              {t.feedbackDetail}
+              {tc.feedbackDetail}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              {t.feedbackDetail}
+              {tc.feedbackDetail}
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-4 w-full">
@@ -1954,10 +1959,10 @@ export default function CustomerPanel() {
                 <div className="flex justify-between items-center pb-3 border-b border-slate-800 flex-wrap gap-2">
                   <div className="flex gap-2 flex-wrap">
                     <span className={`text-xs px-2 py-1 rounded-full border font-semibold whitespace-nowrap ${selectedFeedback.feedback_type === 'complaint' ? 'bg-red-500/10 text-red-400 border-red-500/20' : selectedFeedback.feedback_type === 'suggestion' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'}`}>
-                      {selectedFeedback.feedback_type === 'complaint' ? `🔴 ${t.complaintBadge}` : selectedFeedback.feedback_type === 'suggestion' ? `💡 ${t.suggestionBadge}` : `⭐ ${t.reviewBadge}`}
+                      {selectedFeedback.feedback_type === 'complaint' ? `🔴 ${tc.complaintBadge}` : selectedFeedback.feedback_type === 'suggestion' ? `💡 ${tc.suggestionBadge}` : `⭐ ${tc.reviewBadge}`}
                     </span>
-                    <span className={`text-xs px-2 py-1 rounded-full border font-semibold whitespace-nowrap ${getStatusBadge(selectedFeedback, t).color === 'green' ? 'bg-green-500/10 text-green-400 border-green-500/20' : getStatusBadge(selectedFeedback, t).color === 'orange' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
-                      {getStatusBadge(selectedFeedback, t).icon} {getStatusBadge(selectedFeedback, t).label}
+                    <span className={`text-xs px-2 py-1 rounded-full border font-semibold whitespace-nowrap ${getStatusBadge(selectedFeedback, tc).color === 'green' ? 'bg-green-500/10 text-green-400 border-green-500/20' : getStatusBadge(selectedFeedback, tc).color === 'orange' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                      {getStatusBadge(selectedFeedback, tc).icon} {getStatusBadge(selectedFeedback, tc).label}
                     </span>
                     {(selectedFeedback.general_eval_rating || selectedFeedback.general_eval_comment) && (
                       <span className="text-xs px-2 py-1 rounded-full border font-semibold whitespace-nowrap bg-teal-500/10 text-teal-400 border-teal-500/20">
@@ -1971,13 +1976,13 @@ export default function CustomerPanel() {
                 <div>
                   {selectedFeedback.rating && (
                     <div className="mb-3">
-                      <p className="text-xs text-slate-400 mb-1">{language === 'tr' ? 'Puan:' : 'Rating:'}</p>
+                      <p className="text-xs text-slate-400 mb-1">{t('customer.ratingLabel')}</p>
                       <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => <Star key={i} className={`h-4 w-4 ${i < selectedFeedback.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-600'}`} />)}
                       </div>
                     </div>
                   )}
-                  <h4 className="text-xs font-bold text-teal-500 uppercase mb-2 tracking-wide">{t.yourMessage}</h4>
+                  <h4 className="text-xs font-bold text-teal-500 uppercase mb-2 tracking-wide">{tc.yourMessage}</h4>
                   <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-sm text-slate-200 whitespace-pre-wrap break-words leading-relaxed overflow-hidden">
                     {selectedFeedback.message}
                   </div>
@@ -1985,7 +1990,7 @@ export default function CustomerPanel() {
 
                 {(selectedFeedback.general_eval_rating || selectedFeedback.general_eval_comment) && (
                   <div>
-                    <h4 className="text-xs font-bold text-teal-500 uppercase mb-2 tracking-wide">{t.generalEval}</h4>
+                    <h4 className="text-xs font-bold text-teal-500 uppercase mb-2 tracking-wide">{tc.generalEval}</h4>
                     {selectedFeedback.general_eval_rating && (
                       <div className="flex items-center gap-1 mb-3">
                         {[...Array(5)].map((_, i) => <Star key={i} className={`h-4 w-4 ${i < selectedFeedback.general_eval_rating ? 'text-teal-500 fill-teal-500' : 'text-gray-600'}`} />)}
@@ -2001,7 +2006,7 @@ export default function CustomerPanel() {
 
                 {selectedFeedback.feedback_images?.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-bold text-teal-500 uppercase mb-3 flex items-center gap-2"><ImageIcon className="w-3 h-3" /> {t.attachedImages}</h4>
+                    <h4 className="text-xs font-bold text-teal-500 uppercase mb-3 flex items-center gap-2"><ImageIcon className="w-3 h-3" /> {tc.attachedImages}</h4>
                     <div className="grid grid-cols-3 gap-3">
                       {selectedFeedback.feedback_images.map((img, i) => (
                         <div key={i} className="aspect-square rounded-lg overflow-hidden border border-slate-700 bg-black cursor-pointer group relative" onClick={() => setPreviewImage(img)}>
@@ -2016,7 +2021,7 @@ export default function CustomerPanel() {
             )}
           </div>
           <DialogFooter className="px-6 py-4 border-t border-slate-800 flex-shrink-0">
-            <Button onClick={() => setSelectedFeedback(null)} className="w-full bg-slate-800 hover:bg-slate-700">{t.close}</Button>
+            <Button onClick={() => setSelectedFeedback(null)} className="w-full bg-slate-800 hover:bg-slate-700">{t('common.close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2077,14 +2082,14 @@ export default function CustomerPanel() {
         <DialogContent className="bg-slate-900 border-slate-800 text-white">
           <DialogHeader>
             <DialogTitle className="text-orange-400">
-              {t.guestWarning.title}
+              {tc.guestWarning.title}
             </DialogTitle>
             <DialogDescription className="text-slate-400 mt-2 sr-only">
-              {t.guestWarning.text}
+              {tc.guestWarning.text}
             </DialogDescription>
           </DialogHeader>
           <p className="text-sm text-slate-300">
-            {t.guestWarning.text}
+            {tc.guestWarning.text}
           </p>
           <div className="flex items-center gap-2 mt-4 ml-1">
             <Checkbox
@@ -2094,7 +2099,7 @@ export default function CustomerPanel() {
               className="border-slate-500 data-[state=checked]:bg-teal-600 data-[state=checked]:text-white"
             />
             <label htmlFor="dontShow" className="text-xs text-slate-400 cursor-pointer select-none">
-              {t.guestWarning.dontShow}
+              {tc.guestWarning.dontShow}
             </label>
           </div>
           <DialogFooter className="mt-6 flex-row gap-3">
@@ -2103,10 +2108,10 @@ export default function CustomerPanel() {
               className="flex-1 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700"
               onClick={handleGuestWarningContinue}
             >
-              {t.guestWarning.continueGuest}
+              {tc.guestWarning.continueGuest}
             </Button>
             <Button onClick={handleGuestWarningLogin}>
-              {t.guestWarning.loginToSend}
+              {tc.guestWarning.loginToSend}
             </Button>
           </DialogFooter>
         </DialogContent>

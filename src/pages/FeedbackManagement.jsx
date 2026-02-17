@@ -18,18 +18,31 @@ import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
 import { useToast } from "@/components/ui/use-toast";
 import { cn, formatCustomerName, getCustomerData } from "@/lib/utils";
+import { useTranslation } from 'react-i18next';
 
-const getStatusLabel = (s) => ({ new: 'Yeni', pending: 'Beklemede', in_progress: 'İşlemde', resolved: 'Çözüldü', escalated: 'Acil' }[s] || s);
+const getStatusLabel = (s, t) => t(`feedbackDetail.detail.statuses.${s}`, { defaultValue: s });
 
-const getTypeBadge = (type) => {
-  const styles = { complaint: "text-red-400 bg-red-900/20 border-red-900/30", suggestion: "text-blue-400 bg-blue-900/20 border-blue-900/30", evaluation: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", review: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30", rating: "text-yellow-400 bg-yellow-900/20 border-yellow-900/30" };
-  const labels = { complaint: "Şikayet", suggestion: "Öneri", evaluation: "Değerlendirme", review: "Değerlendirme", rating: "Değerlendirme" };
+const getTypeBadge = (type, t) => {
+  const styles = { complaint: "text-red-400 bg-red-900/20 border-red-900/30", suggestion: "text-blue-400 bg-blue-900/20 border-blue-900/30", evaluation: "text-yellow-400 bg-yellow-900/20 border-red-900/30", review: "text-yellow-400 bg-yellow-900/20 border-red-900/30", rating: "text-yellow-400 bg-yellow-900/20 border-red-900/30" };
+  const labels = {
+    complaint: t('feedbackDetail.types.complaint'),
+    suggestion: t('feedbackDetail.types.suggestion'),
+    evaluation: t('feedbackDetail.types.evaluation'),
+    review: t('feedbackDetail.types.review'),
+    rating: t('feedbackDetail.types.rating')
+  };
   return <Badge variant="secondary" className={`text-xs px-2.5 py-1 ${styles[type] || "text-slate-400"}`}>{labels[type] || type}</Badge>;
 };
 
-const getStatusBadge = (status) => {
+const getStatusBadge = (status, t) => {
   const styles = { new: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20", pending: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", in_progress: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20", resolved: "bg-green-500/10 text-green-500 border-green-500/20", escalated: "bg-red-500/10 text-red-500 border-red-500/20" };
-  const labels = { new: "Yeni", pending: "Beklemede", in_progress: "İşlemde", resolved: "Çözüldü", escalated: "Acil" };
+  const labels = {
+    new: t('feedbackDetail.statuses.new'),
+    pending: t('feedbackDetail.statuses.pending'),
+    in_progress: t('feedbackDetail.statuses.in_progress'),
+    resolved: t('feedbackDetail.statuses.resolved'),
+    escalated: t('feedbackDetail.statuses.escalated')
+  };
   return <Badge variant="outline" className={`text-[10px] h-5 px-1.5 whitespace-nowrap transition-colors ${styles[status] || "bg-slate-500/10 text-slate-500"}`}>{labels[status] || status}</Badge>;
 };
 
@@ -41,11 +54,13 @@ const FeedbackCard = React.memo(React.forwardRef(({
   highlightedId,
   toggleSelect,
   handleFeedbackClick,
-  handleOpenCustomerProfile
+  handleOpenCustomerProfile,
+  t,
+  i18n
 }, ref) => {
   const f = feedback;
   const customerName = getCustomerData(f, 'name');
-  const smartName = formatCustomerName(customerName);
+  const smartName = formatCustomerName(customerName, t('customer.guest'));
   const isVip = f.customer_profiles?.flag_vip_customer || f.flag_vip_customer;
   const isSensitive = f.customer_profiles?.flag_sensitive_customer || f.flag_sensitive_customer;
   const hasCustomerProfileNote = f.customer_profiles?.admin_note && f.customer_profiles.admin_note.trim().length > 0;
@@ -88,20 +103,20 @@ const FeedbackCard = React.memo(React.forwardRef(({
         <div className="flex flex-col md:flex-row gap-4 items-start">
           <div className="flex-1 w-full min-w-0 pr-0 md:pr-4">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              {getTypeBadge(f.feedback_type)}
-              {getStatusBadge(f.status)}
+              {getTypeBadge(f.feedback_type, t)}
+              {getStatusBadge(f.status, t)}
               {f.customer_age_group && (
                 <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-indigo-500/10 text-indigo-400 border-indigo-500/20 whitespace-nowrap">
-                  {f.customer_age_group} Yaş
+                  {f.customer_age_group} {t('feedbackDetail.ageGroup')}
                 </Badge>
               )}
-              <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0"><Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-              <Badge variant="outline" className="text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[200px]">{f.branches?.branch_name_tr || "Şube Bilinmiyor"}</Badge>
+              <span className="text-slate-500 text-xs flex items-center gap-1 ml-auto md:ml-0" translate="no"><Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleString(i18n.language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+              <Badge variant="outline" className="text-[11px] font-medium text-slate-400 border-slate-700 bg-slate-900/80 truncate max-w-[200px]" translate="no">{f.branches?.branch_name_tr || t('customer.unknown')}</Badge>
             </div>
             <div className="flex gap-3 mt-1">
               <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${f.feedback_type === 'complaint' ? 'bg-red-500' : f.feedback_type === 'suggestion' ? 'bg-blue-500' : 'bg-yellow-500'}`} />
               <div className="flex-1 min-w-0">
-                <p className="text-slate-200 text-sm line-clamp-2 leading-relaxed break-all">{f.message || <span className="text-slate-600 italic">Mesaj içeriği yok</span>}</p>
+                <p className="text-slate-200 text-sm line-clamp-2 leading-relaxed break-all">{f.message || <span className="text-slate-600 italic">{t('admin.feedbacks.noMessage')}</span>}</p>
                 {(f.feedback_type === 'review' || Number(f.general_eval_rating) > 0) && rating > 0 && (
                   <div className="flex items-center gap-0.5 mt-1.5">
                     {[...Array(5)].map((_, i) => (
@@ -117,16 +132,16 @@ const FeedbackCard = React.memo(React.forwardRef(({
             <div className="flex items-center gap-2 group/customer hover:bg-slate-800 p-1.5 rounded-lg -ml-1.5 md:ml-0 transition-colors mr-auto md:mr-0 cursor-pointer" onClick={(e) => handleOpenCustomerProfile(e, f)}>
               <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 group-hover/customer:border-indigo-500/50 transition-colors"><User className="w-4 h-4 text-slate-400 group-hover/customer:text-indigo-400" /></div>
               <div className="flex flex-col items-start md:items-end">
-                <span className={cn("text-sm font-medium transition-colors truncate max-w-[140px] flex items-center gap-1", hasCustomerProfileNote ? "text-blue-400 font-bold" : "text-slate-300 group-hover/customer:text-indigo-300")} title={hasCustomerProfileNote ? "Müşteri Notu Mevcut" : ""}>
+                <span className={cn("text-sm font-medium transition-colors truncate max-w-[140px] flex items-center gap-1", hasCustomerProfileNote ? "text-blue-400 font-bold" : "text-slate-300 group-hover/customer:text-indigo-300")} title={hasCustomerProfileNote ? t('admin.feedbacks.customerNotePresent') : ""}>
                   {smartName}
                 </span>
               </div>
             </div>
 
             <div className="flex items-center gap-2 mt-auto flex-wrap justify-end">
-              {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">Genel D.</span></div>)}
-              {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">Görsel</span></div>)}
-              {hasManagerNote && (<div className="feedback-note-icon flex items-center justify-center w-7 h-7 rounded-md bg-amber-500/25 text-amber-500 border-2 border-amber-500/50 shadow-sm" title="Yönetici notu var"><StickyNote className="w-4 h-4 fill-current" /></div>)}
+              {hasGeneralEval && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-blue-400 border border-slate-700"><BarChart className="w-3 h-3" /> <span className="hidden sm:inline">{t('admin.feedbacks.generalEvalShort')}</span></div>)}
+              {hasImgs && (<div className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-teal-400 border border-slate-700"><ImageIcon className="w-3 h-3" /> <span className="hidden sm:inline">{t('admin.feedbacks.image')}</span></div>)}
+              {hasManagerNote && (<div className="feedback-note-icon flex items-center justify-center w-7 h-7 rounded-md bg-amber-500/25 text-amber-500 border-2 border-amber-500/50 shadow-sm" title={t('feedbackDetail.detail.managerNote')}><StickyNote className="w-4 h-4 fill-current" /></div>)}
               {isVip && (<div className="flex items-center gap-1 px-3 py-1 bg-purple-900/30 rounded text-xs text-purple-300 border border-purple-500/30 font-medium"><Crown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">VIP</span></div>)}
               {isSensitive && (<div className="flex items-center gap-1 px-3 py-1 bg-orange-900/30 rounded text-xs text-orange-300 border border-orange-500/30 font-medium"><AlertTriangle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Hassas</span></div>)}
               {f.guest_contact_info && (
@@ -146,6 +161,17 @@ const FeedbackCard = React.memo(React.forwardRef(({
 }));
 
 const FeedbackManagement = () => {
+  const { t, i18n } = useTranslation();
+
+  const dateOptions = {
+    'all': t('customer.all'),
+    'today': t('customer.today'),
+    'last7': t('customer.last7'),
+    'last30': t('customer.last30'),
+    'last90': t('customer.last90'),
+    'thisMonth': t('customer.thisMonth'),
+    'lastMonth': t('customer.lastMonth', { defaultValue: 'Geçen Ay' })
+  };
   const { businessId, selectedBranchId, escalatedCount } = useAdminContext();
   const { toast } = useToast();
   const location = useLocation();
@@ -296,7 +322,7 @@ const FeedbackManagement = () => {
     if (loading || feedbacks.length === 0) return;
 
     if (modalOpenAttempts >= 10) {
-      toast({ variant: "destructive", title: "Bildirim Bulunamadı", description: "Aranan geri bildirim silinmiş veya farklı bir şubede olabilir." });
+      toast({ variant: "destructive", title: t('common.error'), description: t('common.noData') });
       setPendingFeedbackId(null);
       localStorage.removeItem('vocalize_pending_feedback');
       setModalOpenAttempts(0);
@@ -502,7 +528,7 @@ const FeedbackManagement = () => {
       }
     } catch (error) {
       console.error(error);
-      toast({ variant: "destructive", title: "Bağlantı Hatası", description: "Verileriniz yüklenirken bir sorun oluştu. Lütfen sayfayı yenileyin." });
+      toast({ variant: "destructive", title: t('admin.feedbacks.fetchErrorTitle'), description: t('admin.feedbacks.fetchErrorDesc') });
     } finally {
       if (currentRequestId === fetchRequestId.current) {
         setLoading(false);
@@ -570,14 +596,14 @@ const FeedbackManagement = () => {
 
     if (!error) {
       toast({
-        title: "İşlem Başarılı",
-        description: `${selectedIds.length} bildirim "${getStatusLabel(targetStatus)}" olarak güncellendi.`,
+        title: t('common.success'),
+        description: `${selectedIds.length} ${t('admin.sidebar.feedbacks')} "${getStatusLabel(targetStatus, t)}" ${t('common.updated')}.`,
         className: "bg-green-600 text-white border-none"
       });
       setFeedbacks(prev => prev.map(f => selectedIds.includes(f.id) ? { ...f, ...updates } : f));
       setSelectedIds([]);
     } else {
-      toast({ variant: "destructive", title: "Hata", description: "Güncelleme başarısız." });
+      toast({ variant: "destructive", title: t('common.error'), description: t('common.error') });
     }
     setLoading(false);
   };
@@ -673,14 +699,14 @@ const FeedbackManagement = () => {
       <div className="mx-auto max-w-7xl px-4 pt-32 md:px-6 md:pt-0 lg:px-8 space-y-6 relative">
         {hasUrgentFeedbacks && (
           <div className="acil-durum-box bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between shadow-[0_0_15px_rgba(220,38,38,0.3)] shrink-0">
-            <div className="flex items-center gap-3 animate-pulse"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!</h3><p className="text-red-300/80 text-xs">Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.</p></div></div>
-            <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shrink-0" onClick={handleUrgentClick}>İncele</Button>
+            <div className="flex items-center gap-3 animate-pulse"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">{t('admin.dashboard.urgentAction')}</h3><p className="text-red-300/80 text-xs">{t('admin.dashboard.urgentActionDesc')}</p></div></div>
+            <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shrink-0" onClick={handleUrgentClick}>{t('admin.dashboard.inspect')}</Button>
           </div>
         )}
 
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
-          <div><h1 className="text-3xl font-bold text-white tracking-tight">Geri Bildirim Yönetimi</h1><p className="text-slate-400 mt-1">Müşteri geri bildirimlerini inceleyin, filtreleyin ve yönetin.</p></div>
-          <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline" className="gap-2 border-slate-700 hover:bg-slate-800 text-slate-700 dark:text-slate-300"><RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />Yenile</Button>
+          <div><h1 className="text-3xl font-bold text-white tracking-tight">{t('admin.sidebar.feedbacks')}</h1><p className="text-slate-400 mt-1">{t('admin.dashboard.subtitle')}</p></div>
+          <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline" className="gap-2 border-slate-700 hover:bg-slate-800 text-slate-700 dark:text-slate-300"><RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />{t('common.refresh', { defaultValue: 'Yenile' })}</Button>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-5 shrink-0 shadow-sm relative z-10">
@@ -691,7 +717,7 @@ const FeedbackManagement = () => {
             <div className="relative col-span-2 md:flex-1 md:min-w-[240px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <Input
-                placeholder="Mesaj, isim, email veya telefon..."
+                placeholder={t('admin.feedbacks.searchPlaceholder')}
                 value={localSearchQuery}
                 onChange={(e) => setLocalSearchQuery(e.target.value)}
                 className="pl-9 bg-[#111827] border-slate-700 focus:border-indigo-500/50 focus:ring-indigo-500/20 h-10 transition-all rounded-lg text-slate-200 placeholder:text-slate-500 w-full"
@@ -699,10 +725,10 @@ const FeedbackManagement = () => {
             </div>
 
             {/* Selects: Mobilde yan yana 2'li (varsayılan col-span-1), Masaüstünde esnek */}
-            <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-full md:w-[140px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">Durum:</span>{statusFilter === 'all' ? 'Tümü' : statusFilter === 'new' ? 'Yeni' : statusFilter === 'pending' ? 'Beklemede' : statusFilter === 'in_progress' ? 'İşlemde' : 'Çözüldü'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Durumlar</SelectItem><SelectItem value="new">Yeni</SelectItem><SelectItem value="pending">Beklemede</SelectItem><SelectItem value="in_progress">İşlemde</SelectItem><SelectItem value="resolved">Çözüldü</SelectItem></SelectContent></Select>
-            <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-full md:w-[140px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">Tip:</span>{typeFilter === 'all' ? 'Tümü' : typeFilter === 'complaint' ? 'Şikayet' : typeFilter === 'suggestion' ? 'Öneri' : 'Değerlendirme'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Tipler</SelectItem><SelectItem value="complaint">Şikayet</SelectItem><SelectItem value="suggestion">Öneri</SelectItem><SelectItem value="evaluation">Değerlendirme</SelectItem></SelectContent></Select>
-            <Select value={flagFilter} onValueChange={setFlagFilter}><SelectTrigger className="w-full md:w-[130px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">Bayrak:</span>{flagFilter === 'all' ? 'Tümü' : flagFilter === 'vip' ? 'VIP' : 'Hassas'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm (Bayrak)</SelectItem><SelectItem value="vip">VIP Müşteri</SelectItem><SelectItem value="sensitive">Hassas Müşteri</SelectItem></SelectContent></Select>
-            <Select value={dateFilter} onValueChange={setDateFilter}><SelectTrigger className="w-full md:w-[150px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><Calendar className="w-3.5 h-3.5 mr-2 text-indigo-400 shrink-0" /><span className="truncate">{{ 'all': 'Tüm Zamanlar', 'today': 'Bugün', 'last7': 'Son 7 Gün', 'last30': 'Son 30 Gün', 'last90': 'Son 90 Gün', 'thisMonth': 'Bu Ay', 'lastMonth': 'Geçen Ay' }[dateFilter] || 'Tarih'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">Tüm Zamanlar</SelectItem><SelectItem value="today">Bugün</SelectItem><SelectItem value="last7">Son 7 Gün</SelectItem><SelectItem value="last30">Son 30 Gün</SelectItem><SelectItem value="last90">Son 90 Gün</SelectItem><SelectItem value="thisMonth">Bu Ay</SelectItem><SelectItem value="lastMonth">Geçen Ay</SelectItem></SelectContent></Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-full md:w-[140px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">{t('customer.status')}:</span>{statusFilter === 'all' ? t('customer.all') : getStatusLabel(statusFilter, t)}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">{t('customer.filterAllStatuses')}</SelectItem><SelectItem value="new">{t('feedbackDetail.statuses.new')}</SelectItem><SelectItem value="pending">{t('feedbackDetail.statuses.pending')}</SelectItem><SelectItem value="in_progress">{t('feedbackDetail.statuses.in_progress')}</SelectItem><SelectItem value="resolved">{t('feedbackDetail.statuses.resolved')}</SelectItem></SelectContent></Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-full md:w-[140px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">{t('customer.formType')}:</span>{typeFilter === 'all' ? t('customer.all') : t(`feedbackDetail.types.${typeFilter}`, { defaultValue: typeFilter })}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">{t('customer.filterAllTypes')}</SelectItem><SelectItem value="complaint">{t('customer.complaintBadge')}</SelectItem><SelectItem value="suggestion">{t('customer.suggestionBadge')}</SelectItem><SelectItem value="evaluation">{t('customer.reviewBadge')}</SelectItem></SelectContent></Select>
+            <Select value={flagFilter} onValueChange={setFlagFilter}><SelectTrigger className="w-full md:w-[130px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><span className="truncate"><span className="text-slate-500 mr-1">{t('admin.leaderboard.map')}:</span>{flagFilter === 'all' ? t('customer.all') : flagFilter === 'vip' ? 'VIP' : 'Hassas'}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200"><SelectItem value="all">{t('customer.all')}</SelectItem><SelectItem value="vip">VIP</SelectItem><SelectItem value="sensitive">Hassas</SelectItem></SelectContent></Select>
+            <Select value={dateFilter} onValueChange={setDateFilter}><SelectTrigger className="w-full md:w-[150px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200"><Calendar className="w-3.5 h-3.5 mr-2 text-indigo-400 shrink-0" /><span className="truncate">{dateOptions[dateFilter] || t('feedbackDetail.detail.date')}</span></SelectTrigger><SelectContent className="bg-[#111827] border-slate-800 text-slate-200">{Object.entries(dateOptions).map(([k,v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent></Select>
 
             {/* Temizle Butonu: Mobilde tam satır (col-span-2) */}
             <Button variant="ghost" size="sm" onClick={() => {
@@ -714,7 +740,7 @@ const FeedbackManagement = () => {
               setSearchQuery('');
               setShowNotesOnly(false);
               setShowUrgentOnly(false);
-            }} className="col-span-2 md:col-span-1 h-10 px-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg justify-center"><Filter className="w-3.5 h-3.5 mr-1.5" />Temizle</Button>
+            }} className="col-span-2 md:col-span-1 h-10 px-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg justify-center"><Filter className="w-3.5 h-3.5 mr-1.5" />{t('admin.feedbacks.clear')}</Button>
           </div>
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1 border-t border-slate-800/50">
@@ -726,12 +752,12 @@ const FeedbackManagement = () => {
                 className="border-slate-500 data-[state=checked]:bg-indigo-500 w-4 h-4"
               />
               <label htmlFor="select-all" className="text-sm font-medium text-slate-300 cursor-pointer flex items-center gap-1.5 select-none">
-                <ListChecks className="w-3.5 h-3.5 text-indigo-400" /> Tümünü Seç
+                <ListChecks className="w-3.5 h-3.5 text-indigo-400" /> {t('common.selectAll', { defaultValue: 'Tümünü Seç' })}
               </label>
             </div>
 
-            <div className="flex items-center space-x-2"><Checkbox id="notes-filter" checked={showNotesOnly} onCheckedChange={setShowNotesOnly} className="border-slate-600 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600" /><label htmlFor="notes-filter" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-300 flex items-center gap-1.5 cursor-pointer"><StickyNote className="w-3.5 h-3.5 text-amber-400" /><span className="whitespace-nowrap">Notlular</span></label></div>
-            <div className="flex items-center space-x-2"><Checkbox id="urgent-filter" checked={showUrgentOnly} onCheckedChange={setShowUrgentOnly} className="border-slate-600 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600" /><label htmlFor="urgent-filter" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-300 flex items-center gap-1.5 cursor-pointer"><AlertTriangle className="w-3.5 h-3.5 text-red-500" /><span className="whitespace-nowrap">Acil Olanlar</span></label></div>
+            <div className="flex items-center space-x-2"><Checkbox id="notes-filter" checked={showNotesOnly} onCheckedChange={setShowNotesOnly} className="border-slate-600 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600" /><label htmlFor="notes-filter" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-300 flex items-center gap-1.5 cursor-pointer"><StickyNote className="w-3.5 h-3.5 text-amber-400" /><span className="whitespace-nowrap">{t('feedbackDetail.detail.managerNote')}</span></label></div>
+            <div className="flex items-center space-x-2"><Checkbox id="urgent-filter" checked={showUrgentOnly} onCheckedChange={setShowUrgentOnly} className="border-slate-600 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600" /><label htmlFor="urgent-filter" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-300 flex items-center gap-1.5 cursor-pointer"><AlertTriangle className="w-3.5 h-3.5 text-red-500" /><span className="whitespace-nowrap">{t('feedbackDetail.detail.urgent')}</span></label></div>
           </div>
         </div>
 
@@ -740,28 +766,28 @@ const FeedbackManagement = () => {
             <div className="bg-indigo-900/30 border border-indigo-500/50 p-3 rounded-xl flex flex-col sm:flex-row items-center justify-between animate-in fade-in slide-in-from-top-2 mb-4 shadow-lg sticky top-20 z-20 backdrop-blur-md gap-3">
               <div className="flex items-center gap-3">
                 <div className="bg-indigo-600 p-2 rounded-full"><CheckSquare className="w-5 h-5 text-white" /></div>
-                <h3 className="text-indigo-100 font-bold text-sm">{selectedIds.length} Öğe Seçildi</h3>
+                <h3 className="text-indigo-100 font-bold text-sm">{selectedIds.length} {t('common.itemSelected', { defaultValue: 'Öğe Seçildi' })}</h3>
               </div>
               <div className="flex flex-wrap gap-2 justify-center">
-                <Button size="sm" variant="ghost" onClick={() => setSelectedIds([])} className="text-slate-300 hover:text-white h-8">İptal</Button>
+                <Button size="sm" variant="ghost" onClick={() => setSelectedIds([])} className="text-slate-300 hover:text-white h-8">{t('common.cancel')}</Button>
 
                 <Button size="sm" onClick={() => handleBulkUpdate('pending')} className="bg-indigo-600/80 hover:bg-indigo-600 text-white h-8 text-xs border border-indigo-500/50">
-                  Beklemede
+                  {t('feedbackDetail.detail.statuses.pending')}
                 </Button>
                 <Button size="sm" onClick={() => handleBulkUpdate('in_progress')} className="bg-yellow-600/80 hover:bg-yellow-600 text-white h-8 text-xs border border-yellow-500/50">
-                  İşlemde
+                  {t('feedbackDetail.detail.statuses.in_progress')}
                 </Button>
                 <Button size="sm" onClick={() => handleBulkUpdate('resolved')} className="bg-green-600 hover:bg-green-700 text-white h-8 text-xs border-none shadow-md">
-                  <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Çözüldü Yap
+                  <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> {t('feedbackDetail.detail.statuses.resolved')}
                 </Button>
               </div>
             </div>
           )}
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-500"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /><p className="text-sm font-medium">Geri bildirimler yükleniyor...</p></div>
+            <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-500"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /><p className="text-sm font-medium">{t('admin.feedbacks.loading')}</p></div>
           ) : filteredFeedbacks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-4 bg-slate-900/30 rounded-xl border border-dashed border-slate-800"><div className="bg-slate-800/50 p-4 rounded-full"><MessageSquare className="w-8 h-8 text-slate-500" /></div><div className="text-center"><h3 className="text-lg font-medium text-slate-300">Kayıt bulunamadı</h3></div></div>
+            <div className="flex flex-col items-center justify-center h-64 gap-4 bg-slate-900/30 rounded-xl border border-dashed border-slate-800"><div className="bg-slate-800/50 p-4 rounded-full"><MessageSquare className="w-8 h-8 text-slate-500" /></div><div className="text-center"><h3 className="text-lg font-medium text-slate-300">{t('admin.feedbacks.noRecord')}</h3></div></div>
           ) : (
             <>
               <div ref={feedbackListRef} className={cn("transition-opacity duration-300", isRefreshing && "opacity-50")}>
@@ -776,6 +802,8 @@ const FeedbackManagement = () => {
                       toggleSelect={toggleSelect}
                       handleFeedbackClick={handleFeedbackClick}
                       handleOpenCustomerProfile={handleOpenCustomerProfile}
+                      t={t}
+                      i18n={i18n}
                     />
                   ))}
                 </div>
@@ -856,7 +884,11 @@ const FeedbackManagement = () => {
               </div>
 
               <div className="text-center text-xs text-slate-500">
-                Toplam <span className="text-teal-500 font-medium">{totalServerCount}</span> kayıttan <span className="text-slate-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalServerCount)}</span> arası gösteriliyor
+                {t('admin.leaderboard.showingRange', {
+                  total: totalServerCount,
+                  start: (currentPage - 1) * itemsPerPage + 1,
+                  end: Math.min(currentPage * itemsPerPage, totalServerCount)
+                })}
               </div>
             </div>
           )}

@@ -20,16 +20,16 @@ const LeadModal = ({
             <DialogContent className="w-[93vw] sm:max-w-[500px] bg-slate-900 border-slate-800 text-white max-h-[90vh] overflow-y-auto rounded-lg sm:rounded-xl">
                 <DialogHeader>
                     <DialogTitle className="text-white">
-                        {t.leadModal.title}
+                        {t('landing.leadModal.title')}
                     </DialogTitle>
                     <DialogDescription className="text-slate-400">
-                        {t.leadModal.subtitle}
+                        {t('landing.leadModal.subtitle')}
                     </DialogDescription>
                 </DialogHeader>
 
                 {leadType === 'info_request' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 my-2">
-                        {t.leadModal.quickOptions.map((option, idx) => (
+                        {t('landing.leadModal.quickOptions', { returnObjects: true }).map((option, idx) => (
                             <button
                                 key={idx}
                                 type="button"
@@ -46,11 +46,11 @@ const LeadModal = ({
                 <form onSubmit={onSubmit} className="grid gap-4 py-2">
                     <div className="grid gap-2">
                         <label htmlFor="name" className="text-sm font-medium text-slate-200">
-                            {t.leadModal.nameLabel} *
+                            {t('landing.leadModal.nameLabel')} *
                         </label>
                         <Input
                             id="name"
-                            placeholder={t.leadModal.namePlaceholder}
+                            placeholder={t('landing.leadModal.namePlaceholder')}
                             value={leadForm.name}
                             onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })}
                             className="bg-slate-800 border-slate-700 text-white"
@@ -60,12 +60,12 @@ const LeadModal = ({
 
                     <div className="grid gap-2">
                         <label htmlFor="email" className="text-sm font-medium text-slate-200">
-                            {t.leadModal.emailLabel} *
+                            {t('landing.leadModal.emailLabel')} *
                         </label>
                         <Input
                             id="email"
                             type="email"
-                            placeholder={t.leadModal.emailPlaceholder}
+                            placeholder={t('landing.leadModal.emailPlaceholder')}
                             value={leadForm.email}
                             onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
                             className="bg-slate-800 border-slate-700 text-white"
@@ -75,12 +75,12 @@ const LeadModal = ({
 
                     <div className="grid gap-2">
                         <label htmlFor="phone" className="text-sm font-medium text-slate-200">
-                            {t.leadModal.phoneLabel}
+                            {t('landing.leadModal.phoneLabel')}
                         </label>
                         <Input
                             id="phone"
                             type="tel"
-                            placeholder={t.leadModal.phonePlaceholder}
+                            placeholder={t('landing.leadModal.phonePlaceholder')}
                             value={leadForm.phone}
                             onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
                             className="bg-slate-800 border-slate-700 text-white"
@@ -89,12 +89,12 @@ const LeadModal = ({
 
                     <div className="grid gap-2">
                         <label htmlFor="message" className="text-sm font-medium text-slate-200">
-                            {t.leadModal.messageLabel} *
+                            {t('landing.leadModal.messageLabel')} *
                         </label>
                         <textarea
                             id="message"
                             rows="4"
-                            placeholder={t.leadModal.messagePlaceholder}
+                            placeholder={t('landing.leadModal.messagePlaceholder')}
                             value={leadForm.message}
                             onChange={(e) => setLeadForm({ ...leadForm, message: e.target.value })}
                             className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
@@ -109,7 +109,7 @@ const LeadModal = ({
                             className="bg-slate-700 hover:bg-slate-600 text-white w-full"
                         >
                             {leadLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {t.leadModal.submit}
+                            {t('landing.leadModal.submit')}
                         </Button>
                     </DialogFooter>
                 </form>

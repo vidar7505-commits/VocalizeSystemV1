@@ -1,0 +1,1152 @@
+{
+  "common": {
+    "loading": "Yükleniyor...",
+    "error": "Hata",
+    "success": "Başarılı",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "close": "Kapat",
+    "confirm": "Onayla",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "search": "Ara...",
+    "noData": "Veri bulunamadı",
+    "back": "Geri",
+    "next": "İleri",
+    "send": "Gönder",
+    "sending": "Gönderiliyor...",
+    "logout": "Çıkış Yap",
+    "settings": "Ayarlar",
+    "you": "Siz",
+    "exists": "var",
+    "view": "Görüntüle",
+    "retry": "Tekrar Dene",
+    "deselectAll": "Seçimi Kaldır",
+    "selectAll": "Tümünü Seç",
+    "itemSelected": "Öğe Seçildi",
+    "updated": "güncellendi",
+    "privateNotePlaceholder": "Sadece bu işletme yöneticileri görebilir...",
+    "refresh": "Yenile",
+    "yearsAgo": "yıl önce",
+    "monthsAgo": "ay önce",
+    "daysAgo": "gün önce",
+    "hoursAgo": "sa önce",
+    "minutesAgo": "dk önce",
+    "secondsAgo": "sn önce",
+    "perfectMatch": "Mükemmel Uyum",
+    "loginRequired": "Oturum açmanız gerekiyor.",
+    "validation": {
+      "required": "Bu alan zorunludur",
+      "invalidEmail": "Geçersiz e-posta",
+      "mismatch": "Şifreler eşleşmiyor",
+      "shortPassword": "Şifre en az 6 karakter olmalı",
+      "fillRequired": "Lütfen gerekli alanları doldurun.",
+      "checkConfirm": "Lütfen onay kutusunu işaretleyin"
+    }
+  },
+  "landing": {
+    "nav": {
+      "features": "Neden Vocalize?",
+      "useCases": "Kimler Kullanıyor?",
+      "pricing": "Fiyatlandırma",
+      "v2": "V2/AI",
+      "login": "Giriş Yap",
+      "install": "Kurulum İçin Başvur",
+      "managerLogin": "Yönetici Girişi",
+      "globalVision": "Global Vizyonumuz"
+    },
+    "hero": {
+      "badge": "HORECA Sektörüne Özel Geri Bildirim Sistemi",
+      "title1": "Kayıp Müşterileri Yakalayın,",
+      "title2": "Şikayetleri",
+      "title2Highlight": "Kazanca Dönüştürün.",
+      "subtitle1": "Her müşteri geri bildirimi size anında ulaşsın;",
+      "subtitle2": "Şikayetleri büyümeden çözüp, itibarınızı tek panelden yönetin.",
+      "ctaPrimary": "Kurulum İçin Başvur",
+      "ctaSecondary": "Yönetici Girişi",
+      "badge1": "5 Dakikada Kurulum",
+      "badge2": "İlk Aylık Ödeme 30 Gün Sonra",
+      "countries": {
+        "usa": "ABD",
+        "uk": "Birleşik Krallık",
+        "france": "Fransa",
+        "germany": "Almanya",
+        "uae": "BAE",
+        "turkey": "Türkiye",
+        "russia": "Rusya"
+      }
+    },
+    "infrastructure": {
+      "title": "Teknoloji Ortaklarımız",
+      "subtitle": "Dünya standartlarında teknoloji altyapısı"
+    },
+    "technologies": {
+      "title": "Güçlü Altyapı",
+      "subtitle": "Enterprise-grade teknoloji & platform ortaklıkları"
+    },
+    "industries": {
+      "title": "Sektörel Çözüm Alanlarımız",
+      "subtitle": "Hangi endüstride olursanız olun, biz işletmenize özel zeka sunuyoruz.",
+      "solutions": [
+        {
+          "icon": "🥐",
+          "title": "Kafe & Restoran",
+          "subtitle": "Hizmet Kalitesi & Personel Verimlilik",
+          "desc": "Gerçek zamanlı müşteri geri bildirimleriyle personel performansını analiz edin, menü optimizasyonu yapın."
+        },
+        {
+          "icon": "🏪",
+          "title": "Franchise & Perakende",
+          "subtitle": "Merkezi Denetim & Standart Koruma",
+          "desc": "Yüzlerce şubede operasyonel tutarlılığı sağlayın, bölgesel performans karşılaştırmasını merkez panelde yapın."
+        },
+        {
+          "icon": "🏨",
+          "title": "Otel & Konaklama",
+          "subtitle": "Misafir Deneyim Yolculuğu",
+          "desc": "Check-in' den checkout'a her dokunuş noktasında müşteri memnuniyetini izleyin, online itibarınızı proaktif yönetin."
+        },
+        {
+          "icon": "🏥",
+          "title": "Sağlık & Klinik",
+          "subtitle": "Hasta Memnuniyeti & Operasyonel KPI",
+          "desc": "Hasta deneyimini ölçün, ekip koordinasyonunu iyileştirin, sağlık hizmetinde standartları yükseltin."
+        },
+        {
+          "icon": "🍰",
+          "title": "Fırın & Pastane",
+          "subtitle": "Ürün Kalitesi & Müşteri Beklentileri",
+          "desc": "Ürün taze lik oranı, servis hızı ve ürün çeşitliliğinde müşteri memnuniyetini real-time takip edin, stok yönetimini optimize edin."
+        }
+      ]
+    },
+    "ecosystem": {
+      "title": "Stratejik Ekosistem & Pilot Programlar",
+      "subtitle": "İşletmenizin Operasyonel Zekasını Kurmak",
+      "desc": "Sektör lideri kahve zincirleri ve global perakende grupları ile birlikte, müşteri geri bildirimini işletme zekasına dönüştürme vizyonumuzu kurguluyoruz.",
+      "cta": "Pilot Sürece Dahil Olun",
+      "comingSoon": "Yakında",
+      "partners": [
+        {
+          "title": "Loyalty & CRM",
+          "desc": "Müşteri sadakat programları entegrasyonu."
+        },
+        {
+          "title": "Supply Chain",
+          "desc": "Tedarik zinciri ve stok zekası."
+        },
+        {
+          "title": "Predictive Marketing",
+          "desc": "Tahminlemeli pazarlama stratejileri."
+        }
+      ]
+    },
+    "features": {
+      "title": "Neden Vocalize?",
+      "subtitle": "Vocalize, işletmelerin müşterilerini sadece duymalarını değil, anlamalarını sağlar. Her mesaj, bir veri değil; bir deneyimdir.",
+      "feature1": {
+        "title": "Anında Müdahale",
+        "desc": "Şikayetleri müşteriniz kapıdan çıkmadan çözün, dijital itibarınızı proaktif olarak koruyun."
+      },
+      "feature2": {
+        "title": "Şube Röntgeni",
+        "desc": "Tüm lokasyonlarınızı ve personel performansınızı tek panelden, anlık verilerle yönetin."
+      },
+      "feature3": {
+        "title": "Sıfır Sürtünme",
+        "desc": "Uygulama indirme zorunluluğu yok. QR okutmak yeterli; geleneksel anketlere göre 12 kat daha fazla katılım."
+      }
+    },
+    "useCases": {
+      "title": "İşletmenize Özel Çözümler",
+      "subtitle": "Sektörünüz ne olursa olun, müşteri sesini Vocalize ile büyüme stratejisine dönüştürün.",
+      "solutions": [
+        {
+          "sector": "Kafe & Restaurant",
+          "icon": "🍽️",
+          "challenge": "Yemek kalitesi ve hizmet hızı",
+          "solution": "Anlık geri bildirimlerle menü optimizasyonu ve personel eğitimi"
+        },
+        {
+          "sector": "Otel & Konaklama",
+          "icon": "🏨",
+          "challenge": "Misafir deneyimi yönetimi",
+          "solution": "Şube bazlı memnuniyet takibi ve online itibar koruması"
+        },
+        {
+          "sector": "Perakende & Mağazacılık",
+          "icon": "🛍️",
+          "challenge": "Müşteri sadakati ve mağaza performansı",
+          "solution": "Lokasyon karşılaştırması ve trend analizi"
+        },
+        {
+          "sector": "Zincir İşletmeler",
+          "icon": "🏢",
+          "challenge": "Çok şubeli operasyon koordinasyonu",
+          "solution": "Merkezi yönetim paneli ve bölge raporlaması"
+        }
+      ]
+    },
+    "qrPoster": {
+      "title": "Her İşletmeye Özel QR Afiş Tasarımı",
+      "desc": "QR afişleriniz markanıza ve mekânınıza özel renklendirilebilir.",
+      "note": "Renk, yazı veya dil düzenlemeleri işletmenize göre uyarlanır.",
+      "posterText": "Görüşlerinizi bizimle paylaşın",
+      "footer": "Afiş Tasarım Süreci Bize, Baskı İşletmenize Aittir.",
+      "features": [
+        "Marka Renkleriyle Özelleştirme",
+        "Çok Dilli Destek",
+        "Profesyonel Baskıya Hazır",
+        "Dijital & Fiziksel Kullanım"
+      ]
+    },
+    "pricing": {
+      "badge": "HORECA Sektörüne Özel",
+      "title": "İşletmenize Özel",
+      "titleHighlight": "Çözüm Modelleri",
+      "subtitle": "Tek lokasyonlu kafeden global franchise zincirine kadar, her işletme profili için ölçeklenebilir altyapı.",
+      "plan1": {
+        "name": "Butik / Tek Şube",
+        "desc": "Yerel işletmeler için başlangıç.",
+        "features": [
+          "Sınırsız QR Geri Bildirim",
+          "Temel Yönetici Paneli",
+          "Google Harita Yönlendirmesi",
+          "Haftalık E-posta Raporu"
+        ],
+        "priceTitle": "Şube Başı Lisans",
+        "priceSubtitle": "Kurulum + Aylık Hizmet Bedeli",
+        "cta": "Fiyat Bilgisi Al"
+      },
+      "plan2": {
+        "name": "Zincir İşletme",
+        "desc": "Çok şubeli yapılar için.",
+        "badge": "En Çok Tercih Edilen",
+        "features": [
+          "Tüm 'Butik' Özellikleri",
+          "Şube Kıyaslama Tablosu",
+          "Bölge/Müdür Yetkilendirme",
+          "Personel Bazlı Veri Takibi",
+          "Detaylı Trend Analizi"
+        ],
+        "priceTitle": "Hacim İndirimi",
+        "priceSubtitle": "Şube sayısına göre özel teklif",
+        "cta": "Teklif İsteyin"
+      },
+      "plan3": {
+        "name": "Enterprise / Global",
+        "desc": "Dev operasyonlar & Partnerlik.",
+        "features": [
+          "V2 AI Erken Erişim Hakkı",
+          "Size Özel AI Model Eğitimi",
+          "Özel Entegrasyon Kurgusu (API)",
+          "Özel Başarı Yöneticisi",
+          "Öncelikli Teknik Destek"
+        ],
+        "priceTitle": "Kurumsal Plan",
+        "priceSubtitle": "Proje bazlı fiyatlandırma",
+        "cta": "Bize Ulaşın"
+      },
+      "commonTitle": "Tüm Paketlere Dahil Standart Hizmetler",
+      "commonFeatures": [
+        "QR Afiş Tasarım Desteği",
+        "7/24 Teknik İzleme",
+        "Düzenli Veri Yedekleme",
+        "Sınırsız Personel Hesabı"
+      ]
+    },
+    "impact": {
+      "title": "Geri Bildirim Değil, İşletme Zekası.",
+      "subtitle": "Vocalize, sadece geri bildirim toplamaz; işletmenizde ölçülebilir potansiyel etkinin bir parçasıdır.",
+      "metric1": {
+        "title": "Daha Fazla Geri Bildirim",
+        "desc": "Müşterilerin geri bildirim iletme oranında belirgin artış sağlar ve anlık veri akışı oluşturur."
+      },
+      "metric2": {
+        "title": "Daha Yüksek Kazanım Oranı",
+        "desc": "Olumsuz deneyimler online platformlara taşınmadan yerinde çözülür, bu sayede müşteri kayıpları azalır."
+      },
+      "metric3": {
+        "title": "Operasyonel Verimlilik",
+        "desc": "Şube performansı, ekip yanıt hızları ve müşteri memnuniyeti tek panelden yönetilir ve analiz edilir."
+      }
+    },
+    "v2": {
+      "badge": "Çok Yakında",
+      "title": "İşletmenizin",
+      "titleHighlight": "Akıllı Stratejik Ortağı",
+      "subtitle": "Vocalize V2, sadece müşteri geri bildirimlerini toplamakla kalmayacak;",
+      "subtitle2": "müşteri davranışlarını analiz edip",
+      "subtitle3": ", sektör trendlerini takip ederek işletmenize",
+      "subtitle4": "özel stratejik öneriler",
+      "subtitle5": "sunacak.",
+      "features": {
+        "f1": {
+          "title": "Müşteri Portföyü Analizi",
+          "desc": "Müşterilerinizin davranış biçimlerini, tercihlerini ve beklentilerini yapay zeka ile derinlemesine analiz eder."
+        },
+        "f2": {
+          "title": "Global Trend Takibi",
+          "desc": "Dünya genelindeki haberleri ve sektör trendlerini takip ederek, müşteri portföyünüze uygun fırsatları erkenden yakalar."
+        },
+        "f3": {
+          "title": "İşletmeye Özel Öneriler",
+          "desc": "Sorunları önceden tespit eder ve müşteri tercihlerinize uygun, kârlı stratejik çözümler sunar."
+        },
+        "f4": {
+          "title": "Global Marka Algısı",
+          "desc": "Markanızın dünya çapında nasıl algılandığını ölçer, rekabet avantajı elde etmeniz için size yol gösterir."
+        }
+      },
+      "pricingTitle": "V2 AI Ücretlendirmesi",
+      "pricingDesc1": "V2 AI özellikleri, işletmenize sunacağı katma değer göz önüne alınarak",
+      "pricingDesc2": "premium bir yatırım ürünü",
+      "pricingDesc3": "olarak konumlandırılacaktır. Detaylı fiyatlandırma bilgileri çok yakında duyurulacak.",
+      "pricingPoint1": "Franchise/Global İşletmelere Özel:",
+      "pricingPoint1Desc": "V2 AI'ya erken erişim hakkı ve öncelikli geçiş avantajı",
+      "pricingPoint2": "Kişiselleştirilmiş AI Avantajı:",
+      "pricingPoint2Desc": "Erken katılan işletmelerin verileri anonimleştirilerek sistem eğitiminde kullanılır. Bu sayede V2 AI, işletmenizin karakteristiklerini tanır ve size özel stratejik öneriler sunabilir - sanki sadece sizin için tasarlanmış bir AI ortağınız olur.",
+      "pricingPoint3": "Veri Güvenliği:",
+      "pricingPoint3Desc": "Tüm veriler KVKK standartlarında anonimleştirilir ve güvenle işlenir",
+      "ctaV2": "V2 Hakkında Bilgi Alın"
+    },
+    "footer": {
+      "copyright": "© 2025 Vocalize Systems — Müşteri sesini teknolojiyle buluşturuyoruz.",
+      "kvkk": "KVKK Aydınlatma Metni",
+      "terms": "Kullanım Koşulları"
+    },
+    "leadModal": {
+      "title": "Bilgi Alın",
+      "subtitle": "Aşağıdaki formu doldurun, ekibimiz sizinle iletişime geçsin.",
+      "quickOptions": [
+        "Fiyatlandırmayı öğrenmek istiyorum",
+        "Demo toplantısı yapmak istiyorum",
+        "Vocalize'ın çalışma mantığını öğrenmek istiyorum",
+        "İşletmem için uygun mu değerlendirmek istiyorum"
+      ],
+      "nameLabel": "Ad Soyad",
+      "namePlaceholder": "John Doe",
+      "emailLabel": "E-posta",
+      "emailPlaceholder": "ornek@sirket.com",
+      "phoneLabel": "Telefon (İsteğe bağlı)",
+      "phonePlaceholder": "+90 555 ...",
+      "messageLabel": "Mesajınız",
+      "messagePlaceholder": "Sorunuzu buraya yazın...",
+      "submit": "Gönder"
+    }
+  },
+  "customer": {
+    "welcome": "Hoş Geldiniz",
+    "guestWelcome": "Deneyiminizi Paylaşın",
+    "subtitle": "Geri bildirimlerinizle işletmelerin gelişmesine yardımcı olun.",
+    "qrAutoDetect1": "İşletmeyi bir kez QR ile doğruladığınızda, sonraki girişlerinizde işletme ve şube bilgileri otomatik olarak açılır.",
+    "qrAutoDetect2": "Tekrar QR okutmanıza gerek kalmaz.",
+    "qrAutoDetect3": "Bu doğrulama yalnızca seçtiğiniz işletme için geçerlidir.",
+    "sendFeedback": "Geri Bildirim Gönderin",
+    "complaint": "Şikayet Et!",
+    "suggestion": "Öneride Bulun",
+    "review": "Değerlendir",
+    "complaintDesc": "Bir sorun mu yaşadınız? Hemen bildirin!",
+    "suggestionDesc": "Fikriniz var mı? Bize yazın!",
+    "reviewDesc": "Deneyiminizi puanlayın!",
+    "myFeedbacks": "Geri Bildirimlerim",
+    "stats": "İstatistiklerim",
+    "selectBusiness": "İşletme Seçin",
+    "selectBranch": "Şube Seçin",
+    "selectPlaceholder": "Seçiniz...",
+    "qrScanned": "QR Kod İle Doğrulandı",
+    "changeInfo": "Değiştir",
+    "infoBox": "Geri bildirimleriniz doğrudan işletme yöneticilerine anında iletilir ve aksiyon alınır.",
+    "warningTitle": "Önemli Not:",
+    "warningText": "Vocalize geri bildirimlerinizi anında yöneticilere iletilir. Çözüm süreci ve nihai geri dönüş tamamen işletmeye bağlıdır.",
+    "allFeedbacks": "Yaptığınız Tüm Geri Bildirimlerinizi Burada Görüntüleyebilirsiniz",
+    "allStats": "Tüm Zamanların İstatistiklerine Ulaşabilirsiniz",
+    "supportItem": "Destek",
+    "logout": "Çıkış Yap",
+    "total": "Toplam Geri Bildirim Sayısı",
+    "avgRating": "Puanlama Ortalaması",
+    "mostVisited": "En Çok Geri Bildirim Yapılan İşletme",
+    "feedbackTypes": "Form Türleri",
+    "complaintBadge": "Şikayet",
+    "suggestionBadge": "Öneri",
+    "reviewBadge": "Değerlendirme",
+    "noFeedbacks": "Henüz geri bildirim göndermediniz",
+    "sendFirstFeedback": "İlk geri bildiriminizi gönderin ve deneyiminizi paylaşın!",
+    "sendFeedbackBtn": "Geri Bildirim Gönder",
+    "all": "Tümü",
+    "newest": "En Yeni",
+    "oldest": "En Eski",
+    "delivered": "İletildi",
+    "reviewing": "İnceleniyor",
+    "resolved": "İşlendi",
+    "visits": "ziyaret",
+    "guest": "Misafir",
+    "register": "Kayıt Ol",
+    "guestTracking": "Geri bildirimlerinizi takip edin",
+    "guestTrackingDesc": "Hesap oluşturarak gönderdiğiniz geri bildirimlerin durumunu takip edebilirsiniz.",
+    "home": "Ana Sayfa",
+    "notifications": "Bildirimler",
+    "statistics": "İstatistik",
+    "filterAllBranches": "Tüm Şubeler",
+    "filterAllTypes": "Tüm Türler",
+    "filterAllStatuses": "Tüm Durumlar",
+    "changeEmail": "E-posta Değiştir",
+    "changePhone": "Telefon Değiştir",
+    "changePassword": "Şifre Değiştir",
+    "createSupportTicket": "Destek Talebi Oluştur",
+    "feedbackToVocalize": "Vocalize'a Geri Bildirim",
+    "deleteAccount": "Hesabı Sil",
+    "deleteAccountTitle": "Hesabı Silmek İstediğinize Emin misiniz?",
+    "deleteAccountWarning": "Bu işlem geri alınamaz. Tüm verileriniz kalıcı olarak silinecektir.",
+    "deleteConfirm": "Eminim, hesabımı silmek istiyorum",
+    "confirm": "Onaylıyorum",
+    "cancel": "İptal",
+    "unknown": "Bilinmiyor",
+    "totalFeedbacksCount": "Toplam geri bildirim",
+    "advancedFilter": "Gelişmiş Filtreleme",
+    "formType": "Form Biçimi",
+    "branch": "İşletme/Şube",
+    "status": "Durum",
+    "feedbackDetail": "Bildirim Detayı",
+    "yourMessage": "Mesajınız",
+    "attachedImages": "Ekli Görseller",
+    "close": "Kapat",
+    "generalEval": "Genel Değerlendirme",
+    "guestCTA": {
+      "feedbackTitle": "Tüm Geçmiş Geri Bildirimlerinizi görmek için Kayıt Olun",
+      "statsTitle": "İstatistiklerinizi görmek için Kayıt Olun",
+      "subtext": "Misafir verileri kaydedilmez. Geçmiş bildiriminize ve istatistiklerinize ulaşmak için üye girişi yapmalısınız.",
+      "button": "Kayıt Ol"
+    },
+    "guestWarning": {
+      "title": "⚠️ Misafir olarak devam ediyorsunuz",
+      "text": "Bu bildirim hesabınıza kaydedilmeyecek ve işletme size geri dönüş yapamayacaktır. Geri bildiriminizin takibi ve işletmenin sizinle iletişime geçebilmesi için Giriş Yaparak Gönderin.",
+      "dontShow": "Daha sonra gösterme",
+      "continueGuest": "Devam Et",
+      "loginToSend": "Giriş Yaparak Gönder"
+    },
+    "support": {
+      "title": "Destek Talebi Oluştur",
+      "description": "Sorununuzu veya önerinizi detaylı bir şekilde açıklayın...",
+      "email": "E-posta",
+      "message": "Mesajınız",
+      "messagePlaceholder": "Sorununuzu veya önerinizi detaylı bir şekilde açıklayın...",
+      "images": "Görsel Yükleme (Opsiyonel)",
+      "upload": "Görsel Yükle",
+      "send": "Gönder",
+      "sending": "Gönderiliyor...",
+      "successTitle": "Destek talebiniz gönderildi!",
+      "successDesc": "En kısa sürede dönüş yapacağız.",
+      "errorTitle": "Hata",
+      "errorDesc": "Bir hata oluştu, lütfen tekrar deneyin.",
+      "errorEmpty": "Lütfen mesajınızı yazın.",
+      "errorEmail": "Lütfen e-posta adresinizi girin.",
+      "maxImages": "En fazla 3 görsel ekleyebilirsiniz.",
+      "imageUploaded": "{{count}} görsel yüklendi"
+    },
+    "statsPage": {
+      "feedbackBreakdown": "Geri Bildirim Dağılımı",
+      "ratingOverview": "Puanlama Özeti",
+      "noData": "Henüz veri bulunmamaktadır"
+    },
+    "userTitle": {
+      "newVoice": "Yeni Ses",
+      "experiencedObserver": "Deneyimli Gözlemci",
+      "vocalizAmbassador": "Vocalize Elçisi"
+    },
+    "userTitleInfo": {
+      "newVoiceDesc": "Yeni başlayan bir ses olarak, görüşlerini paylaştığın için teşekkür ederiz.",
+      "experiencedObserverDesc": "Deneyimli gözlemci olarak, tutarlı geri bildirimler veriyorsun.",
+      "vocalizAmbassadorDesc": "Vocalize Elçisi olarak, işletmelerin gelişmesine büyük katkı sağlıyorsun!",
+      "nextLevel": "Bir Sonraki Seviye",
+      "nextLevelNewVoice": "6 bildirim daha yaparsan \"Deneyimli Gözlemci\" olacaksın!",
+      "nextLevelExperienced": "20 bildirim daha yaparsan \"Vocalize Elçisi\" olacaksın!",
+      "maxLevel": "🎉 Zaten en yüksek seviyedesin! Harika bir Elçisin!"
+    },
+    "businessSuggestion": {
+      "title": "Vocalize Burada Olsun İster Misiniz?",
+      "businessName": "İşletme Adı",
+      "businessNamePlaceholder": "Örn: Kahve Dükkanı",
+      "location": "Konum",
+      "locationPlaceholder": "Örn: İstanbul, Beşiktaş",
+      "suggest": "Öner",
+      "successMsg": "Öneriniz başarıyla gönderildi!",
+      "errorMsg": "Lütfen tüm alanları doldurunuz."
+    },
+    "visitedBusinesses": "Ziyaret Edilen İşletmeler",
+    "noVisitedBusiness": "Henüz bir işletme ziyaret etmediniz",
+    "startWithQR": "QR kod okutarak başlayın ve geri bildirim gönderin",
+    "selectBranchForFeedback": "Geri bildirim göndermek için şube seçin",
+    "businessSelected": "İşletme Seçili",
+    "ratingLabel": "Puan:",
+    "noFilteredFeedback": "Seçilen filtrelerle eşleşen geri bildirim bulunamadı.",
+    "user": "Kullanıcı",
+    "branchSelector": {
+      "geoError": "Tarayıcınız konum servisini desteklemiyor.",
+      "searchPlaceholder": "Şube veya ilçe ara...",
+      "findNearMe": "Yakınımdakileri Bul",
+      "recentVisits": "Son Ziyaretler",
+      "byDistance": "Mesafeye Göre",
+      "allBranches": "Tüm Şubeler",
+      "noResult": "Sonuç bulunamadı.",
+      "moreBranches": "ve {{count}} şube daha...",
+      "pinnedBranches": "Sabitlenmiş Şubeler"
+    },
+    "loading": "Yükleniyor...",
+    "branchSelection": "Şube Seçimi",
+    "ageModal": {
+      "title": "Sizi Biraz Tanıyalım",
+      "description": "Sizi daha iyi tanıyabilmemiz için yaş grubunuzu seçin.",
+      "subtitle": "Hizmet kalitemizi artırmak için yaş grubunuzu öğrenebilir miyiz?",
+      "accessibleTitle": "Yaş Grubu Seçimi"
+    },
+    "sortBy": "Sıralama",
+    "installRequest": {
+      "title": "Kurulum Başvurusu",
+      "description": "İşletmenizi dijitalleştirmek için ilk adımı atın. Formu doldurun, size ulaşalım.",
+      "companyName": "İşletme Adı",
+      "companyNamePlaceholder": "İşletmenizin adını giriniz.",
+      "sector": "Sektör",
+      "sectorPlaceholder": "Sektör seçiniz",
+      "fullName": "Ad Soyad",
+      "fullNamePlaceholder": "Adınız Soyadınız",
+      "email": "E-posta",
+      "emailPlaceholder": "ornek@sirket.com",
+      "phone": "Telefon",
+      "phonePlaceholder": "0555 123 45 67",
+      "position": "Pozisyon",
+      "positionPlaceholder": "Örn: İşletme Sahibi, Müdür",
+      "note": "Varsa Notunuz",
+      "notePlaceholder": "Eklemek istedikleriniz...",
+      "otherNotePlaceholder": "Lütfen buraya seçtiğiniz \"Diğer\" İşletme Adını ve/veya Sektörünüzü net bir şekilde belirtiniz. (Örn: Fintech)",
+      "submit": "Başvuruyu Tamamla",
+      "successTitle": "Başvurunuz Alındı!",
+      "successDesc": "Kurulum talebiniz başarıyla iletildi. Ekibimiz en kısa sürede sizinle iletişime geçecektir.",
+      "sectors": {
+        "cafe": "Kafe & Restoran",
+        "bakery": "Fırın & Pastane",
+        "hotel": "Otel & Konaklama",
+        "beauty": "Güzellik & Bakım",
+        "health": "Sağlık & Klinik",
+        "retail": "Perakende & Mağazacılık",
+        "sports": "Spor & Fitness",
+        "education": "Eğitim",
+        "franchise": "Franchise",
+        "other": "Diğer"
+      }
+    },
+    "settings": {
+      "title": "Ayarlar",
+      "description": "Hesap ve uygulama ayarlarınızı buradan yönetebilirsiniz.",
+      "tabs": {
+        "profile": "Profil",
+        "security": "Güvenlik",
+        "account": "Hesap"
+      },
+      "profile": {
+        "currentEmail": "Mevcut E-posta",
+        "newEmail": "Yeni E-posta",
+        "placeholder": "yeni@email.com",
+        "update": "E-postayı Güncelle"
+      },
+      "security": {
+        "newPassword": "Yeni Şifre",
+        "confirmPassword": "Şifreyi Onayla",
+        "placeholder": "••••••••",
+        "update": "Şifreyi Güncelle"
+      },
+      "account": {
+        "dangerZone": "Tehlikeli Bölge",
+        "deleteDescription": "Hesabınızı sildiğinizde tüm verileriniz kalıcı olarak silinir ve geri getirilemez.",
+        "deleteStart": "Hesabı Silme İşlemini Başlat"
+      },
+      "unlockFeatures": "Daha Fazla Özellik Açın",
+      "unlockDescription": "Geri bildirimlerinizi takip edin, istatistiklerinizi görün and daha fazla özelliği kullanın.",
+      "vocalizeFeedback": "Vocalize'a Bildir",
+      "logout": "Çıkış Yap",
+      "close": "Pencereyi Kapat",
+      "errors": {
+        "fillAll": "Lütfen tüm alanları doldurunuz",
+        "mismatch": "Şifreler eşleşmiyor",
+        "shortPassword": "Şifre en az 6 karakter olmalı"
+      },
+      "success": {
+        "emailUpdated": "E-posta başarıyla güncellendi",
+        "passwordUpdated": "Şifre başarıyla güncellendi"
+      },
+      "updating": "Güncelleniyor...",
+      "deleteModal": {
+        "title": "Hesabınızı Silmek Üzeresiniz",
+        "description": "Bu işlem geri alınamaz. Hesabınız silindiğinde tüm geri bildirim geçmişiniz, profil bilgileriniz ve ayarlarınız kalıcı olarak silinecektir.",
+        "checkbox": "Sonuçları anlıyorum ve hesabımı kalıcı olarak silmeyi onaylıyorum.",
+        "cancel": "Vazgeç",
+        "delete": "Evet, Hesabımı Sil",
+        "deleting": "Siliniyor..."
+      }
+    }
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Ana Panel",
+      "subtitle": "İşletmenizin anlık performansını ve son aktiviteleri takip edin",
+      "quickLook": "Hızlı Bakış",
+      "distributionDesc": "Gelen bildirimlerin dağılımı",
+      "starDistribution": "Yıldız Dağılımı",
+      "formTypes": "Form Türleri",
+      "noEvaluation": "Henüz değerlendirme almadınız",
+      "noFeedback": "Henüz geri bildirim almadınız",
+      "recentActivities": "Son Aktiviteler",
+      "seeAll": "Tümünü Gör",
+      "noActivity": "Henüz aktivite yok.",
+      "urgentAction": "ACİL DURUM: Müdahale Gerektiren Geri Bildirimler Var!",
+      "urgentActionDesc": "Müşteri memnuniyetini sağlamak için lütfen acil geri bildirimleri inceleyin.",
+      "urgentActionCount": "{{count}} acil bildirim bekliyor.",
+      "inspect": "İncele",
+      "metrics": {
+        "total": "Toplam Bildirim",
+        "pending": "Bekleyen Şikayet",
+        "resolved": "Çözülenler",
+        "avgRating": "Ort. Puan",
+        "newData": "Yeni Veri",
+        "vsLastPeriod": "geçen döneme göre"
+      }
+    },
+    "header": {
+      "allBranches": "Tüm Şubeler",
+      "selectBranch": "Şube Seçiniz",
+      "searchBranch": "Şube ara...",
+      "noBranchFound": "Şube bulunamadı",
+      "scans": "Tarama",
+      "notifications": "Bildirimler",
+      "markAllRead": "Hepsini okundu işaretle",
+      "noNotifications": "Bildirim yok.",
+      "viewAll": "Tümünü Gör",
+      "myAccount": "Hesabım",
+      "settings": "Ayarlar",
+      "appearance": "Görünüm",
+      "themeLight": "Aydınlık",
+      "themeDark": "Koyu",
+      "logout": "Çıkış Yap",
+      "newComplaint": "Yeni bir şikayetiniz var",
+      "newSuggestion": "Yeni bir öneriniz var",
+      "newEvaluation": "Yeni bir değerlendirmeniz var",
+      "newNotification": "Yeni bildirim"
+    },
+    "sidebar": {
+      "dashboard": "Ana Panel",
+      "feedbacks": "Geri Bildirimler",
+      "analytics": "Analizler",
+      "notifications": "Bildirim Geçmişi",
+      "settings": "Ayarlar",
+      "bulkSetup": "Hızlı Kurulum"
+    },
+    "feedbacks": {
+      "title": "Geri Bildirimler",
+      "noMessage": "Mesaj içeriği yok",
+      "customerNotePresent": "Müşteri Notu Mevcut",
+      "generalEvalShort": "Genel D.",
+      "image": "Görsel",
+      "fetchErrorTitle": "Bağlantı Hatası",
+      "fetchErrorDesc": "Verileriniz yüklenirken bir sorun oluştu. Lütfen sayfayı yenileyin.",
+      "searchPlaceholder": "Mesaj, isim, email veya telefon...",
+      "clear": "Temizle",
+      "noRecord": "Kayıt bulunamadı",
+      "loading": "Geri bildirimler yükleniyor..."
+    },
+    "settings": {
+      "title": "Ayarlar",
+      "profileInfo": "Profil Bilgileri",
+      "passwordsDoNotMatch": "Şifreler eşleşmiyor.",
+      "updatePasswordSuccess": "Şifreniz güncellendi.",
+      "feedbackReceived": "Geri Bildirim Alındı",
+      "email": "E-posta Adresi",
+      "businessName": "İşletme Adı",
+      "appearance": "Görünüm Ayarları",
+      "themePreference": "Tema Tercihi",
+      "themeDesc": "Panelin görünümünü aydınlık veya koyu mod olarak ayarlayın.",
+      "changePassword": "Şifre Değiştir",
+      "newPassword": "Yeni Şifre",
+      "confirmPassword": "Yeni Şifre (Tekrar)",
+      "updatePassword": "Şifreyi Güncelle",
+      "vocalizeFeedback": "Vocalize Ekibine Geri Bildirim Gönderin",
+      "vocalizeFeedbackDesc": "Vocalize deneyiminizi iyileştirmek için öneri, şikayet veya taleplerinizi doğrudan bize iletebilirsiniz.",
+      "sendFeedback": "Geri Bildirim Gönder",
+      "modal": {
+        "title": "Vocalize Ekibiyle İletişim",
+        "desc": "Görüşlerinizi, önerilerinizi veya yaşadığınız sorunları bizimle paylaşın.",
+        "message": "Mesajınız *",
+        "placeholder": "Fikirlerinizi buraya yazın...",
+        "images": "Görseller (Opsiyonel)",
+        "upload": "Yükle",
+        "submit": "Gönder"
+      }
+    },
+    "auth": {
+      "login": "Giriş Yap",
+      "register": "Kayıt Ol",
+      "customer": "Müşteri",
+      "manager": "Yönetici",
+      "fullName": "İsim Soyisim",
+      "email": "E-posta Adresi",
+      "phone": "Telefon (05...)",
+      "password": "Şifre (6-12 karakter)",
+      "managerCode": "Yönetici Kodu (MGR_...)",
+      "forgotPassword": "Şifremi Unuttum?",
+      "legal": "Kayıt olarak Kullanım Koşulları ve KVKK Aydınlatma Metni'ni okuduğumu ve kabul ettiğimi onaylıyorum.",
+      "guestOption": "Üyelikle uğraşmak istemiyor musun?",
+      "guestButton": "Misafir Girişi",
+      "guestLegal": "Devam ederek Kullanım Koşulları ve KVKK Metni'ni kabul etmiş sayılırsınız.",
+      "backToLogin": "Geri Dön",
+      "sendResetLink": "Sıfırlama Bağlantısı Gönder",
+      "resetSuccess": "E-posta Gönderildi",
+      "resetSuccessDesc": "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.",
+      "loginSuccess": "Giriş Başarılı",
+      "registerSuccess": "Kayıt Başarılı",
+      "verifyEmail": "Lütfen e-posta adresinizi doğrulayın."
+    },
+    "title": "Performans Analizi",
+    "subtitle": "İşletmenizin sadakat metrikleri, operasyonel hızı ve Google performansı.",
+    "analytics": {
+      "brandVsExperience": {
+        "title": "Marka vs Deneyim",
+        "desc": "Müşterinin aklındaki \"Marka\" ile o an yaşadığı \"Hizmet\" arasındaki fark.",
+        "brandPerception": "Genel Algı (Marka)",
+        "instantExperience": "Anlık Deneyim (Hizmet)",
+        "brandRisk": "⚠️ Dikkat: Marka beklentisi yüksek, ancak son hizmet deneyimleri bu beklentinin altında kalıyor.",
+        "brandSuccess": "✅ Harika: Sunduğunuz hizmet, müşterinin marka beklentisinin üzerine çıkıyor."
+      },
+      "traffic": {
+        "title": "Trafik & Dönüşüm Hunisi",
+        "desc": "Müşteri yolculuğu hunisi.",
+        "visits": "Ziyaret",
+        "qrScans": "QR Okutma",
+        "webLink": "Web Link",
+        "conversion": "Dönüşüm",
+        "maps": "Haritalar"
+      },
+      "satisfaction": {
+        "title": "Genel Memnuniyet",
+        "desc": "Müşteri geri bildirim tonu dağılımı.",
+        "positive": "Pozitif",
+        "neutral": "Nötr",
+        "negative": "Negatif"
+      },
+      "activityByTime": {
+        "title": "Zaman Dilimine Göre Aktivite",
+        "desc": "Seçili tarih aralığında günün saatlerine göre aktivite yoğunluğu."
+      },
+      "demographic": {
+        "title": "Demografik Zekâ",
+        "subtitle": "Yaş gruplarına göre davranış ve memnuniyet analizi.",
+        "audienceDistribution": "Kitle Dağılımı",
+        "audienceDesc": "Müşterilerin yaş grubu bazlı genel dağılımı.",
+        "filter": "Filtre",
+        "all": "Tümü",
+        "liveStream": "Anlık Geri Bildirim Akışı",
+        "brandLoyaltyScore": "Marka Sadakati Skoru",
+        "brandLoyaltyDesc": "Yaş gruplarının işletmenize verdiği ortalama puanlar (0-5).",
+        "formDistribution": "Yaş Gruplarına Göre Form Dağılımı",
+        "formDistributionDesc": "Yaş gruplarının hangi geri bildirim türlerini tercih ettiğini gösterir.",
+        "mostActiveGroup": "Bu işletmenin en aktif müşteri grubu:",
+        "transaction": "İşlem",
+        "group": "Grup: {{name}}",
+        "age": "Yaş: {{name}}",
+        "noData": "Henüz yeterli demografik veri toplanmadı."
+      },
+      "leaderboard": {
+        "title": "Şube Performans Ligi",
+        "subtitle": "Şubelerinizin detaylı karşılaştırması.",
+        "rank": "Sıra",
+        "branchName": "Şube Adı",
+        "total": "Toplam",
+        "leagueScore": "Lig Puanı",
+        "quality": "Kalite",
+        "resolution": "Çözüm",
+        "audience": "Kitle",
+        "map": "Harita",
+        "inspect": "İncele",
+        "calculationWeight": "Hesaplama Ağırlığı",
+        "qualityWeight": "Kalite %40",
+        "operationWeight": "Operasyon %30",
+        "dataWeight": "Veri Payı %30",
+        "searchPlaceholder": "Şube ara...",
+        "noResult": "Şube bulunamadı.",
+        "showingRange": "{{total}} şubeden {{start}}-{{end}} arası gösteriliyor"
+      }
+    },
+    "metrics": {
+      "totalInteraction": "Toplam Etkileşim",
+      "uniqueUsers": "Tekil Kullanıcı",
+      "loyaltyScore": "Sadakat Skoru",
+      "operationalPerformance": "Operasyonel Performans",
+      "resolutionSuccess": "Çözüm Başarısı",
+      "pendingComplaints": "Bekleyen Şikayet",
+      "calculating": "Veriler Hesaplanıyor..."
+    },
+    "trends": {
+      "title": "Bildirim Trendi",
+      "general": "Genel",
+      "detailed": "Detaylı"
+    },
+    "brandVsExperience": {
+      "title": "Marka vs Deneyim",
+      "desc": "Müşterinin aklındaki \"Marka\" ile o an yaşadığı \"Hizmet\" arasındaki fark.",
+      "brandPerception": "Genel Algı (Marka)",
+      "instantExperience": "Anlık Deneyim (Hizmet)",
+      "brandRisk": "⚠️ Dikkat: Marka beklentisi yüksek, ancak son hizmet deneyimleri bu beklentinin altında kalıyor.",
+      "brandSuccess": "✅ Harika: Sunduğunuz hizmet, müşterinin marka beklentisinin üzerine çıkıyor."
+    },
+    "traffic": {
+      "title": "Trafik & Dönüşüm Hunisi",
+      "desc": "Müşteri yolculuğu hunisi.",
+      "visits": "Ziyaret",
+      "qrScans": "QR Okutma",
+      "webLink": "Web Link",
+      "conversion": "Dönüşüm",
+      "maps": "Haritalar"
+    },
+    "satisfaction": {
+      "title": "Genel Memnuniyet",
+      "desc": "Müşteri geri bildirim tonu dağılımı.",
+      "positive": "Pozitif",
+      "neutral": "Nötr",
+      "negative": "Negatif"
+    },
+    "activityByTime": {
+      "title": "Zaman Dilimine Göre Aktivite",
+      "desc": "Seçili tarih aralığında günün saatlerine göre aktivite yoğunluğu."
+    },
+    "demographic": {
+      "title": "Demografik Zekâ",
+      "subtitle": "Yaş gruplarına göre davranış ve memnuniyet analizi.",
+      "audienceDistribution": "Kitle Dağılımı",
+      "audienceDesc": "Müşterilerin yaş grubu bazlı genel dağılımı.",
+      "filter": "Filtre",
+      "all": "Tümü",
+      "liveStream": "Anlık Geri Bildirim Akışı",
+      "brandLoyaltyScore": "Marka Sadakati Skoru",
+      "brandLoyaltyDesc": "Yaş gruplarının işletmenize verdiği ortalama puanlar (0-5).",
+      "formDistribution": "Yaş Gruplarına Göre Form Dağılımı",
+      "formDistributionDesc": "Yaş gruplarının hangi geri bildirim türlerini tercih ettiğini gösterir.",
+      "mostActiveGroup": "Bu işletmenin en aktif müşteri grubu:"
+    },
+    "leaderboard": {
+      "title": "Şube Performans Ligi",
+      "subtitle": "Şubelerinizin detaylı karşılaştırması.",
+      "rank": "Sıra",
+      "branchName": "Şube Adı",
+      "total": "Toplam",
+      "leagueScore": "Lig Puanı",
+      "quality": "Kalite",
+      "resolution": "Çözüm",
+      "audience": "Kitle",
+      "map": "Harita",
+      "inspect": "İncele",
+      "calculationWeight": "Hesaplama Ağırlığı",
+      "qualityWeight": "Kalite %40",
+      "operationWeight": "Operasyon %30",
+      "dataWeight": "Veri Payı %30",
+      "searchPlaceholder": "Şube ara...",
+      "noResult": "Şube bulunamadı.",
+      "showingRange": "{{total}} şubeden {{start}}-{{end}} arası gösteriliyor"
+    },
+    "notifications": {
+      "title": "Bildirim Geçmişi",
+      "subtitle": "Tüm geri bildirim uyarılarınızı buradan yönetin.",
+      "all": "Tümü",
+      "unread": "Okunmamış",
+      "read": "Okunmuş",
+      "selectedCount": "{{count}} bildirim seçildi",
+      "markAsRead": "Okundu İşaretle",
+      "markAsUnread": "Okunmadı İşaretle",
+      "delete": "Sil",
+      "status": "Durum",
+      "message": "Mesaj",
+      "branch": "Şube",
+      "date": "Tarih",
+      "noNotifications": "Görüntülenecek bildirim yok.",
+      "totalNotifications": "Toplam {{count}} bildirim",
+      "previous": "Önceki",
+      "next": "Sonraki",
+      "pageOf": "Sayfa {{current}} / {{total}}",
+      "deleteTitle": "Silme Onayı",
+      "deleteConfirm": "Seçili {{count}} bildirimi kalıcı olarak silmek istediğinizden emin misiniz?",
+      "updateSuccess": "{{count}} bildirim güncellendi.",
+      "deleteSuccess": "{{count}} bildirim silindi.",
+      "updateError": "Toplu güncelleme başarısız.",
+      "deleteError": "Toplu silme başarısız.",
+      "fetchError": "Bildirimler yüklenirken bir hata oluştu.",
+      "detailsLoading": "Detaylar yükleniyor...",
+      "customer": "Müşteri: {{name}}",
+      "general": "Genel"
+    },
+    "insights": {
+      "title": "⏳ Veri Toplanıyor...",
+      "desc": "Analiz motorunun devreye girmesi için minimum veri eşiği (5 işlem) henüz sağlanmadı.",
+      "suggestion": "Masalarda QR yönlendirmesini artırarak veri akışını hızlandırmayı hedefleyebilirsiniz.",
+      "digitalGrowth": "🚀 Dijital Büyüme Motoru",
+      "digitalGrowthDesc": "Harika performans! Müşterileriniz sadece mutlu ayrılmıyor, aynı zamanda bu mutluluğu dijitale taşıyor.",
+      "silentSatisfaction": "💎 Sessiz Memnuniyet (Gizli Potansiyel)",
+      "silentSatisfactionDesc": "Analiz: Müşterileriniz hizmetten çok memnun ancak sisteme katılım düşük.",
+      "strongPerformance": "🌟 Verimli Performans",
+      "strongPerformanceDesc": "Şube gayet başarılı bir çizgide ilerliyor. Müşteri memnuniyeti yüksek ve veri akışı sağlıklı.",
+      "operationalAlarm": "🚨 Kritik Operasyonel Alarm",
+      "operationalAlarmDesc": "Dikkat: Yüksek şikayet oranı ve düşük çözüm hızı.",
+      "brandRisk": "⚠️ Beklenti - Deneyim Uyuşmazlığı",
+      "brandRiskDesc": "Kritik Tespit: Müşteriler markanızı seviyor ancak bu şubedeki son deneyimleri beklentinin altında kalmış.",
+      "roleModel": "🏆 Rol Model Performans",
+      "roleModelDesc": "Kusursuz! Hem müşteri memnuniyeti zirvede hem de panel kullanımı çok disiplinli.",
+      "stablePerformance": "📊 Stabil Performans",
+      "stablePerformanceDesc": "Veriler dengeli seyrediyor."
+    },
+    "customerDetail": {
+      "errorLoading": "Müşteri bilgileri yüklenemedi.",
+      "notFound": "Müşteri bulunamadı.",
+      "back": "Geri Dön",
+      "unnamed": "İsimsiz Müşteri",
+      "registered": "Kayıt",
+      "editProfile": "Profili Düzenle",
+      "vipBadge": "VIP Müşteri",
+      "sensitiveBadge": "Hassas Müşteri",
+      "businessNotes": "İşletme Notları",
+      "noNotes": "Bu müşteri için işletmenize özel not bulunmuyor.",
+      "historyTitle": "Bu İşletmedeki Geçmişi",
+      "noFeedback": "Henüz geri bildirim kaydı yok.",
+      "noMessage": "Mesaj yok"
+    },
+    "branchCard": {
+      "title": "Şube Performans Karnesi",
+      "score": "Lig Puanı",
+      "happy": "Mutlu",
+      "neutral": "Nötr",
+      "unhappy": "Mutsuz",
+      "mapRedirects": "Haritalara Geçiş",
+      "resolutionSpeed": "Çözüm Hızı",
+      "person": "Kişi"
+    },
+    "branchDetail": {
+      "perfectMatch": "✨ Müşterinin beklediği kalite ile aldığı hizmet birebir örtüşüyor.",
+      "gapDesc": "Aradaki renkli alan (lazer), beklenti ile gerçeklik arasındaki farkı temsil eder.",
+      "unknown": "Bilinmiyor",
+      "selectedBranch": "Seçili Şube"
+    },
+    "bulkSetup": {
+      "title": "Enterprise Magic Setup",
+      "subtitle": "300+ şubeli zinciri 5 dakikada kurun. Excel'den kopyala, yapıştır, başlat!",
+      "selectBusiness": "1. İşletme Seçin",
+      "selectPlaceholder": "İşletme seçin...",
+      "loading": "Yükleniyor...",
+      "pasteData": "2. Şube Verilerini Yapıştırın",
+      "format": "Format:",
+      "example": "Her satırda bir şube",
+      "placeholder": "Alsancak Şubesi | https://g.page/r/...\nKarşıyaka Şubesi | https://g.page/r/...\nBornova Şubesi | https://g.page/r/...",
+      "startSetup": "Kurulumu Başlat",
+      "creating": "Oluşturuluyor...",
+      "successTitle": "Başarılı!",
+      "successDesc": "{{count}} şube başarıyla oluşturuldu.",
+      "errorTitle": "Hata",
+      "errorDesc": "Şubeler oluşturulurken bir hata oluştu.",
+      "exportCSV": "CSV İndir",
+      "downloaded": "İndirildi",
+      "downloadSuccess": "CSV dosyası başarıyla indirildi.",
+      "table": {
+        "branchName": "Şube Adı",
+        "qrCode": "QR Kodu",
+        "feedbackUrl": "Feedback URL",
+        "managerCode": "Manager Kodu",
+        "ownerCodes": "Owner Kodları",
+        "googleUrl": "Google URL"
+      },
+      "ownerCodesTitle": "Owner Kodları (Tüm İşletme Erişimi)",
+      "ownerCodesDesc": "Bu kodlar tüm şubelere erişim sağlar. İşletme yöneticilerine verin."
+    }
+  },
+  "auth": {
+    "login": "Giriş Yap",
+    "password": "Şifre en az 6 karakter olmalı.",
+    "register": "Kayıt Ol",
+    "customer": "Müşteri",
+    "manager": "Yönetici",
+    "fullName": "İsim Soyisim",
+    "email": "E-posta Adresi",
+    "phone": "Telefon (05...)",
+    "password": "Şifre (6-12 karakter)",
+    "managerCode": "Yönetici Kodu (MGR_...)",
+    "forgotPassword": "Şifremi Unuttum?",
+    "legal": "Kayıt olarak Kullanım Koşulları ve KVKK Aydınlatma Metni'ni okuduğumu ve kabul ettiğimi onaylıyorum.",
+    "guestOption": "Üyelikle uğraşmak istemiyor musun?",
+    "guestButton": "Misafir Girişi",
+    "guestLegal": "Devam ederek Kullanım Koşulları ve KVKK Metni'ni kabul etmiş sayılırsınız.",
+    "backToLogin": "Geri Dön",
+    "sendResetLink": "Sıfırlama Bağlantısı Gönder",
+    "resetSuccess": "E-posta Gönderildi",
+    "resetSuccessDesc": "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.",
+    "loginSuccess": "Giriş Başarılı",
+    "registerSuccess": "Kayıt Başarılı",
+    "verifyEmail": "Lütfen e-posta adresinizi doğrulayın."
+  },
+  "feedbackDetail": {
+    "detail": {
+      "title": "Detayı",
+      "urgent": "ACİL MÜDAHALE GEREKLİ",
+      "subtitle": "Geri bildirimin tüm detaylarını buradan inceleyebilirsiniz.",
+      "customerInfo": "Müşteri Bilgileri",
+      "membership": "Üyelik",
+      "technicalInfo": "Teknik Bilgiler",
+      "referenceId": "Referans ID",
+      "copy": "Kopyalandı",
+      "branch": "Şube",
+      "date": "Tarih",
+      "ageGroup": "Yaş Grubu",
+      "guestRequest": "Misafir İletişim Talebi",
+      "guestRequestDesc": "Bu misafir, yaşadığı deneyimle ilgili kendisine ulaşılmasını talep etti.",
+      "guestNote": "Müşteri Hakkında İşletme Notu",
+      "evaluationScore": "Değerlendirme Puanı",
+      "generalEval": "Genel Değerlendirme",
+      "customerMessage": "Müşteri Mesajı",
+      "noMessage": "Mesaj yok.",
+      "images": "Görseller",
+      "managerNote": "Bildirim Notu",
+      "managerNotePlaceholder": "Bu bildirime özel notlar...",
+      "lastUpdated": "Son Güncelleme",
+      "viewProfile": "Profili Görüntüle",
+      "anonymous": "Anonim kullanıcı (Profil verisi yok)",
+      "openImage": "Görseli Aç",
+      "translate": "Çevir",
+      "translatedSuccessfully": "Çeviri tamamlandı.",
+      "translationError": "Çeviri sırasında bir hata oluştu.",
+      "translationLabel": "Çeviri ({{lang}}):",
+      "statuses": {
+        "new": "Yeni",
+        "pending": "Beklemede",
+        "in_progress": "İşlemde",
+        "resolved": "Çözüldü",
+        "escalated": "Acil"
+      },
+      "types": {
+        "complaint": "Şikayet",
+        "suggestion": "Öneri",
+        "evaluation": "Değerlendirme",
+        "review": "Değerlendirme",
+        "rating": "Değerlendirme",
+        "general": "Geri Bildirim"
+      }
+    }
+  },
+  "form": {
+    "errorLoad": "Veri yüklenirken sorun oluştu.",
+    "limitExceeded": "Sınır Aşıldı",
+    "limitDesc": "En fazla 3 görsel yükleyebilirsiniz.",
+    "fileTooLarge": "Dosya Çok Büyük",
+    "fileTooLargeDesc": "{{name}} 5MB'dan küçük olmalıdır.",
+    "titles": {
+      "complaint": "Şikayet Bildir",
+      "complaintSub": "Sorunu çözelim.",
+      "suggestion": "Öneride Bulun",
+      "suggestionSub": "Fikirleriniz değerli.",
+      "review": "Değerlendir",
+      "reviewSub": "Deneyiminizi puanlayın.",
+      "default": "Geri Bildirim",
+      "defaultSub": "Görüşlerinizi paylaşın"
+    },
+    "stepsUI": {
+      "evidenceTitle": "Kanıt & Zaman",
+      "evidenceDesc": "İşleminizi hızlandırmak için detay verin.",
+      "problemTitle": "Sorun Nedir?",
+      "suggestionTitle": "Öneriniz Nedir?",
+      "problemDesc": "Lütfen detaylıca açıklayınız.",
+      "rateTitle": "Puanlayın",
+      "rateDesc": "Hizmetimizden ne kadar memnun kaldınız?",
+      "finalTitle": "Son Dokunuşlar",
+      "finalDesc": "Eklemek istedikleriniz var mı?",
+      "branchLabel": "Şube",
+      "addPhoto": "Ekle",
+      "extraImages": "Ek Görseller"
+    },
+    "infoBanner": "Geri bildiriminiz anında yöneticiye iletilir.",
+    "businessLabel": "İşletme",
+    "branch": {
+      "label": "Şube Seçin",
+      "placeholder": "Şube Seçiniz",
+      "auto": "QR ile otomatik seçildi"
+    },
+    "receipt": {
+      "label": "Alışveriş Fişiniz Var mı?",
+      "noReceipt": "Fişim Yok",
+      "hasReceipt": "Fişim Var",
+      "uploadLabel": "Fiş Görseli",
+      "placeholder": "Fiş Fotoğrafı Yükle",
+      "uploaded": "Yüklendi",
+      "dateLabel": "Ne Zaman Ziyaret Ettiniz?"
+    },
+    "message": {
+      "label": "Açıklama",
+      "placeholder": "Lütfen detayları buraya yazın...",
+      "minChars": "En az 10 karakter"
+    },
+    "rating": {
+      "label": "Memnuniyetiniz",
+      "emojis": {
+        "1": "😞 Çok Kötü",
+        "2": "😟 Kötü",
+        "3": "😐 İdare Eder",
+        "4": "😊 Memnun Kaldım",
+        "5": "🤩 Harikaydı!"
+      }
+    },
+    "reactions": {
+      "oneStar": "Çok üzgünüz 😔 Bunu telafi etmek için derhal incelemeye alacağız.",
+      "twoStar": "Beklentinizin altında kaldığımız için üzgünüz. Kendimizi geliştireceğiz.",
+      "threeStar": "Daha iyisini yapabiliriz. Geri bildiriminizle büyüyoruz.",
+      "fourStar": "Teşekkürler! Mükemmele ulaşmak için çalışmaya devam edeceğiz. 💪",
+      "fiveStar": "Muhteşemsiniz! Günümüzü güzelleştirdiniz, desteğiniz için teşekkürler! 🌟"
+    },
+    "general": {
+      "title": "İşletme Hakkındaki Genel Deneyiminiz",
+      "placeholder": "Mekan, hizmet veya atmosfer hakkında eklemek istedikleriniz...",
+      "placeholderLow": "Lütfen nerede hata yaptığımızı bize anlatın, düzeltmek istiyoruz...",
+      "placeholderMid": "Sizce neyi daha iyi yapabilirdik?",
+      "placeholderHigh": "En çok neyi beğendiğinizi anlatın (Hizmet, Lezzet, Ortam?)..."
+    },
+    "images": {
+      "label": "Ek Görseller (Opsiyonel)",
+      "placeholder": "Fotoğraf Ekle",
+      "sub": "Max 3 adet",
+      "uploaded": "görsel seçildi"
+    },
+    "submit": {
+      "sending": "Gönderiliyor...",
+      "send": "Gönder",
+      "error": "Hata oluştu.",
+      "errorValidation": "Lütfen gerekli alanları doldurun."
+    },
+    "success": {
+      "title": "Teşekkürler!",
+      "defaultTitle": "Harika!",
+      "desc": "Bildiriminiz {{name}} yönetimine iletildi.",
+      "defaultDesc": "Geri bildiriminiz başarıyla iletildi.",
+      "footer": "Bizi tercih ettiğiniz için teşekkürler.",
+      "button": "Kapat",
+      "homeButton": "Ana Sayfaya Dön"
+    },
+    "google": {
+      "title": "Harikasınız! 🤩",
+      "copyAlert": "Yorumunuzu sizin için kopyaladık! 📋",
+      "desc": "Bu güzel deneyiminizi Google'da paylaşarak diğer müşterilere de ilham vermek ister misiniz? Yapıştırmanız yeterli.",
+      "yesButton": "Google'da Paylaş",
+      "noButton": "Hayır, Teşekkürler",
+      "instaButton": "Bizi Instagram'da Takip Et",
+      "copiedToast": "Yorum kopyalandı! Google'a yönlendiriliyorsunuz..."
+    },
+    "steps": "Adım",
+    "guestContact": {
+      "title": "Telafi etmemize izin verin",
+      "desc": "Yaşadığınız olumsuz deneyimi telafi edebilmemiz için size ulaşmamızı ister misiniz?",
+      "yes": "Evet, bana ulaşın",
+      "name": "İsminiz",
+      "phone": "Telefon Numaranız",
+      "namePlaceholder": "Adınız Soyadınız",
+      "cancel": "Vazgeç ve Kapat"
+    }
+  }
+}

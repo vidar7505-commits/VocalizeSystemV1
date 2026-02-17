@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAdminContext } from '@/contexts/AdminContext'; // Eklenen
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, User, Mail, Phone, Calendar, Star, MessageSquare, AlertTriangle, MapPin, Loader2, Edit, Crown } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ const CustomerDetail = () => {
   const navigate = useNavigate();
   const { businessId } = useAdminContext(); // Eklenen: Business Context
   const { toast } = useToast();
+  const { t, i18n } = useTranslation();
   
   const [profile, setProfile] = useState(null);
   const [businessData, setBusinessData] = useState(null); // Eklenen: İşletme özel verisi
@@ -66,8 +68,8 @@ const CustomerDetail = () => {
         console.error('Error fetching customer data:', error);
         toast({
           variant: "destructive",
-          title: "Hata",
-          description: "Müşteri bilgileri yüklenemedi."
+          title: t('common.error'),
+          description: t('admin.customerDetail.errorLoading')
         });
       } finally {
         setLoading(false);
@@ -107,9 +109,9 @@ const CustomerDetail = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 p-8">
         <AlertTriangle className="w-16 h-16 text-slate-600" />
-        <p className="text-slate-400 text-center">Müşteri bulunamadı.</p>
+        <p className="text-slate-400 text-center">{t('admin.customerDetail.notFound')}</p>
         <Button onClick={() => navigate(-1)} className="bg-teal-600 hover:bg-teal-700 text-white">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Geri Dön
+          <ArrowLeft className="w-4 h-4 mr-2" /> {t('admin.customerDetail.back')}
         </Button>
       </div>
     );
@@ -118,7 +120,7 @@ const CustomerDetail = () => {
   return (
     <div className="max-w-5xl mx-auto p-0 md:p-4 pb-10">
       <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 text-slate-400 hover:text-white pl-0">
-        <ArrowLeft className="w-4 h-4 mr-2" /> Geri Dön
+        <ArrowLeft className="w-4 h-4 mr-2" /> {t('admin.customerDetail.back')}
       </Button>
 
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 mb-8">
@@ -126,10 +128,10 @@ const CustomerDetail = () => {
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <User className="w-6 h-6 text-teal-500" />
-              {profile.name || "İsimsiz Müşteri"}
+              <span translate="no">{profile.name || t('admin.customerDetail.unnamed')}</span>
             </h1>
             <p className="text-slate-400 text-sm mt-1">
-              Kayıt: {new Date(profile.created_at).toLocaleDateString('tr-TR')}
+              {t('admin.customerDetail.registered')}: <span translate="no">{new Date(profile.created_at).toLocaleDateString(i18n.language)}</span>
             </p>
           </div>
           <div className="flex gap-2 items-center flex-wrap">
@@ -139,11 +141,11 @@ const CustomerDetail = () => {
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Edit className="w-4 h-4 mr-2" />
-              Profili Düzenle
+              {t('admin.customerDetail.editProfile')}
             </Button>
             {/* GÜNCELLENDİ: Flagler businessData'dan okunuyor */}
-            {businessData?.is_vip && <Badge className="bg-purple-900/40 text-purple-400 border-purple-500/30 flex gap-1"><Crown className="w-3 h-3" /> VIP Müşteri</Badge>}
-            {businessData?.is_sensitive && <Badge className="bg-orange-900/40 text-orange-400 border-orange-500/30 flex gap-1"><AlertTriangle className="w-3 h-3" /> Hassas Müşteri</Badge>}
+            {businessData?.is_vip && <Badge className="bg-purple-900/40 text-purple-400 border-purple-500/30 flex gap-1"><Crown className="w-3 h-3" /> {t('admin.customerDetail.vipBadge')}</Badge>}
+            {businessData?.is_sensitive && <Badge className="bg-orange-900/40 text-orange-400 border-orange-500/30 flex gap-1"><AlertTriangle className="w-3 h-3" /> {t('admin.customerDetail.sensitiveBadge')}</Badge>}
           </div>
         </div>
 
@@ -151,33 +153,33 @@ const CustomerDetail = () => {
           <div className="space-y-3">
              <div className="flex items-center gap-3 text-slate-300">
                 <Mail className="w-4 h-4 text-slate-500" />
-                <span>{profile.email || '-'}</span>
+                <span translate="no">{profile.email || '-'}</span>
              </div>
              <div className="flex items-center gap-3 text-slate-300">
                 <Phone className="w-4 h-4 text-slate-500" />
-                <span>{profile.phone || '-'}</span>
+                <span translate="no">{profile.phone || '-'}</span>
              </div>
              <div className="flex items-center gap-3 text-slate-300">
                 <Calendar className="w-4 h-4 text-slate-500" />
-                <span>Kayıt: {new Date(profile.created_at).toLocaleDateString('tr-TR')}</span>
+                <span translate="no">{t('admin.customerDetail.registered')}: {new Date(profile.created_at).toLocaleDateString(i18n.language)}</span>
              </div>
           </div>
           
           <div className="col-span-2 bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
-             <h3 className="text-sm font-semibold text-slate-400 mb-3">İşletme Notları</h3>
+             <h3 className="text-sm font-semibold text-slate-400 mb-3">{t('admin.customerDetail.businessNotes')}</h3>
              <p className="text-slate-300 text-sm whitespace-pre-wrap">
                 {/* GÜNCELLENDİ: Notlar businessData'dan okunuyor */}
-                {businessData?.manager_notes || "Bu müşteri için işletmenize özel not bulunmuyor."}
+                {businessData?.manager_notes || t('admin.customerDetail.noNotes')}
              </p>
           </div>
         </div>
       </div>
 
-      <h2 className="text-xl font-bold text-white mb-4">Bu İşletmedeki Geçmişi ({feedbacks.length})</h2>
+      <h2 className="text-xl font-bold text-white mb-4">{t('admin.customerDetail.historyTitle')} ({feedbacks.length})</h2>
       
       <div className="space-y-4">
         {feedbacks.length === 0 ? (
-           <p className="text-slate-500 italic">Henüz geri bildirim kaydı yok.</p>
+           <p className="text-slate-500 italic">{t('admin.customerDetail.noFeedback')}</p>
         ) : (
           feedbacks.map((fb) => (
              <div key={fb.id} className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 hover:bg-slate-800/50 transition-colors">
@@ -188,21 +190,21 @@ const CustomerDetail = () => {
                           fb.feedback_type === 'suggestion' ? 'text-blue-400 border-blue-900/50 bg-blue-900/10' : 
                           'text-yellow-400 border-yellow-900/50 bg-yellow-900/10'}
                       `}>
-                        {fb.feedback_type === 'complaint' ? 'Şikayet' : fb.feedback_type === 'suggestion' ? 'Öneri' : 'Değerlendirme'}
+                        {t(`feedbackDetail.detail.types.${fb.feedback_type}`, { defaultValue: fb.feedback_type === 'complaint' ? t('feedbackDetail.detail.types.complaint') : fb.feedback_type === 'suggestion' ? t('feedbackDetail.detail.types.suggestion') : t('feedbackDetail.detail.types.evaluation') })}
                       </Badge>
-                      <span className="text-sm text-slate-400">{new Date(fb.created_at).toLocaleString('tr-TR')}</span>
+                      <span className="text-sm text-slate-400">{new Date(fb.created_at).toLocaleString(i18n.language)}</span>
                    </div>
                    <div className="flex items-center gap-2">
                       <span className={`text-xs px-2 py-1 rounded-full ${fb.status === 'resolved' ? 'bg-green-900/30 text-green-400' : 'bg-yellow-900/30 text-yellow-400'}`}>
-                         {fb.status === 'resolved' ? 'Çözüldü' : fb.status === 'new' ? 'Yeni' : 'İşlemde'}
+                         {t(`feedbackDetail.detail.statuses.${fb.status}`, { defaultValue: fb.status === 'resolved' ? t('feedbackDetail.detail.statuses.resolved') : fb.status === 'new' ? t('feedbackDetail.detail.statuses.new') : t('feedbackDetail.detail.statuses.in_progress') })}
                       </span>
                    </div>
                 </div>
                 
-                <p className="text-slate-200 mb-3">{fb.message || "Mesaj yok"}</p>
+                <p className="text-slate-200 mb-3">{fb.message || t('admin.customerDetail.noMessage')}</p>
                 
                 <div className="flex items-center gap-4 text-xs text-slate-500">
-                   <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {fb.branches?.branch_name_tr}</span>
+                   <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> <span translate="no">{fb.branches?.branch_name_tr}</span></span>
                    {(fb.rating || fb.overall_rating) > 0 && (
                       <span className="flex items-center gap-1 text-yellow-500"><Star className="w-3 h-3 fill-current" /> {fb.rating || fb.overall_rating}/5</span>
                    )}
