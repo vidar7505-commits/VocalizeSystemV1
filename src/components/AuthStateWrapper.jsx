@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const AuthStateWrapper = ({ children }) => {
+  const { t } = useTranslation();
   const [sessionReady, setSessionReady] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -76,7 +78,7 @@ const AuthStateWrapper = ({ children }) => {
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-10 h-10 animate-spin text-teal-500" />
-          <p className="text-slate-400 text-sm">Oturum başlatılıyor...</p>
+          <p className="text-slate-400 text-sm">{t('common.loading')}</p>
         </div>
       </div>
     );

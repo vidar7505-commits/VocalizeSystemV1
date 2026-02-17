@@ -7,8 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Download, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function BulkSetupWizard() {
+    const { t } = useTranslation();
     const [businesses, setBusinesses] = useState([]);
     const [selectedBusiness, setSelectedBusiness] = useState('');
     const [branchData, setBranchData] = useState('');
@@ -34,8 +36,8 @@ export default function BulkSetupWizard() {
         } catch (error) {
             console.error('Error loading businesses:', error);
             toast({
-                title: 'Hata',
-                description: 'İşletmeler yüklenemedi.',
+                title: t('common.error'),
+                description: t('customer.installRequest.errorLoad'),
                 variant: 'destructive'
             });
         } finally {
@@ -46,8 +48,8 @@ export default function BulkSetupWizard() {
     const handleBulkCreate = async () => {
         if (!selectedBusiness) {
             toast({
-                title: 'Uyarı',
-                description: 'Lütfen bir işletme seçin.',
+                title: t('common.error'),
+                description: t('admin.header.selectBranch'),
                 variant: 'destructive'
             });
             return;
@@ -55,8 +57,8 @@ export default function BulkSetupWizard() {
 
         if (!branchData.trim()) {
             toast({
-                title: 'Uyarı',
-                description: 'Lütfen şube verilerini girin.',
+                title: t('common.error'),
+                description: t('common.validation.fillRequired'),
                 variant: 'destructive'
             });
             return;
@@ -73,15 +75,15 @@ export default function BulkSetupWizard() {
 
             setResults(data);
             toast({
-                title: 'Başarılı!',
-                description: `${data.length} şube başarıyla oluşturuldu.`,
+                title: t('bulkSetup.successTitle'),
+                description: t('bulkSetup.successDesc', { count: data.length }),
                 className: 'bg-green-600 text-white border-none'
             });
         } catch (error) {
             console.error('Bulk create error:', error);
             toast({
-                title: 'Hata',
-                description: error.message || 'Şubeler oluşturulurken bir hata oluştu.',
+                title: t('common.error'),
+                description: error.message || t('bulkSetup.errorDesc'),
                 variant: 'destructive'
             });
         } finally {
@@ -93,7 +95,14 @@ export default function BulkSetupWizard() {
         if (!results || results.length === 0) return;
 
         // CSV headers
-        const headers = ['Şube Adı', 'QR Kodu', 'Feedback URL', 'Manager Kodu', 'Owner Kodları', 'Google URL'];
+        const headers = [
+            t('bulkSetup.table.branchName'),
+            t('bulkSetup.table.qrCode'),
+            t('bulkSetup.table.feedbackUrl'),
+            t('bulkSetup.table.managerCode'),
+            t('bulkSetup.table.ownerCodes'),
+            t('bulkSetup.table.googleUrl')
+        ];
 
         // CSV rows
         const rows = results.map(r => [
@@ -125,8 +134,8 @@ export default function BulkSetupWizard() {
         document.body.removeChild(link);
 
         toast({
-            title: 'İndirildi',
-            description: 'CSV dosyası başarıyla indirildi.',
+            title: t('bulkSetup.downloaded'),
+            description: t('bulkSetup.downloadSuccess'),
             className: 'bg-green-600 text-white border-none'
         });
     };
@@ -137,10 +146,10 @@ export default function BulkSetupWizard() {
                 <CardHeader>
                     <div className="flex items-center gap-2">
                         <Sparkles className="h-6 w-6 text-orange-500" />
-                        <CardTitle className="text-2xl text-white">Enterprise Magic Setup</CardTitle>
+                        <CardTitle className="text-2xl text-white">{t('bulkSetup.title')}</CardTitle>
                     </div>
                     <CardDescription className="text-slate-400">
-                        300+ şubeli zinciri 5 dakikada kurun. Excel'den kopyala, yapıştır, başlat!
+                        {t('bulkSetup.subtitle')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -148,11 +157,11 @@ export default function BulkSetupWizard() {
                     {/* Step 1: Select Business */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-300">
-                            1. İşletme Seçin
+                            {t('bulkSetup.selectBusiness')}
                         </label>
                         <Select value={selectedBusiness} onValueChange={setSelectedBusiness} disabled={loadingBusinesses}>
                             <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
-                                <SelectValue placeholder={loadingBusinesses ? "Yükleniyor..." : "İşletme seçin..."} />
+                                <SelectValue placeholder={loadingBusinesses ? t('bulkSetup.loading') : t('bulkSetup.selectPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent className="bg-slate-800 border-slate-600">
                                 {businesses.map(business => (
@@ -167,15 +176,15 @@ export default function BulkSetupWizard() {
                     {/* Step 2: Paste Branch Data */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-300">
-                            2. Şube Verilerini Yapıştırın
+                            {t('bulkSetup.pasteData')}
                         </label>
                         <p className="text-xs text-slate-400">
-                            Format: <code className="bg-slate-800 px-2 py-1 rounded">Şube Adı | Google Review URL</code> (Her satırda bir şube)
+                            {t('bulkSetup.format')} <code className="bg-slate-800 px-2 py-1 rounded">{t('bulkSetup.table.branchName')} | Google Review URL</code> ({t('bulkSetup.example')})
                         </p>
                         <Textarea
                             value={branchData}
                             onChange={(e) => setBranchData(e.target.value)}
-                            placeholder="Alsancak Şubesi | https://g.page/r/...&#10;Karşıyaka Şubesi | https://g.page/r/...&#10;Bornova Şubesi | https://g.page/r/..."
+                            placeholder={t('bulkSetup.placeholder')}
                             className="bg-slate-800 border-slate-600 text-white min-h-[200px] font-mono text-sm"
                         />
                     </div>
@@ -190,12 +199,12 @@ export default function BulkSetupWizard() {
                         {isLoading ? (
                             <>
                                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                Oluşturuluyor...
+                                {t('bulkSetup.creating')}
                             </>
                         ) : (
                             <>
                                 <Sparkles className="mr-2 h-5 w-5" />
-                                Kurulumu Başlat
+                                {t('bulkSetup.startSetup')}
                             </>
                         )}
                     </Button>
@@ -207,7 +216,7 @@ export default function BulkSetupWizard() {
                                 <div className="flex items-center gap-2">
                                     <CheckCircle2 className="h-5 w-5 text-green-500" />
                                     <h3 className="text-lg font-semibold text-white">
-                                        {results.length} Şube Başarıyla Oluşturuldu
+                                        {t('bulkSetup.successDesc', { count: results.length })}
                                     </h3>
                                 </div>
                                 <Button
@@ -216,7 +225,7 @@ export default function BulkSetupWizard() {
                                     className="border-slate-600 text-white hover:bg-slate-800"
                                 >
                                     <Download className="mr-2 h-4 w-4" />
-                                    CSV İndir
+                                    {t('bulkSetup.exportCSV')}
                                 </Button>
                             </div>
 
@@ -224,12 +233,12 @@ export default function BulkSetupWizard() {
                                 <Table>
                                     <TableHeader className="bg-slate-800">
                                         <TableRow className="border-slate-700">
-                                            <TableHead className="text-slate-300">Şube Adı</TableHead>
-                                            <TableHead className="text-slate-300">QR Kodu</TableHead>
-                                            <TableHead className="text-slate-300">Feedback URL</TableHead>
-                                            <TableHead className="text-slate-300">Manager Kodu</TableHead>
-                                            <TableHead className="text-slate-300">Owner Kodları</TableHead>
-                                            <TableHead className="text-slate-300">Google URL</TableHead>
+                                            <TableHead className="text-slate-300">{t('bulkSetup.table.branchName')}</TableHead>
+                                            <TableHead className="text-slate-300">{t('bulkSetup.table.qrCode')}</TableHead>
+                                            <TableHead className="text-slate-300">{t('bulkSetup.table.feedbackUrl')}</TableHead>
+                                            <TableHead className="text-slate-300">{t('bulkSetup.table.managerCode')}</TableHead>
+                                            <TableHead className="text-slate-300">{t('bulkSetup.table.ownerCodes')}</TableHead>
+                                            <TableHead className="text-slate-300">{t('bulkSetup.table.googleUrl')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -257,7 +266,7 @@ export default function BulkSetupWizard() {
                             </div>
 
                             <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                                <h4 className="text-sm font-semibold text-white mb-2">Owner Kodları (Tüm İşletme Erişimi)</h4>
+                                <h4 className="text-sm font-semibold text-white mb-2">{t('bulkSetup.ownerCodesTitle')}</h4>
                                 <div className="flex flex-wrap gap-2">
                                     {results[0]?.owner_codes.map((code, idx) => (
                                         <code key={idx} className="bg-orange-600/20 text-orange-400 px-3 py-1 rounded text-sm font-mono">
@@ -266,7 +275,7 @@ export default function BulkSetupWizard() {
                                     ))}
                                 </div>
                                 <p className="text-xs text-slate-400 mt-2">
-                                    Bu kodlar tüm şubelere erişim sağlar. İşletme yöneticilerine verin.
+                                    {t('bulkSetup.ownerCodesDesc')}
                                 </p>
                             </div>
                         </div>

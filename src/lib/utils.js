@@ -9,36 +9,36 @@ export function cn(...inputs) {
 // --- YARDIMCI FONKSİYONLAR (Internal) ---
 
 // "Emir", "Gürbüz" -> "Emir G." yapan iç fonksiyon
-function formatNameComponents(first, last) {
-  if (!first) return "Misafir";
+function formatNameComponents(first, last, fallback = "Guest") {
+  if (!first) return fallback;
   if (!last) return first;
   return `${first} ${last.charAt(0).toUpperCase()}.`;
 }
 
 // "Emir Gürbüz" stringini parçalayıp formatlayan iç fonksiyon
-function parseAndFormatString(fullName) {
-  if (!fullName) return "Misafir";
+function parseAndFormatString(fullName, fallback = "Guest") {
+  if (!fullName) return fallback;
   const parts = fullName.trim().split(/\s+/);
-  if (parts.length === 0) return "Misafir";
+  if (parts.length === 0) return fallback;
   if (parts.length === 1) return parts[0];
 
   const last = parts.pop();
   const first = parts.join(" ");
-  return formatNameComponents(first, last);
+  return formatNameComponents(first, last, fallback);
 }
 
 // --- DIŞA AÇILAN FONKSİYONLAR (Exported) ---
 
 // 2. BASİT İSİM FORMATLAYICI (String alır -> String döner)
 // Kullanım: formatCustomerName("Ahmet Yılmaz") -> "Ahmet Y."
-export function formatCustomerName(fullName) {
-  return parseAndFormatString(fullName);
+export function formatCustomerName(fullName, fallback) {
+  return parseAndFormatString(fullName, fallback);
 }
 
 // 3. GELİŞMİŞ İSİM BULUCU (Feedback objesi alır -> String döner)
 // Veritabanı ilişkilerini (users, customer_profiles) kontrol eder.
-export function getCustomerNameFromFeedback(feedbackItem) {
-  if (!feedbackItem) return "Misafir";
+export function getCustomerNameFromFeedback(feedbackItem, fallback) {
+  if (!feedbackItem) return fallback || "Guest";
 
   const profile = feedbackItem.customer_profiles || {};
 
@@ -71,7 +71,7 @@ export function getCustomerNameFromFeedback(feedbackItem) {
   // Strateji 3: Feedback Form İsmi (Misafir girişi)
   if (cName) return parseAndFormatString(cName);
 
-  return "Misafir";
+  return fallback || (feedbackItem.lang === 'en' ? "Guest" : "Misafir");
 }
 
 // 4. VERİ KURTARICI (Telefon/Email gibi verileri bulur)
@@ -94,13 +94,13 @@ export function getCustomerData(feedback, field) {
 
 // 5. BÜYÜK SAYI FORMATLAYICI (KPI için 9.9K+ formatı)
 // Kullanım: formatCompactNumber(12458) -> { display: "12.5K", full: "12.458" }
-export function formatCompactNumber(num) {
+export function formatCompactNumber(num, locale = undefined) {
   if (num === null || num === undefined || isNaN(num)) {
     return { display: '0', full: '0' };
   }
   const absNum = Math.abs(num);
   const sign = num < 0 ? '-' : '';
-  const full = num.toLocaleString('tr-TR');
+  const full = num.toLocaleString(locale);
 
   // 10.000 altı her zaman tam sayı (Örn: 9.999)
   if (absNum < 10000) {
@@ -122,7 +122,7 @@ export function formatCompactNumber(num) {
   };
 }
 
-export const formatNumber = (num) => new Intl.NumberFormat('tr-TR').format(num);
+export const formatNumber = (num, locale = undefined) => new Intl.NumberFormat(locale).format(num);
 
 // 6. DELTA HESAPLAYICI (İstatistikler için artış/azalış)
 export function calculateDelta(current, previous, metricType = 'total') {
@@ -139,7 +139,7 @@ export function calculateDelta(current, previous, metricType = 'total') {
   // Rating Hesaplama (Puan farkı)
   if (isRating) {
     const sign = diff > 0 ? "+" : "";
-    const val = `${sign}${diff.toFixed(1)} Puan`;
+    const val = `${sign}${diff.toFixed(1)}`;
     let type = "neutral";
     if (diff > 0) type = "increase";
     if (diff < 0) type = "decrease";

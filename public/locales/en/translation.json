@@ -1,0 +1,1152 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search...",
+    "noData": "No data found",
+    "back": "Back",
+    "next": "Next",
+    "send": "Send",
+    "sending": "Sending...",
+    "logout": "Logout",
+    "settings": "Settings",
+    "you": "You",
+    "exists": "exists",
+    "view": "View",
+    "retry": "Retry",
+    "deselectAll": "Deselect All",
+    "selectAll": "Select All",
+    "itemSelected": "Item Selected",
+    "updated": "updated",
+    "privateNotePlaceholder": "Only business managers can see this...",
+    "refresh": "Refresh",
+    "yearsAgo": "years ago",
+    "monthsAgo": "months ago",
+    "daysAgo": "days ago",
+    "hoursAgo": "hours ago",
+    "minutesAgo": "min ago",
+    "secondsAgo": "sec ago",
+    "perfectMatch": "Perfect Match",
+    "loginRequired": "Login required.",
+    "validation": {
+      "required": "This field is required",
+      "invalidEmail": "Invalid email",
+      "mismatch": "Passwords do not match",
+      "shortPassword": "Password must be at least 6 characters",
+      "fillRequired": "Please fill required fields.",
+      "checkConfirm": "Please check the confirmation box"
+    }
+  },
+  "landing": {
+    "nav": {
+      "features": "Why Vocalize?",
+      "useCases": "Who Uses It?",
+      "pricing": "Pricing",
+      "v2": "V2/AI",
+      "login": "Login",
+      "install": "Apply for Installation",
+      "managerLogin": "Manager Login",
+      "globalVision": "Global Vision"
+    },
+    "hero": {
+      "badge": "Feedback System for HORECA Sector",
+      "title1": "Capture Lost Customers,",
+      "title2": "Turn Complaints into",
+      "title2Highlight": "Revenue.",
+      "subtitle1": "Let every customer feedback reach you instantly;",
+      "subtitle2": "Resolve complaints before they escalate, manage your reputation from a single panel.",
+      "ctaPrimary": "Apply for Installation",
+      "ctaSecondary": "Manager Login",
+      "badge1": "5-Minute Setup",
+      "badge2": "First Monthly Payment After 30 Days",
+      "countries": {
+        "usa": "USA",
+        "uk": "United Kingdom",
+        "france": "France",
+        "germany": "Germany",
+        "uae": "UAE",
+        "turkey": "Turkey",
+        "russia": "Russia"
+      }
+    },
+    "infrastructure": {
+      "title": "Technology Partners",
+      "subtitle": "World-class technology infrastructure"
+    },
+    "technologies": {
+      "title": "Enterprise-Grade Infrastructure",
+      "subtitle": "Leading technology & platform partnerships"
+    },
+    "industries": {
+      "title": "Industry-Specific Solutions",
+      "subtitle": "Whatever your industry, we provide intelligence tailored to your business.",
+      "solutions": [
+        {
+          "icon": "🥐",
+          "title": "Coffee & Restaurants",
+          "subtitle": "Service Quality & Staff Productivity",
+          "desc": "Analyze staff performance with real-time customer feedback, optimize menus based on data."
+        },
+        {
+          "icon": "🏪",
+          "title": "Franchise & Retail",
+          "subtitle": "Centralized Control & Standard Protection",
+          "desc": "Ensure operational consistency across hundreds of branches, run regional performance comparisons from the central dashboard."
+        },
+        {
+          "icon": "🏨",
+          "title": "Hotels & Hospitality",
+          "subtitle": "Guest Experience Journey",
+          "desc": "Monitor customer satisfaction at every touchpoint from check-in to check-out, proactively manage your online reputation."
+        },
+        {
+          "icon": "🏥",
+          "title": "Healthcare & Clinics",
+          "subtitle": "Patient Satisfaction & Operational KPIs",
+          "desc": "Measure patient experience, improve team coordination, raise standards in healthcare service."
+        },
+        {
+          "icon": "🍰",
+          "title": "Bakery & Pastry",
+          "subtitle": "Product Quality & Customer Expectations",
+          "desc": "Track customer satisfaction on product freshness, service speed and variety in real-time, optimize inventory management."
+        }
+      ]
+    },
+    "ecosystem": {
+      "title": "Strategic Ecosystem & Pilot Programs",
+      "subtitle": "Building Your Business Operational Intelligence",
+      "desc": "We're shaping our customer feedback-to-business-intelligence vision together with industry-leading coffee chains and global retail groups.",
+      "cta": "Join Our Pilot Program",
+      "comingSoon": "Coming Soon",
+      "partners": [
+        {
+          "title": "Loyalty & CRM",
+          "desc": "Customer loyalty program integration."
+        },
+        {
+          "title": "Supply Chain",
+          "desc": "Supply chain & inventory intelligence."
+        },
+        {
+          "title": "Predictive Marketing",
+          "desc": "Predictive marketing strategies."
+        }
+      ]
+    },
+    "features": {
+      "title": "Why Vocalize?",
+      "subtitle": "Vocalize enables businesses not just to hear, but to understand their customers. Every message is an experience, not just data.",
+      "feature1": {
+        "title": "Instant Intervention",
+        "desc": "Resolve complaints before customers leave, proactively protect your digital reputation."
+      },
+      "feature2": {
+        "title": "Branch X-Ray",
+        "desc": "Manage all your locations and staff performance from a single panel with real-time data."
+      },
+      "feature3": {
+        "title": "Zero Friction",
+        "desc": "No app download required. Just scan QR; 12x more engagement than traditional surveys."
+      }
+    },
+    "useCases": {
+      "title": "Tailored Solutions for Your Business",
+      "subtitle": "Whatever your sector, turn customer voice into growth strategy with Vocalize.",
+      "solutions": [
+        {
+          "sector": "Cafe & Restaurant",
+          "icon": "🍽️",
+          "challenge": "Food quality and service speed",
+          "solution": "Menu optimization and staff training with real-time feedback"
+        },
+        {
+          "sector": "Hotel & Hospitality",
+          "icon": "🏨",
+          "challenge": "Guest experience management",
+          "solution": "Branch-based satisfaction tracking and online reputation protection"
+        },
+        {
+          "sector": "Retail & Shopping",
+          "icon": "🛍️",
+          "challenge": "Customer loyalty and store performance",
+          "solution": "Location comparison and trend analysis"
+        },
+        {
+          "sector": "Chain Businesses",
+          "icon": "🏢",
+          "challenge": "Multi-branch operation coordination",
+          "solution": "Central management panel and regional reporting"
+        }
+      ]
+    },
+    "qrPoster": {
+      "title": "Custom QR Poster Design for Every Business",
+      "desc": "Your QR posters can be customized to match your brand and venue.",
+      "note": "Color, text, or language adjustments are adapted to your business.",
+      "posterText": "Share your thoughts with us",
+      "footer": "Design Process is Ours, Printing is Yours.",
+      "features": [
+        "Brand Color Customization",
+        "Multi-Language Support",
+        "Print-Ready Professional Quality",
+        "Digital & Physical Use"
+      ]
+    },
+    "pricing": {
+      "badge": "For HORECA Sector",
+      "title": "Custom",
+      "titleHighlight": "Solution Models",
+      "subtitle": "Scalable infrastructure for every business profile, from single-location cafes to global franchise chains.",
+      "plan1": {
+        "name": "Boutique / Single Branch",
+        "desc": "Starting point for local businesses.",
+        "features": [
+          "Unlimited QR Feedback",
+          "Basic Admin Panel",
+          "Google Maps Redirect",
+          "Weekly Email Reports"
+        ],
+        "priceTitle": "Per-Branch License",
+        "priceSubtitle": "Setup + Monthly Service Fee",
+        "cta": "Get Pricing Info"
+      },
+      "plan2": {
+        "name": "Chain Business",
+        "desc": "For multi-branch structures.",
+        "badge": "Most Popular",
+        "features": [
+          "All 'Boutique' Features",
+          "Branch Comparison Dashboard",
+          "Regional/Manager Authorization",
+          "Staff-Based Data Tracking",
+          "Detailed Trend Analysis"
+        ],
+        "priceTitle": "Volume Discount",
+        "priceSubtitle": "Custom quote based on branch count",
+        "cta": "Request Quote"
+      },
+      "plan3": {
+        "name": "Enterprise / Global",
+        "desc": "For large operations & partnerships.",
+        "features": [
+          "V2 AI Early Access",
+          "Custom AI Model Training",
+          "Custom Integration Setup (API)",
+          "Dedicated Success Manager",
+          "Priority Technical Support"
+        ],
+        "priceTitle": "Enterprise Plan",
+        "priceSubtitle": "Project-based pricing",
+        "cta": "Contact Us"
+      },
+      "commonTitle": "Standard Services Included in All Packages",
+      "commonFeatures": [
+        "QR Poster Design Support",
+        "24/7 Technical Monitoring",
+        "Regular Data Backup",
+        "Unlimited Staff Accounts"
+      ]
+    },
+    "impact": {
+      "title": "Not Feedback, Business Intelligence.",
+      "subtitle": "Vocalize doesn't just collect feedback; it's part of measurable potential impact on your business.",
+      "metric1": {
+        "title": "More Feedback",
+        "desc": "Significant increase in customer feedback submission rates and creates real-time data flow."
+      },
+      "metric2": {
+        "title": "Higher Retention Rate",
+        "desc": "Negative experiences are resolved on-site before moving to online platforms, reducing customer loss."
+      },
+      "metric3": {
+        "title": "Operational Efficiency",
+        "desc": "Branch performance, team response times, and customer satisfaction managed and analyzed from a single panel."
+      }
+    },
+    "v2": {
+      "badge": "Coming Very Soon",
+      "title": "Your Business's",
+      "titleHighlight": "Intelligent Strategic Partner",
+      "subtitle": "Vocalize V2 won't just collect customer feedback;",
+      "subtitle2": "it will analyze customer behavior",
+      "subtitle3": ", track industry trends, and provide",
+      "subtitle4": "strategic recommendations",
+      "subtitle5": "tailored to your business.",
+      "features": {
+        "f1": {
+          "title": "Customer Portfolio Analysis",
+          "desc": "Deeply analyzes your customers' behavior patterns, preferences, and expectations with AI."
+        },
+        "f2": {
+          "title": "Global Trend Tracking",
+          "desc": "Tracks global news and industry trends, capturing opportunities suited to your customer portfolio early."
+        },
+        "f3": {
+          "title": "Business-Specific Recommendations",
+          "desc": "Detects issues in advance and offers profitable strategic solutions aligned with your customer preferences."
+        },
+        "f4": {
+          "title": "Global Brand Perception",
+          "desc": "Measures how your brand is perceived globally, guiding you to gain competitive advantage."
+        }
+      },
+      "pricingTitle": "V2 AI Pricing",
+      "pricingDesc1": "V2 AI features will be positioned as a",
+      "pricingDesc2": "premium investment product",
+      "pricingDesc3": "considering the added value it brings to your business. Detailed pricing will be announced soon.",
+      "pricingPoint1": "For Franchise/Global Businesses:",
+      "pricingPoint1Desc": "Early access to V2 AI and priority transition advantage",
+      "pricingPoint2": "Personalized AI Advantage:",
+      "pricingPoint2Desc": "Data from early-adopting businesses is anonymized and used in system training. This way, V2 AI learns your business characteristics and offers tailored strategic recommendations - as if you have an AI partner designed exclusively for you.",
+      "pricingPoint3": "Data Security:",
+      "pricingPoint3Desc": "All data is anonymized and processed securely under GDPR standards",
+      "ctaV2": "Get Info About V2"
+    },
+    "footer": {
+      "copyright": "© 2025 Vocalize Systems — Connecting customer voice with technology.",
+      "kvkk": "Privacy Policy",
+      "terms": "Terms of Service"
+    },
+    "leadModal": {
+      "title": "Get Information",
+      "subtitle": "Fill out the form below, our team will contact you.",
+      "quickOptions": [
+        "I want to learn about pricing",
+        "I want to schedule a demo meeting",
+        "I want to learn how Vocalize works",
+        "I want to evaluate if it's suitable for my business"
+      ],
+      "nameLabel": "Full Name",
+      "namePlaceholder": "John Doe",
+      "emailLabel": "Email",
+      "emailPlaceholder": "example@company.com",
+      "phoneLabel": "Phone (Optional)",
+      "phonePlaceholder": "+1 555 ...",
+      "messageLabel": "Your Message",
+      "messagePlaceholder": "Write your question here...",
+      "submit": "Submit"
+    }
+  },
+  "customer": {
+    "welcome": "Welcome",
+    "guestWelcome": "Share Your Experience",
+    "subtitle": "Help businesses improve with your feedback.",
+    "qrAutoDetect1": "Once verified via QR, business info is saved.",
+    "qrAutoDetect2": "No need to scan QR again.",
+    "qrAutoDetect3": "Valid for selected business only.",
+    "sendFeedback": "Send Feedback",
+    "complaint": "Report Issue",
+    "suggestion": "Suggest",
+    "review": "Rate",
+    "complaintDesc": "Experienced an issue? Report it now!",
+    "suggestionDesc": "Have an idea? Let us know!",
+    "reviewDesc": "Rate your experience!",
+    "myFeedbacks": "My Feedbacks",
+    "stats": "My Statistics",
+    "selectBusiness": "Select Business",
+    "selectBranch": "Select Branch",
+    "selectPlaceholder": "Select...",
+    "qrScanned": "Verified via QR Code",
+    "changeInfo": "Change",
+    "infoBox": "Your feedback is instantly delivered to business managers.",
+    "warningTitle": "Important Note:",
+    "warningText": "Vocalize instantly delivers your feedback to managers.",
+    "allFeedbacks": "All My Feedbacks",
+    "allStats": "View Statistics for All Time",
+    "supportItem": "Support",
+    "logout": "Logout",
+    "total": "Total Feedbacks",
+    "avgRating": "Average Rating",
+    "mostVisited": "Most Visited",
+    "feedbackTypes": "Form Types",
+    "complaintBadge": "Complaint",
+    "suggestionBadge": "Suggestion",
+    "reviewBadge": "Review",
+    "noFeedbacks": "No feedbacks yet",
+    "sendFirstFeedback": "Send your first feedback!",
+    "sendFeedbackBtn": "Send Feedback",
+    "all": "All",
+    "newest": "Newest",
+    "oldest": "Oldest",
+    "delivered": "Delivered",
+    "reviewing": "Reviewing",
+    "resolved": "Resolved",
+    "visits": "visits",
+    "guest": "Guest",
+    "register": "Sign Up",
+    "guestTracking": "Track your feedbacks",
+    "guestTrackingDesc": "Create an account to track feedbacks.",
+    "home": "Home",
+    "notifications": "Notifications",
+    "statistics": "Statistics",
+    "filterAllBranches": "All Branches",
+    "filterAllTypes": "All Types",
+    "filterAllStatuses": "All Statuses",
+    "changeEmail": "Change Email",
+    "changePhone": "Change Phone",
+    "changePassword": "Change Password",
+    "createSupportTicket": "Create Support Ticket",
+    "feedbackToVocalize": "Feedback to Vocalize",
+    "deleteAccount": "Delete Account",
+    "deleteAccountTitle": "Are you sure?",
+    "deleteAccountWarning": "This action cannot be undone.",
+    "deleteConfirm": "I want to delete my account",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "unknown": "Unknown",
+    "totalFeedbacksCount": "Total feedbacks",
+    "advancedFilter": "Filter",
+    "formType": "Form Type",
+    "branch": "Branch",
+    "status": "Status",
+    "feedbackDetail": "Feedback Detail",
+    "yourMessage": "Your Message",
+    "attachedImages": "Attached Images",
+    "close": "Close",
+    "generalEval": "General Evaluation",
+    "guestCTA": {
+      "feedbackTitle": "Register to view past feedbacks",
+      "statsTitle": "Register to view statistics",
+      "subtext": "Guest data is not saved. Sign in to access history.",
+      "button": "Sign Up"
+    },
+    "guestWarning": {
+      "title": "⚠️ Continuing as Guest",
+      "text": "This feedback will not be saved to your account, and the business cannot reply to you. To track your feedback and allow the business to contact you, please Login & Send.",
+      "dontShow": "Don't show again",
+      "continueGuest": "Continue",
+      "loginToSend": "Login & Send"
+    },
+    "support": {
+      "title": "Support Ticket",
+      "description": "Explain your issue...",
+      "email": "Email",
+      "message": "Message",
+      "messagePlaceholder": "Explain in detail...",
+      "images": "Images (Optional)",
+      "upload": "Upload",
+      "send": "Send",
+      "sending": "Sending...",
+      "successTitle": "Sent!",
+      "successDesc": "We will reply soon.",
+      "errorTitle": "Error",
+      "errorDesc": "Try again.",
+      "errorEmpty": "Message is empty.",
+      "errorEmail": "Email is required.",
+      "maxImages": "Max 3 images.",
+      "imageUploaded": "{{count}} uploaded"
+    },
+    "statsPage": {
+      "feedbackBreakdown": "Feedback Breakdown",
+      "ratingOverview": "Rating Overview",
+      "noData": "No data yet"
+    },
+    "userTitle": {
+      "newVoice": "New Voice",
+      "experiencedObserver": "Experienced Observer",
+      "vocalizAmbassador": "Vocalize Ambassador"
+    },
+    "userTitleInfo": {
+      "newVoiceDesc": "Thank you for sharing your voice as a newcomer.",
+      "experiencedObserverDesc": "As an experienced observer, you are providing consistent feedback.",
+      "vocalizAmbassadorDesc": "As a Vocalize Ambassador, you are making a huge impact!",
+      "nextLevel": "Next Level",
+      "nextLevelNewVoice": "6 more feedbacks to become \"Experienced Observer\"!",
+      "nextLevelExperienced": "20 more feedbacks to become \"Vocalize Ambassador\"!",
+      "maxLevel": "🎉 You are already at the highest level! You are an amazing Ambassador!"
+    },
+    "businessSuggestion": {
+      "title": "Want Vocalize Here?",
+      "businessName": "Business Name",
+      "businessNamePlaceholder": "E.g.: Coffee Shop",
+      "location": "Location",
+      "locationPlaceholder": "E.g.: Istanbul, Besiktash",
+      "suggest": "Suggest",
+      "successMsg": "Your suggestion has been sent!",
+      "errorMsg": "Please fill in all fields."
+    },
+    "visitedBusinesses": "Visited Businesses",
+    "noVisitedBusiness": "No visited businesses yet",
+    "startWithQR": "Scan a QR code to get started and send feedback",
+    "selectBranchForFeedback": "Select a branch to send feedback",
+    "businessSelected": "Business Selected",
+    "ratingLabel": "Rating:",
+    "noFilteredFeedback": "No feedback found matching the selected filters.",
+    "user": "User",
+    "branchSelector": {
+      "geoError": "Your browser does not support location services.",
+      "searchPlaceholder": "Search branch or district...",
+      "findNearMe": "Find Near Me",
+      "recentVisits": "Recent Visits",
+      "byDistance": "By Distance",
+      "allBranches": "All Branches",
+      "noResult": "No results found.",
+      "moreBranches": "and {{count}} more branches...",
+      "pinnedBranches": "Pinned Branches"
+    },
+    "loading": "Loading...",
+    "branchSelection": "Branch Selection",
+    "ageModal": {
+      "title": "Let's Get to Know You",
+      "description": "Select your age group so we can get to know you better.",
+      "subtitle": "Could you tell us your age group to help us improve our service quality?",
+      "accessibleTitle": "Age Group Selection"
+    },
+    "sortBy": "Sort By",
+    "installRequest": {
+      "title": "Installation Request",
+      "description": "Take the first step to digitalize your business. Fill out the form, we will contact you.",
+      "companyName": "Business Name",
+      "companyNamePlaceholder": "Enter your business name.",
+      "sector": "Sector",
+      "sectorPlaceholder": "Select sector",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Your Full Name",
+      "email": "Email",
+      "emailPlaceholder": "example@company.com",
+      "phone": "Phone",
+      "phonePlaceholder": "+1 234 ...",
+      "position": "Position",
+      "positionPlaceholder": "e.g., Owner, Manager",
+      "note": "Additional Notes",
+      "notePlaceholder": "Anything else you'd like to add...",
+      "otherNotePlaceholder": "Please clearly specify your \"Other\" Business Name and/or Sector here. (e.g., Fintech)",
+      "submit": "Complete Application",
+      "successTitle": "Application Received!",
+      "successDesc": "Your installation request has been successfully submitted. Our team will contact you soon.",
+      "sectors": {
+        "cafe": "Cafe & Restaurant",
+        "bakery": "Bakery & Pastry",
+        "hotel": "Hotel & Accommodation",
+        "beauty": "Beauty & Care",
+        "health": "Health & Clinic",
+        "retail": "Retail & Shopping",
+        "sports": "Sports & Fitness",
+        "education": "Education",
+        "franchise": "Franchise",
+        "other": "Other"
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Manage your account and application settings here.",
+      "tabs": {
+        "profile": "Profile",
+        "security": "Security",
+        "account": "Account"
+      },
+      "profile": {
+        "currentEmail": "Current Email",
+        "newEmail": "New Email",
+        "placeholder": "new@email.com",
+        "update": "Update Email"
+      },
+      "security": {
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password",
+        "placeholder": "••••••••",
+        "update": "Update Password"
+      },
+      "account": {
+        "dangerZone": "Danger Zone",
+        "deleteDescription": "Deleting your account is permanent. All your data will be lost.",
+        "deleteStart": "Start Account Deletion"
+      },
+      "unlockFeatures": "Unlock More Features",
+      "unlockDescription": "Track your feedback, view statistics and unlock more features.",
+      "vocalizeFeedback": "Feedback to Vocalize",
+      "logout": "Logout",
+      "close": "Close Window",
+      "errors": {
+        "fillAll": "Please fill in all fields",
+        "mismatch": "Passwords do not match",
+        "shortPassword": "Password must be at least 6 characters"
+      },
+      "success": {
+        "emailUpdated": "Email successfully updated",
+        "passwordUpdated": "Password successfully updated"
+      },
+      "updating": "Updating...",
+      "deleteModal": {
+        "title": "You Are About To Delete Your Account",
+        "description": "This action cannot be undone. All your feedback history, profile information, and settings will be permanently deleted.",
+        "checkbox": "I understand the consequences and confirm the permanent deletion of my account.",
+        "cancel": "Cancel",
+        "delete": "Yes, Delete My Account",
+        "deleting": "Deleting..."
+      }
+    }
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Track your business performance and recent activities",
+      "quickLook": "Quick Look",
+      "distributionDesc": "Distribution of incoming feedback",
+      "starDistribution": "Star Distribution",
+      "formTypes": "Form Types",
+      "noEvaluation": "You haven't received any ratings yet",
+      "noFeedback": "You haven't received any feedback yet",
+      "recentActivities": "Recent Activities",
+      "seeAll": "See All",
+      "noActivity": "No activity yet.",
+      "urgentAction": "URGENT: Feedbacks Requiring Intervention!",
+      "urgentActionDesc": "Please review urgent feedback to ensure customer satisfaction.",
+      "urgentActionCount": "{{count}} urgent feedbacks pending.",
+      "inspect": "Inspect",
+      "metrics": {
+        "total": "Total Feedback",
+        "pending": "Pending Complaints",
+        "resolved": "Resolved",
+        "avgRating": "Avg. Rating",
+        "newData": "New Data",
+        "vsLastPeriod": "vs last period"
+      }
+    },
+    "header": {
+      "allBranches": "All Branches",
+      "selectBranch": "Select Branch",
+      "searchBranch": "Search branch...",
+      "noBranchFound": "No branch found",
+      "scans": "Scan",
+      "notifications": "Notifications",
+      "markAllRead": "Mark all as read",
+      "noNotifications": "No notifications.",
+      "viewAll": "View All",
+      "myAccount": "My Account",
+      "settings": "Settings",
+      "appearance": "Appearance",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "logout": "Logout",
+      "newComplaint": "You have a new complaint",
+      "newSuggestion": "You have a new suggestion",
+      "newEvaluation": "You have a new evaluation",
+      "newNotification": "New notification"
+    },
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "feedbacks": "Feedbacks",
+      "analytics": "Analytics",
+      "notifications": "Notification History",
+      "settings": "Settings",
+      "bulkSetup": "Bulk Setup"
+    },
+    "feedbacks": {
+      "title": "Feedbacks",
+      "noMessage": "No message content",
+      "customerNotePresent": "Customer Note Available",
+      "generalEvalShort": "Gen. Eval.",
+      "image": "Image",
+      "fetchErrorTitle": "Connection Error",
+      "fetchErrorDesc": "A problem occurred while loading your data. Please refresh the page.",
+      "searchPlaceholder": "Message, name, email or phone...",
+      "clear": "Clear",
+      "noRecord": "No record found",
+      "loading": "Loading feedbacks..."
+    },
+    "settings": {
+      "title": "Settings",
+      "profileInfo": "Profile Information",
+      "passwordsDoNotMatch": "Passwords do not match.",
+      "updatePasswordSuccess": "Your password has been updated.",
+      "feedbackReceived": "Feedback Received",
+      "email": "Email Address",
+      "businessName": "Business Name",
+      "appearance": "Appearance Settings",
+      "themePreference": "Theme Preference",
+      "themeDesc": "Set the appearance of the panel to light or dark mode.",
+      "changePassword": "Change Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "updatePassword": "Update Password",
+      "vocalizeFeedback": "Send Feedback to Vocalize Team",
+      "vocalizeFeedbackDesc": "You can send us suggestions, complaints, or requests directly to improve your Vocalize experience.",
+      "sendFeedback": "Send Feedback",
+      "modal": {
+        "title": "Contact Vocalize Team",
+        "desc": "Share your thoughts, suggestions, or issues with us.",
+        "message": "Your Message *",
+        "placeholder": "Write your thoughts here...",
+        "images": "Images (Optional)",
+        "upload": "Upload",
+        "submit": "Submit"
+      }
+    },
+    "auth": {
+      "login": "Login",
+      "register": "Register",
+      "customer": "Customer",
+      "manager": "Manager",
+      "fullName": "Full Name",
+      "email": "Email Address",
+      "phone": "Phone (05...)",
+      "password": "Password (6-12 characters)",
+      "managerCode": "Manager Code (MGR_...)",
+      "forgotPassword": "Forgot Password?",
+      "legal": "By registering, I confirm that I have read and accept the Terms of Service and Privacy Policy.",
+      "guestOption": "Don't want to register?",
+      "guestButton": "Guest Login",
+      "guestLegal": "By continuing, you are deemed to have accepted the Terms of Service and Privacy Policy.",
+      "backToLogin": "Go Back",
+      "sendResetLink": "Send Reset Link",
+      "resetSuccess": "Email Sent",
+      "resetSuccessDesc": "Password reset link has been sent to your email address.",
+      "loginSuccess": "Login Successful",
+      "registerSuccess": "Registration Successful",
+      "verifyEmail": "Please verify your email address."
+    },
+    "title": "Performance Analysis",
+    "subtitle": "Loyalty metrics, operational speed, and Google performance of your business.",
+    "analytics": {
+      "brandVsExperience": {
+        "title": "Brand vs Experience",
+        "desc": "The difference between the \"Brand\" in the customer's mind and the \"Service\" they experience at that moment.",
+        "brandPerception": "General Perception (Brand)",
+        "instantExperience": "Instant Experience (Service)",
+        "brandRisk": "⚠️ Caution: Brand expectation is high, but recent service experiences fall below this expectation.",
+        "brandSuccess": "✅ Great: The service you provide exceeds the customer's brand expectation."
+      },
+      "traffic": {
+        "title": "Traffic & Conversion Funnel",
+        "desc": "Customer journey funnel.",
+        "visits": "Visits",
+        "qrScans": "QR Scans",
+        "webLink": "Web Link",
+        "conversion": "Conversion",
+        "maps": "Maps"
+      },
+      "satisfaction": {
+        "title": "General Satisfaction",
+        "desc": "Distribution of customer feedback tone.",
+        "positive": "Positive",
+        "neutral": "Neutral",
+        "negative": "Negative"
+      },
+      "activityByTime": {
+        "title": "Activity by Time Period",
+        "desc": "Activity intensity according to the hours of the day in the selected date range."
+      },
+      "demographic": {
+        "title": "Demographic Intelligence",
+        "subtitle": "Behavior and satisfaction analysis by age groups.",
+        "audienceDistribution": "Audience Distribution",
+        "audienceDesc": "General distribution of customers based on age group.",
+        "filter": "Filter",
+        "all": "All",
+        "liveStream": "Instant Feedback Stream",
+        "brandLoyaltyScore": "Brand Loyalty Score",
+        "brandLoyaltyDesc": "Average ratings given by age groups to your business (0-5).",
+        "formDistribution": "Form Distribution by Age Groups",
+        "formDistributionDesc": "Shows which feedback types age groups prefer.",
+        "mostActiveGroup": "The most active customer group of this business:"
+      },
+      "leaderboard": {
+        "title": "Branch Performance League",
+        "subtitle": "Detailed comparison of your branches.",
+        "rank": "Rank",
+        "branchName": "Branch Name",
+        "total": "Total",
+        "leagueScore": "League Score",
+        "quality": "Quality",
+        "resolution": "Resolution",
+        "audience": "Audience",
+        "map": "Map",
+        "inspect": "Inspect",
+        "calculationWeight": "Calculation Weight",
+        "qualityWeight": "Quality 40%",
+        "operationWeight": "Operation 30%",
+        "dataWeight": "Data Share 30%",
+        "searchPlaceholder": "Search branch...",
+        "noResult": "Branch not found.",
+        "showingRange": "Showing {{start}}-{{end}} of {{total}} branches"
+      }
+    },
+    "metrics": {
+      "totalInteraction": "Total Interaction",
+      "uniqueUsers": "Unique Users",
+      "loyaltyScore": "Loyalty Score",
+      "operationalPerformance": "Operational Performance",
+      "resolutionSuccess": "Resolution Success",
+      "pendingComplaints": "Pending Complaints",
+      "calculating": "Calculating Data..."
+    },
+    "trends": {
+      "title": "Feedback Trend",
+      "general": "General",
+      "detailed": "Detailed"
+    },
+    "brandVsExperience": {
+      "title": "Brand vs Experience",
+      "desc": "The gap between \"Brand Perception\" and \"Instant Service Experience\".",
+      "brandPerception": "Brand Perception",
+      "instantExperience": "Instant Experience",
+      "brandRisk": "⚠️ Caution: Brand expectations are high, but recent service experiences fall below.",
+      "brandSuccess": "✅ Great: Your service exceeds brand expectations."
+    },
+    "traffic": {
+      "title": "Traffic & Conversion Funnel",
+      "desc": "Customer journey funnel.",
+      "visits": "Visits",
+      "qrScans": "QR Scans",
+      "webLink": "Web Link",
+      "conversion": "Conversion",
+      "maps": "Maps"
+    },
+    "satisfaction": {
+      "title": "General Satisfaction",
+      "desc": "Distribution of customer feedback tone.",
+      "positive": "Positive",
+      "neutral": "Neutral",
+      "negative": "Negative"
+    },
+    "activityByTime": {
+      "title": "Activity by Time Period",
+      "desc": "Activity intensity by hours of the day in selected range."
+    },
+    "demographic": {
+      "title": "Demographic Intelligence",
+      "subtitle": "Behavior and satisfaction analysis by age groups.",
+      "audienceDistribution": "Audience Distribution",
+      "audienceDesc": "General distribution of customers by age group.",
+      "filter": "Filter",
+      "all": "All",
+      "liveStream": "Live Feedback Stream",
+      "brandLoyaltyScore": "Brand Loyalty Score",
+      "brandLoyaltyDesc": "Average ratings given by age groups (0-5).",
+      "formDistribution": "Form Distribution by Age Groups",
+      "formDistributionDesc": "Shows which feedback types are preferred by age groups.",
+        "mostActiveGroup": "Most active customer group for this business:",
+        "transaction": "Transaction",
+        "group": "Group: {{name}}",
+        "age": "Age: {{name}}",
+        "noData": "Not enough demographic data collected yet."
+    },
+    "leaderboard": {
+      "title": "Branch Performance League",
+      "subtitle": "Detailed comparison of your branches.",
+      "rank": "Rank",
+      "branchName": "Branch Name",
+      "total": "Total",
+      "leagueScore": "League Score",
+      "quality": "Quality",
+      "resolution": "Resolution",
+      "audience": "Audience",
+      "map": "Map",
+      "inspect": "Inspect",
+      "calculationWeight": "Calculation Weight",
+      "qualityWeight": "Quality %40",
+      "operationWeight": "Operation %30",
+      "dataWeight": "Data Share %30",
+      "searchPlaceholder": "Search branch...",
+      "noResult": "No branch found.",
+      "showingRange": "Showing {{start}}-{{end}} of {{total}} branches"
+    },
+    "notifications": {
+      "title": "Notification History",
+      "subtitle": "Manage all your feedback alerts here.",
+      "all": "All",
+      "unread": "Unread",
+      "read": "Read",
+      "selectedCount": "{{count}} notifications selected",
+      "markAsRead": "Mark as Read",
+      "markAsUnread": "Mark as Unread",
+      "delete": "Delete",
+      "status": "Status",
+      "message": "Message",
+      "branch": "Branch",
+      "date": "Date",
+      "noNotifications": "No notifications to display.",
+      "totalNotifications": "Total {{count}} notifications",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {{current}} / {{total}}",
+      "deleteTitle": "Delete Confirmation",
+      "deleteConfirm": "Are you sure you want to permanently delete the selected {{count}} notifications?",
+      "updateSuccess": "{{count}} notifications updated.",
+      "deleteSuccess": "{{count}} notifications deleted.",
+      "updateError": "Bulk update failed.",
+      "deleteError": "Bulk delete failed.",
+      "fetchError": "An error occurred while loading notifications.",
+      "detailsLoading": "Loading details...",
+      "customer": "Customer: {{name}}",
+      "general": "General"
+    },
+    "insights": {
+      "title": "⏳ Collecting Data...",
+      "desc": "Minimum data threshold (5 transactions) not yet met for analysis engine.",
+      "suggestion": "Encourage QR usage at tables to speed up data flow.",
+      "digitalGrowth": "🚀 Digital Growth Engine",
+      "digitalGrowthDesc": "Great performance! Customers leave happy and carry it to digital platforms.",
+      "silentSatisfaction": "💎 Silent Satisfaction (Hidden Potential)",
+      "silentSatisfactionDesc": "Analysis: Customers are very satisfied but engagement is low.",
+      "strongPerformance": "🌟 Productive Performance",
+      "strongPerformanceDesc": "Branch is on a successful track. High satisfaction and healthy data flow.",
+      "operationalAlarm": "🚨 Critical Operational Alarm",
+      "operationalAlarmDesc": "Warning: High complaint rate and low resolution speed.",
+      "brandRisk": "⚠️ Brand Expectation Mismatch",
+      "brandRiskDesc": "Critical Finding: Customers love the brand but recent experience at this branch is below expectations.",
+      "roleModel": "🏆 Role Model Performance",
+      "roleModelDesc": "Flawless! Peak satisfaction and disciplined panel usage.",
+      "stablePerformance": "📊 Stable Performance",
+      "stablePerformanceDesc": "Data trends are balanced."
+    },
+    "customerDetail": {
+      "errorLoading": "Could not load customer information.",
+      "notFound": "Customer not found.",
+      "back": "Go Back",
+      "unnamed": "Unnamed Customer",
+      "registered": "Registered",
+      "editProfile": "Edit Profile",
+      "vipBadge": "VIP Customer",
+      "sensitiveBadge": "Sensitive Customer",
+      "businessNotes": "Business Notes",
+      "noNotes": "There are no special notes for this customer in your business.",
+      "historyTitle": "History in This Business",
+      "noFeedback": "No feedback records yet.",
+      "noMessage": "No message"
+    },
+    "branchCard": {
+      "title": "Branch Performance Scorecard",
+      "score": "League Score",
+      "happy": "Happy",
+      "neutral": "Neutral",
+      "unhappy": "Unhappy",
+      "mapRedirects": "Map Redirects",
+      "resolutionSpeed": "Resolution Speed",
+      "person": "Person"
+    },
+    "branchDetail": {
+      "perfectMatch": "✨ The service provided matches the customer's expectations perfectly.",
+      "gapDesc": "The colored area (laser) represents the gap between expectation and reality.",
+      "unknown": "Unknown",
+      "selectedBranch": "Selected Branch"
+    },
+    "bulkSetup": {
+      "title": "Enterprise Magic Setup",
+      "subtitle": "Set up a chain with 300+ branches in 5 minutes. Copy from Excel, paste, start!",
+      "selectBusiness": "1. Select Business",
+      "selectPlaceholder": "Select business...",
+      "loading": "Loading...",
+      "pasteData": "2. Paste Branch Data",
+      "format": "Format:",
+      "example": "One branch per line",
+      "placeholder": "Alsancak Branch | https://g.page/r/...\nKarsiyaka Branch | https://g.page/r/...\nBornova Branch | https://g.page/r/...",
+      "startSetup": "Start Setup",
+      "creating": "Creating...",
+      "successTitle": "Success!",
+      "successDesc": "{{count}} branches created successfully.",
+      "errorTitle": "Error",
+      "errorDesc": "An error occurred while creating branches.",
+      "exportCSV": "Download CSV",
+      "downloaded": "Downloaded",
+      "downloadSuccess": "CSV file downloaded successfully.",
+      "table": {
+        "branchName": "Branch Name",
+        "qrCode": "QR Code",
+        "feedbackUrl": "Feedback URL",
+        "managerCode": "Manager Code",
+        "ownerCodes": "Owner Codes",
+        "googleUrl": "Google URL"
+      },
+      "ownerCodesTitle": "Owner Codes (Full Business Access)",
+      "ownerCodesDesc": "These codes grant access to all branches. Give them to business managers."
+    }
+  },
+  "auth": {
+    "login": "Login",
+    "password": "Password must be at least 6 characters.",
+    "register": "Register",
+    "customer": "Customer",
+    "manager": "Manager",
+    "fullName": "Full Name",
+    "email": "Email Address",
+    "phone": "Phone (05...)",
+    "password": "Password (6-12 characters)",
+    "managerCode": "Manager Code (MGR_...)",
+    "forgotPassword": "Forgot Password?",
+    "legal": "By registering, I confirm that I have read and accept the Terms of Service and Privacy Policy.",
+    "guestOption": "Don't want to register?",
+    "guestButton": "Guest Login",
+    "guestLegal": "By continuing, you are deemed to have accepted the Terms of Service and Privacy Policy.",
+    "backToLogin": "Go Back",
+    "sendResetLink": "Send Reset Link",
+    "resetSuccess": "Email Sent",
+    "resetSuccessDesc": "Password reset link has been sent to your email address.",
+    "loginSuccess": "Login Successful",
+    "registerSuccess": "Registration Successful",
+    "verifyEmail": "Please verify your email address."
+  },
+  "feedbackDetail": {
+    "detail": {
+      "title": "Detail",
+      "urgent": "URGENT INTERVENTION REQUIRED",
+      "subtitle": "You can review all details of the feedback here.",
+      "customerInfo": "Customer Information",
+      "membership": "Membership",
+      "technicalInfo": "Technical Information",
+      "referenceId": "Reference ID",
+      "copy": "Copied",
+      "branch": "Branch",
+      "date": "Date",
+      "ageGroup": "Age Group",
+      "guestRequest": "Guest Contact Request",
+      "guestRequestDesc": "This guest requested to be contacted regarding their experience.",
+      "guestNote": "Business Note About Customer",
+      "evaluationScore": "Evaluation Score",
+      "generalEval": "General Evaluation",
+      "customerMessage": "Customer Message",
+      "noMessage": "No message.",
+      "images": "Images",
+      "managerNote": "Feedback Note",
+      "managerNotePlaceholder": "Notes specific to this feedback...",
+      "lastUpdated": "Last Updated",
+      "viewProfile": "View Profile",
+      "anonymous": "Anonymous user (No profile data)",
+      "openImage": "Open Image",
+      "translate": "Translate",
+      "translatedSuccessfully": "Translation completed.",
+      "translationError": "An error occurred during translation.",
+      "translationLabel": "Translation ({{lang}}):",
+      "statuses": {
+        "new": "New",
+        "pending": "Pending",
+        "in_progress": "In Progress",
+        "resolved": "Resolved",
+        "escalated": "Urgent"
+      },
+      "types": {
+        "complaint": "Complaint",
+        "suggestion": "Suggestion",
+        "evaluation": "Evaluation",
+        "review": "Review",
+        "rating": "Rating",
+        "general": "Feedback"
+      }
+    }
+  },
+  "form": {
+    "errorLoad": "Error loading data.",
+    "limitExceeded": "Limit Exceeded",
+    "limitDesc": "Max 3 images allowed.",
+    "fileTooLarge": "File Too Large",
+    "fileTooLargeDesc": "{{name}} must be smaller than 5MB.",
+    "titles": {
+      "complaint": "Report Issue",
+      "complaintSub": "Let's fix it.",
+      "suggestion": "Make Suggestion",
+      "suggestionSub": "Your ideas matter.",
+      "review": "Rate Experience",
+      "reviewSub": "Rate your experience.",
+      "default": "Feedback",
+      "defaultSub": "Share your thoughts"
+    },
+    "stepsUI": {
+      "evidenceTitle": "Evidence & Time",
+      "evidenceDesc": "Provide details to speed up the process.",
+      "problemTitle": "What is the issue?",
+      "suggestionTitle": "What is your suggestion?",
+      "problemDesc": "Please explain in detail.",
+      "rateTitle": "Rate Us",
+      "rateDesc": "How satisfied were you with our service?",
+      "finalTitle": "Final Touches",
+      "finalDesc": "Anything else you'd like to add?",
+      "branchLabel": "Branch",
+      "addPhoto": "Add",
+      "extraImages": "Additional Images"
+    },
+    "infoBanner": "Sent instantly to the manager.",
+    "businessLabel": "Business",
+    "branch": {
+      "label": "Select Branch",
+      "placeholder": "Select Branch",
+      "auto": "Auto-selected via QR"
+    },
+    "receipt": {
+      "label": "Do you have a receipt?",
+      "noReceipt": "No Receipt",
+      "hasReceipt": "Have Receipt",
+      "uploadLabel": "Receipt Image",
+      "placeholder": "Upload Receipt",
+      "uploaded": "Uploaded",
+      "dateLabel": "When did you visit?"
+    },
+    "message": {
+      "label": "Description",
+      "placeholder": "Please provide details...",
+      "minChars": "Min 10 chars"
+    },
+    "rating": {
+      "label": "Satisfaction",
+      "emojis": {
+        "1": "😞 Very Bad",
+        "2": "😟 Bad",
+        "3": "😐 Average",
+        "4": "😊 Good",
+        "5": "😍 Excellent"
+      }
+    },
+    "reactions": {
+      "oneStar": "We are very sorry 😔 We will investigate immediately to make it right.",
+      "twoStar": "We apologize for falling below expectations. We will improve ourselves.",
+      "threeStar": "We can do better. We grow with your feedback.",
+      "fourStar": "Thank you! We will continue working to reach perfection. 💪",
+      "fiveStar": "You are awesome! You made our day, thank you for your support! 🌟"
+    },
+    "general": {
+      "title": "Your General Experience with the Business",
+      "placeholder": "Anything you'd like to add about the venue, service, or atmosphere...",
+      "placeholderLow": "Please tell us where we went wrong, we want to fix it...",
+      "placeholderMid": "What could we have done better?",
+      "placeholderHigh": "Tell us what you liked best (Service, Taste, Ambiance?)..."
+    },
+    "images": {
+      "label": "Images (Optional)",
+      "placeholder": "Add Photo",
+      "sub": "Max 3 images",
+      "uploaded": "images selected"
+    },
+    "submit": {
+      "sending": "Sending...",
+      "send": "Send",
+      "error": "Error occurred.",
+      "errorValidation": "Please fill required fields."
+    },
+    "success": {
+      "title": "Thank You!",
+      "defaultTitle": "Awesome!",
+      "desc": "Sent to {{name}} management.",
+      "defaultDesc": "Your feedback has been sent successfully.",
+      "footer": "Thanks for choosing us.",
+      "button": "Close",
+      "homeButton": "Return to Home"
+    },
+    "google": {
+      "title": "You're Awesome! 🤩",
+      "copyAlert": "We copied your feedback for you! 📋",
+      "desc": "Would you like to empower us by sharing this great experience with others on Google? Just paste it.",
+      "yesButton": "Share on Google",
+      "noButton": "No, Thanks",
+      "instaButton": "Follow us on Instagram",
+      "copiedToast": "Copied! Redirecting..."
+    },
+    "steps": "Step",
+    "guestContact": {
+      "title": "Let us make it up to you",
+      "desc": "Would you like us to contact you so we can make up for your negative experience?",
+      "yes": "Yes, contact me",
+      "name": "Your Name",
+      "phone": "Your Phone",
+      "namePlaceholder": "Your Full Name",
+      "cancel": "Cancel and Close"
+    }
+  }
+}

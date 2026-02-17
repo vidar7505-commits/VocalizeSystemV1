@@ -18,7 +18,8 @@ export const getStatusBadge = (feedback, t) => {
 
 export const formatDate = (dateString, language) => {
     if (!dateString) return '';
-    return new Intl.DateTimeFormat(language === 'tr' ? 'tr-TR' : 'en-US', {
+    const locale = language === 'tr' ? 'tr-TR' : 'en-US';
+    return new Intl.DateTimeFormat(locale, {
         day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
     }).format(new Date(dateString));
 };

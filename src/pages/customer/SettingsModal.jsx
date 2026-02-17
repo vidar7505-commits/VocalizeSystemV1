@@ -36,8 +36,8 @@ const SettingsModal = React.memo(({
     const handleUpdateEmail = async () => {
         if (!newEmail.trim()) {
             toast({
-                title: language === 'tr' ? 'Hata' : 'Error',
-                description: language === 'tr' ? 'Lütfen tüm alanları doldurunuz' : 'Please fill in all fields',
+                title: t('common.error'),
+                description: t('customer.settings.errors.fillAll'),
                 variant: "destructive"
             });
             return;
@@ -47,14 +47,14 @@ const SettingsModal = React.memo(({
             const { error } = await supabase.auth.updateUser({ email: newEmail });
             if (error) throw error;
             toast({
-                title: language === 'tr' ? 'Başarılı' : 'Success',
-                description: language === 'tr' ? 'E-posta başarıyla güncellendi' : 'Email successfully updated',
+                title: t('common.success'),
+                description: t('customer.settings.success.emailUpdated'),
                 className: "bg-teal-600 text-white border-none"
             });
             setNewEmail('');
         } catch (err) {
             toast({
-                title: language === 'tr' ? 'Hata' : 'Error',
+                title: t('common.error'),
                 description: err.message,
                 variant: "destructive"
             });
@@ -66,24 +66,24 @@ const SettingsModal = React.memo(({
     const handleUpdatePassword = async () => {
         if (!newPassword.trim() || !newPasswordConfirm.trim()) {
             toast({
-                title: language === 'tr' ? 'Hata' : 'Error',
-                description: language === 'tr' ? 'Lütfen tüm alanları doldurunuz' : 'Please fill in all fields',
+                title: t('common.error'),
+                description: t('customer.settings.errors.fillAll'),
                 variant: "destructive"
             });
             return;
         }
         if (newPassword !== newPasswordConfirm) {
             toast({
-                title: language === 'tr' ? 'Hata' : 'Error',
-                description: language === 'tr' ? 'Şifreler eşleşmiyor' : 'Passwords do not match',
+                title: t('common.error'),
+                description: t('customer.settings.errors.mismatch'),
                 variant: "destructive"
             });
             return;
         }
         if (newPassword.length < 6) {
             toast({
-                title: language === 'tr' ? 'Hata' : 'Error',
-                description: language === 'tr' ? 'Şifre en az 6 karakter olmalı' : 'Password must be at least 6 characters',
+                title: t('common.error'),
+                description: t('customer.settings.errors.shortPassword'),
                 variant: "destructive"
             });
             return;
@@ -93,15 +93,15 @@ const SettingsModal = React.memo(({
             const { error } = await supabase.auth.updateUser({ password: newPassword });
             if (error) throw error;
             toast({
-                title: language === 'tr' ? 'Başarılı' : 'Success',
-                description: language === 'tr' ? 'Şifre başarıyla güncellendi' : 'Password successfully updated',
+                title: t('common.success'),
+                description: t('customer.settings.success.passwordUpdated'),
                 className: "bg-teal-600 text-white border-none"
             });
             setNewPassword('');
             setNewPasswordConfirm('');
         } catch (err) {
             toast({
-                title: language === 'tr' ? 'Hata' : 'Error',
+                title: t('common.error'),
                 description: err.message,
                 variant: "destructive"
             });
@@ -116,10 +116,10 @@ const SettingsModal = React.memo(({
                 <DialogHeader className="px-6 pt-4 pb-2 border-b border-slate-800 flex-shrink-0">
                     <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
                         <Settings className="h-6 w-6 text-teal-500" />
-                        {language === 'tr' ? 'Ayarlar' : 'Settings'}
+                        {t('customer.settings.title')}
                     </DialogTitle>
                     <DialogDescription className="text-slate-400 text-sm sr-only">
-                        {language === 'tr' ? 'Hesap ve uygulama ayarlarınızı buradan yönetebilirsiniz.' : 'Manage your account and application settings here.'}
+                        {t('customer.settings.description')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -134,7 +134,7 @@ const SettingsModal = React.memo(({
                                     }`}
                             >
                                 <Mail className="h-4 w-4" />
-                                {language === 'tr' ? 'Profil' : 'Profile'}
+                                {t('customer.settings.tabs.profile')}
                             </button>
                             <button
                                 onClick={() => setSettingsTab('security')}
@@ -144,7 +144,7 @@ const SettingsModal = React.memo(({
                                     }`}
                             >
                                 <KeyRound className="h-4 w-4" />
-                                {language === 'tr' ? 'Güvenlik' : 'Security'}
+                                {t('customer.settings.tabs.security')}
                             </button>
                             <button
                                 onClick={() => setSettingsTab('account')}
@@ -154,7 +154,7 @@ const SettingsModal = React.memo(({
                                     }`}
                             >
                                 <Shield className="h-4 w-4" />
-                                {language === 'tr' ? 'Hesap' : 'Account'}
+                                {t('customer.settings.tabs.account')}
                             </button>
                         </div>
 
@@ -163,7 +163,7 @@ const SettingsModal = React.memo(({
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-sm text-slate-400 font-semibold mb-2 block">
-                                            {language === 'tr' ? 'Mevcut E-posta' : 'Current Email'}
+                                            {t('customer.settings.profile.currentEmail')}
                                         </label>
                                         <Input
                                             type="email"
@@ -175,11 +175,11 @@ const SettingsModal = React.memo(({
                                     </div>
                                     <div>
                                         <label className="text-sm text-slate-400 font-semibold mb-2 block">
-                                            {language === 'tr' ? 'Yeni E-posta' : 'New Email'}
+                                            {t('customer.settings.profile.newEmail')}
                                         </label>
                                         <Input
                                             type="email"
-                                            placeholder="yeni@email.com"
+                                            placeholder={t('customer.settings.profile.placeholder')}
                                             value={newEmail}
                                             onChange={(e) => setNewEmail(e.target.value)}
                                             autoComplete="email"
@@ -193,11 +193,11 @@ const SettingsModal = React.memo(({
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-sm text-slate-400 font-semibold mb-2 block">
-                                            {language === 'tr' ? 'Yeni Şifre' : 'New Password'}
+                                            {t('customer.settings.security.newPassword')}
                                         </label>
                                         <Input
                                             type="password"
-                                            placeholder="••••••••"
+                                            placeholder={t('customer.settings.security.placeholder')}
                                             value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
                                             autoComplete="new-password"
@@ -206,11 +206,11 @@ const SettingsModal = React.memo(({
                                     </div>
                                     <div>
                                         <label className="text-sm text-slate-400 font-semibold mb-2 block">
-                                            {language === 'tr' ? 'Şifreyi Onayla' : 'Confirm Password'}
+                                            {t('customer.settings.security.confirmPassword')}
                                         </label>
                                         <Input
                                             type="password"
-                                            placeholder="••••••••"
+                                            placeholder={t('customer.settings.security.placeholder')}
                                             value={newPasswordConfirm}
                                             onChange={(e) => setNewPasswordConfirm(e.target.value)}
                                             autoComplete="new-password"
@@ -226,13 +226,11 @@ const SettingsModal = React.memo(({
                                         <div className="flex items-center gap-2 mb-2">
                                             <AlertOctagon className="h-5 w-5 text-red-500" />
                                             <h3 className="font-bold text-red-400 text-sm">
-                                                {language === 'tr' ? 'Tehlikeli Bölge' : 'Danger Zone'}
+                                                {t('customer.settings.account.dangerZone')}
                                             </h3>
                                         </div>
                                         <p className="text-sm text-slate-400 mb-4">
-                                            {language === 'tr'
-                                                ? 'Hesabınızı sildiğinizde tüm verileriniz kalıcı olarak silinir ve geri getirilemez.'
-                                                : 'Deleting your account is permanent. All your data will be lost.'}
+                                            {t('customer.settings.account.deleteDescription')}
                                         </p>
 
                                         <Button
@@ -241,7 +239,7 @@ const SettingsModal = React.memo(({
                                             className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold"
                                         >
                                             <Trash2 className="h-4 w-4 mr-2" />
-                                            {language === 'tr' ? 'Hesabı Silme İşlemini Başlat' : 'Start Account Deletion'}
+                                            {t('customer.settings.account.deleteStart')}
                                         </Button>
                                     </div>
                                 </div>
@@ -258,12 +256,12 @@ const SettingsModal = React.memo(({
                                     {isUpdatingEmail ? (
                                         <>
                                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                            {language === 'tr' ? 'Güncelleniyor...' : 'Updating...'}
+                                            {t('customer.settings.updating')}
                                         </>
                                     ) : (
                                         <>
                                             <Mail className="h-4 w-4 mr-2" />
-                                            {language === 'tr' ? 'E-postayı Güncelle' : 'Update Email'}
+                                            {t('customer.settings.profile.update')}
                                         </>
                                     )}
                                 </Button>
@@ -278,12 +276,12 @@ const SettingsModal = React.memo(({
                                     {isUpdatingPassword ? (
                                         <>
                                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                            {language === 'tr' ? 'Güncelleniyor...' : 'Updating...'}
+                                            {t('customer.settings.updating')}
                                         </>
                                     ) : (
                                         <>
                                             <KeyRound className="h-4 w-4 mr-2" />
-                                            {language === 'tr' ? 'Şifreyi Güncelle' : 'Update Password'}
+                                            {t('customer.settings.security.update')}
                                         </>
                                     )}
                                 </Button>
@@ -298,7 +296,7 @@ const SettingsModal = React.memo(({
                                     className="bg-slate-700 border-slate-600 hover:bg-slate-600 text-teal-400 hover:text-teal-300"
                                 >
                                     <Send className="h-4 w-4 mr-2" />
-                                    {language === 'tr' ? "Vocalize'a Bildir" : "Feedback to Vocalize"}
+                                    {t('customer.settings.vocalizeFeedback')}
                                 </Button>
 
                                 <Button
@@ -306,7 +304,7 @@ const SettingsModal = React.memo(({
                                     className="bg-slate-700 hover:bg-slate-600 text-white font-semibold"
                                 >
                                     <LogOut className="h-4 w-4 mr-2" />
-                                    {language === 'tr' ? 'Çıkış Yap' : 'Logout'}
+                                    {t('customer.settings.logout')}
                                 </Button>
                             </div>
 
@@ -315,7 +313,7 @@ const SettingsModal = React.memo(({
                                 variant="ghost"
                                 className="w-full text-slate-500 hover:text-slate-300 hover:bg-transparent h-8 text-xs"
                             >
-                                {language === 'tr' ? 'Pencereyi Kapat' : 'Close Window'}
+                                {t('customer.settings.close')}
                             </Button>
                         </div>
                     </>
@@ -325,19 +323,17 @@ const SettingsModal = React.memo(({
                             <UserPlus className="h-12 w-12 text-teal-500" />
                         </div>
                         <h3 className="text-2xl font-bold text-white text-center mb-3">
-                            {language === 'tr' ? 'Daha Fazla Özellik Açın' : 'Unlock More Features'}
+                            {t('customer.settings.unlockFeatures')}
                         </h3>
                         <p className="text-slate-400 text-center max-w-sm mb-6">
-                            {language === 'tr'
-                                ? 'Geri bildirimlerinizi takip edin, istatistiklerinizi görün and daha fazla özelliği kullanın.'
-                                : 'Track your feedback, view statistics and unlock more features.'}
+                            {t('customer.settings.unlockDescription')}
                         </p>
                         <Button
                             onClick={() => { handleRegisterClick(); onClose(); }}
                             className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-6 rounded-xl font-bold text-base mb-4"
                         >
                             <UserPlus className="mr-2 h-5 w-5" />
-                            {t.register}
+                            {t('customer.register')}
                         </Button>
 
                         <DialogFooter className="w-full mt-auto pt-6 border-t border-slate-800 flex-shrink-0 flex flex-col gap-3">
@@ -347,7 +343,7 @@ const SettingsModal = React.memo(({
                                 className="w-full bg-slate-700 border-slate-600 hover:bg-slate-600 text-teal-400 hover:text-teal-300"
                             >
                                 <Send className="h-4 w-4 mr-2" />
-                                {language === 'tr' ? "Vocalize'a Bildir" : "Feedback to Vocalize"}
+                                {t('customer.settings.vocalizeFeedback')}
                             </Button>
 
                             <Button
@@ -355,7 +351,7 @@ const SettingsModal = React.memo(({
                                 className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold"
                             >
                                 <LogOut className="h-4 w-4 mr-2" />
-                                {language === 'tr' ? 'Çıkış Yap' : 'Logout'}
+                                {t('customer.settings.logout')}
                             </Button>
                         </DialogFooter>
                     </div>

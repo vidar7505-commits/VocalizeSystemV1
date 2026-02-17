@@ -8,22 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { MessageSquare, Trash2, Check, Eye, EyeOff, Loader2, ServerCrash, Inbox, ChevronLeft, ChevronRight } from 'lucide-react';
 import AdminMobileNavbar from '@/components/AdminMobileNavbar';
 import FeedbackDetailModal from '@/components/FeedbackDetailModal';
-
-const formatTimeAgo = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-    if (seconds < 60) return "az önce";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes} dk önce`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} sa önce`;
-    const days = Math.floor(hours / 24);
-    return `${days} gün önce`;
-};
+import { useTranslation } from 'react-i18next';
+import { formatDistanceToNow } from 'date-fns';
+import { tr, enUS } from 'date-fns/locale';
 
 const NotificationHistory = () => {
+    const { t, i18n } = useTranslation();
     const { user } = useAuth();
     const { toast } = useToast();
     const [notifications, setNotifications] = useState([]);
@@ -76,20 +66,20 @@ const NotificationHistory = () => {
 
         } catch (e) {
             console.error("Error fetching notification history:", e);
-            setError("Bildirimler yüklenirken bir hata oluştu.");
-            toast({ variant: 'destructive', title: 'Hata', description: 'Bildirim geçmişi alınamadı.' });
+            setError(t('admin.notifications.fetchError'));
+            toast({ variant: 'destructive', title: t('common.error'), description: t('admin.notifications.fetchError') });
         } finally {
             setLoading(false);
             setSelected([]);
         }
-    }, [user, toast, filter, page, itemsPerPage]);
+    }, [user, toast, filter, page, itemsPerPage, t]);
 
     const getNotificationLabel = (n) => {
         const type = n.feedbacks?.feedback_type || n.feedback_type;
-        if (type === 'complaint') return 'Yeni bir şikayetiniz var';
-        if (type === 'suggestion') return 'Yeni bir öneriniz var';
-        if (type === 'evaluation' || type === 'review' || type === 'rating') return 'Yeni bir değerlendirmeniz var';
-        return n.message || 'Yeni bildirim';
+        if (type === 'complaint') return t('admin.header.newComplaint');
+        if (type === 'suggestion') return t('admin.header.newSuggestion');
+        if (type === 'evaluation' || type === 'review' || type === 'rating') return t('admin.header.newEvaluation');
+        return n.message || t('admin.header.newNotification');
     };
 
     useEffect(() => {
@@ -100,18 +90,18 @@ const NotificationHistory = () => {
         try {
             const { error } = await supabase.from('notifications').update(updateData).in('id', selected);
             if (error) throw error;
-            toast({ title: "Başarılı!", description: `${selected.length} bildirim güncellendi.` });
+            toast({ title: t('common.success'), description: t('admin.notifications.updateSuccess', { count: selected.length }) });
             await fetchNotifications();
-        } catch (error) { toast({ variant: "destructive", title: "Hata", description: "Toplu güncelleme başarısız." }); }
+        } catch (error) { toast({ variant: "destructive", title: t('common.error'), description: t('admin.notifications.updateError') }); }
     };
 
     const handleBulkDelete = async () => {
         try {
             const { error } = await supabase.from('notifications').delete().in('id', selected);
             if (error) throw error;
-            toast({ title: "Başarılı!", description: `${selected.length} bildirim silindi.` });
+            toast({ title: t('common.success'), description: t('admin.notifications.deleteSuccess', { count: selected.length }) });
             await fetchNotifications();
-        } catch (error) { toast({ variant: "destructive", title: "Hata", description: "Toplu silme başarısız." }); }
+        } catch (error) { toast({ variant: "destructive", title: t('common.error'), description: t('admin.notifications.deleteError') }); }
         setIsDeleteModalOpen(false);
     };
     
@@ -168,7 +158,7 @@ const NotificationHistory = () => {
             setSelectedFeedback(data);
         } catch (err) {
             console.error("Error fetching feedback details:", err);
-            toast({ variant: "destructive", title: "Hata", description: "Geri bildirim detayları yüklenemedi." });
+            toast({ variant: "destructive", title: t('common.error'), description: t('admin.feedbacks.fetchErrorDesc') });
         } finally {
             setIsLoadingFeedback(false);
         }
@@ -186,30 +176,30 @@ const NotificationHistory = () => {
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
                     <div className="bg-slate-900 p-6 rounded-lg border border-slate-700 flex flex-col items-center gap-3">
                         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-                        <span className="text-slate-300 font-medium">Detaylar yükleniyor...</span>
+                        <span className="text-slate-300 font-medium">{t('admin.notifications.detailsLoading')}</span>
                     </div>
                 </div>
             )}
 
             <header className="mb-6 mt-4 md:mt-0 flex flex-col md:flex-row justify-between items-start gap-3">
                 <div>
-                    <h1 className="text-white font-bold text-3xl">Bildirim Geçmişi</h1>
-                    <p className="text-slate-400 text-sm">Tüm geri bildirim uyarılarınızı buradan yönetin.</p>
+                    <h1 className="text-white font-bold text-3xl">{t('admin.notifications.title')}</h1>
+                    <p className="text-slate-400 text-sm">{t('admin.notifications.subtitle')}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant={filter === 'all' ? 'default' : 'outline'} onClick={() => { setFilter('all'); setPage(1); }} size="sm" className="bg-slate-700 hover:bg-slate-600 border-slate-600">Tümü</Button>
-                    <Button variant={filter === 'unread' ? 'default' : 'outline'} onClick={() => { setFilter('unread'); setPage(1); }} size="sm" className="bg-slate-700 hover:bg-slate-600 border-slate-600">Okunmamış</Button>
-                    <Button variant={filter === 'read' ? 'default' : 'outline'} onClick={() => { setFilter('read'); setPage(1); }} size="sm" className="bg-slate-700 hover:bg-slate-600 border-slate-600">Okunmuş</Button>
+                    <Button variant={filter === 'all' ? 'default' : 'outline'} onClick={() => { setFilter('all'); setPage(1); }} size="sm" className="bg-slate-700 hover:bg-slate-600 border-slate-600">{t('admin.notifications.all')}</Button>
+                    <Button variant={filter === 'unread' ? 'default' : 'outline'} onClick={() => { setFilter('unread'); setPage(1); }} size="sm" className="bg-slate-700 hover:bg-slate-600 border-slate-600">{t('admin.notifications.unread')}</Button>
+                    <Button variant={filter === 'read' ? 'default' : 'outline'} onClick={() => { setFilter('read'); setPage(1); }} size="sm" className="bg-slate-700 hover:bg-slate-600 border-slate-600">{t('admin.notifications.read')}</Button>
                 </div>
             </header>
 
             {selected.length > 0 && (
                 <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 md:p-4 mb-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div><span className="text-blue-400 font-medium">{selected.length} bildirim seçildi</span><Button variant="link" className="text-blue-400 hover:text-blue-300 text-sm" onClick={() => setSelected([])}>Seçimi Kaldır</Button></div>
+                    <div><span className="text-blue-400 font-medium">{t('admin.notifications.selectedCount', { count: selected.length })}</span><Button variant="link" className="text-blue-400 hover:text-blue-300 text-sm" onClick={() => setSelected([])}>{t('common.deselectAll')}</Button></div>
                     <div className="flex items-center gap-2">
-                        <Button size="sm" onClick={() => handleBulkUpdate({ is_read: true })} className="bg-blue-600 hover:bg-blue-700"><Eye className="w-4 h-4 mr-2"/>Okundu İşaretle</Button>
-                        <Button size="sm" onClick={() => handleBulkUpdate({ is_read: false })} className="bg-purple-600 hover:bg-purple-700"><EyeOff className="w-4 h-4 mr-2"/>Okunmadı İşaretle</Button>
-                        <Button size="sm" onClick={() => setIsDeleteModalOpen(true)} className="bg-red-600 hover:bg-red-700"><Trash2 className="w-4 h-4 mr-2"/>Sil</Button>
+                        <Button size="sm" onClick={() => handleBulkUpdate({ is_read: true })} className="bg-blue-600 hover:bg-blue-700"><Eye className="w-4 h-4 mr-2"/>{t('admin.notifications.markAsRead')}</Button>
+                        <Button size="sm" onClick={() => handleBulkUpdate({ is_read: false })} className="bg-purple-600 hover:bg-purple-700"><EyeOff className="w-4 h-4 mr-2"/>{t('admin.notifications.markAsUnread')}</Button>
+                        <Button size="sm" onClick={() => setIsDeleteModalOpen(true)} className="bg-red-600 hover:bg-red-700"><Trash2 className="w-4 h-4 mr-2"/>{t('admin.notifications.delete')}</Button>
                     </div>
                 </div>
             )}
@@ -219,10 +209,10 @@ const NotificationHistory = () => {
                     <thead className="bg-slate-700/50">
                         <tr>
                             <th className="p-4 w-12"><Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} id="select-all"/></th>
-                            <th className="px-3 py-4 text-sm font-semibold text-slate-300">Durum</th>
-                            <th className="px-3 py-4 text-sm font-semibold text-slate-300 w-1/2">Mesaj</th>
-                            <th className="px-3 py-4 text-sm font-semibold text-slate-300">Şube</th>
-                            <th className="px-3 py-4 text-sm font-semibold text-slate-300">Tarih</th>
+                            <th className="px-3 py-4 text-sm font-semibold text-slate-300">{t('admin.notifications.status')}</th>
+                            <th className="px-3 py-4 text-sm font-semibold text-slate-300 w-1/2">{t('admin.notifications.message')}</th>
+                            <th className="px-3 py-4 text-sm font-semibold text-slate-300">{t('admin.notifications.branch')}</th>
+                            <th className="px-3 py-4 text-sm font-semibold text-slate-300">{t('admin.notifications.date')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -231,7 +221,7 @@ const NotificationHistory = () => {
                         ) : error ? (
                              <tr><td colSpan="5" className="text-center py-16"><ServerCrash className="w-12 h-12 text-red-500/50 mx-auto mb-4" /><p className="text-slate-400">{error}</p></td></tr>
                         ) : notifications.length === 0 ? (
-                            <tr><td colSpan="5" className="text-center py-16"><Inbox className="w-12 h-12 text-slate-600 mx-auto mb-4" /><p className="text-slate-400">Görüntülenecek bildirim yok.</p></td></tr>
+                            <tr><td colSpan="5" className="text-center py-16"><Inbox className="w-12 h-12 text-slate-600 mx-auto mb-4" /><p className="text-slate-400">{t('admin.notifications.noNotifications')}</p></td></tr>
                         ) : (
                             notifications.map(n => (
                                 <tr 
@@ -243,19 +233,19 @@ const NotificationHistory = () => {
                                         <Checkbox checked={selected.includes(n.id)} onCheckedChange={(checked) => setSelected(prev => checked ? [...prev, n.id] : prev.filter(id => id !== n.id))} />
                                     </td>
                                     <td className="px-3 py-4">
-                                        <span className={`inline-block w-3 h-3 rounded-full ${n.is_read ? 'bg-slate-500' : 'bg-blue-400 animate-pulse'}`} title={n.is_read ? 'Okundu' : 'Okunmadı'}></span>
+                                        <span className={`inline-block w-3 h-3 rounded-full ${n.is_read ? 'bg-slate-500' : 'bg-blue-400 animate-pulse'}`} title={n.is_read ? t('admin.notifications.read') : t('admin.notifications.unread')}></span>
                                     </td>
                                     <td className="px-3 py-4">
                                         <div className="flex items-center gap-3">
                                             <MessageSquare className={`w-5 h-5 shrink-0 ${n.is_read ? 'text-slate-500' : 'text-teal-400'}`} />
                                             <div>
                                                 <p className={`font-medium ${n.is_read ? 'text-slate-400' : 'text-white'}`}>{getNotificationLabel(n)}</p>
-                                                <p className="text-xs text-slate-500">Müşteri: {n.customer_name || 'Bilinmiyor'}</p>
+                                                <p className="text-xs text-slate-500">{t('admin.notifications.customer', { name: n.customer_name || t('common.unknown') })}</p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-3 py-4 text-sm text-slate-300">{n.branch_name || 'Genel'}</td>
-                                    <td className="px-3 py-4 text-sm text-slate-400">{formatTimeAgo(n.created_at)}</td>
+                                    <td className="px-3 py-4 text-sm text-slate-300">{n.branch_name || t('admin.notifications.general')}</td>
+                                    <td className="px-3 py-4 text-sm text-slate-400">{formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: i18n.language === 'tr' ? tr : enUS })}</td>
                                 </tr>
                             ))
                         )}
@@ -265,15 +255,15 @@ const NotificationHistory = () => {
 
             {totalCount > 0 && (
                 <div className="bg-slate-800/40 rounded-lg p-4 border border-slate-700/50 mt-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <p className="text-slate-400 text-sm">Toplam {totalCount} bildirim</p>
+                    <p className="text-slate-400 text-sm">{t('admin.notifications.totalNotifications', { count: totalCount })}</p>
                     <div className="flex items-center gap-2">
-                        <Button onClick={() => setPage(p => p - 1)} disabled={page === 1} size="sm" variant="outline" className="border-slate-700"><ChevronLeft className="w-4 h-4 mr-1"/>Önceki</Button>
-                        <span className="text-sm text-white font-medium px-2">Sayfa {page} / {totalPages}</span>
-                        <Button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages} size="sm" variant="outline" className="border-slate-700">Sonraki<ChevronRight className="w-4 h-4 ml-1"/></Button>
+                        <Button onClick={() => setPage(p => p - 1)} disabled={page === 1} size="sm" variant="outline" className="border-slate-700"><ChevronLeft className="w-4 h-4 mr-1"/>{t('admin.notifications.previous')}</Button>
+                        <span className="text-sm text-white font-medium px-2">{t('admin.notifications.pageOf', { current: page, total: totalPages })}</span>
+                        <Button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages} size="sm" variant="outline" className="border-slate-700">{t('admin.notifications.next')}<ChevronRight className="w-4 h-4 ml-1"/></Button>
                     </div>
                 </div>
             )}
-             <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}><DialogContent className="bg-slate-900 border-slate-800 text-white"><DialogHeader><DialogTitle>Silme Onayı</DialogTitle><DialogDescription>Seçili {selected.length} bildirimi kalıcı olarak silmek istediğinizden emin misiniz?</DialogDescription></DialogHeader><DialogFooter className="mt-4"><Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>İptal</Button><Button variant="destructive" onClick={handleBulkDelete}>Sil</Button></DialogFooter></DialogContent></Dialog>
+             <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}><DialogContent className="bg-slate-900 border-slate-800 text-white"><DialogHeader><DialogTitle>{t('admin.notifications.deleteTitle')}</DialogTitle><DialogDescription>{t('admin.notifications.deleteConfirm', { count: selected.length })}</DialogDescription></DialogHeader><DialogFooter className="mt-4"><Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>{t('common.cancel')}</Button><Button variant="destructive" onClick={handleBulkDelete}>{t('common.delete')}</Button></DialogFooter></DialogContent></Dialog>
         
              {/* Detail Modal */}
              {selectedFeedback && (

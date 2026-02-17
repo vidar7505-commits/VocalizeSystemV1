@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { User, Lock, Save, MessageSquare, Loader2, Image as ImageIcon, Upload, X, Moon, Sun } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useTranslation } from 'react-i18next';
 
 const SettingsPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { businessName } = useAdminContext();
   const { toast } = useToast();
@@ -80,11 +82,11 @@ const SettingsPage = () => {
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
     if (passwords.new !== passwords.confirm) {
-      toast({ variant: "destructive", title: "Hata", description: "Şifreler eşleşmiyor." });
+      toast({ variant: "destructive", title: t('common.error'), description: t('admin.settings.passwordsDoNotMatch', { defaultValue: 'Şifreler eşleşmiyor.' }) });
       return;
     }
     if (passwords.new.length < 6) {
-      toast({ variant: "destructive", title: "Hata", description: "Şifre en az 6 karakter olmalı." });
+      toast({ variant: "destructive", title: t('common.error'), description: t('auth.password', { defaultValue: 'Şifre en az 6 karakter olmalı.' }) });
       return;
     }
 
@@ -93,9 +95,9 @@ const SettingsPage = () => {
     setPasswordLoading(false);
 
     if (error) {
-      toast({ variant: "destructive", title: "Hata", description: error.message });
+      toast({ variant: "destructive", title: t('common.error'), description: error.message });
     } else {
-      toast({ title: "Başarılı", description: "Şifreniz güncellendi." });
+      toast({ title: t('common.success'), description: t('admin.settings.updatePasswordSuccess', { defaultValue: 'Şifreniz güncellendi.' }) });
       setPasswords({ new: '', confirm: '' });
     }
   };
@@ -106,8 +108,8 @@ const SettingsPage = () => {
 
     if (files.length > remainingSlots) {
       toast({
-        title: "Uyarı",
-        description: "En fazla 3 görsel ekleyebilirsiniz.",
+        title: t('customer.support.errorTitle'),
+        description: t('customer.support.maxImages'),
         variant: "destructive"
       });
       return;
@@ -148,11 +150,11 @@ const SettingsPage = () => {
   const handleFeedbackSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
-      toast({ variant: "destructive", title: "Hata", description: "Oturum açmanız gerekiyor." });
+      toast({ variant: "destructive", title: t('common.error'), description: t('common.loginRequired', { defaultValue: 'Oturum açmanız gerekiyor.' }) });
       return;
     }
     if (!feedbackMessage.trim()) {
-      toast({ variant: "destructive", title: "Hata", description: "Lütfen mesajınızı yazın." });
+      toast({ variant: "destructive", title: t('common.error'), description: t('customer.support.errorEmpty') });
       return;
     }
 
@@ -172,8 +174,8 @@ const SettingsPage = () => {
       if (error) throw error;
 
       toast({
-        title: "Geri Bildirim Alındı",
-        description: "Geri bildiriminiz için teşekkür ederiz.",
+        title: t('admin.settings.feedbackReceived', { defaultValue: 'Geri Bildirim Alındı' }),
+        description: t('customer.support.successDesc'),
         className: "bg-teal-600 text-white border-none"
       });
       setFeedbackMessage('');
@@ -201,22 +203,22 @@ const SettingsPage = () => {
   return (
     <div className="max-w-3xl mx-auto space-y-6 pt-16 md:pt-0 pb-10">
       <div className="flex justify-center md:justify-start">
-        <h1 className="text-2xl font-bold text-white">Ayarlar</h1>
+        <h1 className="text-2xl font-bold text-white">{t('admin.settings.title')}</h1>
       </div>
 
       {/* Profile Section */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800">
           <User className="w-5 h-5 text-blue-400" />
-          <h2 className="text-lg font-semibold text-white">Profil Bilgileri</h2>
+          <h2 className="text-lg font-semibold text-white">{t('admin.settings.profileInfo')}</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-sm text-slate-400">E-posta Adresi</label>
+            <label className="text-sm text-slate-400">{t('admin.settings.email')}</label>
             <Input value={user?.email || ''} disabled className="bg-slate-950 border-slate-800 text-slate-500" />
           </div>
           <div className="space-y-2">
-            <label className="text-sm text-slate-400">İşletme Adı</label>
+            <label className="text-sm text-slate-400">{t('admin.settings.businessName')}</label>
             <Input value={businessName} disabled className="bg-slate-950 border-slate-800 text-slate-500" />
           </div>
         </div>
@@ -226,12 +228,12 @@ const SettingsPage = () => {
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800">
           {theme === 'dark' ? <Moon className="w-5 h-5 text-indigo-400" /> : <Sun className="w-5 h-5 text-yellow-400" />}
-          <h2 className="text-lg font-semibold text-white">Görünüm Ayarları</h2>
+          <h2 className="text-lg font-semibold text-white">{t('admin.settings.appearance')}</h2>
         </div>
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-200">Tema Tercihi</label>
-            <p className="text-xs text-slate-400">Panelin görünümünü aydınlık veya koyu mod olarak ayarlayın.</p>
+            <label className="text-sm font-medium text-slate-200">{t('admin.settings.themePreference')}</label>
+            <p className="text-xs text-slate-400">{t('admin.settings.themeDesc')}</p>
           </div>
           <div className="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800">
             <button
@@ -239,14 +241,14 @@ const SettingsPage = () => {
               className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${theme === 'light' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
             >
               <Sun className="w-4 h-4" />
-              Aydınlık
+              {t('admin.header.themeLight')}
             </button>
             <button
               onClick={() => toggleTheme('dark')}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${theme === 'dark' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
             >
               <Moon className="w-4 h-4" />
-              Koyu
+              {t('admin.header.themeDark')}
             </button>
           </div>
         </div>
@@ -256,11 +258,11 @@ const SettingsPage = () => {
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800">
           <Lock className="w-5 h-5 text-orange-400" />
-          <h2 className="text-lg font-semibold text-white">Şifre Değiştir</h2>
+          <h2 className="text-lg font-semibold text-white">{t('admin.settings.changePassword')}</h2>
         </div>
         <form onSubmit={handlePasswordUpdate} className="space-y-4 max-w-md">
           <div className="space-y-2">
-            <label className="text-sm text-slate-400">Yeni Şifre</label>
+            <label className="text-sm text-slate-400">{t('admin.settings.newPassword')}</label>
             <Input
               type="password"
               value={passwords.new}
@@ -270,7 +272,7 @@ const SettingsPage = () => {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm text-slate-400">Yeni Şifre (Tekrar)</label>
+            <label className="text-sm text-slate-400">{t('admin.settings.confirmPassword')}</label>
             <Input
               type="password"
               value={passwords.confirm}
@@ -280,7 +282,7 @@ const SettingsPage = () => {
             />
           </div>
           <Button disabled={passwordLoading} type="submit" className="w-full bg-teal-600 hover:bg-teal-700 text-white">
-            {passwordLoading ? "Güncelleniyor..." : <><Save className="w-4 h-4 mr-2" /> Şifreyi Güncelle</>}
+            {passwordLoading ? t('common.sending') : <><Save className="w-4 h-4 mr-2" /> {t('admin.settings.updatePassword')}</>}
           </Button>
         </form>
       </div>
@@ -289,15 +291,15 @@ const SettingsPage = () => {
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800">
           <MessageSquare className="w-5 h-5 text-purple-400" />
-          <h2 className="text-lg font-semibold text-white">Vocalize Ekibine Geri Bildirim Gönderin</h2>
+          <h2 className="text-lg font-semibold text-white">{t('admin.settings.vocalizeFeedback')}</h2>
         </div>
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <p className="text-slate-400 text-sm max-w-lg">
-            Vocalize deneyiminizi iyileştirmek için öneri, şikayet veya taleplerinizi doğrudan bize iletebilirsiniz. Geri bildirimleriniz bizim için değerlidir.
+            {t('admin.settings.vocalizeFeedbackDesc')}
           </p>
           <Button onClick={() => setFeedbackModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap">
             <MessageSquare className="w-4 h-4 mr-2" />
-            Geri Bildirim Gönder
+            {t('admin.settings.sendFeedback')}
           </Button>
         </div>
       </div>
@@ -306,18 +308,18 @@ const SettingsPage = () => {
       <Dialog open={feedbackModalOpen} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-800 text-white">
           <DialogHeader>
-            <DialogTitle className="text-white">Vocalize Ekibiyle İletişim</DialogTitle>
+            <DialogTitle className="text-white">{t('admin.settings.modal.title')}</DialogTitle>
             <DialogDescription className="text-slate-400">
-              Görüşlerinizi, önerilerinizi veya yaşadığınız sorunları bizimle paylaşın.
+              {t('admin.settings.modal.desc')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleFeedbackSubmit} className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <label htmlFor="feedback-message" className="text-sm font-medium text-slate-200">Mesajınız *</label>
+              <label htmlFor="feedback-message" className="text-sm font-medium text-slate-200">{t('admin.settings.modal.message')}</label>
               <textarea
                 id="feedback-message"
                 rows="4"
-                placeholder="Fikirlerinizi buraya yazın..."
+                placeholder={t('admin.settings.modal.placeholder')}
                 value={feedbackMessage}
                 onChange={(e) => setFeedbackMessage(e.target.value)}
                 className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
@@ -329,7 +331,7 @@ const SettingsPage = () => {
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-slate-200 flex items-center gap-2">
                   <ImageIcon className="w-4 h-4" />
-                  Görseller (Opsiyonel)
+                  {t('admin.settings.modal.images')}
                 </label>
                 <span className="text-xs text-slate-500">{feedbackImages.length}/3</span>
               </div>
@@ -355,7 +357,7 @@ const SettingsPage = () => {
                 {feedbackImages.length < 3 && (
                   <label className="w-20 h-20 flex flex-col items-center justify-center border border-dashed border-slate-700 rounded-lg cursor-pointer hover:bg-slate-800/50 hover:border-blue-500/50 transition-colors">
                     <Upload className="w-5 h-5 text-slate-400 mb-1" />
-                    <span className="text-[10px] text-slate-500">Yükle</span>
+                    <span className="text-[10px] text-slate-500">{t('admin.settings.modal.upload')}</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -371,7 +373,7 @@ const SettingsPage = () => {
             <DialogFooter className="mt-2">
               <Button type="submit" disabled={feedbackLoading} className="bg-blue-600 hover:bg-blue-700 text-white w-full">
                 {feedbackLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Gönder
+                {t('admin.settings.modal.submit')}
               </Button>
             </DialogFooter>
           </form>

@@ -1,6 +1,7 @@
 // src/constants/legalTexts.js
 
-export const TERMS_CONTENT = `
+export const TERMS_CONTENT = {
+  tr: `
 VOCALIZE PLATFORMU KULLANIM KOŞULLARI
 
 Bu Kullanım Koşulları, Vocalize SaaS platformunu ("Platform") kullanan tüm kişi ve kurumlar için bağlayıcıdır. Platforma kayıt olarak aşağıdaki şartları kabul etmiş sayılırsınız.
@@ -44,9 +45,56 @@ Vocalize, işletmelerin müşterilerinden QR kod aracılığıyla geri bildirim 
 
 10. GELECEKTE HİZMETİN SONLANDIRILMASI
 - Vocalize, ticari kararları doğrultusunda Platformu tamamen kapatma veya hizmeti sonlandırma hakkını saklı tutar. Bu durumda kullanıcılara verilerini yedeklemeleri için makul bir süre tanınacaktır.
-`;
+`,
+  en: `
+VOCALIZE PLATFORM TERMS OF SERVICE
 
-export const KVKK_CONTENT = `
+These Terms of Service are binding for all individuals and entities using the Vocalize SaaS platform ("Platform"). By registering on the Platform, you agree to the following terms.
+
+1. DESCRIPTION OF SERVICE
+Vocalize is a cloud-based software service that allows businesses to collect feedback (complaints, suggestions, evaluations) from their customers via QR codes, and to analyze and manage this data.
+
+2. USER CATEGORIES
+- Admin (Business): Commercial entities using the Platform to collect feedback from their customers.
+- Customer (End User): Natural persons who leave feedback for businesses.
+- Guest User: Users who leave feedback with limited features without registering.
+
+3. USER OBLIGATIONS
+- Users may not share content (profanity, insults, threats, illegal material, etc.) that is contrary to general morality, public order, and applicable laws while using the Platform.
+- Businesses are responsible for using the collected customer data in accordance with GDPR and relevant legislation.
+- Security of user accounts is the responsibility of the user. Vocalize cannot be held responsible for damages arising from password sharing.
+
+4. DATA PROCESSING AND AI USAGE
+- The Platform uses Artificial Intelligence (AI) technologies to analyze, summarize, and provide insights to businesses based on customer feedback.
+- Submitted feedback may be anonymized and used to train AI models and improve service quality.
+- Users consent to the processing of their content for this purpose.
+- "Vocalize may store feedback content from guest users or customers who have terminated their membership in an anonymous format, completely stripped of identity information, to improve system performance."
+
+5. TECHNICAL INFRASTRUCTURE AND INTERNATIONAL TRANSFER
+- Vocalize uses Supabase Inc. infrastructure for database and server services.
+- Your data is stored encrypted on Supabase's servers located abroad (USA/EU) due to the nature of the service. By registering, you agree to this data transfer.
+
+6. SERVICE INTERRUPTIONS AND DISCLAIMER
+- The Platform is provided "as-is". Vocalize does not guarantee uninterrupted service, 100% accuracy, or fitness for a particular purpose.
+- Vocalize is not responsible for data loss or service interruptions caused by technical failures, maintenance work, or force majeure.
+
+7. PRICING AND RIGHT TO CHANGE
+- Vocalize reserves the right to change the prices and content of the packages it offers by giving prior notice.
+- Features offered for free during the pilot period may be made paid later.
+
+8. ACCOUNT SUSPENSION OR DELETION
+- In case of detected misuse (spam, attacks, manipulation), Vocalize has the right to suspend or permanently delete the user account without prior warning.
+
+9. INTELLECTUAL PROPERTY
+- The design, software, logo, and all intellectual property rights of the Platform belong to Vocalize. It cannot be copied or reproduced for commercial purposes without permission.
+
+10. TERMINATION OF SERVICE IN THE FUTURE
+- Vocalize reserves the right to completely close the Platform or terminate the service in line with its commercial decisions. In this case, users will be given a reasonable period to back up their data.
+`
+};
+
+export const KVKK_CONTENT = {
+  tr: `
 KVKK AYDINLATMA METNİ
 
 Vocalize olarak kişisel verilerinizin güvenliğine önem veriyoruz. 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında, verilerinizin nasıl işlendiği aşağıda açıklanmıştır.
@@ -95,4 +143,55 @@ Misafir Kullanıcıların Verileri
 
 7. İLGİLİ KİŞİNİN HAKLARI
 KVKK Madde 11 uyarınca; verilerinizin işlenip işlenmediğini öğrenme, işlenmişse bilgi talep etme, işlenme amacını öğrenme, eksik/yanlış işlenmişse düzeltilmesini isteme ve silinmesini talep etme haklarına sahipsiniz. Taleplerinizi uygulama üzerinden veya e-posta yoluyla iletebilirsiniz.
-`;
+`,
+  en: `
+PRIVACY POLICY (GDPR COMPLIANT)
+
+At Vocalize, we care about the security of your personal data. Within the scope of the Personal Data Protection legislation, how your data is processed is explained below.
+
+1. DATA CONTROLLER
+Vocalize Platform (Contact: support@vocalize.global)
+
+2. PROCESSED PERSONAL DATA
+The following data is processed when you register or use the Platform:
+- Identity Information: First name, Last name.
+- Contact Information: Email address, Phone number.
+- Transaction Security: IP address, Log records, Device information.
+- Customer Transaction: Feedback, complaints, ratings you send, and uploaded images.
+
+3. PURPOSES OF DATA PROCESSING
+Your personal data is processed for the following purposes:
+- Carrying out membership transactions and managing the account.
+- Forwarding and tracking customer feedback to the relevant business.
+- Carrying out complaint management and customer satisfaction processes.
+- Performing AI-powered analysis (sentiment analysis, summarization).
+- Fulfillment of legal obligations (logging, etc.).
+
+4. LEGAL BASIS
+Your personal data is processed based on legal grounds such as "Being directly related to the establishment or performance of a contract" and "Data processing is mandatory for the legitimate interests of the data controller".
+
+5. INTERNATIONAL DATA TRANSFER
+The Vocalize platform uses some global infrastructure services to operate technically. Therefore, your personal data may be transferred abroad to the following systems required for service delivery:
+
+Supabase (USA): Database management, storage, and authentication processes.
+
+n8n Automation (Europe / Global servers): Automation flows that enable feedback to be forwarded to businesses.
+
+Telegram API (Global): Sending instant notifications to branch managers.
+
+Google Gmail API (Global): Forwarding email notifications.
+
+Description:
+These transfers are mandatory for the technical operation of the Vocalize platform and are carried out in accordance with data protection requirements. Transferred data is processed over secure infrastructures and can only be used for the purpose of providing the service.
+
+6. STORAGE AND DELETION
+Your personal data is maintained as long as your membership continues or during legal storage periods. When you delete your membership or upon request, your data is deleted or anonymized, except for legal obligations.
+"When the user deletes their account, information of personal data nature is deleted or anonymized; feedback content continues to be kept anonymously for system statistics and measurement of service quality."
+
+Guest User Data:
+"Text, rating, visual, and technical record data submitted by guest users sending feedback via QR code are stored anonymously and forwarded to the business as long as identity information is not shared."
+
+7. RIGHTS OF THE DATA SUBJECT
+You have the right to learn whether your data is processed, request information if processed, learn the purpose of processing, request correction if processed incompletely/inaccurately, and request deletion. You can submit your requests through the application or via email.
+`
+};

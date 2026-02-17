@@ -20,9 +20,10 @@ import { ShaderAnimation } from "@/components/ShaderAnimation";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import ComponentErrorBoundary from "@/components/ComponentErrorBoundary";
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 // 🟢 EXTRACTED COMPONENTS & DATA
-import { landingContent as content } from "@/constants/landingContent";
 import { EnterpriseBackground, AnimatedCounter, FadeIn } from "@/components/landing/LandingHelpers";
 // 🟢 LAZY LOADED COMPONENTS
 const DashboardMockup = lazy(() => import("@/components/landing/DashboardMockup"));
@@ -39,7 +40,10 @@ import LegalModal from "@/components/landing/LegalModal";
 // ============================================================================
 
 const LandingPage = () => {
-  const [lang, setLang] = useState('tr');
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language.split('-')[0] || 'tr';
+  const setLang = (newLang) => i18n.changeLanguage(newLang);
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -100,7 +104,8 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const t = useMemo(() => content[lang], [lang]);
+  // Content is now handled via useTranslation() t function
+  // We'll replace t.<key> with t('landing.<key>')
 
   // Scroll handler
   useEffect(() => {
@@ -269,12 +274,12 @@ const LandingPage = () => {
 
   // Memoize navLinks
   const navLinks = useMemo(() => [
-    { name: t.nav.features, to: 'features' },
-    { name: t.nav.useCases, to: 'industries' },
-    { name: t.nav.pricing, to: 'pricing' },
-    { name: t.nav.v2, to: 'v2-vision' },
-    { name: t.nav.globalVision, to: 'global-map' }
-  ], [t.nav]);
+    { name: t('landing.nav', { returnObjects: true }).features, to: 'features' },
+    { name: t('landing.nav', { returnObjects: true }).useCases, to: 'industries' },
+    { name: t('landing.nav', { returnObjects: true }).pricing, to: 'pricing' },
+    { name: t('landing.nav', { returnObjects: true }).v2, to: 'v2-vision' },
+    { name: t('landing.nav', { returnObjects: true }).globalVision, to: 'global-map' }
+  ], [t('landing.nav', { returnObjects: true })]);
 
 
 
@@ -361,15 +366,7 @@ const LandingPage = () => {
             </nav>
 
             <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-              <button
-                onClick={() => setLang(lang === 'tr' ? 'en' : 'tr')}
-                className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors group"
-              >
-                <Languages className="w-4 h-4" />
-                <span className="font-semibold text-xs uppercase tracking-wide">
-                  {lang === 'tr' ? 'EN' : 'TR'}
-                </span>
-              </button>
+              <LanguageSwitcher showName={false} className="h-9 w-12 px-0 bg-transparent border-slate-800" />
 
               {user ? (
                 <button
@@ -381,7 +378,7 @@ const LandingPage = () => {
                 </button>
               ) : (
                 <button onClick={openLogin} className="text-slate-300 hover:text-white transition-colors hidden sm:inline-block">
-                  {t.nav.login}
+                  {t('landing.nav', { returnObjects: true }).login}
                 </button>
               )}
 
@@ -389,7 +386,7 @@ const LandingPage = () => {
                 onClick={() => openInstallModal()}
                 className="bg-teal-500 hover:bg-teal-600 text-white border-none font-semibold px-5"
               >
-                {t.nav.install}
+                {t('landing.nav', { returnObjects: true }).install}
               </Button>
             </div>
 
@@ -426,18 +423,9 @@ const LandingPage = () => {
                     </ScrollLink>
                   ))}
 
-                  <button
-                    onClick={() => {
-                      setLang(lang === 'tr' ? 'en' : 'tr');
-                      setIsMenuOpen(false);
-                    }}
-                    className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors py-2"
-                  >
-                    <Languages className="w-5 h-5" />
-                    <span className="font-semibold">
-                      {lang === 'tr' ? 'Switch to English' : 'Türkçe\'ye Geç'}
-                    </span>
-                  </button>
+                  <div className="py-2">
+                    <LanguageSwitcher className="w-full justify-start bg-slate-800/50 border-slate-700" />
+                  </div>
 
                   <div className="flex flex-col gap-3 mt-4">
                     {user ? (
@@ -459,7 +447,7 @@ const LandingPage = () => {
                           openLogin();
                         }}
                       >
-                        {t.nav.login}
+                        {t('landing.nav', { returnObjects: true }).login}
                       </Button>
                     )}
                     <Button
@@ -469,7 +457,7 @@ const LandingPage = () => {
                         openInstallModal();
                       }}
                     >
-                      {t.nav.install}
+                      {t('landing.nav', { returnObjects: true }).install}
                     </Button>
                   </div>
                 </div>
@@ -516,21 +504,21 @@ const LandingPage = () => {
                   }}
                 >
                   <Sparkles className="w-3 h-3 md:w-4 md:h-4 fill-current flex-shrink-0" />
-                  {t.hero.badge}
+                  {t('landing.hero', { returnObjects: true }).badge}
                 </motion.div>
 
                 {/* Main Title */}
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 tracking-tight leading-[1.15] px-4 flex flex-col items-center md:block [text-shadow:_0_2px_10px_rgba(0,0,0,0.8)]">
-                  <span className="block">{t.hero.title1}</span>
+                  <span className="block">{t('landing.hero', { returnObjects: true }).title1}</span>
                   <span className="block mt-2 md:mt-4 text-center md:text-left">
-                    {t.hero.title2} <span className="text-teal-400 whitespace-nowrap">{t.hero.title2Highlight}</span>
+                    {t('landing.hero', { returnObjects: true }).title2} <span className="text-teal-400 whitespace-nowrap">{t('landing.hero', { returnObjects: true }).title2Highlight}</span>
                   </span>
                 </h1>
 
                 {/* Subtitle */}
                 <p className="text-base sm:text-lg md:text-xl text-slate-200 mb-12 max-w-4xl mx-auto font-medium leading-[1.6] px-6 opacity-90 [text-shadow:_0_1px_8px_rgba(0,0,0,0.6)]">
-                  <span className="block md:inline font-semibold text-white/95">{t.hero.subtitle1}</span>
-                  <span className="block md:inline md:ml-1 mt-3 md:mt-0">{t.hero.subtitle2}</span>
+                  <span className="block md:inline font-semibold text-white/95">{t('landing.hero', { returnObjects: true }).subtitle1}</span>
+                  <span className="block md:inline md:ml-1 mt-3 md:mt-0">{t('landing.hero', { returnObjects: true }).subtitle2}</span>
                 </p>
 
                 {/* CTA Buttons */}
@@ -540,7 +528,7 @@ const LandingPage = () => {
                     className="h-14 px-8 w-full sm:w-auto bg-slate-100 hover:bg-white text-slate-900 font-bold text-base transition-all shadow-lg hover:shadow-xl"
                     onClick={() => openInstallModal()}
                   >
-                    {t.hero.ctaPrimary}
+                    {t('landing.hero', { returnObjects: true }).ctaPrimary}
                   </Button>
                   <Button
                     variant="outline"
@@ -548,7 +536,7 @@ const LandingPage = () => {
                     className="h-14 px-8 w-full sm:w-auto bg-transparent border-white/80 text-white hover:bg-slate-700 hover:text-white font-semibold text-base transition-all"
                     onClick={openManagerLogin}
                   >
-                    {t.hero.ctaSecondary}
+                    {t('landing.hero', { returnObjects: true }).ctaSecondary}
                   </Button>
                 </div>
 
@@ -556,11 +544,11 @@ const LandingPage = () => {
                 <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-bold text-slate-200 uppercase tracking-widest opacity-90">
                   <div className="flex items-center gap-2 bg-slate-900/50 border border-slate-100/10 px-4 py-2 rounded-full shadow-md backdrop-blur-sm mx-1">
                     <Zap className="w-3.5 h-3.5 text-orange-400 fill-current" />
-                    <span>{t.hero.badge1}</span>
+                    <span>{t('landing.hero', { returnObjects: true }).badge1}</span>
                   </div>
                   <div className="flex items-center gap-2 bg-slate-900/50 border border-slate-100/10 px-4 py-2 rounded-full shadow-md backdrop-blur-sm mx-1">
                     <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
-                    <span>{t.hero.badge2}</span>
+                    <span>{t('landing.hero', { returnObjects: true }).badge2}</span>
                   </div>
                 </div>
 
@@ -648,10 +636,10 @@ const LandingPage = () => {
             <div className="container mx-auto px-4">
               <FadeIn className="text-center mb-16">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white tracking-tight">
-                  {t.features.title}
+                  {t('landing.features', { returnObjects: true }).title}
                 </h2>
                 <p className="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
-                  {t.features.subtitle}
+                  {t('landing.features', { returnObjects: true }).subtitle}
                 </p>
               </FadeIn>
 
@@ -659,18 +647,18 @@ const LandingPage = () => {
                 {[
                   {
                     icon: <Send className="w-6 h-6 text-teal-400" />,
-                    title: t.features.feature1.title,
-                    desc: t.features.feature1.desc
+                    title: t('landing.features', { returnObjects: true }).feature1.title,
+                    desc: t('landing.features', { returnObjects: true }).feature1.desc
                   },
                   {
                     icon: <Lightbulb className="w-6 h-6 text-teal-400" />,
-                    title: t.features.feature2.title,
-                    desc: t.features.feature2.desc
+                    title: t('landing.features', { returnObjects: true }).feature2.title,
+                    desc: t('landing.features', { returnObjects: true }).feature2.desc
                   },
                   {
                     icon: <Heart className="w-6 h-6 text-teal-400" />,
-                    title: t.features.feature3.title,
-                    desc: t.features.feature3.desc
+                    title: t('landing.features', { returnObjects: true }).feature3.title,
+                    desc: t('landing.features', { returnObjects: true }).feature3.desc
                   }
                 ].map((feature, idx) => (
                   <motion.div
@@ -704,16 +692,16 @@ const LandingPage = () => {
             <div className="container mx-auto px-4">
               <FadeIn className="text-center mb-20">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white tracking-tight">
-                  {t.industries.title}
+                  {t('landing.industries', { returnObjects: true }).title}
                 </h2>
                 <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-                  {t.industries.subtitle}
+                  {t('landing.industries', { returnObjects: true }).subtitle}
                 </p>
               </FadeIn>
 
               {/* Bento Grid Industries */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5 max-w-full mx-auto">
-                {t.industries.solutions.map((industry, idx) => (
+                {t('landing.industries', { returnObjects: true }).solutions.map((industry, idx) => (
                   <motion.div
                     key={idx}
                     initial={{ opacity: 0, y: 30 }}
@@ -867,7 +855,7 @@ const LandingPage = () => {
                         transition={{ duration: 0.5, delay: 0.1 }}
                         viewport={{ once: true }}
                       >
-                        {t.ecosystem.title}
+                        {t('landing.ecosystem', { returnObjects: true }).title}
                       </motion.h2>
 
                       <motion.p
@@ -877,7 +865,7 @@ const LandingPage = () => {
                         transition={{ duration: 0.5, delay: 0.2 }}
                         viewport={{ once: true }}
                       >
-                        {t.ecosystem.subtitle}
+                        {t('landing.ecosystem', { returnObjects: true }).subtitle}
                       </motion.p>
 
                       <motion.p
@@ -887,7 +875,7 @@ const LandingPage = () => {
                         transition={{ duration: 0.5, delay: 0.3 }}
                         viewport={{ once: true }}
                       >
-                        {t.ecosystem.desc}
+                        {t('landing.ecosystem', { returnObjects: true }).desc}
                       </motion.p>
 
                       <Button
@@ -895,7 +883,7 @@ const LandingPage = () => {
                         onClick={() => openLeadModal('pilot_program')}
                       >
                         <span className="relative z-10 flex items-center justify-center">
-                          {t.ecosystem.cta}
+                          {t('landing.ecosystem', { returnObjects: true }).cta}
                           <motion.span
                             animate={{ x: [0, 4, 0] }}
                             transition={{ duration: 1.5, repeat: Infinity }}
@@ -907,7 +895,7 @@ const LandingPage = () => {
 
                       {/* Partner "Coming Soon" Teaser Cards */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 md:mt-12 w-full max-w-4xl mx-auto">
-                        {t.ecosystem.partners.map((partner, idx) => (
+                        {t('landing.ecosystem', { returnObjects: true }).partners.map((partner, idx) => (
                           <motion.div
                             key={idx}
                             initial={{ opacity: 0, y: 20 }}
@@ -918,7 +906,7 @@ const LandingPage = () => {
                           >
                             <div className="absolute top-3 right-3">
                               <Badge variant="outline" className="text-[10px] font-bold border-teal-500/30 text-teal-400 py-0 px-2 uppercase tracking-tight bg-teal-500/5">
-                                {t.ecosystem.comingSoon}
+                                {t('landing.ecosystem', { returnObjects: true }).comingSoon}
                               </Badge>
                             </div>
 
@@ -967,13 +955,13 @@ const LandingPage = () => {
               <div className="max-w-4xl mx-auto text-center mb-6 md:mb-12">
                 <FadeIn>
                   <span className="inline-block py-1 px-3 rounded-full bg-teal-500/10 text-teal-400 text-xs font-bold tracking-wider mb-3 uppercase border border-teal-500/20">
-                    <Building2 className="w-3 h-3 inline mr-1" /> {t.pricing.badge}
+                    <Building2 className="w-3 h-3 inline mr-1" /> {t('landing.pricing', { returnObjects: true }).badge}
                   </span>
                   <h2 className="text-2xl md:text-5xl font-bold mb-3 md:mb-4 text-white tracking-tight">
-                    {t.pricing.title} <span className="text-teal-400">{t.pricing.titleHighlight}</span>
+                    {t('landing.pricing', { returnObjects: true }).title} <span className="text-teal-400">{t('landing.pricing', { returnObjects: true }).titleHighlight}</span>
                   </h2>
                   <p className="text-slate-300 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-                    {t.pricing.subtitle}
+                    {t('landing.pricing', { returnObjects: true }).subtitle}
                   </p>
                 </FadeIn>
               </div>
@@ -993,13 +981,13 @@ const LandingPage = () => {
                       <Building2 className="w-6 h-6 text-slate-300 group-hover:text-teal-400" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white">{t.pricing.plan1.name}</h3>
-                      <p className="text-xs text-slate-400">{t.pricing.plan1.desc}</p>
+                      <h3 className="text-xl font-bold text-white">{t('landing.pricing', { returnObjects: true }).plan1.name}</h3>
+                      <p className="text-xs text-slate-400">{t('landing.pricing', { returnObjects: true }).plan1.desc}</p>
                     </div>
                   </div>
 
                   <ul className="space-y-3 mb-8 flex-1">
-                    {t.pricing.plan1.features.map((feat, i) => (
+                    {t('landing.pricing', { returnObjects: true }).plan1.features.map((feat, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
                         <CheckCircle2 className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
                         <span>{feat}</span>
@@ -1008,13 +996,13 @@ const LandingPage = () => {
                   </ul>
 
                   <div className="mt-auto pt-6 border-t border-slate-700/50">
-                    <div className="text-lg font-bold text-white mb-1">{t.pricing.plan1.priceTitle}</div>
-                    <p className="text-xs text-slate-500 mb-4">{t.pricing.plan1.priceSubtitle}</p>
+                    <div className="text-lg font-bold text-white mb-1">{t('landing.pricing', { returnObjects: true }).plan1.priceTitle}</div>
+                    <p className="text-xs text-slate-500 mb-4">{t('landing.pricing', { returnObjects: true }).plan1.priceSubtitle}</p>
                     <Button
                       className="w-full bg-slate-700 hover:bg-slate-600 text-white"
                       onClick={() => openLeadModal('info_request')}
                     >
-                      {t.pricing.plan1.cta}
+                      {t('landing.pricing', { returnObjects: true }).plan1.cta}
                     </Button>
                   </div>
                 </motion.div>
@@ -1028,7 +1016,7 @@ const LandingPage = () => {
                   className="bg-gradient-to-b from-slate-800 to-[#0f172a] border-2 border-teal-500/50 rounded-2xl p-6 flex flex-col relative shadow-2xl transform md:-translate-y-4 z-10"
                 >
                   <div className="absolute top-0 right-0 bg-teal-500 text-slate-900 text-[10px] font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg uppercase tracking-wider">
-                    {t.pricing.plan2.badge}
+                    {t('landing.pricing', { returnObjects: true }).plan2.badge}
                   </div>
 
                   <div className="flex items-center gap-4 mb-6">
@@ -1036,13 +1024,13 @@ const LandingPage = () => {
                       <Layers className="w-6 h-6 text-teal-400" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white">{t.pricing.plan2.name}</h3>
-                      <p className="text-xs text-teal-200/70">{t.pricing.plan2.desc}</p>
+                      <h3 className="text-xl font-bold text-white">{t('landing.pricing', { returnObjects: true }).plan2.name}</h3>
+                      <p className="text-xs text-teal-200/70">{t('landing.pricing', { returnObjects: true }).plan2.desc}</p>
                     </div>
                   </div>
 
                   <ul className="space-y-3 mb-8 flex-1">
-                    {t.pricing.plan2.features.map((feat, i) => (
+                    {t('landing.pricing', { returnObjects: true }).plan2.features.map((feat, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-white font-medium">
                         <CheckCircle2 className="w-4 h-4 text-teal-400 flex-shrink-0 mt-0.5" />
                         <span>{feat}</span>
@@ -1051,13 +1039,13 @@ const LandingPage = () => {
                   </ul>
 
                   <div className="mt-auto pt-6 border-t border-teal-500/30">
-                    <div className="text-lg font-bold text-teal-400 mb-1">{t.pricing.plan2.priceTitle}</div>
-                    <p className="text-xs text-slate-400 mb-4">{t.pricing.plan2.priceSubtitle}</p>
+                    <div className="text-lg font-bold text-teal-400 mb-1">{t('landing.pricing', { returnObjects: true }).plan2.priceTitle}</div>
+                    <p className="text-xs text-slate-400 mb-4">{t('landing.pricing', { returnObjects: true }).plan2.priceSubtitle}</p>
                     <Button
                       className="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold"
                       onClick={() => openLeadModal('info_request')}
                     >
-                      {t.pricing.plan2.cta}
+                      {t('landing.pricing', { returnObjects: true }).plan2.cta}
                     </Button>
                   </div>
                 </motion.div>
@@ -1075,13 +1063,13 @@ const LandingPage = () => {
                       <Globe2 className="w-6 h-6 text-purple-400" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white">{t.pricing.plan3.name}</h3>
-                      <p className="text-xs text-slate-400">{t.pricing.plan3.desc}</p>
+                      <h3 className="text-xl font-bold text-white">{t('landing.pricing', { returnObjects: true }).plan3.name}</h3>
+                      <p className="text-xs text-slate-400">{t('landing.pricing', { returnObjects: true }).plan3.desc}</p>
                     </div>
                   </div>
 
                   <ul className="space-y-3 mb-8 flex-1">
-                    {t.pricing.plan3.features.map((feat, i) => (
+                    {t('landing.pricing', { returnObjects: true }).plan3.features.map((feat, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
                         <CheckCircle2 className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
                         <span>{feat}</span>
@@ -1090,13 +1078,13 @@ const LandingPage = () => {
                   </ul>
 
                   <div className="mt-auto pt-6 border-t border-slate-700/50">
-                    <div className="text-lg font-bold text-purple-400 mb-1">{t.pricing.plan3.priceTitle}</div>
-                    <p className="text-xs text-slate-500 mb-4">{t.pricing.plan3.priceSubtitle}</p>
+                    <div className="text-lg font-bold text-purple-400 mb-1">{t('landing.pricing', { returnObjects: true }).plan3.priceTitle}</div>
+                    <p className="text-xs text-slate-500 mb-4">{t('landing.pricing', { returnObjects: true }).plan3.priceSubtitle}</p>
                     <Button
                       className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold"
                       onClick={() => openLeadModal('info_request')}
                     >
-                      {t.pricing.plan3.cta}
+                      {t('landing.pricing', { returnObjects: true }).plan3.cta}
                     </Button>
                   </div>
                 </motion.div>
@@ -1110,10 +1098,10 @@ const LandingPage = () => {
                 className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 max-w-5xl mx-auto text-center"
               >
                 <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-6">
-                  {t.pricing.commonTitle}
+                  {t('landing.pricing', { returnObjects: true }).commonTitle}
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {t.pricing.commonFeatures.map((item, i) => (
+                  {t('landing.pricing', { returnObjects: true }).commonFeatures.map((item, i) => (
                     <div
                       key={i}
                       className="flex items-center justify-center gap-2 text-sm text-slate-300 bg-slate-800/50 py-2 rounded-lg border border-slate-700/50"
@@ -1139,10 +1127,10 @@ const LandingPage = () => {
                 transition={{ duration: 0.8 }}
               >
                 <h2 className="text-3xl font-bold mb-4 text-white tracking-tight">
-                  {t.impact.title}
+                  {t('landing.impact', { returnObjects: true }).title}
                 </h2>
                 <p className="text-slate-400 mb-16 max-w-2xl mx-auto leading-relaxed">
-                  {t.impact.subtitle}
+                  {t('landing.impact', { returnObjects: true }).subtitle}
                 </p>
               </motion.div>
 
@@ -1150,20 +1138,20 @@ const LandingPage = () => {
                 {[
                   {
                     icon: TrendingUp,
-                    title: t.impact.metric1.title,
-                    desc: t.impact.metric1.desc,
+                    title: t('landing.impact', { returnObjects: true }).metric1.title,
+                    desc: t('landing.impact', { returnObjects: true }).metric1.desc,
                     color: 'text-teal-400'
                   },
                   {
                     icon: Target,
-                    title: t.impact.metric2.title,
-                    desc: t.impact.metric2.desc,
+                    title: t('landing.impact', { returnObjects: true }).metric2.title,
+                    desc: t('landing.impact', { returnObjects: true }).metric2.desc,
                     color: 'text-teal-400'
                   },
                   {
                     icon: RefreshCw,
-                    title: t.impact.metric3.title,
-                    desc: t.impact.metric3.desc,
+                    title: t('landing.impact', { returnObjects: true }).metric3.title,
+                    desc: t('landing.impact', { returnObjects: true }).metric3.desc,
                     color: 'text-teal-400'
                   }
                 ].map((metric, idx) => (
@@ -1268,7 +1256,7 @@ const LandingPage = () => {
               >
                 <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
                 <span className="text-xs font-semibold text-teal-400 uppercase tracking-wider">
-                  {t.v2.badge}
+                  {t('landing.v2', { returnObjects: true }).badge}
                 </span>
               </motion.div>
 
@@ -1280,7 +1268,7 @@ const LandingPage = () => {
                 transition={{ duration: 0.7, delay: 0.2 }}
                 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight leading-tight"
               >
-                {t.v2.title} <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">{t.v2.titleHighlight}</span>
+                {t('landing.v2', { returnObjects: true }).title} <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">{t('landing.v2', { returnObjects: true }).titleHighlight}</span>
               </motion.h3>
 
               {/* Subtitle */}
@@ -1291,17 +1279,17 @@ const LandingPage = () => {
                 transition={{ duration: 0.7, delay: 0.3 }}
                 className="text-lg md:text-xl text-slate-300 mb-10 max-w-4xl leading-relaxed font-light"
               >
-                {t.v2.subtitle} <span className="font-semibold text-white">{t.v2.subtitle2}</span>
-                {t.v2.subtitle3} <span className="font-semibold text-white">{t.v2.subtitle4}</span> {t.v2.subtitle5}
+                {t('landing.v2', { returnObjects: true }).subtitle} <span className="font-semibold text-white">{t('landing.v2', { returnObjects: true }).subtitle2}</span>
+                {t('landing.v2', { returnObjects: true }).subtitle3} <span className="font-semibold text-white">{t('landing.v2', { returnObjects: true }).subtitle4}</span> {t('landing.v2', { returnObjects: true }).subtitle5}
               </motion.p>
 
               {/* Key Features Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-12">
                 {[
-                  { icon: Target, title: t.v2.features.f1.title, desc: t.v2.features.f1.desc },
-                  { icon: TrendingUp, title: t.v2.features.f2.title, desc: t.v2.features.f2.desc },
-                  { icon: Lightbulb, title: t.v2.features.f3.title, desc: t.v2.features.f3.desc },
-                  { icon: Globe2, title: t.v2.features.f4.title, desc: t.v2.features.f4.desc }
+                  { icon: Target, title: t('landing.v2', { returnObjects: true }).features.f1.title, desc: t('landing.v2', { returnObjects: true }).features.f1.desc },
+                  { icon: TrendingUp, title: t('landing.v2', { returnObjects: true }).features.f2.title, desc: t('landing.v2', { returnObjects: true }).features.f2.desc },
+                  { icon: Lightbulb, title: t('landing.v2', { returnObjects: true }).features.f3.title, desc: t('landing.v2', { returnObjects: true }).features.f3.desc },
+                  { icon: Globe2, title: t('landing.v2', { returnObjects: true }).features.f4.title, desc: t('landing.v2', { returnObjects: true }).features.f4.desc }
                 ].map((feature, idx) => (
                   <motion.div
                     key={idx}
@@ -1339,16 +1327,16 @@ const LandingPage = () => {
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-2xl font-bold text-white mb-3">{t.v2.pricingTitle}</h4>
+                    <h4 className="text-2xl font-bold text-white mb-3">{t('landing.v2', { returnObjects: true }).pricingTitle}</h4>
                     <p className="text-slate-300 leading-relaxed text-base mb-4">
-                      {t.v2.pricingDesc1} <span className="font-bold text-teal-400">{t.v2.pricingDesc2}</span> {t.v2.pricingDesc3}
+                      {t('landing.v2', { returnObjects: true }).pricingDesc1} <span className="font-bold text-teal-400">{t('landing.v2', { returnObjects: true }).pricingDesc2}</span> {t('landing.v2', { returnObjects: true }).pricingDesc3}
                     </p>
                     <div className="space-y-3 mb-5">
                       <div className="bg-slate-900/50 border border-teal-500/20 rounded-lg p-4">
                         <p className="text-slate-300 text-sm flex items-start gap-3 mb-2">
                           <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
                           <span>
-                            <span className="font-semibold text-white">{t.v2.pricingPoint1}</span> {t.v2.pricingPoint1Desc}
+                            <span className="font-semibold text-white">{t('landing.v2', { returnObjects: true }).pricingPoint1}</span> {t('landing.v2', { returnObjects: true }).pricingPoint1Desc}
                           </span>
                         </p>
                       </div>
@@ -1356,14 +1344,14 @@ const LandingPage = () => {
                         <p className="text-slate-300 text-sm flex items-start gap-3">
                           <BrainCircuit className="w-5 h-5 text-teal-400 flex-shrink-0 mt-0.5" />
                           <span>
-                            <span className="font-semibold text-teal-400">{t.v2.pricingPoint2}</span> {t.v2.pricingPoint2Desc}
+                            <span className="font-semibold text-teal-400">{t('landing.v2', { returnObjects: true }).pricingPoint2}</span> {t('landing.v2', { returnObjects: true }).pricingPoint2Desc}
                           </span>
                         </p>
                       </div>
                       <p className="text-slate-400 text-sm flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
                         <span>
-                          <span className="font-semibold text-slate-300">{t.v2.pricingPoint3}</span> {t.v2.pricingPoint3Desc}
+                          <span className="font-semibold text-slate-300">{t('landing.v2', { returnObjects: true }).pricingPoint3}</span> {t('landing.v2', { returnObjects: true }).pricingPoint3Desc}
                         </span>
                       </p>
                     </div>
@@ -1371,7 +1359,7 @@ const LandingPage = () => {
                       className="bg-teal-600 hover:bg-teal-700 text-white font-bold mt-2"
                       onClick={() => openLeadModal('info_request')}
                     >
-                      <Mail className="w-4 h-4 mr-2" /> {t.v2.ctaV2}
+                      <Mail className="w-4 h-4 mr-2" /> {t('landing.v2', { returnObjects: true }).ctaV2}
                     </Button>
                   </div>
                 </div>
@@ -1468,7 +1456,7 @@ const LandingPage = () => {
         < footer className="bg-[#0f172a] py-8 border-t border-slate-800 relative z-10 text-center" >
           <div className="container mx-auto px-4">
             <p className="text-slate-500 text-xs mb-4">
-              {t.footer.copyright}
+              {t('landing.footer', { returnObjects: true }).copyright}
             </p>
 
             <div className="mb-4">
@@ -1476,14 +1464,14 @@ const LandingPage = () => {
                 className="text-sm text-teal-400 cursor-pointer hover:text-teal-300 hover:underline transition-colors mx-2"
                 onClick={() => handleLegalLinkClick('kvkk')}
               >
-                {t.footer.kvkk}
+                {t('landing.footer', { returnObjects: true }).kvkk}
               </span>
               <span className="text-slate-600">|</span>
               <span
                 className="text-sm text-teal-400 cursor-pointer hover:text-teal-300 hover:underline transition-colors mx-2"
                 onClick={() => handleLegalLinkClick('terms')}
               >
-                {t.footer.terms}
+                {t('landing.footer', { returnObjects: true }).terms}
               </span>
             </div>
 

@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { tr, enUS } from 'date-fns/locale';
 import BranchSelector from '@/components/BranchSelector';
 import imageCompression from 'browser-image-compression';
+import { useTranslation } from 'react-i18next';
 
 // ============================================================================
 // STATIC DATA & HELPERS
@@ -21,20 +22,20 @@ import imageCompression from 'browser-image-compression';
 
 const getEmojiForRating = (rating, emojis) => emojis[rating] || '';
 
-const getReactionMessage = (rating, t) => {
-  if (rating === 1) return t.reactions.oneStar;
-  if (rating === 2) return t.reactions.twoStar;
-  if (rating === 3) return t.reactions.threeStar;
-  if (rating === 4) return t.reactions.fourStar;
-  if (rating === 5) return t.reactions.fiveStar;
+const getReactionMessage = (rating, tf) => {
+  if (rating === 1) return tf.reactions.oneStar;
+  if (rating === 2) return tf.reactions.twoStar;
+  if (rating === 3) return tf.reactions.threeStar;
+  if (rating === 4) return tf.reactions.fourStar;
+  if (rating === 5) return tf.reactions.fiveStar;
   return "";
 };
 
-const getDynamicPlaceholder = (rating, t) => {
-  if (rating === 0) return t.general.placeholder;
-  if (rating <= 2) return t.general.placeholderLow;
-  if (rating === 3) return t.general.placeholderMid;
-  return t.general.placeholderHigh;
+const getDynamicPlaceholder = (rating, tf) => {
+  if (rating === 0) return tf.general.placeholder;
+  if (rating <= 2) return tf.general.placeholderLow;
+  if (rating === 3) return tf.general.placeholderMid;
+  return tf.general.placeholderHigh;
 };
 
 const getFormInfo = (feedbackType, titles) => {
@@ -59,6 +60,7 @@ const getCurrentLocalISOString = () => {
   return localDate.toISOString().slice(0, 16);
 };
 
+/* MOVED TO translation.json
 const TEXTS = {
   tr: {
     errorLoad: "Veri yüklenirken sorun oluştu.",
@@ -217,6 +219,7 @@ const TEXTS = {
 };
 
 export default function FeedbackForm() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -231,7 +234,7 @@ export default function FeedbackForm() {
   const guestParam = searchParams.get('guest');
 
   // STATE
-  const [language, setLanguage] = useState('tr');
+  const language = i18n.language.split('-')[0] || 'tr';
   const [feedbackType, setFeedbackType] = useState('complaint');
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = feedbackType === 'complaint' ? 3 : 2;
@@ -268,17 +271,14 @@ export default function FeedbackForm() {
   const [guestPhone, setGuestPhone] = useState('');
   const [customerAgeGroup, setCustomerAgeGroup] = useState(null);
 
-  const t = TEXTS[language] || TEXTS.tr;
+  const tf = useMemo(() => t('form', { returnObjects: true }), [t]);
 
   // --- INITIALIZATION ---
   useEffect(() => {
     const init = async () => {
       try {
-        const storedLang = localStorage.getItem('vocalize_lang');
         if (langParam && (langParam === 'tr' || langParam === 'en')) {
-          setLanguage(langParam);
-        } else if (storedLang) {
-          setLanguage(storedLang);
+          i18n.changeLanguage(langParam);
         }
 
         // 🟢 Age Group Retrieval
@@ -359,7 +359,7 @@ export default function FeedbackForm() {
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length + feedbackImages.length > 3) {
-      toast({ title: t.limitExceeded, description: t.limitDesc(3), variant: "destructive" });
+      toast({ title: tf.limitExceeded, description: tf.limitDesc, variant: "destructive" });
       return;
     }
 
@@ -372,7 +372,7 @@ export default function FeedbackForm() {
 
     for (const file of files) {
       if (file.size > 20 * 1024 * 1024) { // 20MB raw limit
-        toast({ title: t.fileTooLarge, variant: "destructive" });
+        toast({ title: tf.fileTooLarge, variant: "destructive" });
         continue;
       }
 
@@ -451,7 +451,7 @@ export default function FeedbackForm() {
 
   const handleNext = () => {
     if (isStepValid()) setCurrentStep(prev => Math.min(prev + 1, totalSteps));
-    else toast({ title: "Eksik Bilgi", description: t.submit.errorValidation, variant: "destructive", className: "top-10" });
+    else toast({ title: t('common.error'), description: tf.submit.errorValidation, variant: "destructive", className: "top-10" });
   };
 
   const handleBack = () => {
@@ -526,7 +526,7 @@ export default function FeedbackForm() {
         general_eval_rating: generalRating > 0 ? generalRating : null,
         general_eval_comment: generalComment.trim() || null,
         customer_email: isGuest ? null : (user?.email || null),
-        customer_name: isGuest ? 'Anonim' : (user?.user_metadata?.full_name || 'Müşteri'),
+        customer_name: isGuest ? t('customer.anonymous') : (user?.user_metadata?.full_name || t('customer.customer')),
 
         // 🟢 MİSAFİR İLETİŞİM BİLGİSİ
         guest_contact_info: (isGuest && wantsGuestContact && (guestName || guestPhone)) ? {
@@ -552,13 +552,13 @@ export default function FeedbackForm() {
       }
 
     } catch (error) {
-      toast({ title: t.submit.error, description: error.message, variant: "destructive" });
+      toast({ title: tf.submit.error, description: error.message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const formInfo = getFormInfo(feedbackType, t.titles);
+  const formInfo = getFormInfo(feedbackType, tf.titles);
 
   const handleGoogleShare = async () => {
     let textToCopy = "";
@@ -572,8 +572,8 @@ export default function FeedbackForm() {
       if (textToCopy) {
         await navigator.clipboard.writeText(textToCopy);
         toast({
-          title: "Kopyalandı!",
-          description: t.google.copiedToast,
+          title: t('feedbackDetail.detail.copy'),
+          description: tf.google.copiedToast,
           className: "bg-green-600 text-white border-none"
         });
       }
@@ -625,8 +625,8 @@ export default function FeedbackForm() {
                   <CalendarIcon className="h-8 w-8 text-red-500" />
                 </div>
                 {/* 🟢 DİNAMİK METİNLER */}
-                <h2 className="text-2xl font-bold text-white">{t.stepsUI.evidenceTitle}</h2>
-                <p className="text-slate-400">{t.stepsUI.evidenceDesc}</p>
+                <h2 className="text-2xl font-bold text-white">{tf.stepsUI.evidenceTitle}</h2>
+                <p className="text-slate-400">{tf.stepsUI.evidenceDesc}</p>
               </div>
 
               {/* Branch Selector */}
@@ -636,21 +636,20 @@ export default function FeedbackForm() {
                     branches={branches}
                     selectedBranch={selectedBranch}
                     onSelect={setSelectedBranch}
-                    t={t}
                   />
                 </div>
               )}
 
               <div className="space-y-4">
-                <label className="text-sm font-medium text-slate-300 ml-1">{t.receipt.label}</label>
+                <label className="text-sm font-medium text-slate-300 ml-1">{tf.receipt.label}</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={() => { setHasReceipt(false); setReceiptFile(null); }} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${!hasReceipt ? 'bg-red-500/10 border-red-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
                     <X className="h-6 w-6" />
-                    <span className="font-medium">{t.receipt.noReceipt}</span>
+                    <span className="font-medium">{tf.receipt.noReceipt}</span>
                   </button>
                   <button onClick={() => setHasReceipt(true)} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${hasReceipt ? 'bg-teal-500/10 border-teal-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
                     <CheckCircle2 className="h-6 w-6" />
-                    <span className="font-medium">{t.receipt.hasReceipt}</span>
+                    <span className="font-medium">{tf.receipt.hasReceipt}</span>
                   </button>
                 </div>
               </div>
@@ -667,14 +666,14 @@ export default function FeedbackForm() {
                     ) : (
                       <div className="space-y-2">
                         <Camera className="h-10 w-10 text-slate-400 mx-auto group-hover:text-teal-400 transition-colors" />
-                        <p className="text-sm text-slate-400 font-medium">{t.receipt.placeholder}</p>
+                        <p className="text-sm text-slate-400 font-medium">{tf.receipt.placeholder}</p>
                       </div>
                     )}
                   </label>
                 </div>
               ) : (
                 <div className="animate-in fade-in slide-in-from-top-2 duration-200 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                  <label className="text-sm text-slate-400 mb-2 block">{t.receipt.dateLabel}</label>
+                  <label className="text-sm text-slate-400 mb-2 block">{tf.receipt.dateLabel}</label>
                   <div className="relative">
                     <input
                       type="datetime-local"
@@ -690,7 +689,7 @@ export default function FeedbackForm() {
                   {visitDate && (
                     <div className="mt-3 flex items-center gap-2 text-teal-400 text-sm font-medium bg-teal-500/10 p-3 rounded-lg border border-teal-500/20">
                       <Clock className="w-4 h-4 shrink-0" />
-                      {format(new Date(visitDate), 'd MMMM yyyy, EEEE - HH:mm', { locale: language === 'tr' ? tr : enUS })}
+                      {format(new Date(visitDate), language === 'tr' ? 'd MMMM yyyy, EEEE - HH:mm' : 'MMMM do yyyy, EEEE - h:mm a', { locale: language === 'tr' ? tr : enUS })}
                     </div>
                   )}
                 </div>
@@ -703,9 +702,9 @@ export default function FeedbackForm() {
             <div className="step-content space-y-6 h-full flex flex-col">
               <div className="text-center space-y-2 flex-shrink-0">
                 <h2 className="text-2xl font-bold text-white">
-                  {feedbackType === 'complaint' ? t.stepsUI.problemTitle : t.stepsUI.suggestionTitle}
+                  {feedbackType === 'complaint' ? tf.stepsUI.problemTitle : tf.stepsUI.suggestionTitle}
                 </h2>
-                <p className="text-slate-400">{t.stepsUI.problemDesc}</p>
+                <p className="text-slate-400">{tf.stepsUI.problemDesc}</p>
               </div>
               <div className="flex-1 min-h-[200px]">
                 <div className="relative h-full bg-slate-800/30 border border-slate-700 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-transparent transition-all">
@@ -719,7 +718,7 @@ export default function FeedbackForm() {
                       if (val.length <= 1000) setMessage(val);
                     }}
                     maxLength={1000}
-                    placeholder={t.message.placeholder}
+                    placeholder={tf.message.placeholder}
                     className="w-full h-full bg-transparent p-4 pl-12 text-base text-white placeholder:text-slate-500 resize-none outline-none"
                     autoFocus
                   />
@@ -733,8 +732,8 @@ export default function FeedbackForm() {
           {feedbackType === 'review' && currentStep === 1 && (
             <div className="step-content flex flex-col items-center justify-center space-y-8 py-10">
               <div className="text-center space-y-2">
-                <h2 className="text-3xl font-bold text-white">{t.stepsUI.rateTitle}</h2>
-                <p className="text-slate-400">{t.stepsUI.rateDesc}</p>
+                <h2 className="text-3xl font-bold text-white">{tf.stepsUI.rateTitle}</h2>
+                <p className="text-slate-400">{tf.stepsUI.rateDesc}</p>
               </div>
 
               <div className="flex gap-3">
@@ -758,9 +757,9 @@ export default function FeedbackForm() {
                 {rating > 0 && (
                   <div className="text-center animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <p className={`text-xl font-bold ${rating >= 4 ? 'text-green-400' : rating === 3 ? 'text-yellow-400' : 'text-red-400'}`}>
-                      {getEmojiForRating(rating, t.rating.emojis)}
+                      {getEmojiForRating(rating, tf.rating.emojis)}
                     </p>
-                    <p className="text-xs text-slate-400 mt-1">{getReactionMessage(rating, t)}</p>
+                    <p className="text-xs text-slate-400 mt-1">{getReactionMessage(rating, tf)}</p>
                   </div>
                 )}
               </div>
@@ -771,8 +770,8 @@ export default function FeedbackForm() {
           {((feedbackType === 'complaint' && currentStep === 3) || (feedbackType === 'suggestion' && currentStep === 2) || (feedbackType === 'review' && currentStep === 2)) && (
             <div className="step-content space-y-6 pb-20">
               <div className="text-center mb-4">
-                <h2 className="text-2xl font-bold text-white">{t.stepsUI.finalTitle}</h2>
-                <p className="text-slate-400">{t.stepsUI.finalDesc}</p>
+                <h2 className="text-2xl font-bold text-white">{tf.stepsUI.finalTitle}</h2>
+                <p className="text-slate-400">{tf.stepsUI.finalDesc}</p>
               </div>
 
               {/* Optional General Rating & Comment */}
@@ -787,7 +786,7 @@ export default function FeedbackForm() {
                   )}
                 >
                   <div className="text-center">
-                    <label className="text-sm text-slate-300 mb-3 block font-medium">{t.general.title} (Opsiyonel)</label>
+                    <label className="text-sm text-slate-300 mb-3 block font-medium">{tf.general.title} ({t('common.optional', { defaultValue: 'Opsiyonel' })})</label>
                     <div className="flex justify-center gap-4">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -815,7 +814,7 @@ export default function FeedbackForm() {
                             generalRating === 3 ? "text-orange-300 bg-orange-400/10 border-orange-400/20" :
                               "text-red-300 bg-red-500/10 border-red-500/20"
                         )}>
-                          {getReactionMessage(generalRating, t)}
+                          {getReactionMessage(generalRating, tf)}
                         </p>
                       </div>
                     )}
@@ -832,7 +831,7 @@ export default function FeedbackForm() {
                         if (val.length <= 500) setGeneralComment(val);
                       }}
                       maxLength={500}
-                      placeholder={getDynamicPlaceholder(generalRating, t)}
+                      placeholder={getDynamicPlaceholder(generalRating, tf)}
                       className="w-full bg-slate-950/50 border border-slate-600/50 rounded-xl p-3 pl-10 text-sm text-white resize-none focus:ring-1 focus:ring-teal-500/50 focus:border-teal-500 transition-all placeholder:text-slate-600"
                       rows={3}
                     />
@@ -858,7 +857,7 @@ export default function FeedbackForm() {
                       if (val.length <= 1000) setMessage(val);
                     }}
                     maxLength={1000}
-                    placeholder={t.message.placeholder}
+                    placeholder={tf.message.placeholder}
                     className="w-full h-full bg-transparent p-4 pl-12 text-white resize-none outline-none placeholder:text-slate-500"
                   />
                   <div className="absolute bottom-2 right-4">
@@ -872,7 +871,7 @@ export default function FeedbackForm() {
               {/* Photo Upload */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-sm font-medium text-slate-300">{t.stepsUI.extraImages}</label>
+                  <label className="text-sm font-medium text-slate-300">{tf.stepsUI.extraImages}</label>
                   <span className="text-xs text-slate-500">{feedbackImages.length}/3</span>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
@@ -885,7 +884,7 @@ export default function FeedbackForm() {
                   {feedbackImages.length < 3 && (
                     <label className="aspect-square bg-slate-800/50 border border-dashed border-slate-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800 hover:border-teal-500/50 transition-all group">
                       <ImagePlus className="w-6 h-6 text-slate-500 group-hover:text-teal-500 transition-colors" />
-                      <span className="text-[10px] text-slate-500 mt-1 group-hover:text-slate-300">{t.stepsUI.addPhoto}</span>
+                      <span className="text-[10px] text-slate-500 mt-1 group-hover:text-slate-300">{tf.stepsUI.addPhoto}</span>
                       <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageUpload} />
                     </label>
                   )}
@@ -900,9 +899,9 @@ export default function FeedbackForm() {
                       <Phone className="w-5 h-5 text-orange-500" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="text-sm font-bold text-white mb-1">Telafi etmemize izin verin</h4>
+                      <h4 className="text-sm font-bold text-white mb-1">{tf.guestContact.title}</h4>
                       <p className="text-xs text-slate-400 mb-3">
-                        Yaşadığınız olumsuz deneyimi telafi edebilmemiz için size ulaşmamızı ister misiniz?
+                        {tf.guestContact.desc}
                       </p>
 
                       {!wantsGuestContact ? (
@@ -910,12 +909,12 @@ export default function FeedbackForm() {
                           onClick={() => setWantsGuestContact(true)}
                           className="w-full bg-orange-500 hover:bg-orange-600 text-white border-none h-9 text-xs font-semibold shadow-lg shadow-orange-900/20"
                         >
-                          Evet, bana ulaşın
+                          {tf.guestContact.yes}
                         </Button>
                       ) : (
                         <div className="space-y-3 mt-3 animate-in fade-in zoom-in-95">
                           <div className="space-y-1">
-                            <label className="text-xs text-slate-400 ml-1">İsminiz</label>
+                            <label className="text-xs text-slate-400 ml-1">{tf.guestContact.name}</label>
                             <input
                               type="text"
                               value={guestName}
@@ -926,12 +925,12 @@ export default function FeedbackForm() {
                                 const formatted = val.replace(/(^|\s)[a-zğüşiöç]/g, (c) => c.toLocaleUpperCase('tr-TR'));
                                 setGuestName(formatted);
                               }}
-                              placeholder="Adınız Soyadınız"
+                              placeholder={tf.guestContact.namePlaceholder}
                               className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-orange-500 outline-none capitalize"
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-xs text-slate-400 ml-1">Telefon Numaranız</label>
+                            <label className="text-xs text-slate-400 ml-1">{tf.guestContact.phone}</label>
                             <input
                               type="tel"
                               value={guestPhone}
@@ -949,7 +948,7 @@ export default function FeedbackForm() {
                               onClick={() => { setWantsGuestContact(false); setGuestName(''); setGuestPhone(''); }}
                               className="text-xs text-slate-400 hover:text-red-400 underline py-2 px-3 hover:bg-slate-800 rounded-lg transition-colors"
                             >
-                              Vazgeç ve Kapat
+                              {tf.guestContact.cancel}
                             </button>
                           </div>
                         </div>
@@ -977,8 +976,8 @@ export default function FeedbackForm() {
         >
           {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> :
             (currentStep === totalSteps) ?
-              <span className="flex items-center gap-2">{t.submit.send} <Send className="w-5 h-5" /></span> :
-              <span className="flex items-center gap-2">{t.next} <ChevronRight className="w-5 h-5" /></span>
+              <span className="flex items-center gap-2">{tf.submit.send} <Send className="w-5 h-5" /></span> :
+              <span className="flex items-center gap-2">{tf.next} <ChevronRight className="w-5 h-5" /></span>
           }
         </Button>
       </div>
@@ -994,11 +993,11 @@ export default function FeedbackForm() {
             </div>
 
             <h2 className="text-3xl font-bold text-white mb-2">
-              {googleRedirectUrl ? t.google.title : (googleRedirectUrl ? t.success.defaultTitle : t.success.title)}
+              {googleRedirectUrl ? tf.google.title : (googleRedirectUrl ? tf.success.defaultTitle : tf.success.title)}
             </h2>
 
             <p className="text-slate-400 mb-8 text-lg">
-              {googleRedirectUrl ? t.google.desc : (googleRedirectUrl ? t.success.defaultDesc : t.success.desc(businessName || "management"))}
+              {googleRedirectUrl ? tf.google.desc : (googleRedirectUrl ? tf.success.defaultDesc : t('form.success.desc', { name: businessName || "management" }))}
             </p>
 
             {/* 🟢 GOOGLE MODU (4-5 Yıldız) */}
@@ -1006,22 +1005,22 @@ export default function FeedbackForm() {
               <div className="space-y-4">
                 <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center animate-in zoom-in duration-500">
                   <p className="text-blue-300 font-bold text-sm flex items-center justify-center gap-2">
-                    <Copy className="w-4 h-4" /> {t.google.copyAlert}
+                    <Copy className="w-4 h-4" /> {tf.google.copyAlert}
                   </p>
                 </div>
                 <Button onClick={handleGoogleShare} className="w-full bg-teal-600 text-white hover:bg-teal-500 h-14 rounded-xl font-bold text-lg animate-pulse shadow-xl shadow-teal-500/20">
-                  {t.google.yesButton}
+                  {tf.google.yesButton}
                 </Button>
 
                 {/* Google varsa, Instagram onun altında belirir */}
                 {instagramRedirectUrl && (
                   <Button onClick={() => window.open(instagramRedirectUrl, '_blank')} variant="outline" className="w-full border-pink-500/30 text-pink-400 hover:bg-pink-500/10 h-12 rounded-xl border-2 transition-all duration-300">
-                    <Instagram className="w-4 h-4 mr-2 stroke-[2.5px]" /> {t.google.instaButton}
+                    <Instagram className="w-4 h-4 mr-2 stroke-[2.5px]" /> {tf.google.instaButton}
                   </Button>
                 )}
 
                 <button onClick={() => navigate('/customer-panel')} className="text-slate-500 text-sm font-medium p-2 hover:text-white transition-colors">
-                  {t.google.noButton}
+                  {tf.google.noButton}
                 </button>
               </div>
             )}
@@ -1030,10 +1029,10 @@ export default function FeedbackForm() {
             {!googleRedirectUrl && instagramRedirectUrl && (
               <div className="space-y-4">
                 <Button onClick={() => window.open(instagramRedirectUrl, '_blank')} className="w-full bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] hover:opacity-90 text-white h-14 rounded-xl font-bold text-lg shadow-xl shadow-pink-600/20 transition-all duration-300">
-                  <Instagram className="w-6 h-6 mr-2 stroke-[2.5px]" /> {t.google.instaButton}
+                  <Instagram className="w-6 h-6 mr-2 stroke-[2.5px]" /> {tf.google.instaButton}
                 </Button>
                 <Button onClick={() => navigate('/customer-panel')} variant="ghost" className="w-full text-slate-400 hover:text-white">
-                  {t.success.homeButton}
+                  {tf.success.homeButton}
                 </Button>
               </div>
             )}
@@ -1041,7 +1040,7 @@ export default function FeedbackForm() {
             {/* 🟢 STANDART MOD (Hiçbiri Yoksa / Şikayet / Düşük Puan) */}
             {!googleRedirectUrl && !instagramRedirectUrl && (
               <Button onClick={() => navigate('/customer-panel')} className="w-full bg-slate-700 hover:bg-slate-600 h-12 rounded-xl text-white font-bold">
-                {t.success.homeButton}
+                {tf.success.homeButton}
               </Button>
             )}
           </div>

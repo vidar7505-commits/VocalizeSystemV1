@@ -13,8 +13,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useTranslation } from 'react-i18next';
 
 const AdminSidebar = () => {
+  const { t } = useTranslation();
   const { pathname } = useLocation();
   const { signOut, user } = useAuth();
   const { businessName, isSpecialOffer, monthlyFeeOverride } = useAdminContext();
@@ -189,10 +191,10 @@ const AdminSidebar = () => {
   };
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Ana Panel', path: '/admin-panel' },
-    { icon: MessageSquare, label: 'Geri Bildirimler', path: '/admin-panel/feedbacks' },
-    { icon: BarChart3, label: 'Detaylı Analiz', path: '/admin-panel/analytics' },
-    { icon: Settings, label: 'Ayarlar', path: '/admin-panel/settings' },
+    { icon: LayoutDashboard, label: t('admin.sidebar.dashboard'), path: '/admin-panel' },
+    { icon: MessageSquare, label: t('admin.sidebar.feedbacks'), path: '/admin-panel/feedbacks' },
+    { icon: BarChart3, label: t('admin.sidebar.analytics'), path: '/admin-panel/analytics' },
+    { icon: Settings, label: t('admin.sidebar.settings'), path: '/admin-panel/settings' },
   ];
 
   const isActive = (path) => {
@@ -282,7 +284,7 @@ const AdminSidebar = () => {
             onClick={() => setFeedbackModalOpen(true)}
           >
             <Send className="w-4 h-4 mr-2 group-hover:text-teal-300 transition-colors" />
-            <span className="font-medium transition-colors">Bizimle İletişime Geçin</span>
+            <span className="font-medium transition-colors">{t('admin.settings.sendFeedback')}</span>
           </Button>
 
           <div className="relative flex items-center gap-3 px-2 py-2 rounded-lg bg-slate-800/30 transition-colors hover:bg-slate-800/50">
@@ -291,7 +293,7 @@ const AdminSidebar = () => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{businessName || 'Admin Panel'}</p>
-              <p className="text-xs text-slate-500 truncate">Yönetici</p>
+              <p className="text-xs text-slate-500 truncate">{t('auth.manager')}</p>
             </div>
           </div>
 
@@ -303,12 +305,12 @@ const AdminSidebar = () => {
             {theme === 'dark' ? (
               <>
                 <Moon className="w-4 h-4" />
-                <span>Koyu Tema</span>
+                <span>{t('admin.header.themeDark')}</span>
               </>
             ) : (
               <>
                 <Sun className="w-4 h-4 text-yellow-400" />
-                <span>Açık Tema</span>
+                <span>{t('admin.header.themeLight')}</span>
               </>
             )}
           </button>
@@ -319,7 +321,7 @@ const AdminSidebar = () => {
             className="logout-sidebar-btn w-full border-slate-700 bg-slate-800/50 text-slate-300 hover:text-white hover:bg-red-900/20 hover:border-red-800/50 group h-9"
           >
             <LogOut className="w-4 h-4 mr-2 group-hover:text-red-400 transition-colors" />
-            <span className="group-hover:text-red-300 transition-colors text-xs">Çıkış Yap</span>
+            <span className="group-hover:text-red-300 transition-colors text-xs">{t('admin.header.logout')}</span>
           </Button>
         </div>
 
@@ -368,18 +370,18 @@ const AdminSidebar = () => {
       <Dialog open={feedbackModalOpen} onOpenChange={setFeedbackModalOpen}>
         <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-800 text-white">
           <DialogHeader>
-            <DialogTitle className="text-white">Vocalize Ekibiyle İletişim</DialogTitle>
+            <DialogTitle className="text-white">{t('admin.settings.modal.title')}</DialogTitle>
             <DialogDescription className="text-slate-400">
-              Görüşlerinizi, önerilerinizi veya yaşadığınız sorunları bizimle paylaşın.
+              {t('admin.settings.modal.desc')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleFeedbackSubmit} className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <label htmlFor="feedback-message" className="text-sm font-medium text-slate-200">Mesajınız *</label>
+              <label htmlFor="feedback-message" className="text-sm font-medium text-slate-200">{t('admin.settings.modal.message')}</label>
               <textarea
                 id="feedback-message"
                 rows="4"
-                placeholder="Mesajınızı buraya yazın..."
+                placeholder={t('admin.settings.modal.placeholder')}
                 value={feedbackMessage}
                 onChange={(e) => setFeedbackMessage(e.target.value)}
                 className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
@@ -391,7 +393,7 @@ const AdminSidebar = () => {
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-slate-200 flex items-center gap-2">
                   <ImageIcon className="w-4 h-4" />
-                  Görseller (Opsiyonel)
+                  {t('admin.settings.modal.images')}
                 </label>
                 <span className="text-xs text-slate-500">{feedbackImages.length}/3</span>
               </div>
@@ -417,7 +419,7 @@ const AdminSidebar = () => {
                 {feedbackImages.length < 3 && (
                   <label className="w-20 h-20 flex flex-col items-center justify-center border border-dashed border-slate-700 rounded-lg cursor-pointer hover:bg-slate-800/50 hover:border-blue-500/50 transition-colors">
                     <Upload className="w-5 h-5 text-slate-400 mb-1" />
-                    <span className="text-[10px] text-slate-500">Yükle</span>
+                    <span className="text-[10px] text-slate-500">{t('admin.settings.modal.upload')}</span>
                     <input 
                       type="file" 
                       accept="image/*" 
@@ -433,7 +435,7 @@ const AdminSidebar = () => {
             <DialogFooter className="mt-2">
               <Button type="submit" disabled={feedbackLoading} className="bg-blue-600 hover:bg-blue-700 text-white w-full">
                 {feedbackLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Gönder
+                {t('admin.settings.modal.submit')}
               </Button>
             </DialogFooter>
           </form>

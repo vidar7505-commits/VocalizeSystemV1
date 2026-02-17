@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertTriangle, RefreshCw, Mail, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getErrorMessage } from '@/constants/errorCodes';
+import { useTranslation } from 'react-i18next';
 
 /**
  * ErrorToast - Minimal, user-friendly error notification component
@@ -10,12 +11,13 @@ import { getErrorMessage } from '@/constants/errorCodes';
 const ErrorToast = ({
     errorCode,
     severity,
-    language = 'tr',
     onRetry,
     onClose,
     autoReload = false,
     reloadDelay = 5000  // 5 saniye - kullanıcının okuyabilmesi için
 }) => {
+    const { t, i18n } = useTranslation();
+    const language = i18n.language.split('-')[0] || 'tr';
     const [countdown, setCountdown] = React.useState(Math.floor(reloadDelay / 1000));
 
     React.useEffect(() => {
@@ -90,7 +92,7 @@ const ErrorToast = ({
                         </div>
                         <div>
                             <h3 className={`font-bold text-sm ${styles.text}`}>
-                                {language === 'tr' ? 'Bir sorun oluştu' : 'An error occurred'}
+                                {t('common.error')}
                             </h3>
                             <p className="text-xs text-slate-400 mt-0.5">
                                 {language === 'tr' ? 'Hata Kodu' : 'Error Code'}: <span className="font-mono font-bold">{errorCode}</span>
@@ -133,7 +135,7 @@ const ErrorToast = ({
                             className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-semibold"
                         >
                             <RefreshCw className="w-4 h-4 mr-2" />
-                            {language === 'tr' ? 'Tekrar Dene' : 'Retry'}
+                            {t('common.retry')}
                         </Button>
                     )}
                     <Button
@@ -143,7 +145,7 @@ const ErrorToast = ({
                         className={`flex-1 border-slate-600 bg-slate-800 text-white hover:bg-slate-700 hover:text-white ${!onRetry || autoReload ? 'flex-1' : ''}`}
                     >
                         <Mail className="w-4 h-4 mr-2" />
-                        {language === 'tr' ? 'Destek' : 'Support'}
+                        {t('customer.supportItem')}
                     </Button>
                 </div>
             </div>

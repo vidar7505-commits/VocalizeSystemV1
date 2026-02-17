@@ -4,7 +4,7 @@ import {
   AlertTriangle, Image as ImageIcon, Building2, StickyNote, Save,
   Loader2, Crown, FileText, Copy, Hash, Download,
   ZoomIn, ChevronLeft, ChevronRight, Siren, Trash2, Lightbulb, Receipt,
-  BarChart, ExternalLink
+  BarChart, ExternalLink, Languages
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import CustomerProfileModal from './CustomerProfileModal';
 import { cn, formatCustomerName, getCustomerData } from "@/lib/utils";
+import { useTranslation } from 'react-i18next';
+import { translateText } from '@/lib/deepl';
 
 const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onStatusChange, scrollToNotes = false }) => {
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -38,6 +41,11 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
   const [liveProfileData, setLiveProfileData] = useState(null);
   const [businessSpecificData, setBusinessSpecificData] = useState(null);
   const notesSectionRef = useRef(null);
+
+  // Translation State
+  const [translatedMessage, setTranslatedMessage] = useState(null);
+  const [translatedGeneralComment, setTranslatedGeneralComment] = useState(null);
+  const [isTranslating, setIsTranslating] = useState(false);
 
   // --- SÜZGEÇ (HATA ÖNLEYİCİ) ---
   const normalizeUrl = (u) => {
@@ -84,6 +92,8 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
       setManagerNote(feedback.manager_note || '');
       setLiveProfileData(null);
       setBusinessSpecificData(null);
+      setTranslatedMessage(null);
+      setTranslatedGeneralComment(null);
 
       // E-posta veya Profil ID varsa veriyi çek
       if (hasProfileId || hasEmail) {
@@ -150,7 +160,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
   const fetchUpdaterInfo = async (userId, updatedAt) => {
     if (!userId) return;
     const { data } = await supabase.from('users').select('first_name, last_name').eq('id', userId).single();
-    if (data) setLastUpdatedInfo(`${data.first_name} ${data.last_name || ''} - ${new Date(updatedAt).toLocaleString('tr-TR')}`);
+    if (data) setLastUpdatedInfo(`${data.first_name} ${data.last_name || ''} - ${new Date(updatedAt).toLocaleString(i18n.language)}`);
   };
 
   const handleStatusUpdate = async (newStatus) => {
@@ -159,10 +169,10 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
       const { error } = await supabase.from('feedbacks').update({ status: newStatus, resolved_at: newStatus === 'resolved' ? new Date().toISOString() : null, updated_at: new Date().toISOString() }).eq('id', feedback.id);
       if (error) throw error;
       setCurrentStatus(newStatus);
-      toast({ title: "Güncellendi", description: `Durum: ${getStatusLabel(newStatus)}` });
+      toast({ title: t('common.success'), description: `${t('customer.status')}: ${getStatusLabel(newStatus)}` });
       if (onFeedbackUpdate) onFeedbackUpdate(feedback.id, { status: newStatus });
       else if (onStatusChange) onStatusChange(feedback.id, newStatus);
-    } catch (e) { toast({ variant: "destructive", title: "Hata" }); } finally { setIsUpdating(false); }
+    } catch (e) { toast({ variant: "destructive", title: t('common.error') }); } finally { setIsUpdating(false); }
   };
 
   const handleSaveNote = async () => {
@@ -172,11 +182,11 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
       const now = new Date().toISOString();
       const { error } = await supabase.from('feedbacks').update({ manager_note: managerNote, manager_note_updated_by: user.id, manager_note_updated_at: now }).eq('id', feedback.id);
       if (error) throw error;
-      toast({ title: "Not Kaydedildi", className: "bg-green-600 text-white border-none" });
-      setLastUpdatedInfo(`Siz - ${new Date(now).toLocaleString('tr-TR')}`);
+      toast({ title: t('feedbackDetail.detail.managerNote'), className: "bg-green-600 text-white border-none" });
+      setLastUpdatedInfo(`${t('common.you', { defaultValue: 'Siz' })} - ${new Date(now).toLocaleString(i18n.language)}`);
       if (onFeedbackUpdate) onFeedbackUpdate(feedback.id, { manager_note: managerNote });
       else if (onStatusChange) onStatusChange(feedback.id, currentStatus, managerNote);
-    } catch (e) { toast({ variant: "destructive", title: "Hata" }); } finally { setIsSavingNote(false); }
+    } catch (e) { toast({ variant: "destructive", title: t('common.error') }); } finally { setIsSavingNote(false); }
   };
 
   const handleRemoveNote = async () => {
@@ -187,20 +197,41 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
       const { error } = await supabase.from('feedbacks').update({ manager_note: null, manager_note_updated_by: user.id, manager_note_updated_at: now }).eq('id', feedback.id);
       if (error) throw error;
       setManagerNote('');
-      toast({ title: "Not Silindi", className: "bg-red-600 text-white border-none" });
-      setLastUpdatedInfo(`Siz - ${new Date(now).toLocaleString('tr-TR')}`);
+      toast({ title: t('common.delete'), className: "bg-red-600 text-white border-none" });
+      setLastUpdatedInfo(`${t('common.you', { defaultValue: 'Siz' })} - ${new Date(now).toLocaleString(i18n.language)}`);
       if (onFeedbackUpdate) onFeedbackUpdate(feedback.id, { manager_note: null });
       else if (onStatusChange) onStatusChange(feedback.id, currentStatus, null);
-    } catch (e) { toast({ variant: "destructive", title: "Hata" }); } finally { setIsSavingNote(false); }
+    } catch (e) { toast({ variant: "destructive", title: t('common.error') }); } finally { setIsSavingNote(false); }
   };
 
   const handleNextImage = (e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % allImages.length); };
   const handlePrevImage = (e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length); };
   const handleOpenImage = (e) => { e.stopPropagation(); const url = allImages[currentImageIndex]; if (url) window.open(url, '_blank'); };
 
-  const getStatusLabel = (s) => ({ new: 'Yeni', pending: 'Beklemede', in_progress: 'İşlemde', resolved: 'Çözüldü', escalated: 'Acil' }[s] || s);
+  const handleTranslate = async () => {
+    if (isTranslating) return;
+    setIsTranslating(true);
+    try {
+      // Hedef dil her zaman panelin mevcut dili olmalı
+      const targetLang = i18n.language === 'tr' ? 'TR' : 'EN-US';
+
+      const promises = [];
+      if (feedback.message) promises.push(translateText(feedback.message, targetLang).then(setTranslatedMessage));
+      if (feedback.general_eval_comment) promises.push(translateText(feedback.general_eval_comment, targetLang).then(setTranslatedGeneralComment));
+
+      await Promise.all(promises);
+      toast({ title: t('common.success'), description: t('feedbackDetail.detail.translatedSuccessfully', { defaultValue: 'Çeviri tamamlandı.' }) });
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: t('common.error'), description: t('feedbackDetail.detail.translationError', { defaultValue: 'Çeviri sırasında bir hata oluştu.' }) });
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const getStatusLabel = (s) => t(`feedbackDetail.detail.statuses.${s}`, { defaultValue: s });
   const getStatusColor = (s) => ({ new: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50', pending: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50', in_progress: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50', resolved: 'bg-green-500/20 text-green-400 border-green-500/50', escalated: 'bg-red-500/20 text-red-500 border-red-500 font-bold' }[s] || 'bg-slate-700');
-  const getTypeLabel = (t) => ({ complaint: 'Şikayet', suggestion: 'Öneri', evaluation: 'Değerlendirme', review: 'Değerlendirme', rating: 'Değerlendirme' }[t] || 'Geri Bildirim');
+  const getTypeLabel = (type) => t(`feedbackDetail.detail.types.${type}`, { defaultValue: type });
   const getHeaderIcon = () => { if (currentStatus === 'escalated') return <Siren className="w-6 h-6 text-white animate-spin-slow" />; return feedback.feedback_type === 'complaint' ? <AlertTriangle className="w-5 h-5 text-red-500" /> : <Star className="w-5 h-5 text-yellow-500" />; };
 
   if (!feedback) return null;
@@ -214,11 +245,11 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
               <DialogTitle className="text-xl font-bold flex items-center gap-2 min-w-0">
                 <div className={`p-2 rounded-full flex-shrink-0 ${currentStatus === 'escalated' ? 'bg-red-600 shadow-lg animate-pulse' : 'bg-slate-800'}`}>{getHeaderIcon()}</div>
                 <span className="text-white">
-                  {currentStatus === 'escalated' ? 'ACİL MÜDAHALE GEREKLİ' : `${getTypeLabel(feedback.feedback_type)} Detayı`}
+                  {currentStatus === 'escalated' ? t('feedbackDetail.detail.urgent') : `${getTypeLabel(feedback.feedback_type)} ${t('feedbackDetail.detail.title')}`}
                 </span>
               </DialogTitle>
               <DialogDescription className="text-slate-400 text-sm sr-only">
-                Geri bildirimin tüm detaylarını buradan inceleyebilirsiniz.
+                {t('feedbackDetail.detail.subtitle')}
               </DialogDescription>
               <div className="flex items-center gap-2 mt-1 flex-shrink-0 mr-10">
                 {isVip && <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-500/10 rounded text-[10px] text-purple-300 border border-purple-500/30 font-medium whitespace-nowrap"><Crown className="w-3 h-3" /><span>VIP</span></div>}
@@ -229,61 +260,61 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
           </DialogHeader>
 
           <div className="space-y-6 mt-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-4 w-full">
-            {managerNote && (<div onClick={() => notesSectionRef.current?.scrollIntoView({ behavior: 'smooth' })} className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-amber-900/30 transition-colors group"><div className="flex items-center gap-2"><StickyNote className="w-4 h-4 text-amber-500" /><span className="text-sm text-amber-200 font-medium">Yönetici notu var</span></div><span className="text-xs text-amber-400 underline">Görüntüle</span></div>)}
+            {managerNote && (<div onClick={() => notesSectionRef.current?.scrollIntoView({ behavior: 'smooth' })} className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-amber-900/30 transition-colors group"><div className="flex items-center gap-2"><StickyNote className="w-4 h-4 text-amber-500" /><span className="text-sm text-amber-200 font-medium">{t('feedbackDetail.detail.managerNote')} {t('common.exists', { defaultValue: 'var' })}</span></div><span className="text-xs text-amber-400 underline">{t('common.view', { defaultValue: 'Görüntüle' })}</span></div>)}
 
             <div className={`rounded-lg p-4 border relative overflow-hidden ${currentStatus === 'escalated' ? 'bg-red-900/10 border-red-500/30' : 'bg-slate-800/50 border-slate-700/50'}`}>
               <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
                 <div className="flex-1 min-w-0 overflow-hidden">
-                  <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2"><User className="w-4 h-4" /> Müşteri Bilgileri</h3>
+                  <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2"><User className="w-4 h-4" /> {t('feedbackDetail.detail.customerInfo')}</h3>
                   <div className="flex flex-col gap-1 mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-lg text-white break-words" title={customerProfileNote ? "Müşteri Notu Mevcut" : ""}>{formattedName}</span>
+                      <span className="font-bold text-lg text-white break-words" title={customerProfileNote ? t('feedbackDetail.detail.guestNote') : ""}>{formattedName}</span>
                     </div>
                     {/* 🟢 SADECE KAYITLI İSE GÖSTER */}
-                    {customerJoinDate && !isAnonymous && (<div className="flex items-center gap-2 text-xs text-slate-400"><User className="w-3 h-3 text-slate-500" /><span>Üyelik: {new Date(customerJoinDate).toLocaleDateString('tr-TR')}</span></div>)}
+                    {customerJoinDate && !isAnonymous && (<div className="flex items-center gap-2 text-xs text-slate-400"><User className="w-3 h-3 text-slate-500" /><span>{t('feedbackDetail.detail.membership')}: {new Date(customerJoinDate).toLocaleDateString(i18n.language)}</span></div>)}
                   </div>
 
                   {/* 🟢 İSTATİSTİKLER - SADECE KAYITLI İSE */}
                   {!isAnonymous ? (
                     customerStats ? (
                       <div className="text-xs text-slate-400 mt-2 flex flex-wrap gap-x-3 gap-y-1">
-                        <span className="font-medium text-slate-300">Toplam: {customerStats.total}</span>
-                        <span className="text-red-400">Şikayet: {customerStats.complaints}</span>
-                        <span className="text-blue-400">Öneri: {customerStats.suggestions}</span>
-                        <span className="text-yellow-400">Değ.: {customerStats.evaluations}</span>
+                        <span className="font-medium text-slate-300">{t('customer.total')}: {customerStats.total}</span>
+                        <span className="text-red-400">{t('customer.complaintBadge')}: {customerStats.complaints}</span>
+                        <span className="text-blue-400">{t('customer.suggestionBadge')}: {customerStats.suggestions}</span>
+                        <span className="text-yellow-400">{t('customer.reviewBadge')}: {customerStats.evaluations}</span>
                       </div>
                     ) : statsLoading ? (
-                      <div className="text-xs text-slate-500 flex items-center gap-1 mt-1"><Loader2 className="w-3 h-3 animate-spin" /> Yükleniyor...</div>
+                      <div className="text-xs text-slate-500 flex items-center gap-1 mt-1"><Loader2 className="w-3 h-3 animate-spin" /> {t('common.loading')}</div>
                     ) : (
-                      <div className="text-xs text-slate-500 italic mt-1">Veri yok.</div>
+                      <div className="text-xs text-slate-500 italic mt-1">{t('common.noData')}</div>
                     )
                   ) : (
                     // 🟢 ANONİM İÇİN BOŞ MESAJ
-                    <div className="text-xs text-slate-500 italic mt-1">Anonim kullanıcı (Profil verisi yok)</div>
+                    <div className="text-xs text-slate-500 italic mt-1">{t('feedbackDetail.detail.anonymous')}</div>
                   )}
 
                   {/* 🟢 PROFİL BUTONU - SADECE KAYITLI/PROFİLLİ İSE */}
                   {(liveProfileData || !isAnonymous) && (
                     <div className="mt-3">
-                      <Button variant="outline" size="sm" onClick={() => setIsProfileModalOpen(true)} className="h-8 text-xs border-teal-500/40 text-teal-400 bg-teal-500/10 hover:bg-teal-500/20 w-full md:w-auto"><User className="w-3.5 h-3.5 mr-1.5" /> Profili Görüntüle</Button>
+                      <Button variant="outline" size="sm" onClick={() => setIsProfileModalOpen(true)} className="h-8 text-xs border-teal-500/40 text-teal-400 bg-teal-500/10 hover:bg-teal-500/20 w-full md:w-auto"><User className="w-3.5 h-3.5 mr-1.5" /> {t('feedbackDetail.detail.viewProfile')}</Button>
                     </div>
                   )}
                 </div>
 
                 <div className="bg-[#111827] p-4 rounded-lg border border-slate-700/50 flex flex-col gap-2 min-w-[250px]">
-                  <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><Hash className="w-3 h-3" /> Teknik Bilgiler</h3>
-                  <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded px-3 py-2"><div className="flex flex-col overflow-hidden flex-1"><span className="text-[10px] text-slate-500">Referans ID</span><code className="text-[10px] sm:text-xs text-indigo-300 font-mono break-all select-all" title={feedback?.id}>{feedback?.id}</code></div><Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400" onClick={() => { navigator.clipboard.writeText(feedback.id); toast({ description: "Kopyalandı" }); }}><Copy className="w-4 h-4" /></Button></div>
+                  <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><Hash className="w-3 h-3" /> {t('feedbackDetail.detail.technicalInfo')}</h3>
+                  <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded px-3 py-2"><div className="flex flex-col overflow-hidden flex-1"><span className="text-[10px] text-slate-500">{t('feedbackDetail.detail.referenceId')}</span><code className="text-[10px] sm:text-xs text-indigo-300 font-mono break-all select-all" title={feedback?.id} translate="no">{feedback?.id}</code></div><Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400" onClick={() => { navigator.clipboard.writeText(feedback.id); toast({ description: t('feedbackDetail.detail.copy') }); }}><Copy className="w-4 h-4" /></Button></div>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm border-t border-slate-700/50 pt-3 mt-2">
-                <div className="flex items-center gap-2 text-slate-300"><Mail className="w-3.5 h-3.5 text-slate-500" /> <span className={!displayEmail || displayEmail === '-' ? "text-slate-500 italic" : ""}>{displayEmail}</span></div>
-                <div className="flex items-center gap-2 text-slate-300"><Phone className="w-3.5 h-3.5 text-slate-500" /> <span className={!displayPhone || displayPhone === '-' ? "text-slate-500 italic" : ""}>{displayPhone}</span></div>
-                <div className="flex items-center gap-2 text-slate-300"><Building2 className="w-3.5 h-3.5 text-slate-500" /> {feedback.branches?.branch_name_tr || 'Bilinmiyor'}</div>
-                <div className="flex items-center gap-2 text-slate-300"><Calendar className="w-3.5 h-3.5 text-slate-500" /> {new Date(feedback.created_at).toLocaleString('tr-TR')}</div>
+                <div className="flex items-center gap-2 text-slate-300"><Mail className="w-3.5 h-3.5 text-slate-500" /> <span className={!displayEmail || displayEmail === '-' ? "text-slate-500 italic" : ""} translate="no">{displayEmail}</span></div>
+                <div className="flex items-center gap-2 text-slate-300"><Phone className="w-3.5 h-3.5 text-slate-500" /> <span className={!displayPhone || displayPhone === '-' ? "text-slate-500 italic" : ""} translate="no">{displayPhone}</span></div>
+                <div className="flex items-center gap-2 text-slate-300"><Building2 className="w-3.5 h-3.5 text-slate-500" /> {feedback.branches?.branch_name_tr || t('customer.unknown')}</div>
+                <div className="flex items-center gap-2 text-slate-300"><Calendar className="w-3.5 h-3.5 text-slate-500" /> <span translate="no">{new Date(feedback.created_at).toLocaleString(i18n.language)}</span></div>
                 {feedback.customer_age_group && (
                   <div className="flex items-center gap-2 text-slate-300 col-span-2">
                     <User className="w-3.5 h-3.5 text-slate-500" />
-                    <span className="text-slate-500 mr-1">Yaş Grubu:</span>
+                    <span className="text-slate-500 mr-1">{t('feedbackDetail.detail.ageGroup')}:</span>
                     <span className="font-medium text-indigo-300">{feedback.customer_age_group}</span>
                   </div>
                 )}
@@ -299,28 +330,28 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
                   <div className="p-1.5 bg-orange-500/20 rounded-full">
                     <Phone className="w-4 h-4 text-orange-500" />
                   </div>
-                  <span className="text-sm font-bold uppercase tracking-wide">Misafir İletişim Talebi</span>
+                  <span className="text-sm font-bold uppercase tracking-wide">{t('feedbackDetail.detail.guestRequest')}</span>
                 </div>
 
                 <p className="text-xs text-slate-400 mb-2">
-                  Bu misafir, yaşadığı deneyimle ilgili kendisine ulaşılmasını talep etti.
+                  {t('feedbackDetail.detail.guestRequestDesc')}
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="bg-slate-900/60 p-2.5 rounded border border-slate-700/50 flex flex-col">
-                    <span className="text-[10px] text-slate-500 uppercase font-semibold mb-0.5">İsim Soyisim</span>
+                    <span className="text-[10px] text-slate-500 uppercase font-semibold mb-0.5">{t('auth.fullName')}</span>
                     <div className="flex items-center gap-2">
                       <User className="w-3.5 h-3.5 text-slate-400" />
-                      <span className="text-sm text-white font-medium">{feedback.guest_contact_info.name || 'Belirtilmedi'}</span>
+                      <span className="text-sm text-white font-medium">{feedback.guest_contact_info.name || t('customer.unknown')}</span>
                     </div>
                   </div>
 
                   <div className="bg-slate-900/60 p-2.5 rounded border border-slate-700/50 flex flex-col">
-                    <span className="text-[10px] text-slate-500 uppercase font-semibold mb-0.5">Telefon</span>
+                    <span className="text-[10px] text-slate-500 uppercase font-semibold mb-0.5">{t('feedbackDetail.detail.phone')}</span>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Phone className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="text-sm text-white font-medium">{feedback.guest_contact_info.phone || 'Belirtilmedi'}</span>
+                        <span className="text-sm text-white font-medium">{feedback.guest_contact_info.phone || t('customer.unknown')}</span>
                       </div>
                       {feedback.guest_contact_info.phone && (
                         <a
@@ -341,14 +372,14 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
             {customerProfileNote && (
               <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 flex gap-3 overflow-hidden">
                 <FileText className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                <div className="overflow-hidden"><h4 className="text-sm font-bold text-blue-400 mb-1">Müşteri Hakkında İşletme Notu</h4><p className="text-sm text-slate-300 italic whitespace-pre-wrap break-words">{customerProfileNote}</p></div>
+                <div className="overflow-hidden"><h4 className="text-sm font-bold text-blue-400 mb-1">{t('feedbackDetail.detail.guestNote')}</h4><p className="text-sm text-slate-300 italic whitespace-pre-wrap break-words">{customerProfileNote}</p></div>
               </div>
             )}
 
             {hasGeneralEval || feedback.feedback_type === 'review' ? (
               <div className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-4 overflow-hidden">
                 <h4 className="text-xs font-semibold text-teal-400 uppercase mb-2 flex items-center gap-2">
-                  <BarChart className="w-3.5 h-3.5" /> {feedback.feedback_type === 'review' ? 'Değerlendirme Puanı' : 'Genel Değerlendirme'}
+                  <BarChart className="w-3.5 h-3.5" /> {feedback.feedback_type === 'review' ? t('feedbackDetail.detail.evaluationScore') : t('feedbackDetail.detail.generalEval')}
                 </h4>
                 <div className="flex flex-col gap-2">
                   {(generalRating > 0 || (feedback.feedback_type === 'review' && (feedback.rating || feedback.overall_rating) > 0)) && (
@@ -369,6 +400,14 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
                   {generalComment && (
                     <div className="bg-slate-900/50 p-3 rounded-md border border-slate-700/30 w-full overflow-hidden">
                       <p className="text-sm text-slate-300 italic whitespace-pre-wrap break-words">"{generalComment}"</p>
+                      {translatedGeneralComment && (
+                        <div className="mt-2 pt-2 border-t border-slate-700/50">
+                          <p className="text-xs text-indigo-400 font-semibold mb-1 flex items-center gap-1">
+                            <Languages className="w-3 h-3" /> {t('feedbackDetail.detail.translationLabel', { lang: i18n.language === 'tr' ? 'TR' : 'EN' })}
+                          </p>
+                          <p className="text-sm text-slate-400 italic whitespace-pre-wrap break-words">"{translatedGeneralComment}"</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -376,15 +415,40 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
             ) : null}
 
             <div className={`rounded-lg p-5 border overflow-hidden ${currentStatus === 'escalated' ? 'bg-red-900/10 border-red-500/30' : 'bg-slate-800/50 border-slate-700/50'}`}>
-              <div className="mb-2"><h4 className="text-xs font-semibold text-slate-400 uppercase flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> Müşteri Mesajı</h4></div>
+              <div className="mb-2 flex items-center justify-between">
+                <h4 className="text-xs font-semibold text-slate-400 uppercase flex items-center gap-1">
+                  <MessageSquare className="w-3.5 h-3.5" /> {t('feedbackDetail.detail.customerMessage')}
+                </h4>
+                {(feedback.message || feedback.general_eval_comment) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleTranslate}
+                    disabled={isTranslating}
+                    className="h-7 text-[10px] text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 gap-1.5"
+                  >
+                    {isTranslating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
+                    {t('feedbackDetail.detail.translate', { defaultValue: 'Çevir' })}
+                  </Button>
+                )}
+              </div>
               <div className="bg-slate-900/80 p-4 rounded-md border border-slate-700/50 min-h-[80px] overflow-hidden">
-                <p className="text-slate-200 whitespace-pre-wrap leading-relaxed text-sm md:text-base break-words">{feedback.message || <span className="text-slate-500 italic">Mesaj yok.</span>}</p>
+                <p className="text-slate-200 whitespace-pre-wrap leading-relaxed text-sm md:text-base break-words">{feedback.message || <span className="text-slate-500 italic">{t('feedbackDetail.detail.noMessage')}</span>}</p>
+
+                {translatedMessage && (
+                  <div className="mt-4 pt-4 border-t border-slate-700/50">
+                    <p className="text-xs text-indigo-400 font-semibold mb-1 flex items-center gap-1">
+                      <Languages className="w-3 h-3" /> {t('feedbackDetail.detail.translationLabel', { lang: i18n.language === 'tr' ? 'TR' : 'EN' })}
+                    </p>
+                    <p className="text-slate-400 whitespace-pre-wrap leading-relaxed text-sm break-words">{translatedMessage}</p>
+                  </div>
+                )}
               </div>
 
               {allImages.length > 0 && (
                 <div className="mt-6 space-y-6">
                   <div>
-                    <h3 className="text-sm font-semibold text-teal-400 mb-3 flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Görseller ({allImages.length})</h3>
+                    <h3 className="text-sm font-semibold text-teal-400 mb-3 flex items-center gap-2"><ImageIcon className="w-4 h-4" /> {t('feedbackDetail.detail.images')} ({allImages.length})</h3>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                       {allImages.map((url, idx) => (
                         <div
@@ -405,12 +469,12 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
             </div>
 
             <div ref={notesSectionRef} className="bg-amber-900/10 rounded-lg p-4 border border-amber-700/30 scroll-mt-20 overflow-hidden">
-              <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider flex items-center gap-2"><StickyNote className="w-4 h-4" /> Bildirim Notu</h3></div>
-              <textarea className="w-full bg-slate-900/80 border border-slate-700 rounded-md p-3 text-sm text-slate-200 min-h-[100px] resize-none" placeholder="Bu bildirime özel notlar..." value={managerNote} onChange={(e) => setManagerNote(e.target.value)} />
+              <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider flex items-center gap-2"><StickyNote className="w-4 h-4" /> {t('feedbackDetail.detail.managerNote')}</h3></div>
+              <textarea className="w-full bg-slate-900/80 border border-slate-700 rounded-md p-3 text-sm text-slate-200 min-h-[100px] resize-none" placeholder={t('feedbackDetail.detail.managerNotePlaceholder')} value={managerNote} onChange={(e) => setManagerNote(e.target.value)} />
               <div className="flex justify-between items-center mt-3"><span className="text-xs text-slate-500 italic">{lastUpdatedInfo}</span>
                 <div className="flex gap-2">
-                  <Button variant="destructive" size="sm" onClick={handleRemoveNote} disabled={isSavingNote || !managerNote} className="h-8 text-xs bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-900/50"><Trash2 className="w-3 h-3 mr-1" /> Sil</Button>
-                  <Button onClick={handleSaveNote} disabled={isSavingNote} size="sm" className="bg-amber-600 hover:bg-amber-700 text-white h-8">{isSavingNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3 mr-2" />} Kaydet</Button>
+                  <Button variant="destructive" size="sm" onClick={handleRemoveNote} disabled={isSavingNote || !managerNote} className="h-8 text-xs bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-900/50"><Trash2 className="w-3 h-3 mr-1" /> {t('common.delete')}</Button>
+                  <Button onClick={handleSaveNote} disabled={isSavingNote} size="sm" className="bg-amber-600 hover:bg-amber-700 text-white h-8">{isSavingNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3 mr-2" />} {t('common.save')}</Button>
                 </div>
               </div>
             </div>
@@ -436,7 +500,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
                 ))}
             </div>
             <div className="flex justify-end">
-              <Button variant="outline" onClick={onClose} className="bg-slate-700 border-slate-600 hover:bg-slate-600 text-white shadow-none ring-0 focus:ring-0 focus-visible:ring-0">Kapat</Button>
+              <Button variant="outline" onClick={onClose} className="bg-slate-700 border-slate-600 hover:bg-slate-600 text-white shadow-none ring-0 focus:ring-0 focus-visible:ring-0">{t('common.close')}</Button>
             </div>
           </div>
         </DialogContent>
@@ -452,7 +516,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 z-[100001] pointer-events-auto bg-black/50 px-6 py-3 rounded-full backdrop-blur-sm">
               <span className="text-white/90 text-sm font-medium select-none">{currentImageIndex + 1} / {allImages.length}</span>
               <div className="h-4 w-px bg-white/30" />
-              <Button variant="ghost" className="text-white hover:bg-slate-700/50 h-auto p-0 px-2 font-normal gap-2" onClick={handleOpenImage}><ExternalLink className="w-4 h-4" /> <span className="hidden sm:inline">Görseli Aç</span></Button>
+              <Button variant="ghost" className="text-white hover:bg-slate-700/50 h-auto p-0 px-2 font-normal gap-2" onClick={handleOpenImage}><ExternalLink className="w-4 h-4" /> <span className="hidden sm:inline">{t('feedbackDetail.detail.openImage')}</span></Button>
             </div>
           </div>
         </div>

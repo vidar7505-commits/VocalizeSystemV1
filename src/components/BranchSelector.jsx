@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, MapPin, History, Navigation, Check } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { useTranslation } from 'react-i18next';
 
-const BranchSelector = ({ branches, selectedBranch, onSelect, t }) => {
+const BranchSelector = ({ branches, selectedBranch, onSelect }) => {
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [recentBranches, setRecentBranches] = useState([]);
@@ -39,7 +41,7 @@ const BranchSelector = ({ branches, selectedBranch, onSelect, t }) => {
     const handleGeolocation = () => {
         setIsLocating(true);
         if (!navigator.geolocation) {
-            alert("Tarayıcınız konum servisini desteklemiyor.");
+            alert(t('customer.branchSelector.geoError'));
             setIsLocating(false);
             return;
         }
@@ -97,11 +99,11 @@ const BranchSelector = ({ branches, selectedBranch, onSelect, t }) => {
     }, [branches, searchTerm, userLocation]);
 
     // Render selected branch display
-    const selectedBranchName = branches.find(b => b.id === selectedBranch)?.branch_name_tr || t.branch.placeholder;
+    const selectedBranchName = branches.find(b => b.id === selectedBranch)?.branch_name_tr || t('form.branch.placeholder');
 
     return (
         <div className="relative">
-            <label className="text-xs text-slate-400 mb-1 block pl-1">{t.stepsUI.branchLabel}</label>
+            <label className="text-xs text-slate-400 mb-1 block pl-1">{t('form.stepsUI.branchLabel')}</label>
 
             {!isOpen ? (
                 <button
@@ -122,14 +124,14 @@ const BranchSelector = ({ branches, selectedBranch, onSelect, t }) => {
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Şube veya ilçe ara..."
+                            placeholder={t('customer.branchSelector.searchPlaceholder')}
                             className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-slate-500 text-sm h-9"
                             autoFocus
                         />
                         <button
                             onClick={handleGeolocation}
                             className={cn("p-2 rounded-md transition-colors", isLocating || userLocation ? "text-teal-400 bg-teal-500/10" : "text-slate-400 hover:text-white hover:bg-slate-800")}
-                            title="Yakınımdakileri Bul"
+                            title={t('customer.branchSelector.findNearMe')}
                         >
                             <Navigation className={cn("h-4 w-4", isLocating && "animate-pulse")} />
                         </button>
@@ -142,7 +144,7 @@ const BranchSelector = ({ branches, selectedBranch, onSelect, t }) => {
                         {!searchTerm && recentBranches.length > 0 && (
                             <div className="mb-2">
                                 <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                    <History className="h-3 w-3" /> Son Ziyaretler
+                                    <History className="h-3 w-3" /> {t('customer.branchSelector.recentVisits')}
                                 </div>
                                 {recentBranches.map(id => {
                                     const b = branches.find(br => br.id === id);
@@ -156,7 +158,7 @@ const BranchSelector = ({ branches, selectedBranch, onSelect, t }) => {
                                                 selectedBranch === b.id ? "bg-teal-500/10 text-teal-400" : "text-slate-300 hover:bg-slate-800 hover:text-white"
                                             )}
                                         >
-                                            <span className="truncate">{b.branch_name_tr}</span>
+                                            <span className="truncate" translate="no">{b.branch_name_tr}</span>
                                             {selectedBranch === b.id && <Check className="h-4 w-4 text-teal-500" />}
                                         </button>
                                     );
@@ -167,12 +169,12 @@ const BranchSelector = ({ branches, selectedBranch, onSelect, t }) => {
 
                         {/* All Branches */}
                         <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                            {userLocation ? 'Mesafeye Göre' : 'Tüm Şubeler'} ({filteredBranches.length})
+                            {userLocation ? t('customer.branchSelector.byDistance') : t('customer.branchSelector.allBranches')} ({filteredBranches.length})
                         </div>
 
                         {filteredBranches.length === 0 ? (
                             <div className="p-4 text-center text-slate-500 text-sm">
-                                Sonuç bulunamadı.
+                                {t('customer.branchSelector.noResult')}
                             </div>
                         ) : (
                             filteredBranches.slice(0, 50).map(b => (
@@ -186,7 +188,7 @@ const BranchSelector = ({ branches, selectedBranch, onSelect, t }) => {
                                 >
                                     <div className="flex items-center gap-2 truncate">
                                         <MapPin className="h-3.5 w-3.5 text-slate-500 group-hover:text-slate-300" />
-                                        <span className="truncate">{b.branch_name_tr}</span>
+                                        <span className="truncate" translate="no">{b.branch_name_tr}</span>
                                     </div>
                                     {selectedBranch === b.id && <Check className="h-4 w-4 text-teal-500" />}
                                 </button>
@@ -195,7 +197,7 @@ const BranchSelector = ({ branches, selectedBranch, onSelect, t }) => {
 
                         {filteredBranches.length > 50 && (
                             <div className="p-2 text-center text-xs text-slate-500">
-                                ve {filteredBranches.length - 50} şube daha...
+                                {t('customer.branchSelector.moreBranches', { count: filteredBranches.length - 50 })}
                             </div>
                         )}
                     </div>
