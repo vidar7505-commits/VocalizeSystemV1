@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -58,164 +58,6 @@ const getCurrentLocalISOString = () => {
   const now = new Date();
   const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
   return localDate.toISOString().slice(0, 16);
-};
-
-/* MOVED TO translation.json
-const TEXTS = {
-  tr: {
-    errorLoad: "Veri yüklenirken sorun oluştu.",
-    limitExceeded: "Sınır Aşıldı",
-    limitDesc: (remaining) => `En fazla 3 görsel yükleyebilirsiniz.`,
-    fileTooLarge: "Dosya Çok Büyük",
-    fileTooLargeDesc: (name) => `${name} 5MB'dan küçük olmalıdır.`,
-    back: "Geri",
-    next: "İleri",
-    titles: {
-      complaint: "Şikayet Bildir", complaintSub: "Sorunu çözelim.",
-      suggestion: "Öneride Bulun", suggestionSub: "Fikirleriniz değerli.",
-      review: "Değerlendir", reviewSub: "Deneyiminizi puanlayın.",
-      default: "Geri Bildirim", defaultSub: "Görüşlerinizi paylaşın"
-    },
-
-    // 🟢 ADIM BAŞLIKLARI VE AÇIKLAMALARI
-    stepsUI: {
-      evidenceTitle: "Kanıt & Zaman",
-      evidenceDesc: "İşleminizi hızlandırmak için detay verin.",
-      problemTitle: "Sorun Nedir?",
-      suggestionTitle: "Öneriniz Nedir?",
-      problemDesc: "Lütfen detaylıca açıklayınız.",
-      rateTitle: "Puanlayın",
-      rateDesc: "Hizmetimizden ne kadar memnun kaldınız?",
-      finalTitle: "Son Dokunuşlar",
-      finalDesc: "Eklemek istedikleriniz var mı?",
-      branchLabel: "Şube",
-      addPhoto: "Ekle",
-      extraImages: "Ek Görseller"
-    },
-
-    infoBanner: "Geri bildiriminiz anında yöneticiye iletilir.",
-    businessLabel: "İşletme",
-    branch: { label: "Şube Seçin", placeholder: "Şube Seçiniz", auto: "QR ile otomatik seçildi" },
-    receipt: {
-      label: "Alışveriş Fişiniz Var mı?", noReceipt: "Fişim Yok", hasReceipt: "Fişim Var",
-      uploadLabel: "Fiş Görseli", placeholder: "Fiş Fotoğrafı Yükle", uploaded: "Yüklendi",
-      dateLabel: "Ne Zaman Ziyaret Ettiniz?",
-    },
-    message: { label: "Açıklama", placeholder: "Lütfen detayları buraya yazın...", minChars: "En az 10 karakter" },
-    rating: { label: "Memnuniyetiniz", emojis: { 1: '😞 Çok Kötü', 2: '😟 Kötü', 3: '😐 İdare Eder', 4: '😊 Memnun Kaldım', 5: '🤩 Harikaydı!' } },
-    reactions: {
-      oneStar: "Çok üzgünüz 😔 Bunu telafi etmek için derhal incelemeye alacağız.",
-      twoStar: "Beklentinizin altında kaldığımız için üzgünüz. Kendimizi geliştireceğiz.",
-      threeStar: "Daha iyisini yapabiliriz. Geri bildiriminizle büyüyoruz.",
-      fourStar: "Teşekkürler! Mükemmele ulaşmak için çalışmaya devam edeceğiz. 💪",
-      fiveStar: "Muhteşemsiniz! Günümüzü güzelleştirdiniz, desteğiniz için teşekkürler! 🌟"
-    },
-    general: {
-      title: "İşletme Hakkındaki Genel Deneyiminiz",
-      placeholder: "Mekan, hizmet veya atmosfer hakkında eklemek istedikleriniz...",
-      placeholderLow: "Lütfen nerede hata yaptığımızı bize anlatın, düzeltmek istiyoruz...",
-      placeholderMid: "Sizce neyi daha iyi yapabilirdik?",
-      placeholderHigh: "En çok neyi beğendiğinizi anlatın (Hizmet, Lezzet, Ortam?)..."
-    },
-    images: { label: "Ek Görseller (Opsiyonel)", placeholder: "Fotoğraf Ekle", sub: "Max 3 adet", uploaded: "görsel seçildi" },
-    submit: { sending: "Gönderiliyor...", send: "Gönder", error: "Hata oluştu.", errorValidation: "Lütfen gerekli alanları doldurun." },
-    success: {
-      title: "Teşekkürler!",
-      defaultTitle: "Harika!",
-      desc: (name) => `Bildiriminiz ${name} yönetimine iletildi.`,
-      defaultDesc: "Geri bildiriminiz başarıyla iletildi.",
-      footer: "Bizi tercih ettiğiniz için teşekkürler.",
-      button: "Kapat",
-      homeButton: "Ana Sayfaya Dön"
-    },
-    google: {
-      title: "Harikasınız! 🤩",
-      copyAlert: "Yorumunuzu sizin için kopyaladık! 📋",
-      desc: "Bu güzel deneyiminizi Google'da paylaşarak diğer müşterilere de ilham vermek ister misiniz? Yapıştırmanız yeterli.",
-      yesButton: "Google'da Paylaş",
-      noButton: "Hayır, Teşekkürler",
-      instaButton: "Bizi Instagram'da Takip Et",
-      copiedToast: "Yorum kopyalandı! Google'a yönlendiriliyorsunuz..."
-    },
-    steps: "Adım"
-  },
-  en: {
-    errorLoad: "Error loading data.",
-    limitExceeded: "Limit Exceeded",
-    limitDesc: (remaining) => `Max 3 images allowed.`,
-    fileTooLarge: "File Too Large",
-    fileTooLargeDesc: (name) => `${name} must be smaller than 5MB.`,
-    back: "Back",
-    next: "Next",
-    titles: {
-      complaint: "Report Issue", complaintSub: "Let's fix it.",
-      suggestion: "Make Suggestion", suggestionSub: "Your ideas matter.",
-      review: "Rate Experience", reviewSub: "Rate your experience.",
-      default: "Feedback", defaultSub: "Share your thoughts"
-    },
-
-    stepsUI: {
-      evidenceTitle: "Evidence & Time",
-      evidenceDesc: "Provide details to speed up the process.",
-      problemTitle: "What is the issue?",
-      suggestionTitle: "What is your suggestion?",
-      problemDesc: "Please explain in detail.",
-      rateTitle: "Rate Us",
-      rateDesc: "How satisfied were you with our service?",
-      finalTitle: "Final Touches",
-      finalDesc: "Anything else you'd like to add?",
-      branchLabel: "Branch",
-      addPhoto: "Add",
-      extraImages: "Additional Images"
-    },
-
-    infoBanner: "Sent instantly to the manager.",
-    businessLabel: "Business",
-    branch: { label: "Select Branch", placeholder: "Select Branch", auto: "Auto-selected via QR" },
-    receipt: {
-      label: "Do you have a receipt?", noReceipt: "No Receipt", hasReceipt: "Have Receipt",
-      uploadLabel: "Receipt Image", placeholder: "Upload Receipt",
-      uploaded: "Uploaded",
-      dateLabel: "When did you visit?",
-    },
-    message: { label: "Description", placeholder: "Please provide details...", minChars: "Min 10 chars" },
-    rating: { label: "Satisfaction", emojis: { 1: '😞 Very Bad', 2: '😟 Bad', 3: '😐 Average', 4: '😊 Good', 5: '😍 Excellent' } },
-    reactions: {
-      oneStar: "We are very sorry 😔 We will investigate immediately to make it right.",
-      twoStar: "We apologize for falling below expectations. We will improve ourselves.",
-      threeStar: "We can do better. We grow with your feedback.",
-      fourStar: "Thank you! We will continue working to reach perfection. 💪",
-      fiveStar: "You are awesome! You made our day, thank you for your support! 🌟"
-    },
-    general: {
-      title: "Your General Experience with the Business",
-      placeholder: "Anything you'd like to add about the venue, service, or atmosphere...",
-      placeholderLow: "Please tell us where we went wrong, we want to fix it...",
-      placeholderMid: "What could we have done better?",
-      placeholderHigh: "Tell us what you liked best (Service, Taste, Ambiance?)..."
-    },
-    images: { label: "Images (Optional)", placeholder: "Add Photo", sub: "Max 3 images", uploaded: "images selected" },
-    submit: { sending: "Sending...", send: "Send", error: "Error occurred.", errorValidation: "Please fill required fields." },
-    success: {
-      title: "Thank You!",
-      defaultTitle: "Awesome!",
-      desc: (name) => `Sent to ${name} management.`,
-      defaultDesc: "Your feedback has been sent successfully.",
-      footer: "Thanks for choosing us.",
-      button: "Close",
-      homeButton: "Return to Home"
-    },
-    google: {
-      title: "You're Awesome! 🤩",
-      copyAlert: "We copied your feedback for you! 📋",
-      desc: "Would you like to empower us by sharing this great experience with others on Google? Just paste it.",
-      yesButton: "Share on Google",
-      noButton: "No, Thanks",
-      instaButton: "Follow us on Instagram",
-      copiedToast: "Copied! Redirecting..."
-    },
-    steps: "Step"
-  }
 };
 
 export default function FeedbackForm() {
@@ -354,7 +196,6 @@ export default function FeedbackForm() {
     }
   };
 
-  // ... (inside component)
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files || []);
