@@ -302,13 +302,11 @@ const SplitKpiCard = ({ title, value1, label1, icon1: Icon1, color1, value2, lab
 
 // 🟢 ŞUBE DETAY MODALI
 const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], isLight = false, t, i18n }) => {
-  if (!isOpen || !branch) return null;
-
-  const insight = getSmartInsight(branch, t);
+  const insight = useMemo(() => getSmartInsight(branch || {}, t), [branch, t]);
   const InsightIcon = insight.icon;
 
-  const perception = Number(branch.brandPerception);
-  const experience = Number(branch.instantExperience);
+  const perception = Number(branch?.brandPerception || 0);
+  const experience = Number(branch?.instantExperience || 0);
   const perceptionGap = perception - experience;
 
   // Çakışma Kontrolü
@@ -366,6 +364,8 @@ const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], is
     });
     return bStats;
   }, [branchesFeedbacks]);
+
+  if (!isOpen || !branch) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
@@ -638,7 +638,7 @@ const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], is
 
             <div className="mt-4 p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-lg">
               <p className="text-xs text-indigo-300 text-center">
-                {t('admin.analytics.demographic.mostActiveGroup')} <span className="font-bold underline text-white">{totalAgeStats.data.sort((a, b) => b.value - a.value)[0]?.name || '-'}</span>
+                {t('admin.analytics.demographic.mostActiveGroup')} <span className="font-bold underline text-white">{[...ageData].sort((a, b) => b.value - a.value)[0]?.name || '-'}</span>
               </p>
             </div>
           </div>
@@ -651,6 +651,7 @@ const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], is
 
 // --- MAIN COMPONENT ---
 const DetailedAnalytics = () => {
+  const { t, i18n } = useTranslation();
   const { businessId, selectedBranchId, businessCreatedAt } = useAdminContext();
   const { toast } = useToast();
 
@@ -1214,7 +1215,6 @@ const DetailedAnalytics = () => {
     };
   }, [feedbacks, selectedBranchId, leaderboardData]);
 
-  const { t, i18n } = useTranslation();
 
   return (
     <div className={`min-h-screen ${isLight ? 'bg-slate-50' : 'bg-[#0f172a]'} ${isLight ? 'text-slate-900' : 'text-slate-200'} pb-32 pt-24 lg:pt-0 font-sans selection:bg-sky-500/30 transition-colors duration-300`}>

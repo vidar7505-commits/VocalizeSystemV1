@@ -100,7 +100,7 @@ const AuthModal = React.memo(({
   showGuestOption = false,
   onGuestContinue
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [viewMode, setViewMode] = useState('auth');
   const [activeRole, setActiveRole] = useState(defaultRole);

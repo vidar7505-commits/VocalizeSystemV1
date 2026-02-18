@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -95,7 +95,6 @@ export default function FeedbackForm() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [googleRedirectUrl, setGoogleRedirectUrl] = useState(null);
   const [instagramRedirectUrl, setInstagramRedirectUrl] = useState(null);
-  const [currentFeedbackId, setCurrentFeedbackId] = useState(null);
 
   const [animatingStar, setAnimatingStar] = useState(null);
 
@@ -359,7 +358,6 @@ export default function FeedbackForm() {
       }).select().single();
 
       if (error) throw error;
-      setCurrentFeedbackId(data.id);
       setShowSuccessModal(true);
 
       if (isGuest) {

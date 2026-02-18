@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   DropdownMenu,
@@ -14,6 +14,11 @@ const LanguageSwitcher = ({ className, variant = "outline", size = "sm", showNam
   const { i18n } = useTranslation();
   const currentLanguage = i18n.language.split('-')[0] || 'tr';
 
+  // Synchronize <html> lang attribute with current language
+  useEffect(() => {
+    document.documentElement.lang = currentLanguage;
+  }, [currentLanguage]);
+
   const languages = [
     { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
     { code: 'en', name: 'English', flag: '🇺🇸' },
@@ -21,8 +26,6 @@ const LanguageSwitcher = ({ className, variant = "outline", size = "sm", showNam
 
   const changeLanguage = (code) => {
     i18n.changeLanguage(code);
-    // Dynamic updates for <html> lang attribute
-    document.documentElement.lang = code;
   };
 
   const currentLangObj = languages.find(lang => lang.code === currentLanguage) || languages[0];

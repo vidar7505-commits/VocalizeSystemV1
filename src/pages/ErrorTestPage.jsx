@@ -2,26 +2,27 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Bug, Zap, Info } from 'lucide-react';
 
+// Component that throws different types of errors based on errorType
+// Moved outside to avoid "Cannot create components during render" error
+const ErrorTrigger = ({ errorType }) => {
+    if (errorType === 'critical') {
+        throw new Error("Database connection failed");
+    }
+    if (errorType === 'recoverable') {
+        throw new Error("Failed to fetch data");
+    }
+    if (errorType === 'minor') {
+        throw new Error("Upload limit exceeded");
+    }
+    return null;
+};
+
 /**
  * ErrorTestPage - Test page for error handling system
  * This page has buttons to trigger different types of errors
  */
 const ErrorTestPage = () => {
     const [errorType, setErrorType] = useState(null);
-
-    // Component that throws different types of errors based on errorType
-    const ErrorTrigger = () => {
-        if (errorType === 'critical') {
-            throw new Error("Database connection failed");
-        }
-        if (errorType === 'recoverable') {
-            throw new Error("Failed to fetch data");
-        }
-        if (errorType === 'minor') {
-            throw new Error("Upload limit exceeded");
-        }
-        return null;
-    };
 
     const triggerCriticalError = () => {
         setErrorType('critical');
@@ -146,7 +147,7 @@ const ErrorTestPage = () => {
                 </div>
 
                 {/* Error Trigger Component (hidden) */}
-                {errorType && <ErrorTrigger />}
+                {errorType && <ErrorTrigger errorType={errorType} />}
             </div>
         </div>
     );
