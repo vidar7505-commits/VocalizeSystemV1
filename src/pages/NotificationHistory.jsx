@@ -9,6 +9,7 @@ import { MessageSquare, Trash2, Check, Eye, EyeOff, Loader2, ServerCrash, Inbox,
 import AdminMobileNavbar from '@/components/AdminMobileNavbar';
 import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { formatDistanceToNow } from 'date-fns';
 import { tr, enUS } from 'date-fns/locale';
 

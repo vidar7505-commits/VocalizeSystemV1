@@ -17,6 +17,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { cn, formatCustomerName, getCustomerData, formatCompactNumber, formatNumber, fetchDeep } from "@/lib/utils";
 import DateRangePicker from '@/components/DateRangePicker';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 // --- RENK PALETİ ---
 const COLORS = {

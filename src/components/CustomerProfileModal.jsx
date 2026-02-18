@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatCustomerName } from "@/lib/utils";
 import FeedbackDetailModal from './FeedbackDetailModal';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmail, businessId, onFlagsUpdate }) => {
   const { t, i18n } = useTranslation();

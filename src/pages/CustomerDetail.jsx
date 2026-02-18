@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAdminContext } from '@/contexts/AdminContext'; // Eklenen
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { ArrowLeft, User, Mail, Phone, Calendar, Star, MessageSquare, AlertTriangle, MapPin, Loader2, Edit, Crown } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

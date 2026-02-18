@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import CustomerProfileModal from './CustomerProfileModal';
 import { cn, formatCustomerName, getCustomerData } from "@/lib/utils";
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { translateText } from '@/lib/deepl';
 
 const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onStatusChange, scrollToNotes = false }) => {

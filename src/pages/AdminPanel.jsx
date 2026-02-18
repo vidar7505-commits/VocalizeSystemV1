@@ -20,6 +20,7 @@ import CustomerProfileModal from '@/components/CustomerProfileModal';
 
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 // --- HELPER COMPONENTS ---
 

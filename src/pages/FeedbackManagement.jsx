@@ -19,6 +19,7 @@ import CustomerProfileModal from '@/components/CustomerProfileModal';
 import { useToast } from "@/components/ui/use-toast";
 import { cn, formatCustomerName, getCustomerData } from "@/lib/utils";
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 const getStatusLabel = (s, t) => t(`feedbackDetail.detail.statuses.${s}`, { defaultValue: s });
 
