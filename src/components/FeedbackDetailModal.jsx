@@ -213,7 +213,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
     setIsTranslating(true);
     try {
       // Hedef dil her zaman panelin mevcut dili olmalı
-      const targetLang = i18n.language === 'tr' ? 'TR' : 'EN-US';
+      const targetLang = i18n.language.startsWith('tr') ? 'TR' : 'EN-US';
 
       const promises = [];
       if (feedback.message) promises.push(translateText(feedback.message, targetLang).then(setTranslatedMessage));
@@ -403,7 +403,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
                       {translatedGeneralComment && (
                         <div className="mt-2 pt-2 border-t border-slate-700/50">
                           <p className="text-xs text-indigo-400 font-semibold mb-1 flex items-center gap-1">
-                            <Languages className="w-3 h-3" /> {t('feedbackDetail.detail.translationLabel', { lang: i18n.language === 'tr' ? 'TR' : 'EN' })}
+                            <Languages className="w-3 h-3" /> {t('feedbackDetail.detail.translationLabel', { lang: i18n.language.startsWith('tr') ? 'TR' : 'EN' })}
                           </p>
                           <p className="text-sm text-slate-400 italic whitespace-pre-wrap break-words">"{translatedGeneralComment}"</p>
                         </div>
@@ -438,7 +438,7 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose, onFeedbackUpdate, onSt
                 {translatedMessage && (
                   <div className="mt-4 pt-4 border-t border-slate-700/50">
                     <p className="text-xs text-indigo-400 font-semibold mb-1 flex items-center gap-1">
-                      <Languages className="w-3 h-3" /> {t('feedbackDetail.detail.translationLabel', { lang: i18n.language === 'tr' ? 'TR' : 'EN' })}
+                      <Languages className="w-3 h-3" /> {t('feedbackDetail.detail.translationLabel', { lang: i18n.language.startsWith('tr') ? 'TR' : 'EN' })}
                     </p>
                     <p className="text-slate-400 whitespace-pre-wrap leading-relaxed text-sm break-words">{translatedMessage}</p>
                   </div>

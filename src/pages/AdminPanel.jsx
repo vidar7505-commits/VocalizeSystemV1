@@ -29,7 +29,7 @@ import { useTranslation } from 'react-i18next';
 
 
 const SparklineCard = React.memo(({ title, value, delta, deltaType, icon: Icon, colorClass, sparkData, loading, isInverseMetric = false, hideDelta = false }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   let sentimentColor = "bg-slate-800 text-slate-400 border-slate-700";
   let TrendIcon = Minus;
 
@@ -44,8 +44,6 @@ const SparklineCard = React.memo(({ title, value, delta, deltaType, icon: Icon, 
       ? "bg-emerald-950/30 text-emerald-400 border-emerald-500/20"
       : "bg-rose-950/30 text-rose-400 border-rose-500/20";
   }
-
-  const { i18n } = useTranslation();
   // 🟢 ENTERPRISE: 10.000'e kadar tam sayı, sonrası için kompakt format (K)
   const numericValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value;
 
@@ -157,7 +155,7 @@ const ChartTooltip = React.memo(({ active, payload, formatter }) => {
 // --- MAIN COMPONENT ---
 
 const AdminPanel = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     businessId,
     selectedBranchId,

@@ -638,7 +638,7 @@ const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], is
 
             <div className="mt-4 p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-lg">
               <p className="text-xs text-indigo-300 text-center">
-                {t('admin.analytics.demographic.mostActiveGroup')} <span className="font-bold underline text-white">{totalAgeStats.data.sort((a, b) => b.value - a.value)[0]?.name || '-'}</span>
+                {t('admin.analytics.demographic.mostActiveGroup')} <span className="font-bold underline text-white">{ageData.sort((a, b) => b.value - a.value)[0]?.name || '-'}</span>
               </p>
             </div>
           </div>
@@ -651,6 +651,7 @@ const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], is
 
 // --- MAIN COMPONENT ---
 const DetailedAnalytics = () => {
+  const { t, i18n } = useTranslation();
   const { businessId, selectedBranchId, businessCreatedAt } = useAdminContext();
   const { toast } = useToast();
 
@@ -1213,8 +1214,6 @@ const DetailedAnalytics = () => {
       ageCounts: agg.ageCounts
     };
   }, [feedbacks, selectedBranchId, leaderboardData]);
-
-  const { t, i18n } = useTranslation();
 
   return (
     <div className={`min-h-screen ${isLight ? 'bg-slate-50' : 'bg-[#0f172a]'} ${isLight ? 'text-slate-900' : 'text-slate-200'} pb-32 pt-24 lg:pt-0 font-sans selection:bg-sky-500/30 transition-colors duration-300`}>

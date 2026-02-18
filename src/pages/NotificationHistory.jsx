@@ -245,7 +245,7 @@ const NotificationHistory = () => {
                                         </div>
                                     </td>
                                     <td className="px-3 py-4 text-sm text-slate-300">{n.branch_name || t('admin.notifications.general')}</td>
-                                    <td className="px-3 py-4 text-sm text-slate-400">{formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: i18n.language === 'tr' ? tr : enUS })}</td>
+                                    <td className="px-3 py-4 text-sm text-slate-400">{formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: i18n.language.startsWith('tr') ? tr : enUS })}</td>
                                 </tr>
                             ))
                         )}
