@@ -1,0 +1,76 @@
+{
+    "header": {
+        "select_branch": "Şube Seçiniz",
+        "all_branches": "Tüm Şubeler",
+        "search_branch": "Şube ara...",
+        "no_branch_found": "Şube bulunamadı",
+        "language": "Dil",
+        "scan_label": "Tarama",
+        "notifications": "Bildirimler",
+        "mark_all_read": "Tümünü Okundu İşaretle",
+        "view_all": "Tümünü Gör",
+        "my_account": "Hesabım",
+        "settings": "Ayarlar",
+        "appearance": "Görünüm",
+        "theme_dark": "Koyu",
+        "theme_light": "Açık",
+        "logout": "Çıkış Yap",
+        "no_notifications": "Bildirim yok.",
+        "time_range": "Zaman Aralığı"
+    },
+    "time_ago": {
+        "years_ago": "{{count}} yıl önce",
+        "months_ago": "{{count}} ay önce",
+        "days_ago": "{{count}} gün önce",
+        "hours_ago": "{{count}} sa önce",
+        "minutes_ago": "{{count}} dk önce",
+        "seconds_ago": "{{count}} sn önce"
+    },
+    "date_ranges": {
+        "daily": "Son 24 Saat",
+        "today": "Bugün",
+        "last7": "Son 7 Gün",
+        "last30": "Son 30 Gün",
+        "last90": "Son 90 Gün",
+        "thisMonth": "Bu Ay",
+        "lastMonth": "Geçen Ay",
+        "6months": "Son 6 Ay",
+        "12months": "Son 1 Yıl",
+        "allTime": "Tüm Zamanlar"
+    },
+    "notifications": {
+        "new_complaint": "Yeni bir şikayetiniz var",
+        "new_suggestion": "Yeni bir öneriniz var",
+        "new_evaluation": "Yeni bir değerlendirmeniz var",
+        "new_notification": "Yeni bildirim",
+        "urgent_title": "Acil Durum",
+        "urgent_desc": "{{count}} acil bildirim bekliyor."
+    },
+    "badges": {
+        "early_access": "Erken Erişim",
+        "early_access_title": "⭐ Ayrıcalıklı Erken Erişim",
+        "early_access_desc": "Bu işletme Vocalize'ın ilk destekçileri arasındadır. Aylık abonelik bedeli $79 + KDV olarak belirlenmiştir ve ömür boyu %20 indirim hakkı mühürlenmiştir.",
+        "flexible_plan": "Esnek Plan",
+        "flexible_plan_title": "🚀 Kurumsal Esnek Paket",
+        "flexible_plan_desc": "İşletmenizin ihtiyaçlarına özel olarak yapılandırılmış ödeme planıdır. Aylık kullanım bedeli ${{fee}} + KDV olarak tanımlanmıştır."
+    },
+    "toasts": {
+        "new_qr_scan_title": "Yeni QR Tarama!",
+        "new_qr_scan_desc": "Bir müşteri QR kodunuzu taradı.",
+        "all_read": "Tüm bildirimler okundu.",
+        "error_title": "Hata",
+        "data_load_error": "Veri yükleme sırasında bir sorun oluştu.",
+        "new_notification": "Yeni Bildirim",
+        "info": "Bilgi",
+        "info_title": "Bilgi"
+    },
+    "days": {
+        "0": "Pazar",
+        "1": "Pazartesi",
+        "2": "Salı",
+        "3": "Çarşamba",
+        "4": "Perşembe",
+        "5": "Cuma",
+        "6": "Cumartesi"
+    }
+}

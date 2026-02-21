@@ -1,0 +1,110 @@
+
+> vocalize-app@0.0.0 build
+> vite build
+
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[33mnode_modules/react-helmet-async/lib/index.module.js (1:7186): A comment
+
+"/*#__PURE__*/"
+
+in "node_modules/react-helmet-async/lib/index.module.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.[39m
+[33mnode_modules/react-helmet-async/lib/index.module.js (1:13561): A comment
+
+"/*#__PURE__*/"
+
+in "node_modules/react-helmet-async/lib/index.module.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.[39m
+[32m✓[39m 2099 modules transformed.
+[31m✗[39m Build failed in 3.94s
+[31merror during build:
+[31m[vite:esbuild] Transform failed with 9 errors:
+X:/Projeler/VocalizeSystemV1- Main/src/components/CustomerProfileModal.jsx:14:2: ERROR: The symbol "AlertTriangle" has already been declared
+X:/Projeler/VocalizeSystemV1- Main/src/components/CustomerProfileModal.jsx:14:17: ERROR: The symbol "Crown" has already been declared
+X:/Projeler/VocalizeSystemV1- Main/src/components/CustomerProfileModal.jsx:14:24: ERROR: The symbol "Save" has already been declared
+X:/Projeler/VocalizeSystemV1- Main/src/components/CustomerProfileModal.jsx:14:30: ERROR: The symbol "Loader2" has already been declared
+X:/Projeler/VocalizeSystemV1- Main/src/components/CustomerProfileModal.jsx:14:39: ERROR: The symbol "MapPin" has already been declared
+...[31m
+file: [36mX:/Projeler/VocalizeSystemV1- Main/src/components/CustomerProfileModal.jsx:14:2[31m
+[33m
+[33mThe symbol "AlertTriangle" has already been declared[33m
+12 |    User, Mail, Phone, Calendar, Star,
+13 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+14 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+   |    ^
+15 |    Image as ImageIcon, RefreshCw, CheckSquare, Square, CheckCircle2, ListChecks, Languages, Globe
+16 |  } from 'lucide-react';
+
+[33mThe symbol "Crown" has already been declared[33m
+12 |    User, Mail, Phone, Calendar, Star,
+13 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+14 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+   |                   ^
+15 |    Image as ImageIcon, RefreshCw, CheckSquare, Square, CheckCircle2, ListChecks, Languages, Globe
+16 |  } from 'lucide-react';
+
+[33mThe symbol "Save" has already been declared[33m
+12 |    User, Mail, Phone, Calendar, Star,
+13 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+14 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+   |                          ^
+15 |    Image as ImageIcon, RefreshCw, CheckSquare, Square, CheckCircle2, ListChecks, Languages, Globe
+16 |  } from 'lucide-react';
+
+[33mThe symbol "Loader2" has already been declared[33m
+12 |    User, Mail, Phone, Calendar, Star,
+13 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+14 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+   |                                ^
+15 |    Image as ImageIcon, RefreshCw, CheckSquare, Square, CheckCircle2, ListChecks, Languages, Globe
+16 |  } from 'lucide-react';
+
+[33mThe symbol "MapPin" has already been declared[33m
+12 |    User, Mail, Phone, Calendar, Star,
+13 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+14 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+   |                                         ^
+15 |    Image as ImageIcon, RefreshCw, CheckSquare, Square, CheckCircle2, ListChecks, Languages, Globe
+16 |  } from 'lucide-react';
+
+[33mThe symbol "StickyNote" has already been declared[33m
+12 |    User, Mail, Phone, Calendar, Star,
+13 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+14 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+   |                                                 ^
+15 |    Image as ImageIcon, RefreshCw, CheckSquare, Square, CheckCircle2, ListChecks, Languages, Globe
+16 |  } from 'lucide-react';
+
+[33mThe symbol "Filter" has already been declared[33m
+12 |    User, Mail, Phone, Calendar, Star,
+13 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+14 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+   |                                                             ^
+15 |    Image as ImageIcon, RefreshCw, CheckSquare, Square, CheckCircle2, ListChecks, Languages, Globe
+16 |  } from 'lucide-react';
+
+[33mThe symbol "FileText" has already been declared[33m
+12 |    User, Mail, Phone, Calendar, Star,
+13 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+14 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+   |                                                                     ^
+15 |    Image as ImageIcon, RefreshCw, CheckSquare, Square, CheckCircle2, ListChecks, Languages, Globe
+16 |  } from 'lucide-react';
+
+[33mThe symbol "Trash2" has already been declared[33m
+12 |    User, Mail, Phone, Calendar, Star,
+13 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+14 |    AlertTriangle, Crown, Save, Loader2, MapPin, StickyNote, Filter, FileText, Trash2,
+   |                                                                               ^
+15 |    Image as ImageIcon, RefreshCw, CheckSquare, Square, CheckCircle2, ListChecks, Languages, Globe
+16 |  } from 'lucide-react';
+[31m
+    at failureErrorWithLog (X:\Projeler\VocalizeSystemV1- Main\node_modules\esbuild\lib\main.js:1467:15)
+    at X:\Projeler\VocalizeSystemV1- Main\node_modules\esbuild\lib\main.js:736:50
+    at responseCallbacks.<computed> (X:\Projeler\VocalizeSystemV1- Main\node_modules\esbuild\lib\main.js:603:9)
+    at handleIncomingPacket (X:\Projeler\VocalizeSystemV1- Main\node_modules\esbuild\lib\main.js:658:12)
+    at Socket.readFromStdout (X:\Projeler\VocalizeSystemV1- Main\node_modules\esbuild\lib\main.js:581:7)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+    at Readable.push (node:internal/streams/readable:390:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)[39m

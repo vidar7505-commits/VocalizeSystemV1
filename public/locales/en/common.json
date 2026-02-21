@@ -1,0 +1,82 @@
+{
+    "header": {
+        "select_branch": "Select Branch",
+        "all_branches": "All Branches",
+        "search_branch": "Search branch...",
+        "no_branch_found": "No branch found",
+        "language": "Language",
+        "scan_label": "Scan",
+        "notifications": "Notifications",
+        "mark_all_read": "Mark All as Read",
+        "view_all": "View All",
+        "my_account": "My Account",
+        "settings": "Settings",
+        "appearance": "Appearance",
+        "theme_dark": "Dark",
+        "theme_light": "Light",
+        "logout": "Log Out",
+        "no_notifications": "No notifications.",
+        "time_range": "Time Range"
+    },
+    "time_ago": {
+        "years_ago": "{{count}} year ago_one",
+        "years_ago_other": "{{count}} years ago",
+        "months_ago": "{{count}} month ago_one",
+        "months_ago_other": "{{count}} months ago",
+        "days_ago": "{{count}} day ago_one",
+        "days_ago_other": "{{count}} days ago",
+        "hours_ago": "{{count}} hr ago_one",
+        "hours_ago_other": "{{count}} hrs ago",
+        "minutes_ago": "{{count}} min ago_one",
+        "minutes_ago_other": "{{count}} mins ago",
+        "seconds_ago": "{{count}} sec ago_one",
+        "seconds_ago_other": "{{count}} secs ago"
+    },
+    "date_ranges": {
+        "daily": "Last 24 Hours",
+        "today": "Today",
+        "last7": "Last 7 Days",
+        "last30": "Last 30 Days",
+        "last90": "Last 90 Days",
+        "thisMonth": "This Month",
+        "lastMonth": "Last Month",
+        "6months": "Last 6 Months",
+        "12months": "Last 12 Months",
+        "allTime": "All Time"
+    },
+    "notifications": {
+        "new_complaint": "You have a new complaint",
+        "new_suggestion": "You have a new suggestion",
+        "new_evaluation": "You have a new evaluation",
+        "new_notification": "New notification",
+        "urgent_title": "Emergency",
+        "urgent_desc": "{{count}} urgent notifications pending."
+    },
+    "badges": {
+        "early_access": "Early Access",
+        "early_access_title": "⭐ Privileged Early Access",
+        "early_access_desc": "This business is among the first supporters of Vocalize. The monthly subscription fee is set at $79 + VAT and a lifetime 20% discount is sealed.",
+        "flexible_plan": "Flexible Plan",
+        "flexible_plan_title": "🚀 Corporate Flexible Package",
+        "flexible_plan_desc": "Payment plan specially configured for your business needs. Monthly usage fee defined as ${{fee}} + VAT."
+    },
+    "toasts": {
+        "new_qr_scan_title": "New QR Scan!",
+        "new_qr_scan_desc": "A customer scanned your QR code.",
+        "all_read": "All notifications marked as read.",
+        "error_title": "Error",
+        "data_load_error": "A problem occurred while loading data.",
+        "new_notification": "New Notification",
+        "info": "Info",
+        "info_title": "Information"
+    },
+    "days": {
+        "0": "Sunday",
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday"
+    }
+}
