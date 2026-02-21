@@ -20,6 +20,8 @@ const CustomerDetail = lazy(() => import('@/pages/CustomerDetail'));
 const UpdatePassword = lazy(() => import('@/pages/UpdatePassword'));
 const ErrorTestPage = lazy(() => import('@/pages/ErrorTestPage'));
 const BulkSetupWizard = lazy(() => import('@/pages/BulkSetupWizard'));
+const AuthCallback = lazy(() => import('@/pages/AuthCallback'));
+const LegalPage = lazy(() => import('@/pages/LegalPage'));
 
 // Loading component
 // Loading component
@@ -121,6 +123,10 @@ function App() {
               <Route path="/scan" element={<QRRedirector />} />
 
               <Route path="/feedback" element={<FeedbackForm />} />
+
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/terms" element={<LegalPage type="terms" />} />
+              <Route path="/privacy" element={<LegalPage type="privacy" />} />
 
               <Route path="/update-password" element={<UpdatePassword />} />
 

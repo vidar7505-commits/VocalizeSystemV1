@@ -4,7 +4,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { cn, formatCustomerName, getCustomerData, calculateDelta, formatCompactNumber, fetchDeep } from "@/lib/utils";
 import AuthModal from '@/components/AuthModal';
-import AgeSelectionModal from '@/components/AgeSelectionModal';
+import CompleteProfileModal from '@/components/CompleteProfileModal';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -63,7 +63,8 @@ export default function CustomerPanel() {
   const [pendingFeedbackType, setPendingFeedbackType] = useState(null);
   const [dontShowGuestWarning, setDontShowGuestWarning] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
-  const [showAgeModal, setShowAgeModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [missingInfo, setMissingInfo] = useState({ phone: false, age: false });
 
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
 
@@ -298,20 +299,51 @@ export default function CustomerPanel() {
   // 🟢 AUTOMATIC AGE MODAL TRIGGER
   // Decoupled from init to ensure it only runs after loading is complete and state is settled
   useEffect(() => {
-    if (isLoading || authLoading || showAgeModal) return;
+    if (isLoading || authLoading || showProfileModal || showAgeModal) return;
+
+    // Check if we already skipped in this session
+    const isProfileSkipped = sessionStorage.getItem('vocalize_profile_skipped') === 'true';
+    if (isProfileSkipped) return;
 
     if (isGuest) {
       const storedAge = localStorage.getItem('vocalize_customer_age_group');
       if (!storedAge) {
-        setShowAgeModal(true);
+        setMissingInfo({ phone: false, age: true });
+        setShowProfileModal(true);
       }
     } else if (user) {
-      // For registered users, we check the profile data we just fetched
-      if (!userProfile?.age_group) {
-        setShowAgeModal(true);
+      const needsPhone = !userProfile?.phone;
+      const needsAge = !userProfile?.age_group;
+
+      if (needsPhone || needsAge) {
+        setMissingInfo({ phone: !!needsPhone, age: !!needsAge });
+        setShowProfileModal(true);
       }
     }
-  }, [isLoading, authLoading, isGuest, user, userProfile, showAgeModal]);
+  }, [isLoading, authLoading, isGuest, user, userProfile, showProfileModal, showAgeModal]);
+
+  const handleProfileComplete = useCallback((updatedData) => {
+    setUserProfile(prev => ({ ...prev, ...updatedData }));
+    setShowProfileModal(false);
+    toast({
+      title: language === 'tr' ? "Başarılı" : "Success",
+      description: language === 'tr' ? "Profiliniz başarıyla güncellendi." : "Profile successfully updated.",
+      className: "bg-teal-600 text-white border-none"
+    });
+
+    // Resume pending action if any
+    if (pendingFeedbackType) {
+      setTimeout(() => {
+        proceedToFeedback(pendingFeedbackType);
+        setPendingFeedbackType(null);
+      }, 500);
+    }
+  }, [language, pendingFeedbackType, toast]);
+
+  const handleProfileSkip = useCallback(() => {
+    sessionStorage.setItem('vocalize_profile_skipped', 'true');
+    setShowProfileModal(false);
+  }, []);
 
   const fetchBusinesses = useCallback(async () => {
     try {
@@ -549,73 +581,7 @@ export default function CustomerPanel() {
 
 
 
-  const handleAgeSelect = async (ageGroup) => {
-    try {
-      if (isGuest) {
-        localStorage.setItem('vocalize_customer_age_group', ageGroup);
-        setShowAgeModal(false);
-        toast({
-          title: "Teşekkürler",
-          description: "Seçiminiz kaydedildi.",
-          className: "bg-teal-600 text-white border-none"
-        });
-      } else if (user) {
-        // 🟢 FIX: Use UPSERT instead of UPDATE to create profile if it doesn't exist
-        const { error } = await supabase
-          .from('customer_profiles')
-          .upsert({
-            user_id: user.id,
-            email: user.email,
-            age_group: ageGroup,
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'user_id',
-            ignoreDuplicates: false
-          });
 
-        if (error) throw error;
-
-        // 🟢 RETROACTIVE UPDATE (Background)
-        // Update all past feedbacks of this user that have no age group
-        if (user.email) {
-          supabase.from('feedbacks')
-            .update({ customer_age_group: ageGroup })
-            .eq('customer_email', user.email)
-            .is('customer_age_group', null)
-            .then(({ error }) => {
-              if (error) console.error("Retroactive update failed:", error);
-              else console.log("Retroactive update success");
-            });
-        }
-
-        setShowAgeModal(false);
-        toast({
-          title: "Teşekkürler",
-          description: "Profiliniz güncellendi.",
-          className: "bg-teal-600 text-white border-none"
-        });
-
-        // Update local state if we add age_group to it
-        setUserProfile(prev => ({ ...prev, age_group: ageGroup }));
-      }
-
-      // Resume pending action if any
-      if (pendingFeedbackType) {
-        // Use timeout to allow state updates/modal close to settle
-        setTimeout(() => {
-          proceedToFeedback(pendingFeedbackType);
-          setPendingFeedbackType(null);
-        }, 500);
-      }
-    } catch (error) {
-      console.error('Age update error:', error);
-      toast({
-        title: "Hata",
-        description: "Bir hata oluştu.",
-        variant: "destructive"
-      });
-    }
-  };
 
   useEffect(() => {
     if (isLoading && (businessParam || branchParam)) return;
@@ -2045,6 +2011,7 @@ export default function CustomerPanel() {
           setDeleteAccountConfirmed(false);
         }}
         user={user}
+        userProfile={userProfile}
         isGuest={isGuest}
         language={language}
         t={t}
@@ -2111,9 +2078,14 @@ export default function CustomerPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <AgeSelectionModal
-        isOpen={showAgeModal}
-        onSelect={handleAgeSelect}
+      <CompleteProfileModal
+        isOpen={showProfileModal}
+        user={user}
+        language={language}
+        missingPhone={missingInfo.phone}
+        missingAge={missingInfo.age}
+        onComplete={handleProfileComplete}
+        onSkip={handleProfileSkip}
       />
     </div >
   );
