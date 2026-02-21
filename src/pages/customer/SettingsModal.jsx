@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { Mail, KeyRound, Shield, AlertOctagon, Trash2, Loader2, Send, LogOut, UserPlus, Settings } from 'lucide-react';
+import { Mail, KeyRound, Shield, AlertOctagon, Trash2, Loader2, Send, LogOut, UserPlus, Settings, Phone, User as UserIcon } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -17,6 +16,7 @@ const SettingsModal = React.memo(({
     isOpen,
     onClose,
     user,
+    userProfile,
     isGuest,
     language,
     t,
@@ -32,6 +32,67 @@ const SettingsModal = React.memo(({
     const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
     const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
     const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+    // Profile updates
+    const [phone, setPhone] = useState(userProfile?.phone || '');
+    const [ageGroup, setAgeGroup] = useState(userProfile?.age_group || '');
+    const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+
+    const AGE_GROUPS = ['18-', '18-24', '25-34', '35-44', '45-54', '55+'];
+
+    const hasMissingInfo = !userProfile?.phone || !userProfile?.age_group;
+
+    const handleUpdateProfile = async () => {
+        if (!phone.trim() || !ageGroup) {
+            toast({
+                title: language === 'tr' ? 'Hata' : 'Error',
+                description: language === 'tr' ? 'Lütfen tüm alanları doldurunuz' : 'Please fill in all fields',
+                variant: "destructive"
+            });
+            return;
+        }
+
+        const phoneRegex = /^05\d{9}$/;
+        if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+            toast({
+                title: language === 'tr' ? 'Hata' : 'Error',
+                description: language === 'tr' ? 'Telefon numarası 05xxxxxxxxx formatında olmalıdır.' : 'Phone must be in 05xxxxxxxxx format.',
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setIsUpdatingProfile(true);
+        try {
+            const { error } = await supabase
+                .from('customer_profiles')
+                .upsert({
+                    user_id: user.id,
+                    email: user.email,
+                    phone: phone.replace(/\s/g, ''),
+                    age_group: ageGroup,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'user_id'
+                });
+
+            if (error) throw error;
+
+            toast({
+                title: language === 'tr' ? 'Başarılı' : 'Success',
+                description: language === 'tr' ? 'Profil başarıyla güncellendi' : 'Profile successfully updated',
+                className: "bg-teal-600 text-white border-none"
+            });
+        } catch (err) {
+            toast({
+                title: language === 'tr' ? 'Hata' : 'Error',
+                description: err.message,
+                variant: "destructive"
+            });
+        } finally {
+            setIsUpdatingProfile(false);
+        }
+    };
 
     const handleUpdateEmail = async () => {
         if (!newEmail.trim()) {
@@ -128,13 +189,16 @@ const SettingsModal = React.memo(({
                         <div className="flex gap-2 px-6 pt-4 flex-shrink-0 border-b border-slate-800">
                             <button
                                 onClick={() => setSettingsTab('profile')}
-                                className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm transition-colors border-b-2 ${settingsTab === 'profile'
+                                className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm transition-colors border-b-2 relative ${settingsTab === 'profile'
                                     ? 'text-teal-400 border-teal-500'
                                     : 'text-slate-400 border-transparent hover:text-white'
                                     }`}
                             >
                                 <Mail className="h-4 w-4" />
                                 {language === 'tr' ? 'Profil' : 'Profile'}
+                                {hasMissingInfo && (
+                                    <span className="absolute top-2 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse border border-slate-900" title={language === 'tr' ? 'Profilinizi tamamlayın' : 'Complete your profile'} />
+                                )}
                             </button>
                             <button
                                 onClick={() => setSettingsTab('security')}
@@ -174,6 +238,61 @@ const SettingsModal = React.memo(({
                                         />
                                     </div>
                                     <div>
+                                        <label className="text-sm text-slate-400 font-semibold mb-2 block flex items-center gap-2">
+                                            <Phone className="h-3.5 w-3.5 text-teal-500" />
+                                            {language === 'tr' ? 'Telefon Numarası' : 'Phone Number'}
+                                        </label>
+                                        <Input
+                                            type="tel"
+                                            placeholder="05XX XXX XX XX"
+                                            value={phone}
+                                            onChange={(e) => setPhone(e.target.value)}
+                                            autoComplete="tel"
+                                            className="bg-slate-800 border-slate-700 text-white focus:border-teal-500 focus:ring-teal-500/20"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm text-slate-400 font-semibold mb-2 block flex items-center gap-2">
+                                            <UserIcon className="h-3.5 w-3.5 text-teal-500" />
+                                            {language === 'tr' ? 'Yaş Grubu' : 'Age Group'}
+                                        </label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {AGE_GROUPS.map((age) => (
+                                                <button
+                                                    key={age}
+                                                    type="button"
+                                                    onClick={() => setAgeGroup(age)}
+                                                    className={`h-10 rounded-lg border text-xs font-medium transition-all duration-200 ${ageGroup === age
+                                                        ? 'bg-teal-600 border-teal-500 text-white shadow-lg shadow-teal-900/30'
+                                                        : 'border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-teal-600/20 hover:border-teal-500/50'
+                                                        }`}
+                                                >
+                                                    {age}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="pt-2">
+                                        <Button
+                                            onClick={handleUpdateProfile}
+                                            disabled={isUpdatingProfile || !phone.trim() || !ageGroup}
+                                            className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold shadow-lg shadow-orange-900/20"
+                                        >
+                                            {isUpdatingProfile ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                    {language === 'tr' ? 'Kaydediliyor...' : 'Saving...'}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Send className="h-4 w-4 mr-2" />
+                                                    {language === 'tr' ? 'Profili Kaydet' : 'Save Profile'}
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+
+                                    <div className="my-6 border-t border-slate-800 pt-6">
                                         <label className="text-sm text-slate-400 font-semibold mb-2 block">
                                             {language === 'tr' ? 'Yeni E-posta' : 'New Email'}
                                         </label>
