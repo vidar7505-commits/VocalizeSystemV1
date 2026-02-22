@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect, useRef, Suspense, lazy, useCallback, useMemo } from 'react';
+﻿import * as React from 'react';
+import { useState, useEffect, useRef, Suspense, lazy, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link as ScrollLink, animateScroll as scroll, scroller } from 'react-scroll';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -42,13 +43,12 @@ import LegalModal from "@/components/landing/LegalModal";
 
 const LandingPage = () => {
   const { i18n } = useTranslation();
-  const [lang, setLang] = useState(i18n.language?.split('-')[0] || 'tr');
+  const lang = i18n.language?.split('-')[0] || 'tr';
 
-  // 🟢 Sync i18next with local lang state
-  useEffect(() => {
-    if (i18n.language !== lang) {
-      i18n.changeLanguage(lang);
-    }
+  const toggleLanguage = useCallback(() => {
+    const newLang = lang === 'tr' ? 'en' : 'tr';
+    i18n.changeLanguage(newLang);
+    localStorage.setItem('vocalize_language', newLang);
   }, [lang, i18n]);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -214,7 +214,9 @@ const LandingPage = () => {
     }, 500);
   };
 
-  const handleLegalLinkClick = (type) => setLegalModal({ isOpen: true, type });
+  const handleLegalLinkClick = useCallback((type) => {
+    navigate(`/${type}`);
+  }, [navigate]);
 
   // Lead modal functions
   const openLeadModal = (type) => {
@@ -373,7 +375,7 @@ const LandingPage = () => {
 
             <div className="hidden md:flex items-center gap-8 text-sm font-medium">
               <button
-                onClick={() => setLang(lang === 'tr' ? 'en' : 'tr')}
+                onClick={toggleLanguage}
                 className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors group"
               >
                 <Languages className="w-4 h-4" />
@@ -439,14 +441,14 @@ const LandingPage = () => {
 
                   <button
                     onClick={() => {
-                      setLang(lang === 'tr' ? 'en' : 'tr');
+                      toggleLanguage();
                       setIsMenuOpen(false);
                     }}
                     className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors py-2"
                   >
                     <Languages className="w-5 h-5" />
                     <span className="font-semibold">
-                      {lang === 'tr' ? 'Switch to English' : 'Türkçe\'ye Geç'}
+                      {lang === 'tr' ? 'Switch to English' : "Türkçe'ye Geç"}
                     </span>
                   </button>
 
@@ -1479,7 +1481,7 @@ const LandingPage = () => {
         < footer className="bg-[#0f172a] py-8 border-t border-slate-800 relative z-10 text-center" >
           <div className="container mx-auto px-4">
             <p className="text-slate-500 text-xs mb-4">
-              {t.footer.copyright}
+              © 2025 Vocalize Global — Müşteri sesini teknolojiyle buluşturuyoruz.
             </p>
 
             <div className="mb-4">
@@ -1488,6 +1490,13 @@ const LandingPage = () => {
                 onClick={() => handleLegalLinkClick('kvkk')}
               >
                 {t.footer.kvkk}
+              </span>
+              <span className="text-slate-600">|</span>
+              <span
+                className="text-sm text-teal-400 cursor-pointer hover:text-teal-300 hover:underline transition-colors mx-2"
+                onClick={() => handleLegalLinkClick('privacy')}
+              >
+                {lang === 'tr' ? 'Gizlilik Politikası' : 'Privacy Policy'}
               </span>
               <span className="text-slate-600">|</span>
               <span
@@ -1563,13 +1572,6 @@ const LandingPage = () => {
           t={t}
         />
 
-        {/* Legal Modal (KVKK & Terms) */}
-        <LegalModal
-          legalModal={legalModal}
-          setLegalModal={setLegalModal}
-          lang={lang}
-          t={t}
-        />
       </div>
 
     </>

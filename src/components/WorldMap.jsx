@@ -1,4 +1,5 @@
-import React, { useRef, useState, useMemo } from "react";
+import * as React from "react";
+import { useRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import mapData from "./worldMapSVG.json";
 

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { MessageCircle, ImageIcon, X, Loader2, Send } from 'lucide-react';
 import {
     Dialog,

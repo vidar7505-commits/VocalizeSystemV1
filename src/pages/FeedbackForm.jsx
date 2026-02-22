@@ -276,7 +276,7 @@ export default function FeedbackForm() {
   useEffect(() => {
     const init = async () => {
       try {
-        const storedLang = localStorage.getItem('vocalize_lang');
+        const storedLang = localStorage.getItem('vocalize_language');
         if (langParam && (langParam === 'tr' || langParam === 'en')) {
           setLanguage(langParam);
         } else if (storedLang) {

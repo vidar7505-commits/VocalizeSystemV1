@@ -1,5 +1,11 @@
-import React, { Suspense } from 'react'
+import * as React from 'react'
+import { Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
+
+// 🔴 NUCLEAR OPTION: Persistently resolve 'React is not defined' in built chunks
+if (typeof window !== 'undefined') {
+  window.React = React;
+}
 import App from './App.jsx'
 import './index.css'
 

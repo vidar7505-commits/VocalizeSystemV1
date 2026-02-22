@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { Outlet } from 'react-router-dom';
 import { AdminProvider } from '@/contexts/AdminContext';
 import AdminHeader from '@/components/AdminHeader';
@@ -14,11 +14,11 @@ const AdminLayout = () => {
       */}
       <div className="h-screen w-full bg-[#0f172a] flex font-sans text-slate-100 overflow-hidden">
         <AdminSidebar />
-        
+
         <div className="flex-1 flex flex-col min-w-0 h-full">
           <AdminHeader />
           <AdminMobileNavbar />
-          
+
           {/* DÜZELTME: main alanı artık kapsayıcının kalan yüksekliğini doldurur 
              ve sadece kendi içinde scroll olur. 
           */}

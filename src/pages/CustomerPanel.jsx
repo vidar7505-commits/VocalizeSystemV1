@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -52,7 +53,7 @@ export default function CustomerPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
   const [user, setUser] = useState(null);
-  const [language, setLanguage] = useState(() => localStorage.getItem('vocalize_lang') || 'tr');
+  const [language, setLanguage] = useState(() => localStorage.getItem('vocalize_language') || 'tr');
 
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [authDefaultTab, setAuthDefaultTab] = useState('login');
@@ -166,9 +167,7 @@ export default function CustomerPanel() {
           newUrl.searchParams.delete('from_qr');
           newUrl.searchParams.delete('qr');
           newUrl.searchParams.delete('guest');
-          useEffect(() => {
-            setBranchPage(1);
-          }, [branchSearchTerm, selectedBusinessForBranches]);
+          setBranchPage(1);
           window.history.replaceState(null, '', newUrl.toString());
         }
       });
@@ -193,7 +192,7 @@ export default function CustomerPanel() {
   const t = useMemo(() => texts[language] || texts.tr, [language]);
 
   useEffect(() => {
-    localStorage.setItem('vocalize_lang', language);
+    localStorage.setItem('vocalize_language', language);
   }, [language]);
 
   // --- INITIALIZATION ---
@@ -299,7 +298,7 @@ export default function CustomerPanel() {
   // 🟢 AUTOMATIC AGE MODAL TRIGGER
   // Decoupled from init to ensure it only runs after loading is complete and state is settled
   useEffect(() => {
-    if (isLoading || authLoading || showProfileModal || showAgeModal) return;
+    if (isLoading || authLoading || showProfileModal) return;
 
     // Check if we already skipped in this session
     const isProfileSkipped = sessionStorage.getItem('vocalize_profile_skipped') === 'true';
@@ -320,7 +319,7 @@ export default function CustomerPanel() {
         setShowProfileModal(true);
       }
     }
-  }, [isLoading, authLoading, isGuest, user, userProfile, showProfileModal, showAgeModal]);
+  }, [isLoading, authLoading, isGuest, user, userProfile, showProfileModal]);
 
   const handleProfileComplete = useCallback((updatedData) => {
     setUserProfile(prev => ({ ...prev, ...updatedData }));
@@ -1071,14 +1070,14 @@ export default function CustomerPanel() {
     if (isGuest) {
       if (!localStorage.getItem('vocalize_customer_age_group')) {
         setPendingFeedbackType(type);
-        setShowAgeModal(true);
+        setShowProfileModal(true);
         return;
       }
     } else if (user) {
       // userProfile.age_group might be updated locally in handleAgeSelect
       if (!userProfile?.age_group) {
         setPendingFeedbackType(type);
-        setShowAgeModal(true);
+        setShowProfileModal(true);
         return;
       }
     }

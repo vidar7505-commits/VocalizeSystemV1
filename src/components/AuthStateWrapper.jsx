@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2 } from 'lucide-react';
 
@@ -11,11 +12,11 @@ const AuthStateWrapper = ({ children }) => {
 
     const initAuth = async () => {
       try {
-        
-        
+
+
         // 1. Session'ı kontrol et
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (!mounted) return;
 
         if (error) {
@@ -27,8 +28,8 @@ const AuthStateWrapper = ({ children }) => {
 
         // 2. Session varsa RLS policy'lerinin aktif olmasını bekle
         if (session?.user) {
-          
-          
+
+
           // RLS test query - user'ın verilerine erişebiliyor mu?
           const { error: rlsError } = await supabase
             .from('users')
@@ -43,10 +44,10 @@ const AuthStateWrapper = ({ children }) => {
             // RLS policy'leri henüz aktif değil, kısa bir süre bekle
             await new Promise(resolve => setTimeout(resolve, 500));
           }
-          
-          
+
+
         } else {
-          
+
         }
 
         if (mounted) {

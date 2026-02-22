@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -15,9 +16,13 @@ export default function AuthCallback() {
         const handle = async () => {
             // 1. URL Hatalarını Kontrol Et (Supabase hata ile dönerse)
             const query = new URLSearchParams(window.location.search);
-            const error = query.get('error_description') || query.get('error');
+            const hash = new URLSearchParams(window.location.hash.substring(1));
+
+            const error = query.get('error_description') || query.get('error') ||
+                hash.get('error_description') || hash.get('error');
 
             if (error) {
+                console.error('[AuthCallback] Error:', error);
                 toast({
                     title: "Giriş Hatası",
                     description: error === 'identity_already_exists'
@@ -25,7 +30,7 @@ export default function AuthCallback() {
                         : error,
                     variant: "destructive"
                 });
-                navigate('/', { replace: true });
+                navigate(`/${window.location.search}`, { replace: true });
                 return;
             }
 
@@ -34,36 +39,41 @@ export default function AuthCallback() {
 
             if (sessionError || !session) {
                 const search = window.location.search;
-                // session henüz gelmemiş olabilir (yavaşlık), bir saniye sonra tekrar dene?
-                // Ama handled.current true olduğu için loop'a girmemeli.
-                // Basitçe landing'e atalım.
                 navigate(`/${search}`, { replace: true });
                 return;
             }
 
-            // 3. Çakışan Hesap Kontrolü (User isteği: Email ile kayıtlıysa Google'a izin verme)
+            // 3. Profili Kontrol Et ve Oluştur (Eğer müşteri ise)
             const user = session.user;
-            const identities = user?.identities || [];
-            const hasEmailIdentity = identities.some(identity => identity.provider === 'email');
-            const hasGoogleIdentity = identities.some(identity => identity.provider === 'google');
-
-            // Eğer kullanıcı e-posta/şifre ile kayıtlıysa (hasEmailIdentity)
-            // ve Google ile giriş yaptıysa (hasGoogleIdentity)
-            // Bu hesapların birleşmesini engellemek için oturumu kapatıyoruz.
-            if (hasEmailIdentity && hasGoogleIdentity) {
-                await supabase.auth.signOut();
-                toast({
-                    title: "Hesap Zaten Mevcut",
-                    description: "Bu Gmail adresi ile daha önce e-posta ve şifre kullanarak kayıt olunmuş. Lütfen şifrenizle giriş yapın.",
-                    variant: "destructive"
-                });
-                navigate('/', { replace: true });
-                return;
-            }
-
-            // 4. Normal Yönlendirme
-            const userType = user?.user_metadata?.user_type;
+            const userType = user?.user_metadata?.user_type || 'customer'; // Default to customer if not set
             const search = window.location.search;
+
+            if (userType === 'customer') {
+                try {
+                    // Profili kontrol et
+                    const { data: profile, error: profileError } = await supabase
+                        .from('customer_profiles')
+                        .select('id')
+                        .eq('user_id', user.id)
+                        .maybeSingle();
+
+                    if (!profile && !profileError) {
+                        // Yeni profil oluştur
+                        const name = user.user_metadata?.full_name ||
+                            (user.user_metadata?.first_name ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}` : 'Kullanıcı');
+
+                        await supabase.from('customer_profiles').insert({
+                            user_id: user.id,
+                            name: name,
+                            email: user.email,
+                            created_at: new Date().toISOString()
+                        });
+                        console.log('[AuthCallback] Created new customer profile for:', user.email);
+                    }
+                } catch (profErr) {
+                    console.error('[AuthCallback] Profile creation error:', profErr);
+                }
+            }
 
             if (userType === 'manager') {
                 navigate(`/admin-panel${search}`, { replace: true });

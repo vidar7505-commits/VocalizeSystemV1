@@ -1,4 +1,5 @@
-import React, { Suspense, lazy, useEffect } from 'react'; // Suspense, lazy ve useEffect eklendi
+import * as React from 'react';
+import { Suspense, lazy, useEffect } from 'react'; // Suspense, lazy ve useEffect eklendi
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { AuthProvider, useAuth } from '@/contexts/SupabaseAuthContext';
@@ -127,6 +128,7 @@ function App() {
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/terms" element={<LegalPage type="terms" />} />
               <Route path="/privacy" element={<LegalPage type="privacy" />} />
+              <Route path="/kvkk" element={<LegalPage type="kvkk" />} />
 
               <Route path="/update-password" element={<UpdatePassword />} />
 

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X, Star, Calendar, User, Mail, Phone, MessageSquare,
   AlertTriangle, Image as ImageIcon, Building2, StickyNote, Save,

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Lock, Mail, Phone, User, Building2, ArrowLeft, KeyRound, ArrowRight } from 'lucide-react';
-import { TERMS_CONTENT, KVKK_CONTENT } from '@/constants/legalTexts';
 import { useTranslation } from 'react-i18next';
 
 const CUSTOMER_LOGO_URL = "faviconbeyaz.png";
@@ -39,56 +39,6 @@ const toTitleCase = (str) => {
     .join(' '); // Boşluklarla birleştir
 };
 
-// ✅ Legal Modal Component
-const LegalModal = React.memo(({ open, onOpenChange, activeLegalTab, setActiveLegalTab, legalAccepted, setLegalAccepted }) => {
-  const { t } = useTranslation('admin');
-  if (!open) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#0f172a] border-slate-700 text-white sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
-        <div className="sr-only">
-          <DialogTitle>{t('auth.legal.title')}</DialogTitle>
-          <DialogDescription>{t('auth.legal.desc')}</DialogDescription>
-        </div>
-        <div className="mb-4">
-          <h3 className="text-xl font-bold text-white">{t('auth.legal.title')}</h3>
-        </div>
-        <Tabs value={activeLegalTab} onValueChange={setActiveLegalTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-slate-800">
-            <TabsTrigger value="terms" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-              {t('auth.legal.terms_tab')}
-            </TabsTrigger>
-            <TabsTrigger value="kvkk" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">
-              {t('auth.legal.kvkk_tab')}
-            </TabsTrigger>
-          </TabsList>
-          <div className="mt-4 p-4 bg-slate-900/50 rounded-lg border border-slate-800 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap font-sans text-justify max-h-96 overflow-y-auto">
-            {activeLegalTab === 'terms' ? TERMS_CONTENT : KVKK_CONTENT}
-          </div>
-        </Tabs>
-        <div className="flex justify-end gap-2 mt-6">
-          <Button
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-            className="bg-slate-700 hover:bg-slate-600 text-white"
-          >
-            {t('auth.legal.close')}
-          </Button>
-          <Button
-            onClick={() => {
-              setLegalAccepted(true);
-              onOpenChange(false);
-            }}
-            className="bg-teal-600 hover:bg-teal-700 text-white"
-          >
-            {t('auth.legal.accept')}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-});
 
 // ✅ Main AuthModal
 const AuthModal = React.memo(({
@@ -117,7 +67,7 @@ const AuthModal = React.memo(({
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useTranslation('admin');
+  const { t, i18n } = useTranslation('admin');
   const { loginAsGuest } = useAuth();
 
   // 🟢 Memoize logo style
@@ -131,7 +81,10 @@ const AuthModal = React.memo(({
       setActiveRole(defaultRole);
       setViewMode('auth');
       setFormData({ fullName: '', email: '', phone: '', password: '', managerCode: '' });
-      setLegalAccepted(false);
+
+      // Auto-check if previously accepted on legal page
+      const hasAccepted = localStorage.getItem('vocalize_legal_accepted') === 'true';
+      setLegalAccepted(hasAccepted);
     }
   }, [isOpen, defaultTab, defaultRole]);
 
@@ -170,9 +123,9 @@ const AuthModal = React.memo(({
     return { first, last };
   };
 
-  const openLegal = (tab) => {
-    setActiveLegalTab(tab);
-    setShowLegalModal(true);
+  const openLegal = (type) => {
+    navigate(`/${type}?from=auth`);
+    onClose();
   };
 
   const handleGuestLogin = async () => {
@@ -197,10 +150,11 @@ const AuthModal = React.memo(({
 
   const handleGoogleLogin = async () => {
     try {
+      const searchParams = window.location.search;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback${searchParams}`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -322,6 +276,9 @@ const AuthModal = React.memo(({
 
         if (signupError) throw signupError;
 
+        // Clear sync flag after attempt
+        localStorage.removeItem('vocalize_legal_accepted');
+
         if (signupData.session) {
           toast({
             title: "Kayıt Başarılı",
@@ -387,7 +344,7 @@ const AuthModal = React.memo(({
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <button
                   type="button"
-                  onClick={() => setViewMode('auth')}
+                  onClick={onClose}
                   className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors mb-2"
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -460,7 +417,15 @@ const AuthModal = React.memo(({
                         </div>
                         <div className="border-t border-slate-700/50 pt-2">
                           <p className="text-[10px] text-slate-500 text-center leading-relaxed">
-                            {t('auth.register.legal_consent')}
+                            {i18n.language.startsWith('tr') ? (
+                              <>
+                                Devam ederek <span onClick={(e) => { e.preventDefault(); openLegal('terms'); }} className="text-teal-400 hover:underline cursor-pointer">Kullanım Koşulları</span> ve <span onClick={(e) => { e.preventDefault(); openLegal('privacy'); }} className="text-teal-400 hover:underline cursor-pointer">Gizlilik Sözleşmesi</span>'ni kabul etmiş sayılırsınız.
+                              </>
+                            ) : (
+                              <>
+                                By continuing, you agree to our <span onClick={(e) => { e.preventDefault(); openLegal('terms'); }} className="text-teal-400 hover:underline cursor-pointer">Terms of Service</span> and <span onClick={(e) => { e.preventDefault(); openLegal('privacy'); }} className="text-teal-400 hover:underline cursor-pointer">Privacy Policy</span>.
+                              </>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -490,12 +455,12 @@ const AuthModal = React.memo(({
                           <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
                           <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                         </svg>
-                        {activeTab === 'login' ? 'Google ile Devam Et' : 'Google ile Kayıt Ol'}
+                        {activeTab === 'login' ? t('auth.login.google_login') : t('auth.register.google_register')}
                       </button>
 
                       <div className="relative flex items-center gap-3">
                         <div className="flex-1 h-px bg-slate-700/60" />
-                        <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">veya</span>
+                        <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{t('auth.login.or')}</span>
                         <div className="flex-1 h-px bg-slate-700/60" />
                       </div>
                     </div>
@@ -569,11 +534,32 @@ const AuthModal = React.memo(({
                   {activeTab === 'register' && (
                     <div className="flex items-start space-x-2 my-4 pt-2">
                       <Checkbox
-                        id="legal-check" checked={legalAccepted} onCheckedChange={setLegalAccepted}
-                        className={`mt-1 border-slate-500 ${activeRole === 'customer' ? 'data-[state=checked]:bg-orange-600 data-[state=checked]:border-orange-600' : 'data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600'}`} />
+                        id="legal-check"
+                        checked={legalAccepted}
+                        onCheckedChange={setLegalAccepted}
+                        className={`mt-1 border-slate-500 ${activeRole === 'customer' ? 'data-[state=checked]:bg-orange-600 data-[state=checked]:border-orange-600' : 'data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600'}`}
+                      />
                       <div className="grid gap-1.5 leading-none">
-                        <label htmlFor="legal-check" className="text-xs text-slate-400 font-medium leading-relaxed">
-                          {t('auth.register.legal_consent')}
+                        <label htmlFor="legal-check" className="text-[11px] text-slate-400 font-medium leading-relaxed cursor-pointer">
+                          {i18n.language.startsWith('tr') ? (
+                            <>
+                              <span onClick={(e) => { e.preventDefault(); openLegal('terms'); }} className="text-teal-400 hover:underline">Kullanım Koşulları</span>
+                              {', '}
+                              <span onClick={(e) => { e.preventDefault(); openLegal('kvkk'); }} className="text-teal-400 hover:underline">KVKK</span>
+                              {' ve '}
+                              <span onClick={(e) => { e.preventDefault(); openLegal('privacy'); }} className="text-teal-400 hover:underline">Gizlilik Sözleşmesi</span>
+                              'ni okudum, onaylıyorum.
+                            </>
+                          ) : (
+                            <>
+                              I have read and approve the{' '}
+                              <span onClick={(e) => { e.preventDefault(); openLegal('terms'); }} className="text-teal-400 hover:underline">Terms of Service</span>
+                              {', '}
+                              <span onClick={(e) => { e.preventDefault(); openLegal('kvkk'); }} className="text-teal-400 hover:underline">Personal Data (KVKK)</span>
+                              {' and '}
+                              <span onClick={(e) => { e.preventDefault(); openLegal('privacy'); }} className="text-teal-400 hover:underline">Privacy Policy</span>.
+                            </>
+                          )}
                         </label>
                       </div>
                     </div>
@@ -596,16 +582,6 @@ const AuthModal = React.memo(({
         </DialogContent>
       </Dialog >
 
-      {showLegalModal && (
-        <LegalModal
-          open={showLegalModal}
-          onOpenChange={setShowLegalModal}
-          activeLegalTab={activeLegalTab}
-          setActiveLegalTab={setActiveLegalTab}
-          legalAccepted={legalAccepted}
-          setLegalAccepted={setLegalAccepted}
-        />
-      )}
     </>
   );
 });

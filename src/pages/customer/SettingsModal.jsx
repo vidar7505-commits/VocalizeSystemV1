@@ -1,3 +1,5 @@
+import * as React from 'react';
+import { useState } from 'react';
 import { Mail, KeyRound, Shield, AlertOctagon, Trash2, Loader2, Send, LogOut, UserPlus, Settings, Phone, User as UserIcon } from 'lucide-react';
 import {
     Dialog,
@@ -39,27 +41,47 @@ const SettingsModal = React.memo(({
     const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
     const AGE_GROUPS = ['18-', '18-24', '25-34', '35-44', '45-54', '55+'];
+    const isAgeAlreadySet = !!userProfile?.age_group;
+    const isPhoneAlreadySet = !!userProfile?.phone;
+
+    const [isEditingPhone, setIsEditingPhone] = useState(false);
 
     const hasMissingInfo = !userProfile?.phone || !userProfile?.age_group;
 
     const handleUpdateProfile = async () => {
-        if (!phone.trim() || !ageGroup) {
+        // Determine the effective phone to save
+        const effectivePhone = isEditingPhone ? phone : (userProfile?.phone || '');
+        // Determine effective age group (existing or newly chosen)
+        const effectiveAge = isAgeAlreadySet ? userProfile.age_group : ageGroup;
+
+        if (isEditingPhone && !effectivePhone.trim()) {
             toast({
                 title: language === 'tr' ? 'Hata' : 'Error',
-                description: language === 'tr' ? 'Lütfen tüm alanları doldurunuz' : 'Please fill in all fields',
+                description: language === 'tr' ? 'Telefon numarasını giriniz' : 'Please enter a phone number',
                 variant: "destructive"
             });
             return;
         }
 
-        const phoneRegex = /^05\d{9}$/;
-        if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+        if (!isAgeAlreadySet && !effectiveAge) {
             toast({
                 title: language === 'tr' ? 'Hata' : 'Error',
-                description: language === 'tr' ? 'Telefon numarası 05xxxxxxxxx formatında olmalıdır.' : 'Phone must be in 05xxxxxxxxx format.',
+                description: language === 'tr' ? 'Lütfen yaş grubunuzu seçiniz' : 'Please select your age group',
                 variant: "destructive"
             });
             return;
+        }
+
+        if (isEditingPhone || !isPhoneAlreadySet) {
+            const phoneRegex = /^05\d{9}$/;
+            if (!phoneRegex.test(effectivePhone.replace(/\s/g, ''))) {
+                toast({
+                    title: language === 'tr' ? 'Hata' : 'Error',
+                    description: language === 'tr' ? 'Telefon numarası 05xxxxxxxxx formatında olmalıdır.' : 'Phone must be in 05xxxxxxxxx format.',
+                    variant: "destructive"
+                });
+                return;
+            }
         }
 
         setIsUpdatingProfile(true);
@@ -69,14 +91,17 @@ const SettingsModal = React.memo(({
                 .upsert({
                     user_id: user.id,
                     email: user.email,
-                    phone: phone.replace(/\s/g, ''),
-                    age_group: ageGroup,
+                    phone: effectivePhone.replace(/\s/g, ''),
+                    age_group: effectiveAge,
                     updated_at: new Date().toISOString()
                 }, {
                     onConflict: 'user_id'
                 });
 
             if (error) throw error;
+
+            // Update local userProfile state so UI reflects change immediately
+            setIsEditingPhone(false);
 
             toast({
                 title: language === 'tr' ? 'Başarılı' : 'Success',
@@ -237,45 +262,90 @@ const SettingsModal = React.memo(({
                                             className="bg-slate-800 border-slate-700 text-slate-400 opacity-50 cursor-not-allowed"
                                         />
                                     </div>
+
+                                    {/* Phone Number - with inline edit button */}
                                     <div>
-                                        <label className="text-sm text-slate-400 font-semibold mb-2 block flex items-center gap-2">
+                                        <label className="text-sm text-slate-400 font-semibold mb-2 flex items-center gap-2">
                                             <Phone className="h-3.5 w-3.5 text-teal-500" />
                                             {language === 'tr' ? 'Telefon Numarası' : 'Phone Number'}
                                         </label>
-                                        <Input
-                                            type="tel"
-                                            placeholder="05XX XXX XX XX"
-                                            value={phone}
-                                            onChange={(e) => setPhone(e.target.value)}
-                                            autoComplete="tel"
-                                            className="bg-slate-800 border-slate-700 text-white focus:border-teal-500 focus:ring-teal-500/20"
-                                        />
+                                        {isPhoneAlreadySet && !isEditingPhone ? (
+                                            <div className="flex items-center gap-2">
+                                                <Input
+                                                    type="tel"
+                                                    value={userProfile?.phone || ''}
+                                                    disabled
+                                                    className="bg-slate-800 border-slate-700 text-slate-300 opacity-60 cursor-not-allowed flex-1"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setIsEditingPhone(true); setPhone(userProfile?.phone || ''); }}
+                                                    className="px-3 py-2 text-xs font-semibold text-teal-400 bg-slate-800 border border-slate-700 rounded-md hover:bg-slate-700 hover:border-teal-500/50 transition-colors whitespace-nowrap"
+                                                >
+                                                    {language === 'tr' ? 'Değiştir' : 'Edit'}
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <Input
+                                                    type="tel"
+                                                    placeholder="05XX XXX XX XX"
+                                                    value={phone}
+                                                    onChange={(e) => setPhone(e.target.value)}
+                                                    autoComplete="tel"
+                                                    className="bg-slate-800 border-slate-700 text-white focus:border-teal-500 focus:ring-teal-500/20 flex-1"
+                                                />
+                                                {isPhoneAlreadySet && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setIsEditingPhone(false); setPhone(userProfile?.phone || ''); }}
+                                                        className="px-3 py-2 text-xs font-semibold text-slate-400 bg-slate-800 border border-slate-700 rounded-md hover:bg-slate-700 transition-colors whitespace-nowrap"
+                                                    >
+                                                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
+
+                                    {/* Age Group - locked after first selection */}
                                     <div>
-                                        <label className="text-sm text-slate-400 font-semibold mb-2 block flex items-center gap-2">
+                                        <label className="text-sm text-slate-400 font-semibold mb-2 flex items-center gap-2">
                                             <UserIcon className="h-3.5 w-3.5 text-teal-500" />
                                             {language === 'tr' ? 'Yaş Grubu' : 'Age Group'}
                                         </label>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {AGE_GROUPS.map((age) => (
-                                                <button
-                                                    key={age}
-                                                    type="button"
-                                                    onClick={() => setAgeGroup(age)}
-                                                    className={`h-10 rounded-lg border text-xs font-medium transition-all duration-200 ${ageGroup === age
-                                                        ? 'bg-teal-600 border-teal-500 text-white shadow-lg shadow-teal-900/30'
-                                                        : 'border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-teal-600/20 hover:border-teal-500/50'
-                                                        }`}
-                                                >
-                                                    {age}
-                                                </button>
-                                            ))}
-                                        </div>
+                                        {isAgeAlreadySet ? (
+                                            <div className="flex items-center gap-3 p-3 bg-slate-800/50 border border-slate-700 rounded-lg">
+                                                <span className="text-sm font-semibold text-teal-400 bg-teal-500/10 border border-teal-500/30 px-3 py-1 rounded-full">
+                                                    {userProfile.age_group}
+                                                </span>
+                                                <span className="text-xs text-slate-500">
+                                                    {language === 'tr' ? 'Yaş grubu değiştirilemez.' : 'Age group cannot be changed.'}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {AGE_GROUPS.map((age) => (
+                                                    <button
+                                                        key={age}
+                                                        type="button"
+                                                        onClick={() => setAgeGroup(age)}
+                                                        className={`h-10 rounded-lg border text-xs font-medium transition-all duration-200 ${ageGroup === age
+                                                            ? 'bg-teal-600 border-teal-500 text-white shadow-lg shadow-teal-900/30'
+                                                            : 'border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-teal-600/20 hover:border-teal-500/50'
+                                                            }`}
+                                                    >
+                                                        {age}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
+
                                     <div className="pt-2">
                                         <Button
                                             onClick={handleUpdateProfile}
-                                            disabled={isUpdatingProfile || !phone.trim() || !ageGroup}
+                                            disabled={isUpdatingProfile || (!isEditingPhone && isPhoneAlreadySet && isAgeAlreadySet) || (isEditingPhone && !phone.trim()) || (!isAgeAlreadySet && !ageGroup)}
                                             className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold shadow-lg shadow-orange-900/20"
                                         >
                                             {isUpdatingProfile ? (

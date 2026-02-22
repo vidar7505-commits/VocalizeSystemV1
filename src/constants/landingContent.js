@@ -269,7 +269,7 @@ export const landingContent = {
             ctaV2: 'V2 Hakkında Bilgi Alın'
         },
         footer: {
-            copyright: '© 2025 Vocalize Systems — Müşteri sesini teknolojiyle buluşturuyoruz.',
+            copyright: '© 2025 Vocalize Global — Müşteri sesini teknolojiyle buluşturuyoruz.',
             kvkk: 'KVKK Aydınlatma Metni',
             terms: 'Kullanım Koşulları'
         },
@@ -559,8 +559,8 @@ export const landingContent = {
             ctaV2: 'Get Info About V2'
         },
         footer: {
-            copyright: '© 2025 Vocalize Systems — Connecting customer voice with technology.',
-            kvkk: 'Privacy Policy',
+            copyright: '© 2025 Vocalize Global — Connecting customer voice with technology.',
+            kvkk: 'Personal Data (KVKK)',
             terms: 'Terms of Service'
         },
         leadModal: {

@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 import {
     Dialog,

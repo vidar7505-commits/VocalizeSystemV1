@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import * as React from 'react';
+import { useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,33 +72,42 @@ const CompleteProfileModal = React.memo(({
 
         setIsSaving(true);
         try {
-            const updates = {
-                user_id: user.id,
-                email: user.email,
-                updated_at: new Date().toISOString(),
-            };
-            if (missingPhone) updates.phone = phone.replace(/\s/g, '');
-            if (missingAge) updates.age_group = selectedAge;
+            if (user) {
+                const updates = {
+                    user_id: user.id,
+                    email: user.email,
+                    updated_at: new Date().toISOString(),
+                };
+                if (missingPhone) updates.phone = phone.replace(/\s/g, '');
+                if (missingAge) updates.age_group = selectedAge;
 
-            const { error } = await supabase
-                .from('customer_profiles')
-                .upsert(updates, { onConflict: 'user_id', ignoreDuplicates: false });
+                const { error } = await supabase
+                    .from('customer_profiles')
+                    .upsert(updates, { onConflict: 'user_id', ignoreDuplicates: false });
 
-            if (error) throw error;
+                if (error) throw error;
 
-            // 🟢 Retroactive: Geçmiş feedbacklere age_group uygula
-            if (missingAge && selectedAge && user.email) {
-                supabase
-                    .from('feedbacks')
-                    .update({ customer_age_group: selectedAge })
-                    .eq('customer_email', user.email)
-                    .is('customer_age_group', null)
-                    .then(({ error: retErr }) => {
-                        if (retErr) console.warn('[CompleteProfileModal] Retroactive age update failed:', retErr);
-                    });
+                // 🟢 Retroactive: Geçmiş feedbacklere age_group uygula
+                if (missingAge && selectedAge && user.email) {
+                    supabase
+                        .from('feedbacks')
+                        .update({ customer_age_group: selectedAge })
+                        .eq('customer_email', user.email)
+                        .is('customer_age_group', null)
+                        .then(({ error: retErr }) => {
+                            if (retErr) console.warn('[CompleteProfileModal] Retroactive age update failed:', retErr);
+                        });
+                }
+            } else {
+                // Guest mode: Save to localStorage
+                if (missingPhone) localStorage.setItem('vocalize_customer_phone', phone.replace(/\s/g, ''));
+                if (missingAge) localStorage.setItem('vocalize_customer_age_group', selectedAge);
             }
 
-            onComplete?.({ phone: updates.phone, age_group: updates.age_group });
+            onComplete?.({
+                phone: missingPhone ? phone.replace(/\s/g, '') : undefined,
+                age_group: missingAge ? selectedAge : undefined
+            });
         } catch (err) {
             console.error('[CompleteProfileModal] Save error:', err);
             toast({ title: t.saveError, variant: 'destructive' });
@@ -172,8 +182,8 @@ const CompleteProfileModal = React.memo(({
                                         type="button"
                                         onClick={() => setSelectedAge(age)}
                                         className={`h-10 rounded-lg border text-sm font-medium transition-all duration-200 ${selectedAge === age
-                                                ? 'bg-teal-600 border-teal-500 text-white shadow-lg shadow-teal-900/30'
-                                                : 'border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-teal-600/20 hover:border-teal-500/50'
+                                            ? 'bg-teal-600 border-teal-500 text-white shadow-lg shadow-teal-900/30'
+                                            : 'border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-teal-600/20 hover:border-teal-500/50'
                                             }`}
                                     >
                                         {age}

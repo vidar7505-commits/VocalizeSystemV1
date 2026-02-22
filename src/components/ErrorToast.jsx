@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { AlertTriangle, RefreshCw, Mail, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getErrorMessage } from '@/constants/errorCodes';

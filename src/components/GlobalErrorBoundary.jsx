@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { logError } from '@/lib/ErrorLogger';
 import ErrorToast from '@/components/ErrorToast';
 
@@ -42,7 +42,7 @@ class GlobalErrorBoundary extends React.Component {
       const { errorCode, severity, shouldNotifyUser } = result;
 
       // Get user's language preference
-      const language = localStorage.getItem('vocalize_lang') || 'tr';
+      const language = localStorage.getItem('vocalize_language') || 'tr';
 
       this.setState({
         errorCode,

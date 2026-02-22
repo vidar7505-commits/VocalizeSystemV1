@@ -644,7 +644,9 @@
             "guest_title": "Don't want to deal with registration?",
             "guest_button": "Guest Login",
             "guest_success_title": "Guest Login Successful",
-            "guest_success_desc": "You are being redirected..."
+            "guest_success_desc": "You are being redirected...",
+            "google_login": "Continue with Google",
+            "or": "or"
         },
         "installation_request": {
             "title": "Installation Request",
@@ -693,7 +695,8 @@
             "verify_email": "Please verify your email address. Check your inbox.",
             "customer_tab": "Customer",
             "manager_tab": "Manager",
-            "legal_consent": "By registering, I confirm that I have read and accept the Terms of Use and KVKK Clarification Text."
+            "legal_consent": "I have read and approve the Terms of Service and Privacy Policy.",
+            "google_register": "Register with Google"
         },
         "forgot_password": {
             "title": "Forgot Password",

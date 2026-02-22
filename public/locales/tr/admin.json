@@ -643,7 +643,9 @@
             "guest_title": "Üyelikle uğraşmak istemiyor musun?",
             "guest_button": "Misafir Girişi",
             "guest_success_title": "Misafir Girişi Başarılı",
-            "guest_success_desc": "Yönlendiriliyorsunuz..."
+            "guest_success_desc": "Yönlendiriliyorsunuz...",
+            "google_login": "Google ile Devam Et",
+            "or": "veya"
         },
         "installation_request": {
             "title": "Kurulum Başvurusu",
@@ -692,7 +694,8 @@
             "verify_email": "Lütfen e-posta adresinizi doğrulayın. Gelen kutunuzu kontrol edin.",
             "customer_tab": "Müşteri",
             "manager_tab": "Yönetici",
-            "legal_consent": "Kayıt olarak Kullanım Koşulları ve KVKK Aydınlatma Metni'ni okuduğumu ve kabul ettiğimi onaylıyorum."
+            "legal_consent": "Kayıt olarak Kullanım Koşulları ve KVKK Aydınlatma Metni'ni okuduğumu ve kabul ettiğimi onaylıyorum.",
+            "google_register": "Google ile Kayıt Ol"
         },
         "forgot_password": {
             "title": "Şifremi Unuttum",
