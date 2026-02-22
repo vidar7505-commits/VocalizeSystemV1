@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, MessageSquare, BarChart3, Settings,
   Menu, X, LogOut, Send, Loader2, Image as ImageIcon, Upload,
-  Sun, Moon
+  Sun, Moon, Globe
 } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useAdminContext } from '@/contexts/AdminContext';
@@ -23,7 +23,7 @@ const AdminSidebar = () => {
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useTranslation(['admin', 'common']);
+  const { t, i18n } = useTranslation(['admin', 'common']);
 
   // 🟢 REMOVED: Local Theme Management moved to AdminContext
 
@@ -286,23 +286,33 @@ const AdminSidebar = () => {
             </div>
           </div>
 
-          {/* Tema Değiştir - Sadece Mobil */}
-          <button
-            onClick={toggleTheme}
-            className="md:hidden flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-700/70 border border-slate-700/70 text-xs font-medium"
-          >
-            {theme === 'dark' ? (
-              <>
-                <Moon className="w-4 h-4" />
-                <span>{t('sidebar.theme_dark')}</span>
-              </>
-            ) : (
-              <>
-                <Sun className="w-4 h-4 text-yellow-400" />
-                <span>{t('sidebar.theme_light')}</span>
-              </>
-            )}
-          </button>
+          {/* Tema / Dil Değiştir - Sadece Mobil */}
+          <div className="md:hidden grid grid-cols-2 gap-2">
+            <button
+              onClick={toggleTheme}
+              className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-700/70 border border-slate-700/70 text-[10px] font-medium transition-all"
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Moon className="w-3.5 h-3.5" />
+                  <span>{t('sidebar.theme_dark')}</span>
+                </>
+              ) : (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-yellow-400" />
+                  <span>{t('sidebar.theme_light')}</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => i18n.changeLanguage(i18n.language === 'tr' ? 'en' : 'tr')}
+              className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-700/70 border border-slate-700/70 text-[10px] font-medium transition-all"
+            >
+              <Globe className="w-3.5 h-3.5 text-teal-400" />
+              <span>{i18n.language === 'tr' ? 'English' : 'Türkçe'}</span>
+            </button>
+          </div>
 
           <Button
             onClick={handleLogout}
