@@ -9,6 +9,18 @@
         "theme_dark": "Karanlık",
         "theme_light": "Aydınlık",
         "logout": "Çıkış Yap",
+        "league_inspect": {
+            "title": "Şube Karnesi Detayları",
+            "desc": "Buradan herhangi bir şubenin üzerine tıklayarak o şubeye özel tüm detaylı metriklere, trendlere ve yapay zeka analizlerine ulaşabilirsiniz."
+        },
+        "branch_intelligence": {
+            "title": "Yapay Zeka Şube Teşhisi",
+            "desc": "Her şube için özel hazırlanan bu alanda; Google Maps etkileşimleri, operasyonel hız ve müşteri memnuniyeti verileri harmanlanarak şubenin performansı tek bir cümlede özetlenir."
+        },
+        "smart_insights": {
+            "title": "Akıllı İçgörüler",
+            "desc": "Yapay zeka destekli analizlerle işletmenizin performansını artırın."
+        },
         "contact_modal": {
             "title": "Vocalize Ekibine Ulaşın",
             "description": "Her türlü soru, öneri veya teknik destek talebinizi buradan bize iletebilirsiniz.",
@@ -483,9 +495,15 @@
         "translate": "Çevir",
         "translating": "Çevriliyor...",
         "show_original": "Orijinali Göster",
+        "auth_error_title": "Oturum Hatası",
+        "anonymous_warning_title": "⚠️ Misafir Geri Bildirimi",
+        "anonymous_warning_desc": "Bu müşteri sisteme kayıtlı olmadığı için 'Müşteri Profili' ve 'VIP' özellikleri bu öğe için kullanılamaz.",
+        "no_comment_warning_title": "⚠️ Metin Bulunamadı",
+        "no_comment_warning_desc": "Bu geri bildirimde metin bulunmadığı için 'Çeviri' özelliği gösterilmemektedir.",
+        "tour_skip_note": "Eğitimde bu adımları otomatik olarak geçeceğiz.",
         "translation_error": "Çeviri yapılamadı",
         "customer_info": "Müşteri Bilgileri",
-        "membership": "Üyelik:",
+        "membership": "Üyelik Tarihi:",
         "loading": "Yükleniyor...",
         "no_data": "Veri yok.",
         "images_count": "Görseller",
@@ -500,97 +518,6 @@
         "image_alt": "Geri bildirim görseli",
         "general_eval_short": "Genel D.",
         "check_api_key": "Lütfen API anahtarını kontrol edin."
-    },
-    "notification_history": {
-        "title": "Bildirim Geçmişi",
-        "description": "Tüm geri bildirim uyarılarınızı buradan yönetin.",
-        "loading": "Bildirimler yükleniyor...",
-        "error_loading": "Bildirimler yüklenirken bir hata oluştu.",
-        "no_notifications": "Görüntülenecek bildirim yok.",
-        "total_count": "Toplam {{count}} bildirim",
-        "bulk": {
-            "selected_count": "{{count}} bildirim seçildi",
-            "deselect": "Seçimi Kaldır",
-            "mark_read": "Okundu İşaretle",
-            "mark_unread": "Okunmadı İşaretle",
-            "delete": "Sil"
-        },
-        "filters": {
-            "all": "Tümü",
-            "unread": "Okunmamış",
-            "read": "Okunmuş"
-        },
-        "table": {
-            "status": "Durum",
-            "message": "Mesaj",
-            "branch": "Şube",
-            "date": "Tarih",
-            "read": "Okundu",
-            "unread": "Okunmadı"
-        },
-        "labels": {
-            "complaint": "Yeni bir şikayetiniz var",
-            "suggestion": "Yeni bir öneriniz var",
-            "evaluation": "Yeni bir değerlendirmeniz var",
-            "unknown": "Yeni bildirim",
-            "customer": "Müşteri: {{name}}",
-            "unknown_customer": "Bilinmiyor",
-            "general_branch": "Genel"
-        },
-        "time": {
-            "just_now": "az önce",
-            "minutes_ago": "{{count}} dk önce",
-            "hours_ago": "{{count}} sa önce",
-            "days_ago": "{{count}} gün önce"
-        },
-        "delete_modal": {
-            "title": "Silme Onayı",
-            "description": "Seçili {{count}} bildirimi kalıcı olarak silmek istediğinizden emin misiniz?",
-            "confirm": "Sil",
-            "cancel": "İptal"
-        },
-        "toast": {
-            "update_success": "Başarılı!",
-            "update_success_desc": "{{count}} bildirim güncellendi.",
-            "update_error": "Hata",
-            "update_error_desc": "Toplu güncelleme başarısız.",
-            "delete_success": "Başarılı!",
-            "delete_success_desc": "{{count}} bildirim silindi.",
-            "delete_error": "Hata",
-            "delete_error_desc": "Toplu silme başarısız.",
-            "load_error": "Hata",
-            "load_error_desc": "Bildirim geçmişi alınamadı.",
-            "detail_error": "Hata",
-            "detail_error_desc": "Geri bildirim detayları yüklenemedi."
-        },
-        "details_loading": "Detaylar yükleniyor..."
-    },
-    "update_password": {
-        "title": "Yeni Şifre Belirle",
-        "subtitle": "Lütfen hesabınız için yeni ve güvenli bir şifre girin.",
-        "label": "Yeni Şifre",
-        "button": "Şifreyi Güncelle",
-        "updating": "Güncelleniyor...",
-        "success": "Başarılı",
-        "success_desc": "Şifreniz başarıyla güncellendi. Yönlendiriliyorsunuz...",
-        "error": "Hata",
-        "error_length": "Şifre en az 6 karakter olmalıdır.",
-        "error_update": "Şifre güncellenemedi.",
-        "invalid_link_title": "Geçersiz Bağlantı",
-        "invalid_link_desc": "Şifre sıfırlama bağlantısının süresi dolmuş veya geçersiz."
-    },
-    "qr_redirector": {
-        "loading": "Yönlendiriliyorsunuz...",
-        "error_title": "Hata Oluştu",
-        "error_desc": "Bağlantı sırasında bir sorun oluştu.",
-        "qr_not_found": "URL'de QR kodu parametresi bulunamadı.",
-        "branch_not_found": "Şube bulunamadı",
-        "session_ended_title": "Oturum Sonlandırıldı",
-        "session_ended_desc": "Müşteri paneline yönlendirilmek üzere Yönetici hesabınızdan çıkış yapılmıştır.",
-        "show_debug": "Teknik Detayları Göster",
-        "hide_debug": "Teknik Detayları Gizle",
-        "retry": "Tekrar Dene",
-        "home": "Ana Sayfa"
     },
     "navbar": {
         "qr_scans": "{{count}} Tarama",
@@ -697,117 +624,231 @@
             "legal_consent": "Kayıt olarak Kullanım Koşulları ve KVKK Aydınlatma Metni'ni okuduğumu ve kabul ettiğimi onaylıyorum.",
             "google_register": "Google ile Kayıt Ol"
         },
-        "forgot_password": {
-            "title": "Şifremi Unuttum",
-            "back": "Geri Dön",
-            "placeholder": "E-posta Adresi",
-            "submit": "Sıfırlama Bağlantısı Gönder",
-            "sending": "Gönderiliyor...",
-            "success_title": "E-posta Gönderildi",
-            "success_desc": "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. Lütfen spam kutunuzu da kontrol edin."
-        },
-        "legal": {
-            "title": "Yasal Bilgilendirme",
-            "desc": "Kullanım Koşulları ve KVKK Metinleri",
-            "terms_tab": "Kullanım Koşulları",
-            "kvkk_tab": "KVKK & Gizlilik",
-            "close": "Kapat",
-            "accept": "Okudum, Onaylıyorum"
-        },
         "placeholders": {
             "full_name": "İsim Soyisim",
             "email": "E-posta Adresi",
             "phone": "Telefon (05...)",
             "password": "Şifre (6-12 karakter)",
             "manager_code": "Yönetici Kodu (MGR_...)"
+        }
+    },
+    "forgot_password": {
+        "title": "Şifremi Unuttum",
+        "back": "Geri Dön",
+        "placeholder": "E-posta Adresi",
+        "submit": "Sıfırlama Bağlantısı Gönder",
+        "sending": "Gönderiliyor...",
+        "success_title": "E-posta Gönderildi",
+        "success_desc": "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. Lütfen spam kutunuzu da kontrol edin."
+    },
+    "legal": {
+        "title": "Yasal Bilgilendirme",
+        "desc": "Kullanım Koşulları ve KVKK Metinleri",
+        "terms_tab": "Kullanım Koşulları",
+        "kvkk_tab": "KVKK & Gizlilik",
+        "close": "Kapat",
+        "accept": "Okudum, Onaylıyorum"
+    },
+    "notification_history": {
+        "title": "Bildirim Geçmişi",
+        "description": "Önemli geri bildirimler ve sistem güncellemeleri",
+        "no_notifications": "Henüz bildirim bulunmuyor.",
+        "error_loading": "Bildirimler yüklenirken bir sorun oluştu.",
+        "details_loading": "Detaylar yükleniyor...",
+        "total_count": "Toplam {{count}} bildirim",
+        "filters": {
+            "all": "Tümü",
+            "unread": "Okunmamış",
+            "read": "Okunmuş"
         },
-        "notification_history": {
-            "title": "Bildirim Geçmişi",
-            "description": "Önemli geri bildirimler ve sistem güncellemeleri",
-            "no_notifications": "Henüz bildirim bulunmuyor.",
-            "error_loading": "Bildirimler yüklenirken bir sorun oluştu.",
-            "details_loading": "Detaylar yükleniyor...",
-            "total_count": "Toplam {{count}} bildirim",
-            "filters": {
-                "all": "Tümü",
-                "unread": "Okunmamış",
-                "read": "Okunmuş"
+        "table": {
+            "status": "Durum",
+            "message": "İçerik",
+            "branch": "Şube",
+            "date": "Tarih"
+        },
+        "bulk": {
+            "selected_count": "{{count}} bildirim seçildi",
+            "deselect": "Seçimi Kaldır",
+            "mark_read": "Okundu İşaretle",
+            "mark_unread": "Okunmadı İşaretle",
+            "delete": "Sil"
+        },
+        "labels": {
+            "complaint": "Şikayet",
+            "suggestion": "Öneri",
+            "evaluation": "Değerlendirme",
+            "unknown": "Bilinmeyen Bildirim",
+            "unknown_customer": "Bilinmeyen Müşteri",
+            "customer": "Müşteri: {{name}}",
+            "general_branch": "Genel Merkez"
+        },
+        "toast": {
+            "load_error": "Hata",
+            "load_error_desc": "Bildirimler yüklenemedi.",
+            "update_success": "Başarılı",
+            "update_success_desc": "{{count}} bildirim güncellendi.",
+            "update_error": "Hata",
+            "update_error_desc": "Bildirimler güncellenemedi.",
+            "delete_success": "Silindi",
+            "delete_success_desc": "{{count}} bildirim başarıyla silindi.",
+            "delete_error": "Hata",
+            "delete_error_desc": "Bildirimler silinemedi.",
+            "detail_error": "Hata",
+            "detail_error_desc": "Detaylar yüklenirken bir sorun oluştu."
+        },
+        "delete_modal": {
+            "title": "Bildirimleri Sil",
+            "description": "Seçilen {{count}} bildirimi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+            "cancel": "Vazgeç",
+            "confirm": "Evet, Sil"
+        },
+        "time": {
+            "just_now": "az önce",
+            "minutes_ago": "{{count}}dk önce",
+            "hours_ago": "{{count}}sa önce",
+            "days_ago": "{{count}}g önce"
+        }
+    },
+    "update_password": {
+        "title": "Şifrenizi Güncelleyin",
+        "subtitle": "Yeni şifrenizi belirleyerek hesabınızı güvende tutun.",
+        "label": "Yeni Şifre",
+        "button": "Şifreyi Kaydet",
+        "updating": "Güncelleniyor...",
+        "success": "Başarılı",
+        "success_desc": "Şifreniz başarıyla güncellendi. Yönlendiriliyorsunuz...",
+        "error": "Hata",
+        "error_length": "Şifre en az 6 karakter olmalıdır.",
+        "error_update": "Şifre güncellenirken bir sorun oluştu.",
+        "invalid_link_title": "Geçersiz Bağlantı",
+        "invalid_link_desc": "Şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş."
+    },
+    "qr_redirector": {
+        "loading": "QR Kod İşleniyor...",
+        "error_title": "Hata Oluştu",
+        "error_desc": "QR kod işlenirken bir sorun oluştu.",
+        "retry": "Tekrar Dene",
+        "home": "Ana Sayfaya Dön",
+        "show_debug": "Hata Detayını Göster",
+        "hide_debug": "Detayı Gizle",
+        "qr_not_found": "QR kod bulunamadı.",
+        "branch_not_found": "Bu QR koda ait şube bilgisi bulunamadı.",
+        "session_ended_title": "Oturum Sonlandırıldı",
+        "session_ended_desc": "Yönetici oturumu açıkken QR kodu taranamadığı için oturumunuz kapatıldı. Müşteri girişi yapabilirsiniz."
+    },
+    "onboarding": {
+        "btn_next": "İleri",
+        "btn_back": "Geri",
+        "btn_finish": "Başlayalım!",
+        "btn_skip": "Turu Atla",
+        "restart_tour": "Öğreticiyi Yeniden Başlat",
+        "step_of": "/",
+        "items": {
+            "welcome": {
+                "title": "🚀 Kontrol Merkezinize Hoş Geldiniz",
+                "desc": "Vocalize paneli, misafir geri bildirimlerini eyleme dönüştürülebilir iş zekasına dönüştürüyor. Temel özellikleri yaklaşık 90 saniyede size tanıtacağız."
             },
-            "table": {
-                "status": "Durum",
-                "message": "İçerik",
-                "branch": "Şube",
-                "date": "Tarih"
+            "header_branch": {
+                "title": "🏢 Şube Seçici",
+                "desc": "Şubeler arasında geçiş yapın veya 'Tüm Şubeler' seçerek konsolide bir görünüm elde edin. Paneldeki her grafik, KPI kartı ve rapor seçiminize anında uyum sağlar."
             },
-            "bulk": {
-                "selected_count": "{{count}} bildirim seçildi",
-                "deselect": "Seçimi Kaldır",
-                "mark_read": "Okundu İşaretle",
-                "mark_unread": "Okunmadı İşaretle",
-                "delete": "Sil"
+            "header_qr": {
+                "title": "📊 QR Tarama Sayacı",
+                "desc": "Bu sayaç, seçili dönemde QR kodlarınızın ve geri bildirim linklerinizin kaç kez tarandığını gösterir. Yüksek tarama ama düşük geri bildirim, formunuzun optimizasyona ihtiyacı olduğuna işaret eder."
             },
-            "labels": {
-                "complaint": "Şikayet",
-                "suggestion": "Öneri",
-                "evaluation": "Değerlendirme",
-                "unknown": "Bilinmeyen Bildirim",
-                "unknown_customer": "Bilinmeyen Müşteri",
-                "customer": "Müşteri: {{name}}",
-                "general_branch": "Genel Merkez"
+            "header_notifications": {
+                "title": "🔔 Anlık Bildirimler",
+                "desc": "Yeni geri bildirimler, acil şikayetler ve sistem güncellemeleri için anlık uyarılar. Kırmızı rozetler, acil ilgi gerektiren okunmamış kritik öğeleri belirtir."
             },
-            "toast": {
-                "load_error": "Hata",
-                "load_error_desc": "Bildirimler yüklenemedi.",
-                "update_success": "Başarılı",
-                "update_success_desc": "{{count}} bildirim güncellendi.",
-                "update_error": "Hata",
-                "update_error_desc": "Bildirimler güncellenemedi.",
-                "delete_success": "Silindi",
-                "delete_success_desc": "{{count}} bildirim başarıyla silindi.",
-                "delete_error": "Hata",
-                "delete_error_desc": "Bildirimler silinemedi.",
-                "detail_error": "Hata",
-                "detail_error_desc": "Detaylar yüklenirken bir sorun oluştu."
+            "feedbacks": {
+                "title": "🚨 Acil Geri Bildirim Bandı",
+                "desc": "Bu kırmızı bant, bir misafir hâlâ masadayken ve ŞİMDİ yardıma ihtiyacı olduğunda görünür. Dakikalar içinde müdahale ederek olumsuz bir deneyimi sadık bir müşteriye dönüştürebilirsiniz. 'İncele' butonuyla doğrudan acil öğelere atlayın."
             },
-            "delete_modal": {
-                "title": "Bildirimleri Sil",
-                "description": "Seçilen {{count}} bildirimi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
-                "cancel": "Vazgeç",
-                "confirm": "Evet, Sil"
+            "dashboard_kpi": {
+                "title": "📈 Dashboard KPI Kartları",
+                "desc": "Günlük performans özetiniz: toplam geri bildirim sayısı, memnuniyet skoru, çözüm oranı ve daha fazlası. Yeşil oklar önceki döneme göre iyileşmeyi, kırmızı oklar düşüşü gösterir."
             },
-            "time": {
-                "just_now": "az önce",
-                "minutes_ago": "{{count}}dk önce",
-                "hours_ago": "{{count}}sa önce",
-                "days_ago": "{{count}}g önce"
+            "dashboard_charts": {
+                "title": "📊 Hızlı Bakış Grafikleri",
+                "desc": "Bu grafikler işletmenizin genel memnuniyet trendini, müşteri profili dağılımını ve kaynakları tek ekranda özetler."
+            },
+            "dashboard_activities": {
+                "title": "📋 Son Aktiviteler",
+                "desc": "Tüm platformlardan gelen son misafir etkileşimlerini anlık olarak burada görebilirsiniz. İşletmenizin nabzını buradan tutun."
+            },
+            "sidebar_feedbacks": {
+                "title": "💬 Geri Bildirim Yönetimi",
+                "desc": "Tüm misafir mesajlarınızın merkezi. Şimdi filtreleme, detay görünümü ve müşteri zekâsı özelliklerini keşfetmek için oraya gidelim."
+            },
+            "feedbacks_filters": {
+                "title": "🎯 Akıllı Filtreler",
+                "desc": "Geri bildirimleri Durum (Yeni, Bekleyen, Çözüldü...), Tür (Şikayet, Öneri, Değerlendirme) veya Bayraklar (VIP, Hassas) bazında daraltın. 'Sadece Acilleri Göster' kutucuğuyla kritik öğeleri anında yüzeye çıkarın."
+            },
+            "feedbacks_date": {
+                "title": "📅 Tarih Aralığı Seçici",
+                "desc": "Dilediğiniz zaman dilimini analiz edin: bugün, bu hafta, bu ay veya özel bir aralık. Farklı dönemler karşılaştırarak trendleri ve mevsimsel kalıpları tespit edin."
+            },
+            "feedback_search": {
+                "title": "🔍 Arama Çubuğu",
+                "desc": "Geri bildirimleri müşteri adı, mesaj içeriği veya referans ID ile arayın. Bir müşteri sizinle iletişime geçtiğinde geri bildirimini hızlıca bulmak için çok kullanışlıdır."
+            },
+            "feedback_card_anatomy": {
+                "title": "🃏 Geri Bildirim Kartı ve Detaylar",
+                "desc": "Kartlara tıklayarak detaylı geri bildirim modaline veya müşteri profiline ulaşabilirsiniz. Listede müşteri adı mavi renkte görünüyorsa, o müşteri için profil üzerinden bırakılmış özel bir personel/işletme notu var demektir."
+            },
+            "sidebar_analytics": {
+                "title": "📊 Detaylı Analizler",
+                "desc": "Performans metrikleri, demografik öngörüler ve şube karşılaştırmalarına derin dalış yapın. Şimdi oraya gidelim..."
+            },
+            "analytics_kpi": {
+                "title": "📊 Analiz KPI Kartları",
+                "desc": "Bir bakışta dört temel metrik: Toplam Etkileşim, Benzersiz Kullanıcı, Sadakat Skoru (100 üzerinden) ve Operasyonel Performans (çözüm oranı vs bekleyen şikayet). Önceki dönemle karşılaştırarak ilerlemeyi takip edin."
+            },
+            "analytics_trend": {
+                "title": "📈 Trend ve Tahminleme",
+                "desc": "Günlük geri bildirim hacmini zaman içinde izleyin. 'Genel' (toplam sayı) ve 'Detaylı' (Şikayet/Öneri/Değerlendirme dağılımı) görünümleri arasında geçiş yapın. Belirli günlerde şikayetler artıyorsa personel veya tedarik sorunlarını araştırın."
+            },
+            "analytics_brand_experience": {
+                "title": "⚡ Marka Deneyimi ve Algı",
+                "desc": "Misafirlerinizin işletmenize olan genel marka algısı ile anlık ziyaretlerindeki tatmin seviyesi arasındaki dengeyi ölçerek beklenti makasındaki riskleri tespit eder."
+            },
+            "analytics_hourly": {
+                "title": "⏰ Saatlik Yoğunluk Analizi",
+                "desc": "Yoğun saatlerinizi keşfedin. KİM'in NE ZAMAN geldiğini anlamak için 'Yaş Dağılımı' ve 'Form Tipi' sekmeleri arasında geçiş yapın. Alttaki Anlık İstatistik kartları en yoğun gününüzü, saatinizi, yaş grubunuzu ve baskın geri bildirim tipinizi gösterir."
+            },
+            "analytics_detailed": {
+                "title": "👥 Demografik Zekâ",
+                "desc": "Kitlenizi anlayın: yaş dağılımı, yaş grubuna göre memnuniyet ve geri bildirim türü dağılımı. Bu verileri, en aktif müşteri segmentlerinize yönelik pazarlama ve hizmet stratejilerinizi şekillendirmek için kullanın."
+            },
+            "league": {
+                "title": "🏆 Şube Performans Ligi",
+                "desc": "Tüm şubeleriniz Vocalize Skoru ile tek listede sıralanır — Kalite (%40), Operasyonel Verimlilik (%30) ve Trafik Payı (%30) bileşkesi. Genel rekabeti bu tablodan takip edersiniz."
+            },
+            "league_inspect": {
+                "title": "🔍 Lideri İnceleme",
+                "desc": "Ligdeki başarısını detaylandırmak için satıra tıkladığınızda Şube Performans Karnesi açılır; burada yapay zeka teşhisi ve o şubeye özel geniş raporlamalar yer alır."
+            },
+            "branch_intelligence": {
+                "title": "🧠 Yapay Zekâ Destekli Şube Teşhisi",
+                "desc": "Yapay zekâ motoru bu şubenin verilerini analiz ederek stratejik bir değerlendirme sunar: memnuniyet düzeyi, operasyonel güçlü/zayıf yönler ve spesifik iyileştirme önerileri. Renk genel sağlığı belirtir — yeşil mükemmel, kırmızı ilgi gerektirir."
+            },
+            "branch_hourly": {
+                "title": "📊 Şube Saatlik Aktivite",
+                "desc": "Bu şubenin saatlik aktivite haritası. Personel planlamasını optimize etmek için yoğun saatleri belirleyin ve bu lokasyona özgü ziyaretçi kalıplarını anlamak için yaş ile geri bildirim türü dağılımlarını karşılaştırın."
+            },
+            "branch_demographics": {
+                "title": "👥 Şube Müşteri Profili",
+                "desc": "Bu şubeyi kimler ziyaret ediyor? Yaş dağılımını ve yaş grubuna göre memnuniyet puanlarını görün. Lokasyona özel promosyonlar ve hizmet ayarlamaları geliştirmek için kullanın."
+            },
+            "smart_insights": {
+                "title": "🧠 Vocalize Akıllı Analiz",
+                "desc": "Şube performansınızın yapay zekâ destekli stratejik analizi. Akıllı Teşhisler operasyonel kör noktaları tespit eder, güçlü yönleri vurgular ve eyleme dönüştürülebilir öneriler sunar. Bu, verilerle güçlendirilmiş kişisel iş danışmanınızdır."
+            },
+            "finish": {
+                "title": "🎉 Her Şey Hazır!",
+                "desc": "Vocalize Kontrol Merkeziniz kullanıma hazır. Misafir geri bildirimlerini rekabet avantajına dönüştürmeye başlayın. Bu turu istediğiniz zaman Ayarlar → 'Öğreticiyi Yeniden Başlat' bölümünden tekrar başlatabilirsiniz."
             }
-        },
-        "update_password": {
-            "title": "Şifrenizi Güncelleyin",
-            "subtitle": "Yeni şifrenizi belirleyerek hesabınızı güvende tutun.",
-            "label": "Yeni Şifre",
-            "button": "Şifreyi Kaydet",
-            "updating": "Güncelleniyor...",
-            "success": "Başarılı",
-            "success_desc": "Şifreniz başarıyla güncellendi. Yönlendiriliyorsunuz...",
-            "error": "Hata",
-            "error_length": "Şifre en az 6 karakter olmalıdır.",
-            "error_update": "Şifre güncellenirken bir sorun oluştu.",
-            "invalid_link_title": "Geçersiz Bağlantı",
-            "invalid_link_desc": "Şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş."
-        },
-        "qr_redirector": {
-            "loading": "QR Kod İşleniyor...",
-            "error_title": "Hata Oluştu",
-            "error_desc": "QR kod işlenirken bir sorun oluştu.",
-            "retry": "Tekrar Dene",
-            "home": "Ana Sayfaya Dön",
-            "show_debug": "Hata Detayını Göster",
-            "hide_debug": "Detayı Gizle",
-            "qr_not_found": "QR kod bulunamadı.",
-            "branch_not_found": "Bu QR koda ait şube bilgisi bulunamadı.",
-            "session_ended_title": "Oturum Sonlandırıldı",
-            "session_ended_desc": "Yönetici oturumu açıkken QR kodu taranamadığı için oturumunuz kapatıldı. Müşteri girişi yapabilirsiniz."
         }
     }
 }

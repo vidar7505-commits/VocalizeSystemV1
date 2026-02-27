@@ -78,7 +78,9 @@ const FeedbackCard = React.memo(React.forwardRef(({
   highlightedId,
   toggleSelect,
   handleFeedbackClick,
-  handleOpenCustomerProfile
+  handleOpenCustomerProfile,
+  onboardingId,
+  customerOnboardingId
 }, ref) => {
   const f = feedback;
   const { t, i18n } = useTranslation('admin'); // Assuming t is available here
@@ -104,16 +106,23 @@ const FeedbackCard = React.memo(React.forwardRef(({
         isHighlighted ? "scale-[1.01]" : ""
       )}
     >
-      <button
-        onClick={(e) => { e.stopPropagation(); toggleSelect(f.id); }}
-        className="mt-6 text-slate-600 hover:text-indigo-400 transition-colors shrink-0 p-1"
+      <div
+        className="mt-6 flex items-center justify-center shrink-0 p-2 -ml-1 cursor-pointer relative z-20 group"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleSelect(f.id);
+        }}
       >
-        {isSelected
-          ? <CheckSquare className="w-6 h-6 text-indigo-500" />
-          : <Square className="w-6 h-6" />}
-      </button>
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => { }} // Controlled purely by wrapper click
+          className="border-slate-500 data-[state=checked]:bg-indigo-500 rounded pointer-events-none group-hover:border-indigo-400 transition-colors"
+        />
+      </div>
 
       <div
+        id={onboardingId}
         onClick={() => handleFeedbackClick(f)}
         className={cn(
           "feedback-activity-card flex-1 group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border duration-200 ease-in-out",
@@ -155,7 +164,11 @@ const FeedbackCard = React.memo(React.forwardRef(({
           </div>
 
           <div className="w-full md:w-auto md:min-w-[200px] md:shrink-0 flex md:flex-col justify-between md:items-end gap-2 pl-0 md:pl-4 md:border-l border-slate-800/50 mt-4 md:mt-0">
-            <div className="flex items-center gap-2 group/customer hover:bg-slate-800 p-1.5 rounded-lg -ml-1.5 md:ml-0 transition-colors mr-auto md:mr-0 cursor-pointer" onClick={(e) => handleOpenCustomerProfile(e, f)}>
+            <div
+              id={customerOnboardingId}
+              className="flex items-center gap-2 group/customer hover:bg-slate-800 p-1.5 rounded-lg -ml-1.5 md:ml-0 transition-colors mr-auto md:mr-0 cursor-pointer"
+              onClick={(e) => handleOpenCustomerProfile(e, f)}
+            >
               <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 group-hover/customer:border-indigo-500/50 transition-colors"><User className="w-4 h-4 text-slate-400 group-hover/customer:text-indigo-400" /></div>
               <div className="flex flex-col items-start md:items-end">
                 <span translate="no" className={cn("text-sm font-medium transition-colors truncate max-w-[140px] flex items-center gap-1", hasCustomerProfileNote ? "text-blue-400 font-bold" : "text-slate-300 group-hover/customer:text-indigo-300")} title={hasCustomerProfileNote ? t('feedback_management.card.customer_note') : ""}>
@@ -187,7 +200,7 @@ const FeedbackCard = React.memo(React.forwardRef(({
 }));
 
 const FeedbackManagement = () => {
-  const { businessId, selectedBranchId, escalatedCount } = useAdminContext();
+  const { businessId, selectedBranchId, escalatedCount, checkEscalatedStatus } = useAdminContext();
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
@@ -650,27 +663,44 @@ const FeedbackManagement = () => {
 
   const handleBulkUpdate = async (targetStatus) => {
     if (selectedIds.length === 0) return;
-    setLoading(true);
+
+    const count = selectedIds.length;
+    const idsToUpdate = [...selectedIds];
 
     const updates = {
       status: targetStatus,
       resolved_at: targetStatus === 'resolved' ? new Date().toISOString() : null
     };
 
-    const { error } = await supabase.from('feedbacks').update(updates).in('id', selectedIds);
+    // 🟢 Optimistic: immediately update local state and clear selection
+    setFeedbacks(prev => prev.map(f => idsToUpdate.includes(f.id) ? { ...f, ...updates } : f));
+    setSelectedIds([]);
+
+    // 🟢 Show subtle refresh indicator (NOT the full loading spinner)
+    setIsRefreshing(true);
+
+    const { error } = await supabase.from('feedbacks').update(updates).in('id', idsToUpdate);
+
+    setIsRefreshing(false);
 
     if (!error) {
       toast({
         title: t('feedback_management.toast.bulk_update_success_title'),
-        description: t('feedback_management.toast.bulk_update_success_description', { count: selectedIds.length, status: getStatusLabel(targetStatus) }),
+        description: t('feedback_management.toast.bulk_update_success_description', { count, status: getStatusLabel(targetStatus) }),
         className: "bg-green-600 text-white border-none"
       });
-      setFeedbacks(prev => prev.map(f => selectedIds.includes(f.id) ? { ...f, ...updates } : f));
-      setSelectedIds([]);
+      // 🟢 Immediately update the global escalated count without waiting for the 1.5s realtime debounce
+      if (typeof checkEscalatedStatus === 'function') {
+        checkEscalatedStatus();
+      }
     } else {
+      // Revert optimistic update on error
       toast({ variant: "destructive", title: t('feedback_management.toast.bulk_update_error_title'), description: t('feedback_management.toast.bulk_update_error_description') });
+      // Re-fetch to get correct state
+      setIsRefreshing(true);
+      await fetchFeedbacks();
+      setIsRefreshing(false);
     }
-    setLoading(false);
   };
 
   // Client-side filtering remains only for complex cases or forcing visibility (highlighted items)
@@ -778,12 +808,12 @@ const FeedbackManagement = () => {
           <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline" className="gap-2 border-slate-700 hover:bg-slate-800 text-slate-700 dark:text-slate-300"><RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />{t('feedback_management.actions.refresh')}</Button>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-5 shrink-0 shadow-sm relative z-10">
+        <div id="onboarding-filters" className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-5 shrink-0 shadow-sm relative z-10">
           {/* 🟢 MOBİL GÖRÜNÜM: Grid (2 sütun), Masaüstü: Flex */}
           <div className="grid grid-cols-2 gap-2 md:flex md:flex-row md:flex-wrap md:gap-3 xl:flex-nowrap">
 
             {/* Arama Inputu: Mobilde col-span-2 (Tam genişlik) */}
-            <div className="relative col-span-2 md:flex-1 md:min-w-[240px]">
+            <div className="relative col-span-2 md:flex-1 md:min-w-[240px]" id="feedback-search-bar">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <Input
                 placeholder={t('feedback_management.search_placeholder')}
@@ -827,17 +857,19 @@ const FeedbackManagement = () => {
                 <SelectItem value="sensitive">{t('feedback_management.filters.sensitive_customer')}</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger className="w-full md:w-[150px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200">
-                <Calendar className="w-3.5 h-3.5 mr-2 text-indigo-400 shrink-0" />
-                <span className="truncate">{dateFilters.find(f => f.id === dateFilter)?.label || t('feedback_management.filters.date')}</span>
-              </SelectTrigger>
-              <SelectContent className="bg-[#111827] border-slate-800 text-slate-200">
-                {dateFilters.map(f => (
-                  <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div id="onboarding-date-picker" className="col-span-1 md:w-auto">
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger className="w-full md:w-[150px] bg-[#111827] border-slate-700 h-10 rounded-lg text-sm text-slate-200">
+                  <Calendar className="w-3.5 h-3.5 mr-2 text-indigo-400 shrink-0" />
+                  <span className="truncate">{dateFilters.find(f => f.id === dateFilter)?.label || t('feedback_management.filters.date')}</span>
+                </SelectTrigger>
+                <SelectContent className="bg-[#111827] border-slate-800 text-slate-200">
+                  {dateFilters.map(f => (
+                    <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Temizle Butonu: Mobilde tam satır (col-span-2) */}
             <Button
@@ -903,23 +935,52 @@ const FeedbackManagement = () => {
           {loading ? (
             <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-500"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /><p className="text-sm font-medium">{t('feedback_management.loading_feedbacks')}</p></div>
           ) : filteredFeedbacks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-4 bg-slate-900/30 rounded-xl border border-dashed border-slate-800"><div className="bg-slate-800/50 p-4 rounded-full"><MessageSquare className="w-8 h-8 text-slate-500" /></div><div className="text-center"><h3 className="text-lg font-medium text-slate-300">{t('feedback_management.no_records_found')}</h3></div></div>
+            <div id="onboarding-feedback-card-0" className="flex flex-col items-center justify-center h-64 gap-4 bg-slate-900/30 rounded-xl border border-dashed border-slate-800"><div className="bg-slate-800/50 p-4 rounded-full"><MessageSquare className="w-8 h-8 text-slate-500" /></div><div className="text-center"><h3 className="text-lg font-medium text-slate-300">{t('feedback_management.no_records_found')}</h3></div></div>
           ) : (
             <>
-              <div ref={feedbackListRef} className={cn("transition-opacity duration-300", isRefreshing && "opacity-50")}>
+              <div id="feedback-list-container" ref={feedbackListRef} className={cn("transition-opacity duration-300", isRefreshing && "opacity-50")}>
                 <div className="grid gap-3">
-                  {filteredFeedbacks.map((f) => (
-                    <FeedbackCard
-                      key={f.id}
-                      ref={(el) => { if (el) itemRefs.current[f.id] = el; }}
-                      feedback={f}
-                      selectedIds={selectedIds}
-                      highlightedId={highlightedId}
-                      toggleSelect={toggleSelect}
-                      handleFeedbackClick={handleFeedbackClick}
-                      handleOpenCustomerProfile={handleOpenCustomerProfile}
-                    />
-                  ))}
+                  {(() => {
+                    // 🟢 SMART TARGETING: Find the best feedback for the tour
+                    // Preference order: 
+                    // 1. Not Anonymous AND Has Comment (Best for profile + translate steps)
+                    // 2. Not Anonymous (Good for profile steps)
+                    // 3. Has Comment (Good for translate steps)
+                    // 4. Default to first card
+
+                    const bestTargetIndex = filteredFeedbacks.findIndex(f => {
+                      const isAnon = (!f.customer_profile_id || f.customer_profile_id === 'guest') && (!f.customer_email || f.customer_email.length < 5);
+                      const hasComment = f.comment && f.comment.trim().length > 0;
+                      return !isAnon && hasComment;
+                    });
+
+                    const fallbackRegisteredIndex = bestTargetIndex !== -1 ? -1 : filteredFeedbacks.findIndex(f => {
+                      const isAnon = (!f.customer_profile_id || f.customer_profile_id === 'guest') && (!f.customer_email || f.customer_email.length < 5);
+                      return !isAnon;
+                    });
+
+                    const fallbackCommentIndex = (bestTargetIndex === -1 && fallbackRegisteredIndex === -1) ? filteredFeedbacks.findIndex(f => f.comment && f.comment.trim().length > 0) : -1;
+
+                    let targetIndex = 0;
+                    if (bestTargetIndex !== -1) targetIndex = bestTargetIndex;
+                    else if (fallbackRegisteredIndex !== -1) targetIndex = fallbackRegisteredIndex;
+                    else if (fallbackCommentIndex !== -1) targetIndex = fallbackCommentIndex;
+
+                    return filteredFeedbacks.map((f, index) => (
+                      <FeedbackCard
+                        key={f.id}
+                        ref={(el) => { if (el) itemRefs.current[f.id] = el; }}
+                        feedback={f}
+                        selectedIds={selectedIds}
+                        highlightedId={highlightedId}
+                        toggleSelect={toggleSelect}
+                        handleFeedbackClick={handleFeedbackClick}
+                        handleOpenCustomerProfile={handleOpenCustomerProfile}
+                        onboardingId={index === targetIndex ? "onboarding-feedback-card-0" : undefined}
+                        customerOnboardingId={index === targetIndex ? "onboarding-customer-trigger-0" : undefined}
+                      />
+                    ));
+                  })()}
                 </div>
 
                 {/* 🟢 DAHA FAZLA YÜKLE BUTONU (Server-side pagination) */}

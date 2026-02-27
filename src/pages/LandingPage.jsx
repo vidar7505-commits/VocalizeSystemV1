@@ -9,7 +9,7 @@ import {
   ArrowRight, TrendingUp, Target, RefreshCw, Cpu, BrainCircuit, Activity, Sparkles,
   MessageSquare as MessageSquareText, Info, AlertTriangle, Layers, Zap as ZapIcon, Network,
   Instagram, Mail, Building2, Globe2, TrendingDown, Languages, MapPin, Shield, Cloud, Database,
-  BarChart3, Users, Clock, Star, Award, Briefcase, Code2, Brain, Lock
+  BarChart3, Users, Clock, Star, Award, Briefcase, Code2, Brain, Lock, ChevronDown, Eye, Smartphone, Repeat, HeartHandshake, UserCheck, LayoutDashboard
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -59,6 +59,7 @@ const LandingPage = () => {
   const [authDefaultTab, setAuthDefaultTab] = useState('login');
   const [authDefaultRole, setAuthDefaultRole] = useState('customer');
   const [legalModal, setLegalModal] = useState({ isOpen: false, type: '' });
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [leadModalOpen, setLeadModalOpen] = useState(false);
   const [leadType, setLeadType] = useState('info_request');
   const [leadLoading, setLeadLoading] = useState(false);
@@ -285,6 +286,7 @@ const LandingPage = () => {
     { name: t.nav.features, to: 'features' },
     { name: t.nav.useCases, to: 'industries' },
     { name: t.nav.pricing, to: 'pricing' },
+    { name: t.nav.faq, to: 'faq' },
     { name: t.nav.v2, to: 'v2-vision' },
     { name: t.nav.globalVision, to: 'global-map' }
   ], [t.nav]);
@@ -1204,6 +1206,110 @@ const LandingPage = () => {
               </div>
             </div>
           </section >
+        </ComponentErrorBoundary>
+
+        {/* ===== FAQ SECTION ===== */}
+        <ComponentErrorBoundary name="FAQ Section" variant="teal">
+          <section id="faq" className="py-20 md:py-28 bg-gradient-to-b from-[#0f172a] via-slate-900/30 to-[#0f172a] relative z-10 border-t border-slate-800/50">
+            <div className="container mx-auto px-4">
+              <FadeIn className="text-center mb-16">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white tracking-tight">
+                  {t.faq.title}
+                </h2>
+                <p className="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
+                  {t.faq.subtitle}
+                </p>
+              </FadeIn>
+
+              <div className="max-w-3xl mx-auto space-y-3">
+                {t.faq.items.map((item, idx) => {
+                  const isOpen = openFaqIndex === idx;
+                  const iconMap = {
+                    messageHeart: HeartHandshake,
+                    eye: Eye,
+                    shield: Shield,
+                    smartphone: Smartphone,
+                    repeat: Repeat,
+                    userCheck: UserCheck,
+                    lock: Lock,
+                    layout: LayoutDashboard,
+                    zap: Zap
+                  };
+                  const IconComp = iconMap[item.icon] || MessageSquareText;
+
+                  return (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: idx * 0.08, duration: 0.4 }}
+                    >
+                      <div
+                        className={cn(
+                          "rounded-xl border transition-all duration-300 overflow-hidden",
+                          isOpen
+                            ? "bg-slate-800/70 border-teal-500/40 shadow-lg shadow-teal-500/5"
+                            : "bg-slate-800/30 border-slate-700/50 hover:border-slate-600/60 hover:bg-slate-800/50"
+                        )}
+                      >
+                        <button
+                          onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                          className="w-full flex items-center gap-4 p-5 md:p-6 text-left cursor-pointer group"
+                        >
+                          <div className={cn(
+                            "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors duration-300",
+                            isOpen
+                              ? "bg-teal-500/20 border border-teal-500/40"
+                              : "bg-slate-700/50 border border-slate-600/50 group-hover:border-teal-500/30"
+                          )}>
+                            <IconComp className={cn(
+                              "w-5 h-5 transition-colors duration-300",
+                              isOpen ? "text-teal-400" : "text-slate-400 group-hover:text-teal-400/70"
+                            )} />
+                          </div>
+                          <span className={cn(
+                            "flex-1 font-semibold text-sm md:text-base transition-colors duration-300",
+                            isOpen ? "text-white" : "text-slate-200 group-hover:text-white"
+                          )}>
+                            {item.question}
+                          </span>
+                          <motion.div
+                            animate={{ rotate: isOpen ? 180 : 0 }}
+                            transition={{ duration: 0.3, ease: 'easeInOut' }}
+                            className="flex-shrink-0"
+                          >
+                            <ChevronDown className={cn(
+                              "w-5 h-5 transition-colors duration-300",
+                              isOpen ? "text-teal-400" : "text-slate-500"
+                            )} />
+                          </motion.div>
+                        </button>
+
+                        <AnimatePresence initial={false}>
+                          {isOpen && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.3, ease: 'easeInOut' }}
+                              className="overflow-hidden"
+                            >
+                              <div className="px-5 md:px-6 pb-5 md:pb-6 pl-[4.5rem] md:pl-[5rem]">
+                                <p className="text-slate-300 text-sm md:text-base leading-relaxed">
+                                  {item.answer}
+                                </p>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
         </ComponentErrorBoundary>
 
         {/* ===== V2 AI VISION SECTION ===== */}

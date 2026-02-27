@@ -456,17 +456,19 @@ export default function FeedbackForm() {
     else toast({ title: "Eksik Bilgi", description: t.submit.errorValidation, variant: "destructive", className: "top-10" });
   };
 
+  const handleReturnToHome = () => {
+    const params = new URLSearchParams();
+    if (businessParam) params.set('business', businessParam);
+    if (branchParam) params.set('branch', branchParam);
+    if (guestParam) params.set('guest', guestParam);
+    if (qrParam) params.set('qr', qrParam);
+    if (langParam) params.set('lang', langParam);
+    navigate(`/customer-panel?${params.toString()}`);
+  };
+
   const handleBack = () => {
     if (currentStep > 1) setCurrentStep(prev => prev - 1);
-    else {
-      const params = new URLSearchParams();
-      if (businessParam) params.set('business', businessParam);
-      if (branchParam) params.set('branch', branchParam);
-      if (guestParam) params.set('guest', guestParam);
-      if (qrParam) params.set('qr', qrParam);
-      if (langParam) params.set('lang', langParam);
-      navigate(`/customer-panel?${params.toString()}`);
-    }
+    else handleReturnToHome();
   };
 
   const uploadFiles = async (files) => {
@@ -1043,7 +1045,7 @@ export default function FeedbackForm() {
                   </Button>
                 )}
 
-                <button onClick={() => navigate('/customer-panel')} className="text-slate-500 text-sm font-medium p-2 hover:text-white transition-colors">
+                <button onClick={handleReturnToHome} className="text-slate-500 text-sm font-medium p-2 hover:text-white transition-colors">
                   {t.google.noButton}
                 </button>
               </div>
@@ -1055,7 +1057,7 @@ export default function FeedbackForm() {
                 <Button onClick={() => window.open(instagramRedirectUrl, '_blank')} className="w-full bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] hover:opacity-90 text-white h-14 rounded-xl font-bold text-lg shadow-xl shadow-pink-600/20 transition-all duration-300">
                   <Instagram className="w-6 h-6 mr-2 stroke-[2.5px]" /> {t.google.instaButton}
                 </Button>
-                <Button onClick={() => navigate('/customer-panel')} variant="ghost" className="w-full text-slate-400 hover:text-white">
+                <Button onClick={handleReturnToHome} variant="ghost" className="w-full text-slate-400 hover:text-white">
                   {t.success.homeButton}
                 </Button>
               </div>
@@ -1063,7 +1065,7 @@ export default function FeedbackForm() {
 
             {/* 🟢 STANDART MOD (Hiçbiri Yoksa / Şikayet / Düşük Puan) */}
             {!googleRedirectUrl && !instagramRedirectUrl && (
-              <Button onClick={() => navigate('/customer-panel')} className="w-full bg-slate-700 hover:bg-slate-600 h-12 rounded-xl text-white font-bold">
+              <Button onClick={handleReturnToHome} className="w-full bg-slate-700 hover:bg-slate-600 h-12 rounded-xl text-white font-bold">
                 {t.success.homeButton}
               </Button>
             )}

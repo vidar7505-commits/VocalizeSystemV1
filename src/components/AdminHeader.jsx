@@ -197,6 +197,11 @@ const AdminHeader = () => {
         <div className="flex items-center gap-6">
           <span className="text-white font-bold text-xl md:text-2xl truncate max-w-[200px] md:max-w-xs tracking-tight">
             {loading ? "..." : businessName}
+            {userRole === 'branch_manager' && branches.length > 0 && assignedBranchId && (
+              <span className="text-slate-400 text-sm md:text-base font-medium ml-2 border-l border-slate-700 pl-2">
+                {branches.find(b => b.id === assignedBranchId)?.branch_name_tr || ""}
+              </span>
+            )}
           </span>
 
           {badgeConfig && (
@@ -211,7 +216,7 @@ const AdminHeader = () => {
           )}
 
           {!loading && branches.length > 1 && (
-            <div className="w-56">
+            <div className="w-56" id="header-branch-selector">
               <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
                 <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-200 font-semibold text-base h-10 hover:bg-slate-700 transition-colors">
                   <div className="flex items-center gap-2 truncate">
@@ -237,7 +242,7 @@ const AdminHeader = () => {
                       </div>
                     </div>
                   )}
-                  <SelectItem value="all">{t('header.all_branches')}</SelectItem>
+                  {!isBranchManager && <SelectItem value="all">{t('header.all_branches')}</SelectItem>}
                   {filteredBranches.length === 0 && branchSearchQuery && (
                     <div className="p-3 text-center text-slate-500 text-sm">{t('header.no_branch_found')}</div>
                   )}
@@ -252,7 +257,7 @@ const AdminHeader = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 bg-slate-800/50 border border-teal-500/30 rounded-lg px-4 py-2 hover:bg-slate-700/50 transition-colors">
+          <div className="flex items-center gap-3 bg-slate-800/50 border border-teal-500/30 rounded-lg px-4 py-2 hover:bg-slate-700/50 transition-colors" id="header-qr-stats">
             <QrCode className="h-5 w-5 text-teal-400" />
             <span className="text-sm font-semibold text-teal-300 whitespace-nowrap">
               {getQrDateLabel()}: <span className="text-white font-bold">{loading ? '...' : qrCount}</span> {t('header.scan_label')}
@@ -260,7 +265,7 @@ const AdminHeader = () => {
           </div>
 
           {/* BİLDİRİM BUTONU (GÜNCELLENDİ: toggleNotifications kullanıyor) */}
-          <div ref={notificationRef} className="relative">
+          <div ref={notificationRef} className="relative" id="header-notifications">
             <Button onClick={toggleNotifications} variant="ghost" size="icon" className="relative text-slate-400 hover:text-white hover:bg-slate-800">
               <Bell className="h-5 w-5" />
               {(unreadCount > 0 || escalatedCount > 0) && <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse border-2 border-[#111827]"></span>}

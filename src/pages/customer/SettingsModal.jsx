@@ -37,11 +37,11 @@ const SettingsModal = React.memo(({
 
     // Profile updates
     const [phone, setPhone] = useState(userProfile?.phone || '');
-    const [ageGroup, setAgeGroup] = useState(userProfile?.age_group || '');
+    const [ageGroup, setAgeGroup] = useState(userProfile?.age_group || (isGuest ? localStorage.getItem('vocalize_customer_age_group') : '') || '');
     const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
     const AGE_GROUPS = ['18-', '18-24', '25-34', '35-44', '45-54', '55+'];
-    const isAgeAlreadySet = !!userProfile?.age_group;
+    const isAgeAlreadySet = !isGuest && !!userProfile?.age_group;
     const isPhoneAlreadySet = !!userProfile?.phone;
 
     const [isEditingPhone, setIsEditingPhone] = useState(false);
@@ -72,7 +72,7 @@ const SettingsModal = React.memo(({
             return;
         }
 
-        if (isEditingPhone || !isPhoneAlreadySet) {
+        if (!isGuest && (isEditingPhone || !isPhoneAlreadySet)) {
             const phoneRegex = /^05\d{9}$/;
             if (!phoneRegex.test(effectivePhone.replace(/\s/g, ''))) {
                 toast({
@@ -86,28 +86,37 @@ const SettingsModal = React.memo(({
 
         setIsUpdatingProfile(true);
         try {
-            const { error } = await supabase
-                .from('customer_profiles')
-                .upsert({
-                    user_id: user.id,
-                    email: user.email,
-                    phone: effectivePhone.replace(/\s/g, ''),
-                    age_group: effectiveAge,
-                    updated_at: new Date().toISOString()
-                }, {
-                    onConflict: 'user_id'
+            if (isGuest) {
+                localStorage.setItem('vocalize_customer_age_group', effectiveAge);
+                toast({
+                    title: language === 'tr' ? 'Başarılı' : 'Success',
+                    description: language === 'tr' ? 'Yaş bilgisi kaydedildi' : 'Age information saved',
+                    className: "bg-teal-600 text-white border-none"
                 });
+            } else {
+                const { error } = await supabase
+                    .from('customer_profiles')
+                    .upsert({
+                        user_id: user.id,
+                        email: user.email,
+                        phone: effectivePhone.replace(/\s/g, ''),
+                        age_group: effectiveAge,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'user_id'
+                    });
 
-            if (error) throw error;
+                if (error) throw error;
 
-            // Update local userProfile state so UI reflects change immediately
-            setIsEditingPhone(false);
+                // Update local userProfile state so UI reflects change immediately
+                setIsEditingPhone(false);
 
-            toast({
-                title: language === 'tr' ? 'Başarılı' : 'Success',
-                description: language === 'tr' ? 'Profil başarıyla güncellendi' : 'Profile successfully updated',
-                className: "bg-teal-600 text-white border-none"
-            });
+                toast({
+                    title: language === 'tr' ? 'Başarılı' : 'Success',
+                    description: language === 'tr' ? 'Profil başarıyla güncellendi' : 'Profile successfully updated',
+                    className: "bg-teal-600 text-white border-none"
+                });
+            }
         } catch (err) {
             toast({
                 title: language === 'tr' ? 'Hata' : 'Error',
@@ -509,27 +518,69 @@ const SettingsModal = React.memo(({
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center p-8">
-                        <div className="bg-slate-800/80 p-8 rounded-full inline-flex mb-6">
-                            <UserPlus className="h-12 w-12 text-teal-500" />
+                    <div className="flex-1 flex flex-col items-center justify-start p-6 overflow-y-auto">
+
+                        {/* Guest Age Selection */}
+                        <div className="w-full max-w-sm mb-6 bg-slate-800/50 p-5 rounded-xl border border-slate-700">
+                            <label className="text-sm text-slate-300 font-semibold mb-3 flex items-center justify-center gap-2">
+                                <UserIcon className="h-4 w-4 text-teal-500" />
+                                {language === 'tr' ? 'Yaş Grubunuz' : 'Your Age Group'}
+                            </label>
+                            <div className="grid grid-cols-3 gap-2 mb-4">
+                                {AGE_GROUPS.map((age) => (
+                                    <button
+                                        key={age}
+                                        type="button"
+                                        onClick={() => setAgeGroup(age)}
+                                        className={`h-10 rounded-lg border text-xs font-medium transition-all duration-200 ${ageGroup === age
+                                            ? 'bg-teal-600 border-teal-500 text-white shadow-lg shadow-teal-900/30'
+                                            : 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-teal-600/20 hover:border-teal-500/50'
+                                            }`}
+                                    >
+                                        {age}
+                                    </button>
+                                ))}
+                            </div>
+                            <Button
+                                onClick={handleUpdateProfile}
+                                disabled={isUpdatingProfile || !ageGroup}
+                                className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold h-10"
+                            >
+                                {isUpdatingProfile ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                        {language === 'tr' ? 'Kaydediliyor...' : 'Saving...'}
+                                    </>
+                                ) : (
+                                    <>
+                                        <Send className="h-4 w-4 mr-2" />
+                                        {language === 'tr' ? 'Yaşı Kaydet' : 'Save Age'}
+                                    </>
+                                )}
+                            </Button>
                         </div>
-                        <h3 className="text-2xl font-bold text-white text-center mb-3">
+
+                        <div className="bg-slate-800/80 p-5 rounded-full inline-flex mb-3 relative">
+                            <UserPlus className="h-8 w-8 text-teal-500" />
+                            <div className="absolute top-0 right-0 w-3 h-3 bg-teal-500 rounded-full animate-ping"></div>
+                        </div>
+                        <h3 className="text-xl font-bold text-white text-center mb-2">
                             {language === 'tr' ? 'Daha Fazla Özellik Açın' : 'Unlock More Features'}
                         </h3>
-                        <p className="text-slate-400 text-center max-w-sm mb-6">
+                        <p className="text-slate-400 text-sm text-center max-w-sm mb-5">
                             {language === 'tr'
-                                ? 'Geri bildirimlerinizi takip edin, istatistiklerinizi görün and daha fazla özelliği kullanın.'
+                                ? 'Geri bildirimlerinizi takip edin, istatistiklerinizi görün ve gelişmiş özellikleri kullanın.'
                                 : 'Track your feedback, view statistics and unlock more features.'}
                         </p>
                         <Button
                             onClick={() => { handleRegisterClick(); onClose(); }}
-                            className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-6 rounded-xl font-bold text-base mb-4"
+                            className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-5 rounded-xl font-bold text-sm mb-4"
                         >
-                            <UserPlus className="mr-2 h-5 w-5" />
+                            <UserPlus className="mr-2 h-4 w-4" />
                             {t.register}
                         </Button>
 
-                        <DialogFooter className="w-full mt-auto pt-6 border-t border-slate-800 flex-shrink-0 flex flex-col gap-3">
+                        <div className="w-full mt-auto pt-4 border-t border-slate-800 flex-shrink-0 flex flex-col gap-3">
                             <Button
                                 onClick={() => { onClose(); setSupportModalOpen(true); }}
                                 variant="outline"
@@ -546,7 +597,7 @@ const SettingsModal = React.memo(({
                                 <LogOut className="h-4 w-4 mr-2" />
                                 {language === 'tr' ? 'Çıkış Yap' : 'Logout'}
                             </Button>
-                        </DialogFooter>
+                        </div>
                     </div>
                 )}
             </DialogContent>

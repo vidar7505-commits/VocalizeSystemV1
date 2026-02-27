@@ -18,6 +18,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { cn, formatCustomerName, getCustomerData, formatCompactNumber, formatNumber, fetchDeep } from "@/lib/utils";
 import DateRangePicker from '@/components/DateRangePicker';
 
+// ID for tour targeting added to wrapper div in return
+
 // --- RENK PALETİ ---
 const COLORS = {
   primary: '#0ea5e9',   // Sky Blue
@@ -525,7 +527,7 @@ const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], is
               <Activity className="w-3.5 h-3.5" /> {t('analytics.modal.report_card')}
             </p>
           </div>
-          <button onClick={onClose} className={`p-2 rounded-full ${isLight ? 'bg-slate-200 hover:bg-slate-300 text-slate-600' : 'bg-slate-800 hover:bg-slate-700 text-slate-400'} hover:text-white transition-colors`}>
+          <button onClick={onClose} data-onboarding-close-branch-modal className={`p-2 rounded-full ${isLight ? 'bg-slate-200 hover:bg-slate-300 text-slate-600' : 'bg-slate-800 hover:bg-slate-700 text-slate-400'} hover:text-white transition-colors`}>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -533,7 +535,7 @@ const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], is
         <div className="p-6 space-y-6 overflow-y-auto">
 
           {/* AKILLI TEŞHİS */}
-          <div className={`p-5 rounded-xl border ${insight.color} relative overflow-hidden shadow-lg`}>
+          <div id="onboarding-branch-intelligence" className={`p-5 rounded-xl border ${insight.color} relative overflow-hidden shadow-lg`}>
             <div className="flex items-start gap-4 relative z-10">
               <div className="p-2.5 rounded-lg bg-white/10 shrink-0 border border-white/10">
                 <InsightIcon className="w-6 h-6" />
@@ -654,7 +656,7 @@ const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], is
           </div>
 
           {/* Şube Saatlik Analiz (YENİ) */}
-          <div className={`mt-4 ${isLight ? 'bg-slate-100/30 border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} p-4 rounded-xl border transition-all`}>
+          <div id="onboarding-branch-hourly" className={`mt-4 ${isLight ? 'bg-slate-100/30 border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} p-4 rounded-xl border transition-all`}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
               <div className="flex items-center gap-2">
                 <Activity className="w-4 h-4 text-purple-400" />
@@ -748,7 +750,7 @@ const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], is
           </div>
 
           {/* 👥 ŞUBE DEMOGRAFİK ANALİZ (YENİ) */}
-          <div className={`border-t ${isLight ? 'border-slate-200' : 'border-slate-800'} pt-6`}>
+          <div id="onboarding-branch-demographics" className={`border-t ${isLight ? 'border-slate-200' : 'border-slate-800'} pt-6`}>
             <h3 className={`text-sm font-bold ${isLight ? 'text-slate-800' : 'text-slate-300'} mb-4 flex items-center gap-2`}>
               <Users className="w-4 h-4 text-indigo-400" /> {t('analytics.modal.customer_profile')}
             </h3>
@@ -843,9 +845,12 @@ const BranchDetailModal = ({ isOpen, onClose, branch, branchesFeedbacks = [], is
 
 // --- MAIN COMPONENT ---
 const DetailedAnalytics = () => {
-  const { businessId, selectedBranchId, businessCreatedAt, theme } = useAdminContext();
+  const { businessId, selectedBranchId, userRole, assignedBranchId, businessCreatedAt, theme } = useAdminContext();
   const { toast } = useToast();
   const { t } = useTranslation(['admin', 'common']);
+
+  const isBranchManager = userRole === 'branch_manager';
+  const effectiveBranchId = isBranchManager ? assignedBranchId : (selectedBranchId === 'all' ? null : selectedBranchId);
 
   const [loading, setLoading] = useState(true);
   const isLight = theme === 'light';
@@ -889,11 +894,17 @@ const DetailedAnalytics = () => {
       const prevTo = sub(dateRange.to, { days: dayDiff });
 
       // 🟢 1. FETCH ALL BRANCHES (Leaderboard için)
-      const { data: bData, error: bErr } = await supabase
+      let bQuery = supabase
         .from('branches')
         .select('id, branch_name_tr, is_active')
         .eq('business_id', businessId)
         .eq('is_active', true);
+
+      if (isBranchManager && assignedBranchId) {
+        bQuery = bQuery.eq('id', assignedBranchId);
+      }
+
+      const { data: bData, error: bErr } = await bQuery;
       if (!bErr) setAllBranches(bData || []);
 
       // 🟢 2. COUNTS (Single hit)
@@ -902,14 +913,14 @@ const DetailedAnalytics = () => {
         .eq('business_id', businessId)
         .gte('created_at', startOfDay(dateRange.from).toISOString())
         .lte('created_at', endOfDay(dateRange.to).toISOString());
-      if (selectedBranchId !== 'all') countCurrQuery = countCurrQuery.eq('branch_id', selectedBranchId);
+      if (effectiveBranchId) countCurrQuery = countCurrQuery.eq('branch_id', effectiveBranchId);
 
       let countPrevQuery = supabase.from('feedbacks')
         .select('*', { count: 'exact', head: true })
         .eq('business_id', businessId)
         .gte('created_at', startOfDay(prevFrom).toISOString())
         .lte('created_at', endOfDay(prevTo).toISOString());
-      if (selectedBranchId !== 'all') countPrevQuery = countPrevQuery.eq('branch_id', selectedBranchId);
+      if (effectiveBranchId) countPrevQuery = countPrevQuery.eq('branch_id', effectiveBranchId);
 
       const [resCountCurr, resCountPrev] = await Promise.all([countCurrQuery, countPrevQuery]);
 
@@ -929,25 +940,27 @@ const DetailedAnalytics = () => {
         .gte('created_at', startOfDay(prevFrom).toISOString())
         .lte('created_at', endOfDay(prevTo).toISOString());
 
-      const feedbacksCurr = await fetchDeep(selectedBranchId !== 'all' ? queryCurr.eq('branch_id', selectedBranchId) : queryCurr);
-      const feedbacksPrev = await fetchDeep(selectedBranchId !== 'all' ? queryPrev.eq('branch_id', selectedBranchId) : queryPrev);
+      const feedbacksCurr = await fetchDeep(effectiveBranchId ? queryCurr.eq('branch_id', effectiveBranchId) : queryCurr);
+      const feedbacksPrev = await fetchDeep(effectiveBranchId ? queryPrev.eq('branch_id', effectiveBranchId) : queryPrev);
 
       setFeedbacks(feedbacksCurr);
       setPrevFeedbacks(feedbacksPrev);
 
       // 🟢 4. TRAFFIC COUNTS
-      const qrTrafficQuery = supabase.from('qr_scans')
+      let qrTrafficQuery = supabase.from('qr_scans')
         .select('id', { count: 'exact', head: true })
         .eq('business_id', businessId)
         .gte('created_at', startOfDay(dateRange.from).toISOString())
         .lte('created_at', endOfDay(dateRange.to).toISOString());
+      if (effectiveBranchId) qrTrafficQuery = qrTrafficQuery.eq('branch_id', effectiveBranchId);
 
-      const webTrafficQuery = supabase.from('page_views')
+      let webTrafficQuery = supabase.from('page_views')
         .select('id', { count: 'exact', head: true })
         .eq('business_id', businessId)
         .eq('source', 'web')
         .gte('created_at', startOfDay(dateRange.from).toISOString())
         .lte('created_at', endOfDay(dateRange.to).toISOString());
+      if (effectiveBranchId) webTrafficQuery = webTrafficQuery.eq('branch_id', effectiveBranchId);
 
       const [resQr, resWeb] = await Promise.all([qrTrafficQuery, webTrafficQuery]);
 
@@ -966,7 +979,7 @@ const DetailedAnalytics = () => {
         .select('customer_age_group, customer_email')
         .eq('business_id', businessId);
 
-      const allTimeBranchQuery = selectedBranchId !== 'all' ? allTimeQuery.eq('branch_id', selectedBranchId) : allTimeQuery;
+      const allTimeBranchQuery = effectiveBranchId ? allTimeQuery.eq('branch_id', effectiveBranchId) : allTimeQuery;
       const allTimeFeedbacks = await fetchDeep(allTimeBranchQuery);
 
       const uniqueUsersTotal = { '18-': new Set(), '18-24': new Set(), '25-34': new Set(), '35-44': new Set(), '45-54': new Set(), '55+': new Set() };
@@ -999,7 +1012,7 @@ const DetailedAnalytics = () => {
     } finally {
       setLoading(false);
     }
-  }, [businessId, selectedBranchId, dateRange, toast]);
+  }, [businessId, effectiveBranchId, dateRange, toast]);
 
   // 🟢 REALTIME (Anlık Güncelleme - DEBOUNCED)
   const analyticsDebounceRef = useRef(null);
@@ -1388,7 +1401,7 @@ const DetailedAnalytics = () => {
         dominantAge: Object.entries(b.ageCounts).sort((x, y) => y[1] - x[1])[0]?.[0] || '-'
       };
     }).sort((a, b) => b.vocalizeScore - a.vocalizeScore);
-  }, [feedbacks, selectedBranchId]);
+  }, [feedbacks, selectedBranchId, allBranches]);
 
   // 🟢 FİLTRELENMİŞ LİDERLİK TABLOSU (Arama özelliği)
   const filteredLeaderboard = useMemo(() => {
@@ -1413,7 +1426,8 @@ const DetailedAnalytics = () => {
 
   // Tek şube / tek satır durumunda akıllı analiz için özet nesne
   const singleBranchSummary = useMemo(() => {
-    if (!feedbacks.length) return null;
+    // Şubesi belli değilse analiz gösterme
+    if (selectedBranchId === 'all' && (!leaderboardData || leaderboardData.length !== 1)) return null;
 
     // Tüm şubeler görünümünde sadece 1 satır varsa, doğrudan o satırı kullan
     if (selectedBranchId === 'all') {
@@ -1422,7 +1436,9 @@ const DetailedAnalytics = () => {
     }
 
     const base = {
-      name: feedbacks[0].branches?.branch_name_tr || t('analytics.single_branch.selected_branch'),
+      name: (selectedBranchId !== 'all' && allBranches.length > 0)
+        ? (allBranches.find(b => b.id === selectedBranchId)?.branch_name_tr || t('analytics.single_branch.selected_branch'))
+        : (feedbacks[0]?.branches?.branch_name_tr || t('analytics.single_branch.selected_branch')),
       total: 0,
       complaints: 0,
       resolved: 0,
@@ -1489,7 +1505,7 @@ const DetailedAnalytics = () => {
       dominantAge: Object.entries(agg.ageCounts).sort((x, y) => y[1] - x[1])[0]?.[0] || '-',
       ageCounts: agg.ageCounts
     };
-  }, [feedbacks, selectedBranchId, leaderboardData]);
+  }, [feedbacks, selectedBranchId, leaderboardData, allBranches, t]);
 
   return (
     <div className={`min-h-screen ${isLight ? 'bg-slate-50' : 'bg-[#0f172a]'} ${isLight ? 'text-slate-900' : 'text-slate-200'} pb-32 pt-24 lg:pt-0 font-sans selection:bg-sky-500/30 transition-colors duration-300`}>
@@ -1506,13 +1522,13 @@ const DetailedAnalytics = () => {
               {t('analytics.subtitle')}
             </p>
           </div>
-          <div className="w-full lg:w-auto z-20">
+          <div className="w-full lg:w-auto z-20" id="analytics-date-range">
             <DateRangePicker date={dateRange} setDate={setDateRange} preset={preset} setPreset={setPreset} />
           </div>
         </div>
 
         {/* KPI KARTLARI */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div id="onboarding-analytics-kpi" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
           <KpiCard
             title={t('analytics.kpi.total_interactions')}
             value={kpi.curr.total}
@@ -1564,7 +1580,7 @@ const DetailedAnalytics = () => {
 
               {/* 1. Trend & Marka Algısı */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className={`lg:col-span-2 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 shadow-lg transition-all`}>
+                <div id="analytics-trend-chart" className={`lg:col-span-2 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 shadow-lg transition-all`}>
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <h3 className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-lg flex items-center gap-2`}>
                       <TrendingUp className="w-5 h-5 text-sky-400" />
@@ -1602,7 +1618,7 @@ const DetailedAnalytics = () => {
                   </div>
                 </div>
 
-                <div className={`${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 flex flex-col justify-between transition-all`}>
+                <div id="onboarding-brand-experience" className={`${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 flex flex-col justify-between transition-all`}>
                   <div>
                     <h3 className={`${isLight ? 'text-slate-900' : 'text-white'} font-bold text-lg flex items-center gap-2`}>
                       <Zap className="w-5 h-5 text-yellow-400" />
@@ -1742,7 +1758,7 @@ const DetailedAnalytics = () => {
                 </div>
 
                 {/* 🟢 SAATLİK YOĞUNLUK ANALİZİ (YENİ) - TAM GENİŞLİK */}
-                <div className={`lg:col-span-3 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 transition-all`}>
+                <div id="onboarding-hourly-analysis" className={`lg:col-span-3 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 transition-all`}>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
                     <div className="flex items-center gap-2">
                       <Zap className="w-5 h-5 text-indigo-400" />
@@ -1881,7 +1897,7 @@ const DetailedAnalytics = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div id="onboarding-analytics-demographics" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* 1. Yaş Dağılımı (Mevcut) */}
                 <div className={`${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 flex flex-col transition-all`}>
@@ -2032,7 +2048,7 @@ const DetailedAnalytics = () => {
 
             {selectedBranchId === 'all' && leaderboardData && leaderboardData.length > 0 && (
               <div className={`${isLight ? 'bg-white border-slate-200 shadow-md' : 'bg-slate-900/50 border-slate-800'} border rounded-2xl p-6 relative overflow-visible z-0 mb-8 shadow-lg transition-all`}>
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+                <div id="onboarding-analytics-leaderboard" className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 scroll-mt-24">
                   <div className="flex items-center gap-2">
                     <Trophy className="w-6 h-6 text-amber-400" />
                     <div>
@@ -2110,6 +2126,7 @@ const DetailedAnalytics = () => {
                         return (
                           <tr
                             key={branch.name}
+                            id={i === 0 ? "onboarding-leaderboard-inspect" : undefined}
                             onClick={() => setSelectedModalBranch(branch)}
                             className={`cursor-pointer transition-all duration-200 group ${isFirst ? (isLight ? 'bg-amber-500/10 hover:bg-amber-500/20' : 'bg-amber-500/5 hover:bg-amber-500/10') : (isLight ? 'hover:bg-slate-100' : 'hover:bg-slate-800/60')}`}
                           >
@@ -2191,7 +2208,7 @@ const DetailedAnalytics = () => {
               const insight = getSmartInsight(singleBranchSummary, t);
               const InsightIcon = insight.icon;
               return (
-                <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 mb-8 shadow-lg">
+                <div id="onboarding-smart-insights" className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 mb-8 shadow-lg">
                   <div className={`p-5 rounded-xl border ${insight.color} relative overflow-hidden`}>
                     <div className="flex items-start gap-4 relative z-10">
                       <div className="p-2.5 rounded-lg bg-white/10 shrink-0 border border-white/10">

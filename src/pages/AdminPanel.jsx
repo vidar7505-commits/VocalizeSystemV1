@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAdminContext } from '@/contexts/AdminContext';
@@ -21,6 +22,21 @@ import FeedbackDetailModal from '@/components/FeedbackDetailModal';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
 
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
+
+// --- MOCK DATA FOR ONBOARDING ---
+const getMockFeedback = (t) => ({
+  id: 'mock-onboarding-id',
+  feedback_type: 'complaint',
+  status: 'escalated',
+  message: t('onboarding.mock_message', 'Bu bir örnek bildirimdir. Sistemin nasıl çalıştığını görmeniz için buraya yerleştirilmiştir.'),
+  created_at: new Date().toISOString(),
+  rating: 1,
+  general_eval_rating: 1,
+  branches: { branch_name_tr: t('onboarding.mock_branch', 'Örnek Şube') },
+  customer_profiles: { first_name: 'Müşteri', last_name: 'Örneği' },
+  flag_vip_customer: true,
+  flag_sensitive_customer: false
+});
 
 // --- HELPER COMPONENTS ---
 
@@ -162,6 +178,7 @@ const AdminPanel = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { t, i18n } = useTranslation('admin'); // 'admin' namespace
+  const { hasSeenOnboarding } = useAuth();
 
   const feedbackSectionRef = useRef(null);
   const realtimeDebounceRef = useRef(null);
@@ -188,9 +205,17 @@ const AdminPanel = () => {
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
+  // Tura özel sahte veri yönetimi
+  const finalFeedbacks = useMemo(() => {
+    if (!loadingFeedbacks && recentFeedbacks.length === 0 && !hasSeenOnboarding) {
+      return [getMockFeedback(t)];
+    }
+    return recentFeedbacks;
+  }, [loadingFeedbacks, recentFeedbacks, hasSeenOnboarding, t]);
+
   useEffect(() => {
-    if (location.state?.openFeedbackId && recentFeedbacks.length > 0) {
-      const targetFeedback = recentFeedbacks.find(f => f.id === location.state.openFeedbackId);
+    if (location.state?.openFeedbackId && finalFeedbacks.length > 0) {
+      const targetFeedback = finalFeedbacks.find(f => f.id === location.state.openFeedbackId);
       if (targetFeedback) {
         setSelectedFeedback(targetFeedback);
         setIsDetailModalOpen(true);
@@ -201,7 +226,7 @@ const AdminPanel = () => {
         window.history.replaceState({}, document.title);
       }
     }
-  }, [location.state, recentFeedbacks]);
+  }, [location.state, finalFeedbacks]);
 
   // Fallback if branch name is missing, use translation
   const displayTitle = selectedBranchId === 'all'
@@ -471,7 +496,7 @@ const AdminPanel = () => {
         .select('customer_profile_id, is_vip, is_sensitive, manager_notes')
         .eq('business_id', businessId);
 
-      const finalFeedbacks = processedFeedbacks.map(f => {
+      const processedFeedbacksWithFlags = processedFeedbacks.map(f => {
         const profileId = f.customer_profile_id || f.customer_profiles?.id;
         const bizData = bizCustomers?.find(bc => bc.customer_profile_id === profileId);
 
@@ -492,7 +517,7 @@ const AdminPanel = () => {
         };
       });
 
-      setRecentFeedbacks(finalFeedbacks);
+      setRecentFeedbacks(processedFeedbacksWithFlags);
 
     } catch (error) {
       console.error("Dashboard data fetch error:", error);
@@ -570,7 +595,7 @@ const AdminPanel = () => {
     }));
   };
 
-  const hasUrgentFeedbacks = useMemo(() => recentFeedbacks.some(f => f.status === 'escalated'), [recentFeedbacks]);
+  const hasUrgentFeedbacks = useMemo(() => finalFeedbacks.some(f => f.status === 'escalated'), [finalFeedbacks]);
 
   return (
     <div className="mx-auto max-w-7xl pb-10 px-4 pt-20 md:px-6 md:pt-0 lg:px-8">
@@ -588,32 +613,32 @@ const AdminPanel = () => {
       </div>
 
       {hasUrgentFeedbacks && (
-        <div className="acil-durum-box bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between shadow-[0_0_15px_rgba(220,38,38,0.3)] mb-6">
+        <div id="urgent-feedbacks-banner" className="acil-durum-box bg-red-950/80 border border-red-600/50 rounded-lg p-3 flex items-center justify-between shadow-[0_0_15px_rgba(220,38,38,0.3)] mb-6">
           <div className="flex items-center gap-3 animate-pulse"><div className="bg-red-600 p-2 rounded-full"><Siren className="w-5 h-5 text-white animate-spin-slow" /></div><div><h3 className="text-red-200 font-bold text-sm">{t('dashboard.urgent_alert.title')}</h3><p className="text-red-300/80 text-xs">{t('dashboard.urgent_alert.description')}</p></div></div>
           <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shrink-0" onClick={handleInspectUrgent}>{t('dashboard.urgent_alert.inspect_button')}</Button>
         </div>
       )}
 
       {/* 1. KPI KARTLARI */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <SparklineCard title={t('dashboard.kpi.total_feedbacks')} value={`${metrics.total.value}`} delta={metrics.total.delta} deltaType={metrics.total.type} icon={MessageSquare} colorClass="bg-blue-500" sparkData={sparklineData.total} loading={loading} hideDelta={dateRange === 'all'} t={t} i18n={i18n} />
-        <SparklineCard title={t('dashboard.kpi.pending_complaints')} value={`${metrics.complaints.value}`} delta={metrics.complaints.delta} deltaType={metrics.complaints.type} icon={AlertTriangle} colorClass="bg-red-500" sparkData={sparklineData.complaints} loading={loading} isInverseMetric={true} hideDelta={dateRange === 'all'} t={t} i18n={i18n} />
-        <SparklineCard title={t('dashboard.kpi.resolved')} value={`${metrics.resolved.value}`} delta={metrics.resolved.delta} deltaType={metrics.resolved.type} icon={CheckCircle2} colorClass="bg-green-500" sparkData={sparklineData.resolved} loading={loading} hideDelta={dateRange === 'all'} t={t} i18n={i18n} />
-        <SparklineCard title={t('dashboard.kpi.avg_score')} value={metrics.rating.value} delta={metrics.rating.delta} deltaType={metrics.rating.type} icon={Star} colorClass="bg-yellow-500" sparkData={sparklineData.rating} loading={loading} hideDelta={dateRange === 'all'} t={t} i18n={i18n} />
+      <div id="kpi-cards-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div id="kpi-total-feedbacks"><SparklineCard title={t('dashboard.kpi.total_feedbacks')} value={`${metrics.total.value}`} delta={metrics.total.delta} deltaType={metrics.total.type} icon={MessageSquare} colorClass="bg-blue-500" sparkData={sparklineData.total} loading={loading} hideDelta={dateRange === 'all'} t={t} i18n={i18n} /></div>
+        <div id="kpi-complaints"><SparklineCard title={t('dashboard.kpi.pending_complaints')} value={`${metrics.complaints.value}`} delta={metrics.complaints.delta} deltaType={metrics.complaints.type} icon={AlertTriangle} colorClass="bg-red-500" sparkData={sparklineData.complaints} loading={loading} isInverseMetric={true} hideDelta={dateRange === 'all'} t={t} i18n={i18n} /></div>
+        <div id="kpi-resolved"><SparklineCard title={t('dashboard.kpi.resolved')} value={`${metrics.resolved.value}`} delta={metrics.resolved.delta} deltaType={metrics.resolved.type} icon={CheckCircle2} colorClass="bg-green-500" sparkData={sparklineData.resolved} loading={loading} hideDelta={dateRange === 'all'} t={t} i18n={i18n} /></div>
+        <div id="kpi-avg-score"><SparklineCard title={t('dashboard.kpi.avg_score')} value={metrics.rating.value} delta={metrics.rating.delta} deltaType={metrics.rating.type} icon={Star} colorClass="bg-yellow-500" sparkData={sparklineData.rating} loading={loading} hideDelta={dateRange === 'all'} t={t} i18n={i18n} /></div>
       </div>
 
       {/* 2. GRAFİKLER */}
       <ComponentErrorBoundary name="Charts Section">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8 relative group">
+        <div id="analytics-charts-section" className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8 relative group">
           <Tabs defaultValue="stars" className="w-full">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6" id="dashboard-charts-header">
               <div className="flex items-center">
                 <div>
                   <h2 className="text-white font-bold text-xl mb-1">{t('dashboard.charts.quick_look')}</h2>
                   <p className="text-slate-400 text-sm">{t('dashboard.charts.quick_look_desc')}</p>
                 </div>
               </div>
-              <TabsList className="bg-slate-800 border-slate-700 w-full grid grid-cols-2 h-auto p-1 sm:w-auto sm:flex sm:h-10">
+              <TabsList className="bg-slate-800 border-slate-700 w-full grid grid-cols-2 h-auto p-1 sm:w-auto sm:flex sm:h-10" id="dashboard-tabs">
                 <TabsTrigger value="stars" className="text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white text-xs sm:text-sm transition-all"><Star className="w-4 h-4 mr-2" />{t('dashboard.charts.star_distribution')}</TabsTrigger>
                 <TabsTrigger value="types" className="text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-white text-xs sm:text-sm transition-all"><MessageSquare className="w-4 h-4 mr-2" />{t('dashboard.charts.feedback_types')}</TabsTrigger>
               </TabsList>
@@ -662,9 +687,8 @@ const AdminPanel = () => {
         </div >
       </ComponentErrorBoundary >
 
-      {/* 3. SON AKTİVİTELER (EN ALTTA) */}
       <ComponentErrorBoundary name="Recent Activities">
-        <div ref={feedbackSectionRef} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden p-6 relative group">
+        <div id="dashboard-recent-activities" ref={feedbackSectionRef} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden p-6 relative group">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-white">{t('dashboard.activity.title')}</h2>
             <div className="flex gap-2">
@@ -676,9 +700,9 @@ const AdminPanel = () => {
           </div>
 
           <div className={cn("transition-opacity duration-300", loadingFeedbacks ? "opacity-50 pointer-events-none" : "opacity-100")}>
-            {loadingFeedbacks && !recentFeedbacks.length ? (<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>) : recentFeedbacks.length === 0 ? (<div className="text-center py-8 text-slate-500">{t('dashboard.activity.no_activities')}</div>) : (
-              <div className="space-y-3">
-                {recentFeedbacks.map((f) => {
+            {loadingFeedbacks && !finalFeedbacks.length ? (<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>) : finalFeedbacks.length === 0 ? (<div className="text-center py-8 text-slate-500">{t('dashboard.activity.no_activities')}</div>) : (
+              <div className="space-y-3" id="feedback-list-container">
+                {finalFeedbacks.map((f, index) => {
                   const customerName = getCustomerData(f, 'name');
                   const smartName = formatCustomerName(customerName);
 
@@ -693,7 +717,7 @@ const AdminPanel = () => {
                   const hasGeneralEval = (Number(f.general_eval_rating) > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
 
                   return (
-                    <div key={f.id} id={`feedback-${f.id}`} onClick={() => handleFeedbackClick(f)} className={cn("feedback-activity-card group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "feedback-row-escalated bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
+                    <div key={f.id} id={index === 0 ? "onboarding-feedback-card-0" : `feedback-${f.id}`} onClick={() => handleFeedbackClick(f)} className={cn("feedback-activity-card group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "feedback-row-escalated bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
                       <div className="flex flex-col md:flex-row gap-4 items-start">
                         <div className="flex-1 w-full min-w-0 pr-0 md:pr-4">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">

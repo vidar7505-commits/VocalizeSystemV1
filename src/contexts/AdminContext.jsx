@@ -21,7 +21,6 @@ export const AdminProvider = ({ children }) => {
   // 🟢 YENİ: Role-based access control
   const [userRole, setUserRole] = useState(null); // 'owner' | 'branch_manager'
   const [assignedBranchId, setAssignedBranchId] = useState(null);
-
   const [branches, setBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState('all');
 
@@ -92,6 +91,7 @@ export const AdminProvider = ({ children }) => {
           business_id, 
           role, 
           assigned_branch_id,
+          has_seen_onboarding,
           businesses(business_name, created_at, is_special_offer, monthly_fee_override)
         `)
         .eq('user_id', user.id)
@@ -125,6 +125,7 @@ export const AdminProvider = ({ children }) => {
         return newVal === prev ? prev : newVal;
       });
       setUserRole(prev => role === prev ? prev : role);
+      setAssignedBranchId(prev => assignedBranch === prev ? prev : assignedBranch);
       setAssignedBranchId(prev => assignedBranch === prev ? prev : assignedBranch);
 
       // 2. Fetch Branches (with role-based filtering)

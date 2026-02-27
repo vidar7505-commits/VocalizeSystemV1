@@ -180,10 +180,10 @@ const AdminSidebar = () => {
   };
 
   const navItems = [
-    { icon: LayoutDashboard, label: t('sidebar.dashboard'), path: '/admin-panel' },
-    { icon: MessageSquare, label: t('sidebar.feedbacks'), path: '/admin-panel/feedbacks' },
-    { icon: BarChart3, label: t('sidebar.analytics'), path: '/admin-panel/analytics' },
-    { icon: Settings, label: t('sidebar.settings'), path: '/admin-panel/settings' },
+    { icon: LayoutDashboard, label: t('sidebar.dashboard'), path: '/admin-panel', id: 'sidebar-dashboard' },
+    { icon: MessageSquare, label: t('sidebar.feedbacks'), path: '/admin-panel/feedbacks', id: 'sidebar-feedbacks' },
+    { icon: BarChart3, label: t('sidebar.analytics'), path: '/admin-panel/analytics', id: 'sidebar-analytics' },
+    { icon: Settings, label: t('sidebar.settings'), path: '/admin-panel/settings', id: 'sidebar-settings' },
   ];
 
   const isActive = (path) => {
@@ -237,6 +237,7 @@ const AdminSidebar = () => {
             <Link
               key={item.path}
               to={item.path}
+              id={item.id}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
                 isActive(item.path)

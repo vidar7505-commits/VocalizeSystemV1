@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
 
   // Flag to prevent onAuthStateChange from overriding manual loading state during sign out
   const isSigningOut = useRef(false);
@@ -22,14 +23,37 @@ export const AuthProvider = ({ children }) => {
     if (session?.user) {
       setIsGuest(false);
       localStorage.removeItem('vocalize_guest_mode');
+
+      // Fetch onboarding status for managers
+      const fetchOnboardingStatus = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('manager_profiles')
+            .select('has_seen_onboarding')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+          if (!error && data) {
+            setHasSeenOnboarding(data.has_seen_onboarding);
+          }
+        } catch (err) {
+          console.error("Error fetching onboarding status:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchOnboardingStatus();
     } else {
+      setIsGuest(true); // Default or reset
+      setHasSeenOnboarding(false);
       // Check if guest mode was previously active
       const guestMode = localStorage.getItem('vocalize_guest_mode');
       if (guestMode === 'true') {
         setIsGuest(true);
       }
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -179,16 +203,35 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('vocalize_guest_mode', 'true'); // Persistent guest mode
   }, [user, session]);
 
+  // 🟢 YENİ: Onboarding durumunu güncelleme
+  const updateOnboardingStatus = useCallback(async (status) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('manager_profiles')
+        .update({ has_seen_onboarding: status })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setHasSeenOnboarding(status);
+    } catch (err) {
+      console.error("Error updating onboarding status:", err);
+    }
+  }, [user]);
+
   const value = useMemo(() => ({
     user,
     session,
     loading,
     isGuest,
+    hasSeenOnboarding,
+    setHasSeenOnboarding,
+    updateOnboardingStatus,
     signUp,
     signIn,
     signOut,
     loginAsGuest,
-  }), [user, session, loading, isGuest, signUp, signIn, signOut, loginAsGuest]);
+  }), [user, session, loading, isGuest, hasSeenOnboarding, updateOnboardingStatus, signUp, signIn, signOut, loginAsGuest]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -32,9 +32,7 @@ import {
 import SettingsModal from './customer/SettingsModal';
 import SupportModal from './customer/SupportModal';
 import DeleteAccountModal from './customer/DeleteAccountModal';
-
-
-
+import CustomerOnboardingModal from '@/components/onboarding/CustomerOnboardingModal';
 
 
 export default function CustomerPanel() {
@@ -2086,6 +2084,7 @@ export default function CustomerPanel() {
         onComplete={handleProfileComplete}
         onSkip={handleProfileSkip}
       />
+      <CustomerOnboardingModal />
     </div >
   );
 }

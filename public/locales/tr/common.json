@@ -72,5 +72,14 @@
         "4": "Perşembe",
         "5": "Cuma",
         "6": "Cumartesi"
+    },
+    "onboarding": {
+        "customer_modal_title": "Sesiniz İşletmemize Yol Gösterir",
+        "customer_modal_desc": "Şikayetlerinizle bizi iyileştirin, önerilerinizle vizyon katın, değerlendirmelerinizle en iyi olanı seçmemize yardımcı olun. Katılımınız bizim için çok değerli.",
+        "btn_finish": "Anladım",
+        "btn_skip": "Atla",
+        "btn_back": "Geri",
+        "btn_next": "İleri",
+        "restart_tour": "Sistem Turunu Başlat"
     }
 }

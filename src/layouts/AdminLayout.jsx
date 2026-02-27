@@ -4,6 +4,7 @@ import { AdminProvider } from '@/contexts/AdminContext';
 import AdminHeader from '@/components/AdminHeader';
 import AdminSidebar from '@/components/AdminSidebar';
 import AdminMobileNavbar from '@/components/AdminMobileNavbar';
+import OnboardingTour from '@/components/onboarding/OnboardingTour';
 
 const AdminLayout = () => {
   return (
@@ -13,6 +14,7 @@ const AdminLayout = () => {
         Böylece içerik uzasa bile Sidebar sabit kalır.
       */}
       <div className="h-screen w-full bg-[#0f172a] flex font-sans text-slate-100 overflow-hidden">
+        <OnboardingTour />
         <AdminSidebar />
 
         <div className="flex-1 flex flex-col min-w-0 h-full">
@@ -22,7 +24,7 @@ const AdminLayout = () => {
           {/* DÜZELTME: main alanı artık kapsayıcının kalan yüksekliğini doldurur 
              ve sadece kendi içinde scroll olur. 
           */}
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-900/50 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+          <main id="admin-main-content" className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-900/50 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
             <Outlet />
           </main>
         </div>

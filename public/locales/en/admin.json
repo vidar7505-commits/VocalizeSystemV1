@@ -391,7 +391,7 @@
             "error_title": "Error",
             "error_desc": "Could not send feedback.",
             "auth_error": "You need to log in.",
-            "empty_error": "Please type your message."
+            "empty_error": "Please write your message."
         }
     },
     "customer_profile": {
@@ -461,8 +461,12 @@
     "feedback_detail": {
         "urgent_header": "URGENT ACTION REQUIRED",
         "detail_header": "Detail",
-        "desc": "You can view all details of the feedback here.",
         "anonymous": "Anonymous user (No profile data)",
+        "anonymous_warning_title": "⚠️ Guest Feedback",
+        "anonymous_warning_desc": "Since this customer is not registered, 'Customer Profile' and 'VIP' features are unavailable for this item.",
+        "no_comment_warning_title": "⚠️ No Text Found",
+        "no_comment_warning_desc": "Since there is no text in this feedback, the 'Translation' feature is not available.",
+        "tour_skip_note": "We will automatically skip these steps in the tour.",
         "view_profile": "View Profile",
         "tech_info": "Technical Info",
         "ref_id": "Reference ID",
@@ -501,97 +505,6 @@
         "image_alt": "Feedback image",
         "general_eval_short": "Gen. Eval.",
         "check_api_key": "Please check API key configuration."
-    },
-    "notification_history": {
-        "title": "Notification History",
-        "description": "Manage all your feedback alerts from here.",
-        "loading": "Loading notifications...",
-        "error_loading": "Error loading notifications.",
-        "no_notifications": "No notifications to display.",
-        "total_count": "Total {{count}} notifications",
-        "bulk": {
-            "selected_count": "{{count}} notifications selected",
-            "deselect": "Deselect",
-            "mark_read": "Mark as Read",
-            "mark_unread": "Mark as Unread",
-            "delete": "Delete"
-        },
-        "filters": {
-            "all": "All",
-            "unread": "Unread",
-            "read": "Read"
-        },
-        "table": {
-            "status": "Status",
-            "message": "Message",
-            "branch": "Branch",
-            "date": "Date",
-            "read": "Read",
-            "unread": "Unread"
-        },
-        "labels": {
-            "complaint": "You have a new complaint",
-            "suggestion": "You have a new suggestion",
-            "evaluation": "You have a new evaluation",
-            "unknown": "New notification",
-            "customer": "Customer: {{name}}",
-            "unknown_customer": "Unknown",
-            "general_branch": "General"
-        },
-        "time": {
-            "just_now": "just now",
-            "minutes_ago": "{{count}}m ago",
-            "hours_ago": "{{count}}h ago",
-            "days_ago": "{{count}}d ago"
-        },
-        "delete_modal": {
-            "title": "Delete Confirmation",
-            "description": "Are you sure you want to permanently delete {{count}} selected notifications?",
-            "confirm": "Delete",
-            "cancel": "Cancel"
-        },
-        "toast": {
-            "update_success": "Success!",
-            "update_success_desc": "{{count}} notifications updated.",
-            "update_error": "Error",
-            "update_error_desc": "Bulk update failed.",
-            "delete_success": "Success!",
-            "delete_success_desc": "{{count}} notifications deleted.",
-            "delete_error": "Error",
-            "delete_error_desc": "Bulk delete failed.",
-            "load_error": "Error",
-            "load_error_desc": "Could not retrieve notification history.",
-            "detail_error": "Error",
-            "detail_error_desc": "Could not load feedback details."
-        },
-        "details_loading": "Loading details..."
-    },
-    "update_password": {
-        "title": "Set New Password",
-        "subtitle": "Please enter a new and secure password for your account.",
-        "label": "New Password",
-        "button": "Update Password",
-        "updating": "Updating...",
-        "success": "Success",
-        "success_desc": "Your password has been successfully updated. Redirecting...",
-        "error": "Error",
-        "error_length": "Password must be at least 6 characters.",
-        "error_update": "Password could not be updated.",
-        "invalid_link_title": "Invalid Link",
-        "invalid_link_desc": "The password reset link has expired or is invalid."
-    },
-    "qr_redirector": {
-        "loading": "You are being redirected...",
-        "error_title": "An Error Occurred",
-        "error_desc": "A problem occurred during connection.",
-        "qr_not_found": "QR code parameter not found in URL.",
-        "branch_not_found": "Branch not found",
-        "session_ended_title": "Session Ended",
-        "session_ended_desc": "You have been logged out of your Admin account to be redirected to the customer panel.",
-        "show_debug": "Show Technical Details",
-        "hide_debug": "Hide Technical Details",
-        "retry": "Try Again",
-        "home": "Home"
     },
     "navbar": {
         "qr_scans": "{{count}} Scans",
@@ -698,117 +611,231 @@
             "legal_consent": "I have read and approve the Terms of Service and Privacy Policy.",
             "google_register": "Register with Google"
         },
-        "forgot_password": {
-            "title": "Forgot Password",
-            "back": "Go Back",
-            "placeholder": "Email Address",
-            "submit": "Send Reset Link",
-            "sending": "Sending...",
-            "success_title": "Email Sent",
-            "success_desc": "Password reset link has been sent to your email address. Please also check your spam folder."
-        },
-        "legal": {
-            "title": "Legal Information",
-            "desc": "Terms of Use and KVKK Texts",
-            "terms_tab": "Terms of Use",
-            "kvkk_tab": "KVKK & Privacy",
-            "close": "Close",
-            "accept": "I Have Read and I Agree"
-        },
         "placeholders": {
             "full_name": "Full Name",
             "email": "Email Address",
             "phone": "Phone (05...)",
             "password": "Password (6-12 characters)",
             "manager_code": "Manager Code (MGR_...)"
+        }
+    },
+    "forgot_password": {
+        "title": "Forgot Password",
+        "back": "Go Back",
+        "placeholder": "Email Address",
+        "submit": "Send Reset Link",
+        "sending": "Sending...",
+        "success_title": "Email Sent",
+        "success_desc": "Password reset link has been sent to your email address. Please also check your spam folder."
+    },
+    "legal": {
+        "title": "Legal Information",
+        "desc": "Terms of Use and KVKK Texts",
+        "terms_tab": "Terms of Use",
+        "kvkk_tab": "KVKK & Privacy",
+        "close": "Close",
+        "accept": "I Have Read and I Agree"
+    },
+    "notification_history": {
+        "title": "Notification History",
+        "description": "Important feedback and system updates",
+        "no_notifications": "No notifications yet.",
+        "error_loading": "There was a problem loading notifications.",
+        "details_loading": "Loading details...",
+        "total_count": "Total {{count}} notifications",
+        "filters": {
+            "all": "All",
+            "unread": "Unread",
+            "read": "Read"
         },
-        "notification_history": {
-            "title": "Notification History",
-            "description": "Important feedback and system updates",
-            "no_notifications": "No notifications yet.",
-            "error_loading": "There was a problem loading notifications.",
-            "details_loading": "Loading details...",
-            "total_count": "Total {{count}} notifications",
-            "filters": {
-                "all": "All",
-                "unread": "Unread",
-                "read": "Read"
+        "table": {
+            "status": "Status",
+            "message": "Content",
+            "branch": "Branch",
+            "date": "Date"
+        },
+        "bulk": {
+            "selected_count": "{{count}} notifications selected",
+            "deselect": "Deselect",
+            "mark_read": "Mark as Read",
+            "mark_unread": "Mark as Unread",
+            "delete": "Delete"
+        },
+        "labels": {
+            "complaint": "Complaint",
+            "suggestion": "Suggestion",
+            "evaluation": "Evaluation",
+            "unknown": "Unknown Notification",
+            "unknown_customer": "Unknown Customer",
+            "customer": "Customer: {{name}}",
+            "general_branch": "Headquarters"
+        },
+        "toast": {
+            "load_error": "Error",
+            "load_error_desc": "Notifications could not be loaded.",
+            "update_success": "Success",
+            "update_success_desc": "{{count}} notifications updated.",
+            "update_error": "Error",
+            "update_error_desc": "Notifications could not be updated.",
+            "delete_success": "Deleted",
+            "delete_success_desc": "{{count}} notifications successfully deleted.",
+            "delete_error": "Error",
+            "delete_error_desc": "Notifications could not be deleted.",
+            "detail_error": "Error",
+            "detail_error_desc": "There was a problem loading details."
+        },
+        "delete_modal": {
+            "title": "Delete Notifications",
+            "description": "Are you sure you want to delete the selected {{count}} notifications? This action cannot be undone.",
+            "cancel": "Cancel",
+            "confirm": "Yes, Delete"
+        },
+        "time": {
+            "just_now": "just now",
+            "minutes_ago": "{{count}}m ago",
+            "hours_ago": "{{count}}h ago",
+            "days_ago": "{{count}}d ago"
+        }
+    },
+    "update_password": {
+        "title": "Update Your Password",
+        "subtitle": "Keep your account secure by setting a new password.",
+        "label": "New Password",
+        "button": "Save Password",
+        "updating": "Updating...",
+        "success": "Success",
+        "success_desc": "Your password has been successfully updated. Redirecting...",
+        "error": "Error",
+        "error_length": "Password must be at least 6 characters.",
+        "error_update": "There was a problem updating your password.",
+        "invalid_link_title": "Invalid Link",
+        "invalid_link_desc": "Password reset link is invalid or has expired."
+    },
+    "qr_redirector": {
+        "loading": "Processing QR Code...",
+        "error_title": "Error Occurred",
+        "error_desc": "Something went wrong while processing the QR code.",
+        "retry": "Try Again",
+        "home": "Back to Home",
+        "show_debug": "Show Error Detail",
+        "hide_debug": "Hide Detail",
+        "qr_not_found": "QR code not found.",
+        "branch_not_found": "No branch information found for this QR code.",
+        "session_ended_title": "Session Terminated",
+        "session_ended_desc": "Your session was closed because the QR code cannot be scanned while a manager session is active. You can log in as a customer."
+    },
+    "onboarding": {
+        "btn_next": "Next",
+        "btn_back": "Back",
+        "btn_finish": "Let's Start!",
+        "btn_skip": "Skip Tour",
+        "restart_tour": "Restart Tutorial",
+        "step_of": "of",
+        "items": {
+            "welcome": {
+                "title": "🚀 Welcome to Your Command Center",
+                "desc": "Your Vocalize dashboard transforms guest feedback into actionable business intelligence. We'll walk you through the key features in about 90 seconds."
             },
-            "table": {
-                "status": "Status",
-                "message": "Content",
-                "branch": "Branch",
-                "date": "Date"
+            "header_branch": {
+                "title": "🏢 Branch Selector",
+                "desc": "Switch between branches or select 'All Branches' for a consolidated view. Every chart, KPI card, and report on the dashboard adapts instantly to your selection."
             },
-            "bulk": {
-                "selected_count": "{{count}} notifications selected",
-                "deselect": "Deselect",
-                "mark_read": "Mark as Read",
-                "mark_unread": "Mark as Unread",
-                "delete": "Delete"
+            "header_qr": {
+                "title": "📊 QR Scan Counter",
+                "desc": "This counter shows how many times your QR codes and feedback links have been scanned in the selected period. A high scan count with low feedback means your form might need optimization."
             },
-            "labels": {
-                "complaint": "Complaint",
-                "suggestion": "Suggestion",
-                "evaluation": "Evaluation",
-                "unknown": "Unknown Notification",
-                "unknown_customer": "Unknown Customer",
-                "customer": "Customer: {{name}}",
-                "general_branch": "HQ"
+            "header_notifications": {
+                "title": "🔔 Real-Time Notifications",
+                "desc": "Instant alerts for new feedbacks, urgent complaints, and system updates. Red badges indicate unread critical items that need immediate attention."
             },
-            "toast": {
-                "load_error": "Error",
-                "load_error_desc": "Could not load notifications.",
-                "update_success": "Success",
-                "update_success_desc": "{{count}} notifications updated.",
-                "update_error": "Error",
-                "update_error_desc": "Could not update notifications.",
-                "delete_success": "Deleted",
-                "delete_success_desc": "{{count}} notifications successfully deleted.",
-                "delete_error": "Error",
-                "delete_error_desc": "Could not delete notifications.",
-                "detail_error": "Error",
-                "detail_error_desc": "There was a problem loading details."
+            "feedbacks": {
+                "title": "🚨 Urgent Feedback Banner",
+                "desc": "This red banner appears when a guest is still at the table and needs help NOW. Acting within minutes can turn a negative experience into a loyal customer. Click 'Inspect' to jump directly to urgent items."
             },
-            "delete_modal": {
-                "title": "Delete Notifications",
-                "description": "Are you sure you want to delete {{count}} selected notifications? This action cannot be undone.",
-                "cancel": "Cancel",
-                "confirm": "Yes, Delete"
+            "dashboard_kpi": {
+                "title": "📈 Dashboard KPI Cards",
+                "desc": "Your daily performance snapshot: total feedbacks, satisfaction score, resolution rate, and more. Green arrows indicate improvement over the previous period; red arrows indicate decline."
             },
-            "time": {
-                "just_now": "just now",
-                "minutes_ago": "{{count}}m ago",
-                "hours_ago": "{{count}}h ago",
-                "days_ago": "{{count}}d ago"
+            "dashboard_charts": {
+                "title": "📊 Quick Look Charts",
+                "desc": "These charts summarize your business's overall satisfaction trend, complaint distribution, and traffic sources on a single screen."
+            },
+            "dashboard_activities": {
+                "title": "📋 Recent Activities",
+                "desc": "Watch the pulse of your business here. Recent guest interactions from all platforms are shown in real-time."
+            },
+            "sidebar_feedbacks": {
+                "title": "💬 Feedback Management",
+                "desc": "Your central hub for all guest messages. Let's navigate there now to explore the filtering, detail views, and customer intelligence features."
+            },
+            "feedbacks_filters": {
+                "title": "🎯 Smart Filters",
+                "desc": "Narrow down feedbacks by Status (New, Pending, Resolved...), Type (Complaint, Suggestion, Evaluation), or Flags (VIP, Sensitive). Use 'Show Urgent Only' checkbox to instantly surface critical items."
+            },
+            "feedbacks_date": {
+                "title": "📅 Date Range Picker",
+                "desc": "Analyze any time period: today, this week, this month, or a custom range. Compare performance across different periods to spot trends and seasonal patterns."
+            },
+            "feedback_search": {
+                "title": "🔍 Search Bar",
+                "desc": "Search feedbacks by customer name, message content, or reference ID. Useful when a customer contacts you and you need to find their feedback quickly."
+            },
+            "feedback_card_anatomy": {
+                "title": "🃏 Feedback Card & Details",
+                "desc": "Clicking on cards opens the detailed feedback modal and customer profile. If you see the customer's name in blue, it means there is a special staff/business note attached to that customer's profile."
+            },
+            "sidebar_analytics": {
+                "title": "📊 Detailed Analytics",
+                "desc": "Deep-dive into performance metrics, demographic insights, and branch comparisons. Let's navigate there now..."
+            },
+            "analytics_kpi": {
+                "title": "📊 Analytics KPI Cards",
+                "desc": "Four key metrics at a glance: Total Interactions, Unique Users, Loyalty Score (out of 100), and Operational Performance (resolution rate vs. pending complaints). Compare with the previous period to track progress."
+            },
+            "analytics_trend": {
+                "title": "📈 Trend & Forecasting",
+                "desc": "Monitor daily feedback volume over time. Switch between 'General' (total count) and 'Detailed' (Complaint/Suggestion/Evaluation breakdown) views. If complaints spike on certain days, investigate staffing or supply chain issues."
+            },
+            "analytics_brand_experience": {
+                "title": "⚡ Brand Experience & Perception",
+                "desc": "This analysis measures the balance between your guests' overall brand perception and their instant satisfaction during recent visits, helping you identify potential expectation gaps."
+            },
+            "analytics_hourly": {
+                "title": "⏰ Hourly Activity Analysis",
+                "desc": "Discover your peak hours. Switch between 'Age Distribution' and 'Form Type' tabs to understand WHO is visiting WHEN. The Peak Insights cards below reveal your busiest day, hour, age group, and dominant feedback type."
+            },
+            "analytics_detailed": {
+                "title": "👥 Demographic Intelligence",
+                "desc": "Understand your audience: age distribution, satisfaction by age group, and feedback type breakdown. Use this data to tailor your marketing and service strategies to your most active customer segments."
+            },
+            "league": {
+                "title": "🏆 Branch Performance League",
+                "desc": "All your branches ranked by the Vocalize Score — a composite of Quality (40%), Operational Efficiency (30%), and Traffic Share (30%). You can track the overall competition directly from this list."
+            },
+            "league_inspect": {
+                "title": "🔍 Inspecting the Leader",
+                "desc": "Clicking on any row to detail its success opens the Branch Performance Report Card, which includes AI diagnosis and comprehensive branch-specific reports."
+            },
+            "branch_intelligence": {
+                "title": "AI Branch Diagnosis",
+                "desc": "In this area prepared specifically for each branch, performance is summarized in a single sentence by blending Google Maps interactions, operational speed, and customer satisfaction data."
+            },
+            "branch_hourly": {
+                "title": "📊 Branch Hourly Activity",
+                "desc": "This branch's activity heatmap by hour. Identify peak times to optimize staffing, and compare age vs. feedback type distributions to understand visitor patterns specific to this location."
+            },
+            "branch_demographics": {
+                "title": "👥 Branch Customer Profile",
+                "desc": "Who visits this specific branch? See age distribution and satisfaction scores by age group. Use this to develop location-specific promotions and service adjustments."
+            },
+            "smart_insights": {
+                "title": "🧠 Vocalize Smart Analysis",
+                "desc": "AI-driven strategic analysis of your branch performance. Smart Diagnoses detect operational blind spots, highlight strengths, and provide actionable recommendations. This is your personal business consultant powered by data."
+            },
+            "finish": {
+                "title": "🎉 You're All Set!",
+                "desc": "Your Vocalize Command Center is ready. Start turning guest feedback into competitive advantage. You can restart this tour anytime from Settings → 'Restart Tutorial'."
             }
-        },
-        "update_password": {
-            "title": "Update Your Password",
-            "subtitle": "Keep your account secure by setting a new password.",
-            "label": "New Password",
-            "button": "Save Password",
-            "updating": "Updating...",
-            "success": "Success",
-            "success_desc": "Your password has been successfully updated. You are being redirected...",
-            "error": "Error",
-            "error_length": "Password must be at least 6 characters.",
-            "error_update": "There was a problem updating the password.",
-            "invalid_link_title": "Invalid Link",
-            "invalid_link_desc": "The password reset link is invalid or has expired."
-        },
-        "qr_redirector": {
-            "loading": "Processing QR Code...",
-            "error_title": "An Error Occurred",
-            "error_desc": "There was a problem processing the QR code.",
-            "retry": "Try Again",
-            "home": "Back to Home",
-            "show_debug": "Show Error Details",
-            "hide_debug": "Hide Details",
-            "qr_not_found": "QR code not found.",
-            "branch_not_found": "Branch information for this QR code could not be found.",
-            "session_ended_title": "Session Terminated",
-            "session_ended_desc": "Your session was closed because the QR code cannot be scanned while a manager session is active. You can log in as a customer."
         }
     }
 }

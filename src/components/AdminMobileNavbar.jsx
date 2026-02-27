@@ -181,7 +181,7 @@ const AdminMobileNavbar = () => {
       <div className="flex items-center justify-between h-full pl-16">
 
         {/* QR Sayacı */}
-        <div className="flex items-center gap-1.5 bg-teal-900/20 border border-teal-500/30 rounded-lg px-2 py-1 shrink-0 max-w-[100px]">
+        <div id="header-qr-stats" className="flex items-center gap-1.5 bg-teal-900/20 border border-teal-500/30 rounded-lg px-2 py-1 shrink-0 max-w-[100px]">
           <QrCode className="w-3.5 h-3.5 text-teal-400" />
           <span className="text-teal-400 font-medium text-xs truncate">
             {t('navbar.qr_scans', { count: qrCount })}
@@ -191,7 +191,7 @@ const AdminMobileNavbar = () => {
         {/* Şube Seçimi */}
         <div className="flex-1 flex justify-center px-1 min-w-0">
           {branches.length > 1 && (
-            <div className="w-full max-w-[130px]">
+            <div id="header-branch-selector" className="w-full max-w-[130px]">
               <Select
                 value={selectedBranchId}
                 onValueChange={setSelectedBranchId}
@@ -221,7 +221,7 @@ const AdminMobileNavbar = () => {
                     </div>
                   )}
 
-                  <SelectItem value="all">{t('navbar.all_branches')}</SelectItem>
+                  {!isBranchManager && <SelectItem value="all">{t('navbar.all_branches')}</SelectItem>}
                   {filteredBranches.length === 0 && branchSearchQuery && (
                     <div className="p-3 text-center text-slate-500 text-xs">{t('navbar.no_branch_found')}</div>
                   )}
@@ -241,7 +241,7 @@ const AdminMobileNavbar = () => {
         </div>
 
         {/* Bildirim Alanı */}
-        <div className="flex items-center gap-2 shrink-0 relative" ref={containerRef}>
+        <div id="header-notifications" className="flex items-center gap-2 shrink-0 relative" ref={containerRef}>
           <Button onClick={handleBellClick} variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white p-0 relative">
             <Bell className="w-5 h-5" />
             {unreadCount > 0 || escalatedCount > 0 ? (

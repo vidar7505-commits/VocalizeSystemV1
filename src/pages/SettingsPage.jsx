@@ -5,12 +5,12 @@ import { useAdminContext } from '@/contexts/AdminContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { User, Lock, Save, MessageSquare, Loader2, Image as ImageIcon, Upload, X, Moon, Sun } from 'lucide-react';
+import { User, Lock, Save, MessageSquare, Loader2, Image as ImageIcon, Upload, X, Moon, Sun, HelpCircle, Globe } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useTranslation } from 'react-i18next';
 
 const SettingsPage = () => {
-  const { t } = useTranslation('admin');
+  const { t, i18n } = useTranslation(['admin', 'common']);
   const { user } = useAuth();
   const { businessName, theme, toggleTheme } = useAdminContext();
   const { toast } = useToast();
@@ -202,6 +202,19 @@ const SettingsPage = () => {
             <label className="text-sm text-slate-400">{t('settings.profile.business_name')}</label>
             <Input value={businessName} disabled className="bg-slate-950 border-slate-800 text-slate-500" />
           </div>
+          <div className="pt-4 border-t border-slate-800 mt-4">
+            <Button
+              variant="outline"
+              className="w-full bg-slate-800 border-slate-700 text-slate-300 hover:text-teal-400 hover:bg-teal-900/20"
+              onClick={() => {
+                localStorage.setItem('vocalize_force_tour', 'true');
+                window.location.href = '/admin-panel';
+              }}
+            >
+              <HelpCircle className="w-4 h-4 mr-2" />
+              {t('onboarding.restart_tour')}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -211,26 +224,46 @@ const SettingsPage = () => {
           {theme === 'dark' ? <Moon className="w-5 h-5 text-indigo-400" /> : <Sun className="w-5 h-5 text-yellow-400" />}
           <h2 className="text-lg font-semibold text-white">{t('settings.appearance.title')}</h2>
         </div>
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="space-y-1 flex-1">
             <label className="text-sm font-medium text-slate-200">{t('settings.appearance.preference')}</label>
             <p className="text-xs text-slate-400">{t('settings.appearance.description')}</p>
           </div>
-          <div className="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800">
-            <button
-              onClick={() => toggleTheme('light')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${theme === 'light' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              <Sun className="w-4 h-4" />
-              {t('settings.appearance.light')}
-            </button>
-            <button
-              onClick={() => toggleTheme('dark')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${theme === 'dark' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              <Moon className="w-4 h-4" />
-              {t('settings.appearance.dark')}
-            </button>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Language Switcher */}
+            <div className="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800">
+              <button
+                onClick={() => i18n.changeLanguage('tr')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${i18n.language === 'tr' ? 'bg-teal-500/20 text-teal-400 border border-teal-500/20 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                TR
+              </button>
+              <button
+                onClick={() => i18n.changeLanguage('en')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${i18n.language === 'en' ? 'bg-teal-500/20 text-teal-400 border border-teal-500/20 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                EN
+              </button>
+            </div>
+
+            {/* Theme Switcher */}
+            <div className="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800">
+              <button
+                onClick={() => toggleTheme('light')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${theme === 'light' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                <Sun className="w-4 h-4" />
+                {t('settings.appearance.light')}
+              </button>
+              <button
+                onClick={() => toggleTheme('dark')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${theme === 'dark' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                <Moon className="w-4 h-4" />
+                {t('settings.appearance.dark')}
+              </button>
+            </div>
           </div>
         </div>
       </div>

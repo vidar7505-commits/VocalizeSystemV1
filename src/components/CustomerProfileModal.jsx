@@ -445,6 +445,8 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
       <Dialog open={isOpen} onOpenChange={handleClose}>
         <DialogContent className="w-[95vw] sm:w-full sm:max-w-2xl max-h-[90vh] flex flex-col bg-slate-900 border border-slate-800 text-slate-100 p-0 gap-0 overflow-hidden">
           <DialogHeader className="px-6 py-4 border-b border-slate-800 flex-shrink-0">
+            {/* 🟢 Programmatic back for onboarding tour */}
+            <button id="onboarding-back-profile-modal" onClick={handleClose} className="hidden" data-onboarding-back-modal />
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <User className="w-6 h-6 text-indigo-400" /> {t('customer_profile.title')}
             </DialogTitle>
@@ -548,7 +550,7 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
                   <div className="bg-slate-800/40 rounded-lg p-4 border border-slate-700/50 flex flex-col justify-between">
                     <div className="space-y-3">
                       <div className="flex justify-between items-center"><label className="text-sm font-medium text-purple-300 flex gap-2"><Crown className="w-4 h-4" /> {t('customer_profile.switches.vip')}</label>
-                        <Switch checked={flags.vip} onCheckedChange={handleToggleVip} className="data-[state=checked]:bg-purple-600" />
+                        <Switch id="onboarding-vip-switch" checked={flags.vip} onCheckedChange={handleToggleVip} className="data-[state=checked]:bg-purple-600" />
                       </div>
                       <div className="h-px bg-slate-700/50" />
                       <div className="flex justify-between items-center"><label className="text-sm font-medium text-orange-300 flex gap-2"><AlertTriangle className="w-4 h-4" /> {t('customer_profile.switches.sensitive')}</label>
@@ -585,7 +587,7 @@ const CustomerProfileModal = ({ isOpen, onClose, customerProfileId, customerEmai
                         </Button>
                       )}
                     </div>
-                    <Textarea value={notes} onChange={(e) => { setNotes(e.target.value); if (translatedNote) setTranslatedNote(null); }} className="bg-slate-900/80 border-slate-700 flex-1 min-h-[80px] text-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500" placeholder={t('customer_profile.switches.note_placeholder')} />
+                    <Textarea id="onboarding-business-note" value={notes} onChange={(e) => { setNotes(e.target.value); if (translatedNote) setTranslatedNote(null); }} className="bg-slate-900/80 border-slate-700 flex-1 min-h-[80px] text-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500" placeholder={t('customer_profile.switches.note_placeholder')} />
                     {translatedNote && (
                       <div className="mt-2 p-3 bg-slate-900/50 rounded border border-blue-500/20 text-sm text-slate-300 italic">
                         <div className="flex items-center gap-1 mb-1 text-[10px] text-blue-400 font-bold uppercase"><Globe className="w-3 h-3" /> {t('customer_profile.translation_title')}</div>

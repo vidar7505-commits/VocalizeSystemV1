@@ -11,7 +11,8 @@ export const landingContent = {
             login: 'Giriş Yap',
             install: 'Kurulum İçin Başvur',
             managerLogin: 'Yönetici Girişi',
-            globalVision: 'Global Vizyonumuz'
+            globalVision: 'Global Vizyonumuz',
+            faq: 'SSS'
         },
         hero: {
             badge: 'HORECA Sektörüne Özel Geri Bildirim Sistemi',
@@ -229,6 +230,57 @@ export const landingContent = {
                 desc: 'Şube performansı, ekip yanıt hızları ve müşteri memnuniyeti tek panelden yönetilir ve analiz edilir.'
             }
         },
+        faq: {
+            title: 'Sıkça Sorulan Sorular',
+            subtitle: 'İşletmenizi büyütmek için ihtiyacınız olan tüm cevaplar burada.',
+            items: [
+                {
+                    icon: 'messageHeart',
+                    question: 'Müşteriler gerçekten geri bildirim yazmak için zaman ayırır mı, yoksa sadece şikâyet mi ederler?',
+                    answer: 'Aslında çoğu insan sadece hayal kırıklığına uğradığında sesini çıkarır. Vocalize, V-Plume (Sadakat/Ödül) Sistemi ile bu senaryoyu tersine çevirir. Anlık ödüller veya "Plume" puanlarıyla geri bildirimi teşvik ederek, pasif ziyaretçileri aktif katılımcılara dönüştürürüz. "Sadece şikâyet" kültürünü, müşterilerin içgörülerini paylaşarak "Plume" toplayıp ödüller kazandığı oyunlaştırılmış bir deneyime çeviririz.'
+                },
+                {
+                    icon: 'eye',
+                    question: 'Personelim zaten her şeyi bana raporluyorsa buna neden ihtiyacım var?',
+                    answer: 'Personel genellikle gördüklerini veya sizin duymak istediğinizi düşündüklerini raporlar. Buna "Operasyonel Körlük" denir. Vocalize, doğrudan misafirin bakış açısından filtresiz, gerçek zamanlı içgörüler sunar — sallanan bir masa, müzik seviyesi veya ince hizmet ipuçları gibi personelinizin gözden kaçırabileceği detaylar. Kör noktalarınız için bir erken uyarı sistemidir.'
+                },
+                {
+                    icon: 'shield',
+                    question: 'Bu, Google Haritalar yorumlarından nasıl farklı?',
+                    answer: 'Google Haritalar, hasarın kalıcı olduğu halka açık bir puan tahtasıdır. Vocalize ise bir Dijital Kalkan\'dır. Misafir henüz masadayken olumsuz geri bildirimleri yakalarız ve sorunu özel olarak çözme şansı veririz. Bu arada, memnun misafirleri otomatik olarak Google\'a 5 yıldızlı yorum yazmaya yönlendiririz. Kötüyü gizler, iyiyi büyütürüz.'
+                },
+                {
+                    icon: 'smartphone',
+                    question: 'Müşterilerimin kullanması veya personelimin doğrulaması zahmetli mi?',
+                    answer: 'Sıfır zahmet. Müşteriler için Google One-Tap ile 10 saniyelik bir deneyim — uzun formlar yok. Personel için ise ekran görüntüsü alınamayan ve taklit edilemeyen canlı animasyonlu ekranlarla 1 Saniyelik Görsel Doğrulama sistemi. Hızlı, güvenli ve yoğun trafikli HORECA ortamları için tasarlandı.'
+                },
+                {
+                    icon: 'repeat',
+                    question: 'Bu gerçekten müşterileri geri getirir mi?',
+                    answer: 'Evet. V-Plume Puan Sistemi (örn. "5 Plume = 1 Bedava Kahve") ile güçlü bir "İlerleme Döngüsü" oluşturursunuz. Misafirler, bir ödül kazanmaya yakın olduklarında geri dönme olasılıkları %70 daha fazladır. Vocalize sadece bir geri bildirim aracı değil; Ciro artıran bir büyüme motorudur'
+                },
+                {
+                    icon: 'userCheck',
+                    question: 'Personelim bu durumdan rahatsız olur mu? Motivasyonları düşer mi?',
+                    answer: 'Tam tersine, Vocalize personeli korur. Objektif Ödüllendirme: Sistem sadece şikayetleri değil, "Garson Ahmet Bey çok ilgiliydi" gibi spesifik övgüleri de yakalar. Bu veriyi personelinizi ödüllendirmek ve gerçek performansı ölçmek için kullanabilirsiniz.'
+                },
+                {
+                    icon: 'lock',
+                    question: 'Kişisel verilerin korunması (KVKK) konusunda süreç nasıl işliyor?',
+                    answer: 'Vocalize, en güncel KVKK standartlarıyla tam uyumludur. Misafirleriniz Google altyapısıyla güvenli giriş yapar; telefon numarası veya hassas kişisel verileri paylaşmak zorunda kalmazlar. İşletmeniz için temiz, güvenli ve hukuki risk taşımayan bir veri havuzu oluştururuz.'
+                },
+                {
+                    icon: 'layout',
+                    question: '100+ şubeli bir operasyonda veriler arasında boğulur muyuz?',
+                    answer: 'Kesinlikle hayır. Vocalize, "Özet Zekası" ile çalışır. 100 şubeniz olsa bile sistem size sadece müdahale gerektiren "Kritik" durumları ve şube bazlı performans kıyaslamalarını getirir. Yönetici paneli sayesinde tüm imparatorluğunuzun nabzını tek bir ekrandan, 1 dakikada tutabilirsiniz.'
+                },
+                {
+                    icon: 'zap',
+                    question: 'Bir kriz olduğunda ne kadar hızlı haberim olur?',
+                    answer: 'Anında. Negatif bir geri bildirim düştüğü an, ilgili şube müdürüne veya bölge sorumlusuna anlık bildirim gider. Sorun büyümeden, misafir dükkandan çıkmadan müdahale etme şansı yakalarsınız. Vocalize bir arşiv değil, canlı bir operasyon aracıdır.'
+                }
+            ]
+        },
         v2: {
             badge: 'Çok Yakında',
             title: 'İşletmenizin',
@@ -302,7 +354,8 @@ export const landingContent = {
             login: 'Login',
             install: 'Apply for Installation',
             managerLogin: 'Manager Login',
-            globalVision: 'Global Vision'
+            globalVision: 'Global Vision',
+            faq: 'FAQ'
         },
         hero: {
             badge: 'Feedback System for HORECA Sector',
@@ -518,6 +571,57 @@ export const landingContent = {
                 title: 'Operational Efficiency',
                 desc: 'Branch performance, team response times, and customer satisfaction managed and analyzed from a single panel.'
             }
+        },
+        faq: {
+            title: 'Frequently Asked Questions',
+            subtitle: 'All the answers you need to grow your business.',
+            items: [
+                {
+                    icon: 'messageHeart',
+                    question: 'Do customers really take the time to write feedback, or do they just complain?',
+                    answer: 'Actually, most people only speak up when they are frustrated. Vocalize flips this script with our V-Plume (Loyalty/Reward) System. By incentivizing feedback with instant rewards or "Stamps," we turn passive visitors into active participants. We convert the "complaint-only" culture into a gamified experience where customers share insights to collect "Plumes" and win rewards.'
+                },
+                {
+                    icon: 'eye',
+                    question: 'Why do I need this if my staff already reports everything to me?',
+                    answer: 'Staff members often report what they see or what they think you want to hear. This is called "Operational Blindness." Vocalize provides unfiltered, real-time insights directly from the guest\'s perspective—things your staff might miss, like a wobbly table, specific music volume, or subtle service cues. It\'s an early-warning system for your blind spots.'
+                },
+                {
+                    icon: 'shield',
+                    question: 'How is this different from Google Maps reviews?',
+                    answer: 'Google Maps is a public scoreboard where damage is permanent. Vocalize is a Digital Shield. We intercept negative feedback while the guest is still at the table, giving you a chance to fix the issue privately. Meanwhile, we automatically nudge happy guests to post 5-star reviews on Google. We hide the bad and amplify the good.'
+                },
+                {
+                    icon: 'smartphone',
+                    question: 'Is it a hassle for my customers to use or my staff to verify?',
+                    answer: 'Zero hassle. For customers, it\'s a 10-second experience with Google One-Tap login—no long forms. For staff, our 1-Second Visual Verification uses live-animated screens that are impossible to screenshot or fake. It\'s fast, secure, and built for high-traffic hospitality environments.'
+                },
+                {
+                    icon: 'repeat',
+                    question: 'Will this actually bring customers back?',
+                    answer: 'Yes. By using our V-Plume Stamp System (e.g., "5 Plumes = 1 Free Coffee"), you create a powerful "Progress Loop." Guests are 70% more likely to return when they are close to earning a reward. Vocalize isn\'t just a feedback tool; it\'s a revenue-generating loyalty engine.'
+                },
+                {
+                    icon: 'userCheck',
+                    question: 'Will my staff feel uncomfortable about this? Will it hurt their motivation?',
+                    answer: 'Quite the opposite—Vocalize protects your staff. Objective Rewarding: The system doesn\'t just capture complaints; it also catches specific praise like "Waiter James was incredibly attentive." You can use this data to objectively reward your team and measure real performance.'
+                },
+                {
+                    icon: 'lock',
+                    question: 'How does the process work regarding personal data protection (GDPR/KVKK)?',
+                    answer: 'Vocalize is fully compliant with the latest GDPR and KVKK standards. Your guests log in securely via Google infrastructure; they never have to share phone numbers or sensitive personal data. We create a clean, secure, and legally risk-free data pool for your business.'
+                },
+                {
+                    icon: 'layout',
+                    question: 'Will we drown in data with a 100+ branch operation?',
+                    answer: 'Absolutely not. Vocalize works with "Summary Intelligence." Even with 100 branches, the system only surfaces "Critical" situations requiring intervention and branch-level performance comparisons. With the admin panel, you can feel the pulse of your entire empire from a single screen in under 1 minute.'
+                },
+                {
+                    icon: 'zap',
+                    question: 'How fast will I be notified when a crisis occurs?',
+                    answer: 'Instantly. The moment negative feedback is submitted, an instant notification is sent to the relevant branch manager or regional supervisor. You get the chance to intervene before the issue escalates and before the guest leaves the venue. Vocalize isn\'t an archive—it\'s a live operations tool.'
+                }
+            ]
         },
         v2: {
             badge: 'Coming Very Soon',

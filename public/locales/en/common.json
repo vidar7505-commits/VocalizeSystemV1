@@ -78,5 +78,14 @@
         "4": "Thursday",
         "5": "Friday",
         "6": "Saturday"
+    },
+    "onboarding": {
+        "customer_modal_title": "Your Voice Guides Our Business",
+        "customer_modal_desc": "Improve us with your complaints, add vision with your suggestions, and help us choose the best with your evaluations. Your participation is very valuable to us.",
+        "btn_finish": "Got it",
+        "btn_skip": "Skip",
+        "btn_back": "Back",
+        "btn_next": "Next",
+        "restart_tour": "Start System Tour"
     }
 }
