@@ -717,7 +717,7 @@ const AdminPanel = () => {
                   const hasGeneralEval = (Number(f.general_eval_rating) > 0) || (f.general_eval_comment && f.general_eval_comment.trim().length > 0);
 
                   return (
-                    <div key={f.id} id={index === 0 ? "onboarding-feedback-card-0" : `feedback-${f.id}`} onClick={() => handleFeedbackClick(f)} className={cn("feedback-activity-card group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "feedback-row-escalated bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
+                    <div key={f.id} id={index === 0 ? "onboarding-dashboard-card-0" : `feedback-${f.id}`} onClick={() => handleFeedbackClick(f)} className={cn("feedback-activity-card group rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden shadow-sm border", isEscalated ? "feedback-row-escalated bg-red-950/40 border-red-500/50 hover:bg-red-900/50 hover:border-red-400 animate-pulse-subtle" : "bg-slate-900/50 hover:bg-slate-800 border-slate-800 hover:border-slate-700")}>
                       <div className="flex flex-col md:flex-row gap-4 items-start">
                         <div className="flex-1 w-full min-w-0 pr-0 md:pr-4">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">

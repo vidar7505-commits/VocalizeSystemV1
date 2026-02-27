@@ -197,6 +197,7 @@ const AdminSidebar = () => {
       {/* Mobile Trigger */}
       <div className="fixed top-3 left-4 z-50 md:hidden">
         <Button
+          id="mobile-menu-trigger"
           variant="ghost"
           size="icon"
           onClick={() => setIsOpen(true)}

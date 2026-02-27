@@ -21,6 +21,7 @@ const CustomTooltip = React.memo(({
     const { t } = useTranslation('admin');
     const { theme } = useAdminContext();
     const progress = ((index + 1) / size) * 100;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
     return (
         <div
@@ -34,9 +35,9 @@ const CustomTooltip = React.memo(({
                 backdropFilter: 'blur(20px)',
                 overflow: 'hidden',
                 animation: 'onboarding-tooltip-enter 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                maxWidth: '400px',
+                maxWidth: isMobile ? 'calc(100vw - 24px)' : '400px',
                 width: '100%',
-                minWidth: '280px',
+                minWidth: isMobile ? '260px' : '280px',
             }}
         >
             <div style={{
@@ -59,7 +60,7 @@ const CustomTooltip = React.memo(({
                 }} />
             </div>
 
-            <div style={{ padding: '18px 20px 16px' }}>
+            <div style={{ padding: isMobile ? '14px 16px 12px' : '18px 20px 16px' }}>
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -166,14 +167,15 @@ const CustomTooltip = React.memo(({
 
 const StepContent = React.memo(({ title, desc, isCenter = false }) => {
     const { theme } = useAdminContext();
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     return (
-        <div className={`text-left space-y-3 ${isCenter ? 'text-center' : ''}`}>
-            <h3 className={`font-bold leading-tight ${isCenter ? 'text-xl' : 'text-base md:text-lg'} ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}
+        <div className={`text-left ${isMobile ? 'space-y-1.5' : 'space-y-3'} ${isCenter ? 'text-center' : ''}`}>
+            <h3 className={`font-bold leading-tight ${isCenter ? (isMobile ? 'text-lg' : 'text-xl') : (isMobile ? 'text-sm' : 'text-base md:text-lg')} ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}
                 style={{ lineHeight: 1.3, wordBreak: 'break-word' }}>
                 {title}
             </h3>
-            <p className={`text-xs md:text-sm leading-relaxed whitespace-pre-line ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}
-                style={{ lineHeight: 1.6, wordBreak: 'break-word' }}>
+            <p className={`${isMobile ? 'text-[11px]' : 'text-xs md:text-sm'} leading-relaxed whitespace-pre-line ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}
+                style={{ lineHeight: 1.5, wordBreak: 'break-word' }}>
                 {desc}
             </p>
         </div>
@@ -215,18 +217,20 @@ const OnboardingStyles = React.memo(() => {
 
             @media (max-width: 768px) {
                 .react-joyride__spotlight {
-                    max-width: calc(100vw - 24px) !important;
+                    max-width: calc(100vw - 16px) !important;
                 }
                 .__floater {
-                    max-width: calc(100vw - 16px) !important;
-                    left: 8px !important;
-                    right: 8px !important;
-                }
-                .__floater.__floater--open {
-                    max-width: calc(100vw - 16px) !important;
+                    max-width: calc(100vw - 12px) !important;
+                    /* REMOVED: Specific left/right overrides to allow Joyride's own centering and calculation */
                 }
                 .vocalize-onboarding-card {
-                    max-width: calc(100vw - 24px) !important;
+                    max-width: calc(100vw - 12px) !important;
+                    min-width: 250px !important;
+                }
+                .onboarding-tooltip {
+                    padding: 0 !important;
+                    max-height: 80vh;
+                    overflow-y: auto;
                 }
             }
 
@@ -286,49 +290,90 @@ const OnboardingTour = () => {
 
     useEffect(() => {
         const handleResize = () => {
-            setTourWidth(window.innerWidth < 480 ? Math.min(window.innerWidth - 24, 300) : 340);
+            setTourWidth((typeof window !== 'undefined' && window.innerWidth < 768) ? Math.min(window.innerWidth - 12, 320) : 340);
         };
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Phase 1: Compute Steps (Once role is stable)
+    // ─── Phase 1: Compute Steps (Separated for Mobile/Desktop) ──────────────────
     useEffect(() => {
-        if (!isAppLoading && userRole && tourSteps.length === 0) {
-            const computed = [
-                // 1. WELCOME
-                {
-                    target: 'body',
-                    placement: 'center',
-                    content: (
-                        <StepContent
-                            isCenter
-                            title={!isOwner && managerBranchName
-                                ? `🏢 ${managerBranchName}`
-                                : t('onboarding.items.welcome.title')
-                            }
-                            desc={t('onboarding.items.welcome.desc')}
-                        />
-                    ),
-                    disableBeacon: true,
-                },
+        if (isAppLoading || !userRole || tourSteps.length > 0) return;
 
-                // 2. HEADER SECTION (OWNER ONLY)
-                ...(isOwner ? [{
-                    target: '#header-branch-selector',
-                    disableBeacon: true,
-                    content: (
-                        <StepContent
-                            title={t('onboarding.items.header_branch.title')}
-                            desc={t('onboarding.items.header_branch.desc')}
-                        />
-                    ),
-                }] : []),
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
-                // 3. HEADER QR
+        // Shared Steps
+        const welcomeStep = {
+            target: 'body',
+            placement: 'center',
+            content: (
+                <StepContent
+                    isCenter
+                    title={!isOwner && managerBranchName
+                        ? `🏢 ${managerBranchName}`
+                        : t('onboarding.items.welcome.title')
+                    }
+                    desc={t('onboarding.items.welcome.desc')}
+                />
+            ),
+            disableBeacon: true,
+        };
+
+        const finishStep = {
+            target: 'body',
+            disableBeacon: true,
+            placement: 'center',
+            content: (
+                <StepContent
+                    isCenter
+                    title={t('onboarding.items.finish.title')}
+                    desc={t('onboarding.items.finish.desc')}
+                />
+            ),
+        };
+
+        const commonDashboardSteps = [
+            {
+                target: '#urgent-feedbacks-banner',
+                disableBeacon: true,
+                content: (
+                    <StepContent
+                        title={t('onboarding.items.feedbacks.title')}
+                        desc={t('onboarding.items.feedbacks.desc')}
+                    />
+                ),
+            },
+            {
+                target: '#kpi-cards-grid',
+                disableBeacon: true,
+                content: (
+                    <StepContent
+                        title={t('onboarding.items.dashboard_kpi.title')}
+                        desc={t('onboarding.items.dashboard_kpi.desc')}
+                    />
+                ),
+            },
+            {
+                target: '#analytics-charts-section',
+                disableBeacon: true,
+                content: (
+                    <StepContent
+                        title={t('onboarding.items.dashboard_charts.title')}
+                        desc={t('onboarding.items.dashboard_charts.desc')}
+                    />
+                ),
+            }
+        ];
+
+        let steps = [];
+
+        if (isMobile) {
+            // 📱 MOBILE FLOW
+            steps = [
+                welcomeStep,
                 {
-                    target: '#header-qr-stats',
+                    target: '#mobile-qr-stats',
                     disableBeacon: true,
                     content: (
                         <StepContent
@@ -337,10 +382,18 @@ const OnboardingTour = () => {
                         />
                     ),
                 },
-
-                // 4. HEADER NOTIFICATIONS
+                ...(isOwner ? [{
+                    target: '#mobile-branch-selector',
+                    disableBeacon: true,
+                    content: (
+                        <StepContent
+                            title={t('onboarding.items.header_branch.title')}
+                            desc={t('onboarding.items.header_branch.desc')}
+                        />
+                    ),
+                }] : []),
                 {
-                    target: '#header-notifications',
+                    target: '#mobile-notifications',
                     disableBeacon: true,
                     content: (
                         <StepContent
@@ -349,44 +402,7 @@ const OnboardingTour = () => {
                         />
                     ),
                 },
-
-                // 5. DASHBOARD URGENT
-                {
-                    target: '#urgent-feedbacks-banner',
-                    disableBeacon: true,
-                    content: (
-                        <StepContent
-                            title={t('onboarding.items.feedbacks.title')}
-                            desc={t('onboarding.items.feedbacks.desc')}
-                        />
-                    ),
-                },
-
-                // 6. DASHBOARD KPI
-                {
-                    target: '#kpi-cards-grid',
-                    disableBeacon: true,
-                    content: (
-                        <StepContent
-                            title={t('onboarding.items.dashboard_kpi.title')}
-                            desc={t('onboarding.items.dashboard_kpi.desc')}
-                        />
-                    ),
-                },
-
-                // 7. DASHBOARD CHARTS
-                {
-                    target: '#analytics-charts-section',
-                    disableBeacon: true,
-                    content: (
-                        <StepContent
-                            title={t('onboarding.items.dashboard_charts.title')}
-                            desc={t('onboarding.items.dashboard_charts.desc')}
-                        />
-                    ),
-                },
-
-                // 8. DASHBOARD RECENT ACTIVITIES
+                ...commonDashboardSteps,
                 {
                     target: '#dashboard-recent-activities',
                     disableBeacon: true,
@@ -397,8 +413,16 @@ const OnboardingTour = () => {
                         />
                     ),
                 },
-
-                // 9. SIDEBAR FEEDBACKS
+                {
+                    target: '#mobile-menu-trigger',
+                    disableBeacon: true,
+                    content: (
+                        <StepContent
+                            title={t('sidebar.menu', { defaultValue: 'Menü' })}
+                            desc={t('onboarding.items.sidebar_feedbacks.desc')}
+                        />
+                    ),
+                },
                 {
                     target: '#sidebar-feedbacks',
                     disableBeacon: true,
@@ -409,8 +433,6 @@ const OnboardingTour = () => {
                         />
                     ),
                 },
-
-                // 10. FILTERS
                 {
                     target: '#onboarding-filters',
                     disableBeacon: true,
@@ -421,44 +443,26 @@ const OnboardingTour = () => {
                         />
                     ),
                 },
-
-                // 11. DATE PICKER
-                {
-                    target: '#onboarding-date-picker',
-                    disableBeacon: true,
-                    content: (
-                        <StepContent
-                            title={t('onboarding.items.feedbacks_date.title')}
-                            desc={t('onboarding.items.feedbacks_date.desc')}
-                        />
-                    ),
-                },
-
-                // 12. SEARCH
-                {
-                    target: '#feedback-search-bar',
-                    disableBeacon: true,
-                    content: (
-                        <StepContent
-                            title={t('onboarding.items.feedback_search.title')}
-                            desc={t('onboarding.items.feedback_search.desc')}
-                        />
-                    ),
-                },
-
-                // 13. CARD ANATOMY
                 {
                     target: '#onboarding-feedback-card-0',
                     disableBeacon: true,
                     content: (
                         <StepContent
-                            title={t('onboarding.items.feedback_card_anatomy.title')}
+                            title={t('onboarding.items.feedback_card_anatomy.title', { defaultValue: 'Geri Bildirim Detayı' })}
                             desc={t('onboarding.items.feedback_card_anatomy.desc')}
                         />
                     ),
                 },
-
-                // 14. SIDEBAR ANALYTICS
+                {
+                    target: '#mobile-menu-trigger',
+                    disableBeacon: true,
+                    content: (
+                        <StepContent
+                            title={t('sidebar.menu', { defaultValue: 'Gezinti' })}
+                            desc={t('onboarding.items.sidebar_analytics.desc')}
+                        />
+                    ),
+                },
                 {
                     target: '#sidebar-analytics',
                     disableBeacon: true,
@@ -469,20 +473,16 @@ const OnboardingTour = () => {
                         />
                     ),
                 },
-
-                // 15. ANALYTICS KPI
                 {
                     target: '#onboarding-analytics-kpi',
                     disableBeacon: true,
                     content: (
                         <StepContent
-                            title={t('onboarding.items.analytics_kpi.title')}
+                            title={t('onboarding.items.analytics_kpi.title', { defaultValue: 'Analiz Özetleri' })}
                             desc={t('onboarding.items.analytics_kpi.desc')}
                         />
                     ),
                 },
-
-                // 16. ANALYTICS TREND
                 {
                     target: '#analytics-trend-chart',
                     disableBeacon: true,
@@ -493,32 +493,36 @@ const OnboardingTour = () => {
                         />
                     ),
                 },
-
-                // 17. ANALYTICS BRAND VS EXPERIENCE
                 {
                     target: '#onboarding-brand-experience',
                     disableBeacon: true,
                     content: (
                         <StepContent
-                            title={t('onboarding.items.analytics_brand_experience.title')}
-                            desc={t('onboarding.items.analytics_brand_experience.desc')}
+                            title={t('analytics.brand_vs_experience.title', { defaultValue: 'Marka Denetimi' })}
+                            desc={t('analytics.brand_vs_experience.subtitle', { defaultValue: 'Müşterilerinizin marka algısı ve anlık deneyim karşılaştırması.' })}
                         />
                     ),
                 },
-
-                // 18. ANALYTICS HOURLY
                 {
                     target: '#onboarding-hourly-analysis',
                     disableBeacon: true,
                     content: (
                         <StepContent
-                            title={t('onboarding.items.analytics_hourly.title')}
-                            desc={t('onboarding.items.analytics_hourly.desc')}
+                            title={t('analytics.hourly.title', { defaultValue: 'Zaman Analizi' })}
+                            desc={t('analytics.hourly.subtitle', { defaultValue: 'Günün hangi saatlerinde daha yoğun geri bildirim aldığınızı görün.' })}
                         />
                     ),
                 },
-
-                // 19. ANALYTICS DETAILED (OWNER: League | MANAGER: Smart Insights)
+                {
+                    target: '#onboarding-analytics-demographics',
+                    disableBeacon: true,
+                    content: (
+                        <StepContent
+                            title={t('analytics.demographics.title', { defaultValue: 'Demografik Zekâ' })}
+                            desc={t('analytics.demographics.subtitle', { defaultValue: 'Müşteri kitlenizin yaş ve cinsiyet bazlı dağılım analizi.' })}
+                        />
+                    ),
+                },
                 ...(isOwner ? [
                     {
                         target: '#onboarding-analytics-leaderboard',
@@ -544,31 +548,7 @@ const OnboardingTour = () => {
                             />
                         ),
                     },
-                    {
-                        target: 'body',
-                        disableBeacon: true,
-                        placement: 'center',
-                        content: (
-                            <StepContent
-                                isCenter
-                                title={t('onboarding.items.finish.title')}
-                                desc={t('onboarding.items.finish.desc')}
-                            />
-                        ),
-                    }
                 ] : [
-                    // MANAGER: Demographic Intelligence
-                    {
-                        target: '#onboarding-analytics-demographics',
-                        disableBeacon: true,
-                        content: (
-                            <StepContent
-                                title={t('onboarding.items.analytics_detailed.title')}
-                                desc={t('onboarding.items.analytics_detailed.desc')}
-                            />
-                        ),
-                    },
-                    // MANAGER: Smart Insights
                     {
                         target: '#onboarding-smart-insights',
                         disableBeacon: true,
@@ -579,23 +559,42 @@ const OnboardingTour = () => {
                             />
                         ),
                     },
-                    {
-                        target: 'body',
-                        disableBeacon: true,
-                        placement: 'center',
-                        content: (
-                            <StepContent
-                                isCenter
-                                title={t('onboarding.items.finish.title')}
-                                desc={t('onboarding.items.finish.desc')}
-                            />
-                        ),
-                    }
                 ]),
+                finishStep
             ];
-            setTourSteps(computed);
+        } else {
+            // 💻 DESKTOP FLOW (Original Detailed Flow)
+            steps = [
+                welcomeStep,
+                ...(isOwner ? [{
+                    target: '#header-branch-selector',
+                    disableBeacon: true,
+                    content: (<StepContent title={t('onboarding.items.header_branch.title')} desc={t('onboarding.items.header_branch.desc')} />),
+                }] : []),
+                { target: '#header-qr-stats', disableBeacon: true, content: (<StepContent title={t('onboarding.items.header_qr.title')} desc={t('onboarding.items.header_qr.desc')} />) },
+                { target: '#header-notifications', disableBeacon: true, content: (<StepContent title={t('onboarding.items.header_notifications.title')} desc={t('onboarding.items.header_notifications.desc')} />) },
+                ...commonDashboardSteps,
+                { target: '#dashboard-recent-activities', disableBeacon: true, content: (<StepContent title={t('onboarding.items.dashboard_activities.title')} desc={t('onboarding.items.dashboard_activities.desc')} />) },
+                { target: '#sidebar-feedbacks', disableBeacon: true, content: (<StepContent title={t('onboarding.items.sidebar_feedbacks.title')} desc={t('onboarding.items.sidebar_feedbacks.desc')} />) },
+                { target: '#onboarding-filters', disableBeacon: true, content: (<StepContent title={t('onboarding.items.feedbacks_filters.title')} desc={t('onboarding.items.feedbacks_filters.desc')} />) },
+                { target: '#onboarding-date-picker', disableBeacon: true, content: (<StepContent title={t('onboarding.items.feedbacks_date.title')} desc={t('onboarding.items.feedbacks_date.desc')} />) },
+                { target: '#onboarding-feedback-card-0', disableBeacon: true, content: (<StepContent title={t('onboarding.items.feedback_card_anatomy.title')} desc={t('onboarding.items.feedback_card_anatomy.desc')} />) },
+                { target: '#sidebar-analytics', disableBeacon: true, content: (<StepContent title={t('onboarding.items.sidebar_analytics.title')} desc={t('onboarding.items.sidebar_analytics.desc')} />) },
+                { target: '#onboarding-analytics-kpi', disableBeacon: true, content: (<StepContent title={t('onboarding.items.analytics_kpi.title')} desc={t('onboarding.items.analytics_kpi.desc')} />) },
+                { target: '#analytics-trend-chart', disableBeacon: true, content: (<StepContent title={t('onboarding.items.analytics_trend.title')} desc={t('onboarding.items.analytics_trend.desc')} />) },
+                ...(isOwner ? [
+                    { target: '#onboarding-analytics-leaderboard', disableBeacon: true, placement: 'top', disableScrolling: true, content: (<StepContent title={t('onboarding.items.league.title')} desc={t('onboarding.items.league.desc')} />) },
+                    { target: '#onboarding-leaderboard-inspect', disableBeacon: true, placement: 'top', disableScrolling: true, content: (<StepContent title={t('onboarding.items.league_inspect.title')} desc={t('onboarding.items.league_inspect.desc')} />) },
+                ] : [
+                    { target: '#onboarding-analytics-demographics', disableBeacon: true, content: (<StepContent title={t('onboarding.items.analytics_detailed.title')} desc={t('onboarding.items.analytics_detailed.desc')} />) },
+                    { target: '#onboarding-smart-insights', disableBeacon: true, content: (<StepContent title={t('onboarding.items.smart_insights.title')} desc={t('onboarding.items.smart_insights.desc')} />) },
+                ]),
+                finishStep
+            ];
         }
-    }, [isAppLoading, userRole, t, isOwner, managerBranchName]);
+
+        setTourSteps(steps);
+    }, [isAppLoading, userRole, t, isOwner, managerBranchName, tourSteps.length]);
 
     // Phase 2: Start Tour
     useEffect(() => {
@@ -648,174 +647,232 @@ const OnboardingTour = () => {
     const handleJoyrideCallback = useCallback((data) => {
         const { action, index, status, type } = data;
 
-        // 🟢 Robust Termination Logic
-        const isRealFinish = status === STATUS.FINISHED;
-        const isUserSkip = status === STATUS.SKIPPED && action === ACTIONS.SKIP;
-
-        if (isRealFinish || isUserSkip) {
+        // ─── Phase 0: Termination Logic ─────────────────────────────────────
+        if (status === STATUS.FINISHED || (status === STATUS.SKIPPED && action === ACTIONS.SKIP)) {
             setRun(false);
             window.vocalize_tour_active = false;
             setStepIndex(0);
             hasInitialized.current = false;
             updateOnboardingStatus(true).catch(console.error);
-
-            // Sadece gerçekten bittiyse (atlamadıysa) yönlendir
-            if (isRealFinish) {
-                setTimeout(() => {
-                    navigate('/admin-panel');
-                }, 300);
+            if (status === STATUS.FINISHED) {
+                setTimeout(() => navigate('/admin-panel'), 300);
             }
             return;
         }
 
-        // Handle navigation/events
-        if ([EVENTS.STEP_AFTER, EVENTS.TARGET_NOT_FOUND].includes(type)) {
-            const nextStepIndex = index + (action === ACTIONS.PREV ? -1 : 1);
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+        const optionalTargets = [
+            '#urgent-feedbacks-banner',
+            '#mobile-branch-selector',
+            '#header-branch-selector',
+            '#onboarding-brand-experience',
+            '#onboarding-hourly-analysis',
+            '#onboarding-analytics-demographics',
+            '#onboarding-analytics-leaderboard',
+            '#onboarding-leaderboard-inspect',
+            '#onboarding-smart-insights'
+        ];
 
-            // Safety check: ensure nextStepIndex is valid
-            if (nextStepIndex < 0 || nextStepIndex >= tourSteps.length) {
-                // If we went past the end via NEXT, it's a finish
-                if (nextStepIndex >= tourSteps.length && action !== ACTIONS.PREV) {
-                    exitTour();
-                } else {
-                    setRun(false);
+        // ─── Phase 1: Mobile Sidebar Auto-Toggle ─────────────────────────────
+        if (isMobile && type === EVENTS.STEP_BEFORE) {
+            const target = tourSteps[index]?.target;
+            if (typeof target === 'string' && target.startsWith('#sidebar')) {
+                const aside = document.querySelector('aside');
+                if (aside && aside.classList.contains('-translate-x-full')) {
+                    const trigger = document.querySelector('#mobile-menu-trigger');
+                    if (trigger) trigger.click();
                 }
+            } else if (typeof target === 'string' && !target.startsWith('#sidebar') && target !== '#mobile-menu-trigger') {
+                const aside = document.querySelector('aside');
+                if (aside && !aside.classList.contains('-translate-x-full')) {
+                    const closeBtn = aside.querySelector('button.md\\:hidden');
+                    if (closeBtn) closeBtn.click();
+                }
+            }
+        }
+
+        // ─── Phase 2: Action & Event Processing ──────────────────────────────
+        if ([EVENTS.STEP_AFTER, EVENTS.TARGET_NOT_FOUND].includes(type)) {
+            const nextIdx = index + (action === ACTIONS.PREV ? -1 : 1);
+
+            // Safety: Check bounds
+            if (nextIdx < 0 || nextIdx >= tourSteps.length) {
+                if (nextIdx >= tourSteps.length && action === ACTIONS.NEXT) exitTour();
                 return;
             }
 
-            const currentStep = tourSteps[index];
+            const current = tourSteps[index];
 
             if (action === ACTIONS.NEXT) {
-                if (currentStep.target === '#sidebar-feedbacks') {
+                // Route Navigation
+                if (current.target === '#sidebar-feedbacks') {
                     setRun(false);
                     setIsWaiting(true);
                     navigate('/admin-panel/feedbacks');
-                    waitForElement('#onboarding-filters', (found) => {
-                        setStepIndex(nextStepIndex);
-                        setRun(true);
-                        setIsWaiting(false);
-                    });
+                    setTimeout(() => {
+                        waitForElement('#onboarding-filters', (found) => {
+                            setStepIndex(nextIdx);
+                            setRun(true);
+                            setIsWaiting(false);
+                        });
+                    }, 500);
                     return;
-                } else if (currentStep.target === '#sidebar-analytics') {
+                }
+
+                if (current.target === '#sidebar-analytics') {
                     setRun(false);
                     setIsWaiting(true);
                     const closeBtn = document.querySelector('[data-onboarding-close-modal]');
                     if (closeBtn) closeBtn.click();
+                    navigate('/admin-panel/analytics');
                     setTimeout(() => {
-                        navigate('/admin-panel/analytics');
-                        waitForElement('#onboarding-analytics-kpi', (found) => {
-                            setStepIndex(nextStepIndex);
+                        waitForElement('#onboarding-analytics-kpi', () => {
+                            setStepIndex(nextIdx);
                             setRun(true);
                             setIsWaiting(false);
                         });
-                    }, 400);
-                    return;
-                } else if (currentStep.target === '#onboarding-feedback-card-0' || currentStep.target === '#onboarding-leaderboard-inspect') {
-                    setRun(false);
-                    setIsWaiting(true);
-                    setTimeout(() => {
-                        setStepIndex(nextStepIndex);
-                        setRun(true);
-                        setIsWaiting(false);
-                    }, 400);
+                    }, 500);
                     return;
                 }
+
+                // Interaction: Sidebar Open
+                if (current.target === '#mobile-menu-trigger') {
+                    const aside = document.querySelector('aside');
+                    if (aside && aside.classList.contains('-translate-x-full')) {
+                        const trigger = document.querySelector('#mobile-menu-trigger');
+                        if (trigger) trigger.click();
+                    }
+                    setTimeout(() => setStepIndex(nextIdx), 300);
+                    return;
+                }
+
+                // Interaction: Dashboard Scroll
+                if (current.target === '#analytics-charts-section' && isMobile) {
+                    const recentAct = document.querySelector('#dashboard-recent-activities');
+                    if (recentAct) {
+                        recentAct.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        setTimeout(() => setStepIndex(nextIdx), 400);
+                        return;
+                    }
+                }
             } else if (action === ACTIONS.PREV) {
-                if (currentStep.target === '#onboarding-filters') {
+                // Back Nav
+                if (current.target === '#onboarding-filters' || current.target === '#onboarding-dashboard-card-0') {
                     setRun(false);
                     setIsWaiting(true);
                     navigate('/admin-panel');
-                    waitForElement('#kpi-cards-grid', (found) => {
-                        setStepIndex(nextStepIndex);
-                        setRun(true);
-                        setIsWaiting(false);
-                    });
+                    setTimeout(() => {
+                        waitForElement('#kpi-cards-grid', () => {
+                            setStepIndex(nextIdx);
+                            setRun(true);
+                            setIsWaiting(false);
+                        });
+                    }, 500);
                     return;
-                } else if (currentStep.target === '#onboarding-analytics-kpi') {
+                }
+                if (current.target === '#onboarding-analytics-kpi') {
                     setRun(false);
                     setIsWaiting(true);
                     navigate('/admin-panel/feedbacks');
-                    waitForElement('#onboarding-filters', (found) => {
-                        setStepIndex(nextStepIndex);
-                        setRun(true);
-                        setIsWaiting(false);
-                    });
+                    setTimeout(() => {
+                        waitForElement('#onboarding-filters', () => {
+                            setStepIndex(nextIdx);
+                            setRun(true);
+                            setIsWaiting(false);
+                        });
+                    }, 500);
                     return;
                 }
             }
 
-            // 🟢 Handle Target Not Found
+            // ─── Phase 3: Target Availability Checks ─────────────────────────
+
+            // A: Target Not Found Case
             if (type === EVENTS.TARGET_NOT_FOUND) {
-                const skippableTargets = ['#urgent-feedbacks-banner', '#header-branch-selector'];
-                if (skippableTargets.includes(currentStep.target)) {
-                    setStepIndex(nextStepIndex);
-                    return;
-                }
-
-                // Retry logic for mandatory targets
-                if (!window.onboardingRetryCount) window.onboardingRetryCount = 0;
-                window.onboardingRetryCount++;
-
-                if (window.onboardingRetryCount > 4) {
-                    window.onboardingRetryCount = 0;
-                    setStepIndex(nextStepIndex); // Skip it to keep the tour moving
-                    return;
-                }
-
-                setTimeout(() => setStepIndex(index), 400);
-                return;
-            }
-
-            // Default advance for STEP_AFTER
-            if (type === EVENTS.STEP_AFTER) {
-                window.onboardingRetryCount = 0;
-                const nextTarget = tourSteps[nextStepIndex]?.target;
-
-                // Optimization: If next target is missing and optional, skip immediately
-                const optionalTargets = ['#header-branch-selector', '#urgent-feedbacks-banner'];
-                if (nextTarget && optionalTargets.includes(nextTarget) && !document.querySelector(nextTarget)) {
-                    setStepIndex(nextStepIndex);
-                    return;
-                }
-
-                // Special scroll handling
-                if (nextTarget === '#onboarding-analytics-leaderboard' || nextTarget === '#onboarding-leaderboard-inspect') {
-                    const el = document.querySelector(nextTarget);
-                    const scrollContainer = document.querySelector('#admin-main-content');
-                    if (el && scrollContainer) {
-                        const containerRect = scrollContainer.getBoundingClientRect();
-                        const elRect = el.getBoundingClientRect();
-                        const elOffsetInContainer = elRect.top - containerRect.top + scrollContainer.scrollTop;
-                        const targetScrollTop = Math.max(0, elOffsetInContainer - 200);
-                        scrollContainer.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
-                        setTimeout(() => setStepIndex(nextStepIndex), 400);
-                    } else {
-                        setStepIndex(nextStepIndex);
+                if (optionalTargets.includes(current.target)) {
+                    // If moving forward and optional target missing, keep moving
+                    if (action === ACTIONS.NEXT) {
+                        setStepIndex(nextIdx);
+                    } else if (action === ACTIONS.PREV && nextIdx >= 0) {
+                        setStepIndex(nextIdx);
                     }
                     return;
                 }
 
-                // If next step requires waiting
-                if (nextTarget && nextTarget !== 'body' && !document.querySelector(nextTarget)) {
-                    setRun(false); // Pause while waiting to avoid ghosting
+                // Mandatory retry
+                if (!window.vocalize_retry) window.vocalize_retry = 0;
+                window.vocalize_retry++;
+                if (window.vocalize_retry > 3) {
+                    window.vocalize_retry = 0;
+                    setStepIndex(nextIdx);
+                } else {
+                    setTimeout(() => setStepIndex(index), 300);
+                }
+                return;
+            }
+
+            // B: Success/Transition Case (STEP_AFTER)
+            if (type === EVENTS.STEP_AFTER) {
+                window.vocalize_retry = 0;
+                let targetCandidateIdx = nextIdx;
+
+                // 🟢 NEW: Optimization for Optional Steps
+                // If moving next, check if the NEXT candidate is optional and missing. 
+                // If so, skip it immediately to avoid a TARGET_NOT_FOUND or wait.
+                if (action === ACTIONS.NEXT) {
+                    while (
+                        targetCandidateIdx < tourSteps.length &&
+                        optionalTargets.includes(tourSteps[targetCandidateIdx].target) &&
+                        !document.querySelector(tourSteps[targetCandidateIdx].target)
+                    ) {
+                        targetCandidateIdx++;
+                    }
+                }
+
+                if (targetCandidateIdx >= tourSteps.length) {
+                    exitTour();
+                    return;
+                }
+
+                const nextStep = tourSteps[targetCandidateIdx];
+
+                // Advanced Scrolling for Analytics sections
+                const analyticsTargets = ['leaderboard', 'trend-chart', 'demographics', 'smart-insights', 'recent-activities', 'brand-experience', 'hourly-analysis'];
+                if (nextStep?.target && typeof nextStep.target === 'string' && analyticsTargets.some(t => nextStep.target.includes(t))) {
+                    const el = document.querySelector(nextStep.target);
+                    const main = document.querySelector('#admin-main-content');
+                    if (el && main) {
+                        const rect = el.getBoundingClientRect();
+                        const mRect = main.getBoundingClientRect();
+                        const targetScroll = main.scrollTop + (rect.top - mRect.top) - (isMobile ? 80 : 120);
+                        main.scrollTo({ top: targetScroll, behavior: 'smooth' });
+                        setTimeout(() => setStepIndex(targetCandidateIdx), 500);
+                        return;
+                    }
+                }
+
+                // Check if target candidate exists, otherwise wait (unless it's body or center)
+                const targetDom = nextStep.target !== 'body' ? document.querySelector(nextStep.target) : true;
+                if (!targetDom) {
+                    setRun(false);
                     setIsWaiting(true);
-                    waitForElement(nextTarget, (found) => {
-                        setStepIndex(nextStepIndex);
+                    waitForElement(nextStep.target, (found) => {
+                        setStepIndex(targetCandidateIdx);
                         setRun(true);
                         setIsWaiting(false);
-                    }, 4000);
+                    });
                 } else {
-                    setStepIndex(nextStepIndex);
+                    setStepIndex(targetCandidateIdx);
                 }
             }
         }
-    }, [navigate, tourSteps, updateOnboardingStatus, isWaiting, exitTour]);
+    }, [navigate, tourSteps, updateOnboardingStatus, exitTour]);
 
     return (
         <>
             <OnboardingStyles />
             <Joyride
-                key={run ? 'onboarding-active' : 'onboarding-inactive'}
+                key="vocalize-main-tour"
                 callback={handleJoyrideCallback}
                 continuous
                 hideCloseButton
@@ -826,10 +883,10 @@ const OnboardingTour = () => {
                 showSkipButton
                 steps={tourSteps}
                 disableScrolling={false}
-                disableScrollParentFix={true}
+                disableScrollParentFix={false}
                 disableOverlayClose={true}
                 disableCloseOnEsc={true}
-                scrollOffset={140}
+                scrollOffset={(typeof window !== 'undefined' && window.innerWidth < 768) ? 90 : 140}
                 tooltipComponent={CustomTooltip}
                 styles={{
                     options: {
