@@ -249,7 +249,7 @@ const OnboardingStyles = React.memo(() => {
 const OnboardingTour = () => {
     const { t } = useTranslation(['admin', 'common']);
     const { hasSeenOnboarding, updateOnboardingStatus, loading: authLoading } = useAuth();
-    const { userRole, theme, loading: adminLoading, branches, assignedBranchId } = useAdminContext();
+    const { userRole, theme, loading: adminLoading, branches, assignedBranchId, setSelectedBranchId } = useAdminContext();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -296,6 +296,18 @@ const OnboardingTour = () => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    // ─── Scroll-Lock Cleanup ──────────────────────────────────────────
+    useEffect(() => {
+        if (!run) {
+            document.body.style.overflow = '';
+            const main = document.querySelector('#admin-main-content');
+            if (main) {
+                main.style.overflowY = 'auto';
+                main.style.pointerEvents = 'auto';
+            }
+        }
+    }, [run]);
 
     // ─── Phase 1: Compute Steps (Separated for Mobile/Desktop) ──────────────────
     useEffect(() => {
@@ -582,11 +594,13 @@ const OnboardingTour = () => {
                 { target: '#sidebar-analytics', disableBeacon: true, content: (<StepContent title={t('onboarding.items.sidebar_analytics.title')} desc={t('onboarding.items.sidebar_analytics.desc')} />) },
                 { target: '#onboarding-analytics-kpi', disableBeacon: true, content: (<StepContent title={t('onboarding.items.analytics_kpi.title')} desc={t('onboarding.items.analytics_kpi.desc')} />) },
                 { target: '#analytics-trend-chart', disableBeacon: true, content: (<StepContent title={t('onboarding.items.analytics_trend.title')} desc={t('onboarding.items.analytics_trend.desc')} />) },
+                { target: '#onboarding-brand-experience', disableBeacon: true, content: (<StepContent title={t('onboarding.items.analytics_brand_experience.title')} desc={t('onboarding.items.analytics_brand_experience.desc')} />) },
+                { target: '#onboarding-hourly-analysis', disableBeacon: true, content: (<StepContent title={t('onboarding.items.analytics_hourly.title')} desc={t('onboarding.items.analytics_hourly.desc')} />) },
+                { target: '#onboarding-analytics-demographics', disableBeacon: true, content: (<StepContent title={t('onboarding.items.analytics_detailed.title')} desc={t('onboarding.items.analytics_detailed.desc')} />) },
                 ...(isOwner ? [
                     { target: '#onboarding-analytics-leaderboard', disableBeacon: true, placement: 'top', disableScrolling: true, content: (<StepContent title={t('onboarding.items.league.title')} desc={t('onboarding.items.league.desc')} />) },
                     { target: '#onboarding-leaderboard-inspect', disableBeacon: true, placement: 'top', disableScrolling: true, content: (<StepContent title={t('onboarding.items.league_inspect.title')} desc={t('onboarding.items.league_inspect.desc')} />) },
                 ] : [
-                    { target: '#onboarding-analytics-demographics', disableBeacon: true, content: (<StepContent title={t('onboarding.items.analytics_detailed.title')} desc={t('onboarding.items.analytics_detailed.desc')} />) },
                     { target: '#onboarding-smart-insights', disableBeacon: true, content: (<StepContent title={t('onboarding.items.smart_insights.title')} desc={t('onboarding.items.smart_insights.desc')} />) },
                 ]),
                 finishStep
@@ -636,7 +650,13 @@ const OnboardingTour = () => {
     const exitTour = useCallback(() => {
         setRun(false);
         setStepIndex(0);
-        hasInitialized.current = false;
+        window.vocalize_tour_active = false;
+
+        // Force reset scroll locks
+        document.body.style.overflow = '';
+        const main = document.querySelector('#admin-main-content');
+        if (main) main.style.overflowY = 'auto';
+
         updateOnboardingStatus(true).catch(console.error);
         setTimeout(() => {
             navigate('/admin-panel');
@@ -652,7 +672,12 @@ const OnboardingTour = () => {
             setRun(false);
             window.vocalize_tour_active = false;
             setStepIndex(0);
-            hasInitialized.current = false;
+
+            // Force reset scroll locks
+            document.body.style.overflow = '';
+            const main = document.querySelector('#admin-main-content');
+            if (main) main.style.overflowY = 'auto';
+
             updateOnboardingStatus(true).catch(console.error);
             if (status === STATUS.FINISHED) {
                 setTimeout(() => navigate('/admin-panel'), 300);
@@ -673,20 +698,35 @@ const OnboardingTour = () => {
             '#onboarding-smart-insights'
         ];
 
-        // ─── Phase 1: Mobile Sidebar Auto-Toggle ─────────────────────────────
-        if (isMobile && type === EVENTS.STEP_BEFORE) {
+        // ─── Phase 1: Scroll & UI Adjustments (STEP_BEFORE) ──────────────────
+        if (type === EVENTS.STEP_BEFORE) {
             const target = tourSteps[index]?.target;
-            if (typeof target === 'string' && target.startsWith('#sidebar')) {
-                const aside = document.querySelector('aside');
-                if (aside && aside.classList.contains('-translate-x-full')) {
-                    const trigger = document.querySelector('#mobile-menu-trigger');
-                    if (trigger) trigger.click();
+            if (!target) return;
+
+            // 1. Mobile Sidebar Handling
+            if (isMobile) {
+                if (typeof target === 'string' && target.startsWith('#sidebar')) {
+                    const aside = document.querySelector('aside');
+                    if (aside && aside.classList.contains('-translate-x-full')) {
+                        const trigger = document.querySelector('#mobile-menu-trigger');
+                        if (trigger) trigger.click();
+                    }
+                } else if (typeof target === 'string' && !target.startsWith('#sidebar') && target !== '#mobile-menu-trigger') {
+                    const aside = document.querySelector('aside');
+                    if (aside && !aside.classList.contains('-translate-x-full')) {
+                        const closeBtn = aside.querySelector('button.md\\:hidden');
+                        if (closeBtn) closeBtn.click();
+                    }
                 }
-            } else if (typeof target === 'string' && !target.startsWith('#sidebar') && target !== '#mobile-menu-trigger') {
-                const aside = document.querySelector('aside');
-                if (aside && !aside.classList.contains('-translate-x-full')) {
-                    const closeBtn = aside.querySelector('button.md\\:hidden');
-                    if (closeBtn) closeBtn.click();
+            }
+
+            // 2. Advanced Scrolling for Analytics sections
+            const analyticsTargets = ['leaderboard', 'trend-chart', 'demographics', 'smart-insights', 'recent-activities', 'brand-experience', 'hourly-analysis', 'analytics-kpi'];
+            if (typeof target === 'string' && analyticsTargets.some(t => target.includes(t))) {
+                const el = document.querySelector(target);
+                if (el) {
+                    // Use instant scroll for correct spotlight positioning during transitions
+                    el.scrollIntoView({ behavior: 'auto', block: 'center' });
                 }
             }
         }
@@ -725,6 +765,9 @@ const OnboardingTour = () => {
                     const closeBtn = document.querySelector('[data-onboarding-close-modal]');
                     if (closeBtn) closeBtn.click();
                     navigate('/admin-panel/analytics');
+                    if (isOwner && setSelectedBranchId) {
+                        setSelectedBranchId('all');
+                    }
                     setTimeout(() => {
                         waitForElement('#onboarding-analytics-kpi', () => {
                             setStepIndex(nextIdx);
@@ -836,30 +879,29 @@ const OnboardingTour = () => {
 
                 const nextStep = tourSteps[targetCandidateIdx];
 
-                // Advanced Scrolling for Analytics sections
-                const analyticsTargets = ['leaderboard', 'trend-chart', 'demographics', 'smart-insights', 'recent-activities', 'brand-experience', 'hourly-analysis'];
-                if (nextStep?.target && typeof nextStep.target === 'string' && analyticsTargets.some(t => nextStep.target.includes(t))) {
-                    const el = document.querySelector(nextStep.target);
-                    const main = document.querySelector('#admin-main-content');
-                    if (el && main) {
-                        const rect = el.getBoundingClientRect();
-                        const mRect = main.getBoundingClientRect();
-                        const targetScroll = main.scrollTop + (rect.top - mRect.top) - (isMobile ? 80 : 120);
-                        main.scrollTo({ top: targetScroll, behavior: 'smooth' });
-                        setTimeout(() => setStepIndex(targetCandidateIdx), 500);
-                        return;
-                    }
-                }
-
                 // Check if target candidate exists, otherwise wait (unless it's body or center)
                 const targetDom = nextStep.target !== 'body' ? document.querySelector(nextStep.target) : true;
                 if (!targetDom) {
                     setRun(false);
                     setIsWaiting(true);
                     waitForElement(nextStep.target, (found) => {
-                        setStepIndex(targetCandidateIdx);
-                        setRun(true);
-                        setIsWaiting(false);
+                        if (found) {
+                            setStepIndex(targetCandidateIdx);
+                            setRun(true);
+                            setIsWaiting(false);
+                        } else {
+                            // If optional, skip
+                            if (optionalTargets.includes(nextStep.target)) {
+                                setStepIndex(targetCandidateIdx + 1);
+                                setRun(true);
+                                setIsWaiting(false);
+                            } else {
+                                // Fallback: exit or try anyway
+                                setStepIndex(targetCandidateIdx);
+                                setRun(true);
+                                setIsWaiting(false);
+                            }
+                        }
                     });
                 } else {
                     setStepIndex(targetCandidateIdx);
