@@ -25,15 +25,15 @@ const CustomerOnboardingModal = () => {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md pointer-events-auto">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl"
+                    className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl pointer-events-auto"
                 >
                     {/* Header Image/Pattern */}
-                    <div className="h-32 bg-gradient-to-br from-teal-500/20 to-sky-500/20 flex items-center justify-center relative overflow-hidden">
+                    <div className="h-32 bg-gradient-to-br from-teal-500/20 to-sky-500/20 flex items-center justify-center relative overflow-hidden pointer-events-none">
                         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
                         <div className="p-4 bg-slate-900 rounded-full border border-slate-800 shadow-xl relative z-10">
                             <Sparkles className="w-10 h-10 text-teal-400" />

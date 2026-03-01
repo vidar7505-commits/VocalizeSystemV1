@@ -60,15 +60,15 @@ const CustomTooltip = React.memo(({
                 }} />
             </div>
 
-            <div style={{ padding: isMobile ? '14px 16px 12px' : '18px 20px 16px' }}>
+            <div style={{ padding: isMobile ? '12px 14px 10px' : '18px 20px 16px' }}>
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    marginBottom: '16px',
+                    marginBottom: isMobile ? '10px' : '16px',
                 }}>
                     <span style={{
-                        fontSize: '11px',
+                        fontSize: isMobile ? '10px' : '11px',
                         fontWeight: 700,
                         letterSpacing: '0.1em',
                         textTransform: 'uppercase',
@@ -85,7 +85,7 @@ const CustomTooltip = React.memo(({
                     )}
                 </div>
 
-                <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: isMobile ? '12px' : '20px' }}>
                     {step.content}
                 </div>
             </div>
@@ -539,7 +539,7 @@ const OnboardingTour = () => {
                     {
                         target: '#onboarding-analytics-leaderboard',
                         disableBeacon: true,
-                        placement: 'top',
+                        placement: 'bottom',
                         disableScrolling: true,
                         content: (
                             <StepContent
@@ -551,7 +551,7 @@ const OnboardingTour = () => {
                     {
                         target: '#onboarding-leaderboard-inspect',
                         disableBeacon: true,
-                        placement: 'top',
+                        placement: 'bottom',
                         disableScrolling: true,
                         content: (
                             <StepContent
@@ -660,6 +660,9 @@ const OnboardingTour = () => {
         updateOnboardingStatus(true).catch(console.error);
         setTimeout(() => {
             navigate('/admin-panel');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            const main = document.querySelector('#admin-main-content');
+            if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
         }, 300);
     }, [navigate, updateOnboardingStatus]);
 
@@ -668,19 +671,10 @@ const OnboardingTour = () => {
         const { action, index, status, type } = data;
 
         // ─── Phase 0: Termination Logic ─────────────────────────────────────
-        if (status === STATUS.FINISHED || (status === STATUS.SKIPPED && action === ACTIONS.SKIP)) {
-            setRun(false);
-            window.vocalize_tour_active = false;
-            setStepIndex(0);
-
-            // Force reset scroll locks
-            document.body.style.overflow = '';
-            const main = document.querySelector('#admin-main-content');
-            if (main) main.style.overflowY = 'auto';
-
-            updateOnboardingStatus(true).catch(console.error);
-            if (status === STATUS.FINISHED) {
-                setTimeout(() => navigate('/admin-panel'), 300);
+        if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+            exitTour();
+            if (status === STATUS.SKIPPED && action === ACTIONS.SKIP) {
+                // Tracking or specific logs can go here
             }
             return;
         }
@@ -725,9 +719,26 @@ const OnboardingTour = () => {
             if (typeof target === 'string' && analyticsTargets.some(t => target.includes(t))) {
                 const el = document.querySelector(target);
                 if (el) {
-                    // Use instant scroll for correct spotlight positioning during transitions
-                    el.scrollIntoView({ behavior: 'auto', block: 'center' });
+                    // For leaderboard, use 'start' explicitly to prevent it from going too far down on mobile.
+                    // This way the title isn't hidden above the view.
+                    const blockPos = target.includes('leaderboard') ? 'start' : (isMobile ? 'start' : 'center');
+                    el.scrollIntoView({
+                        behavior: 'auto',
+                        block: blockPos
+                    });
+
+                    if (blockPos === 'start') {
+                        const main = document.querySelector('#admin-main-content');
+                        if (main) main.scrollBy(0, -100); // 100px padding for the top header
+                    }
                 }
+            }
+
+            // 3. Scroll to top for Success message
+            if (target === 'body' && index === tourSteps.length - 1) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                const main = document.querySelector('#admin-main-content');
+                if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 

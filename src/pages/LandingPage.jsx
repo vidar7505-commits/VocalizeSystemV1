@@ -34,6 +34,7 @@ const WorldMap = lazy(() => import("@/components/WorldMap").then(module => ({ de
 import UseCaseCard from "@/components/landing/UseCaseCard";
 import LeadModal from "@/components/landing/LeadModal";
 import LegalModal from "@/components/landing/LegalModal";
+import VPlumeSection from "@/components/landing/VPlumeSection";
 
 
 
@@ -281,14 +282,14 @@ const LandingPage = () => {
     }
   };
 
-  // Memoize navLinks
   const navLinks = useMemo(() => [
     { name: t.nav.features, to: 'features' },
     { name: t.nav.useCases, to: 'industries' },
     { name: t.nav.pricing, to: 'pricing' },
     { name: t.nav.faq, to: 'faq' },
     { name: t.nav.v2, to: 'v2-vision' },
-    { name: t.nav.globalVision, to: 'global-map' }
+    { name: t.nav.globalVision, to: 'global-map' },
+    { name: "V-Plume", to: 'v-plume', isSpecial: true }
   ], [t.nav]);
 
 
@@ -368,7 +369,10 @@ const LandingPage = () => {
                   smooth={true}
                   offset={-80}
                   duration={500}
-                  className="text-sm font-medium text-slate-300 hover:text-white cursor-pointer transition-colors tracking-tight"
+                  className={`text-sm font-medium cursor-pointer transition-colors tracking-tight ${link.isSpecial
+                    ? 'text-white animate-pulse'
+                    : 'text-slate-300 hover:text-white'
+                    }`}
                 >
                   {link.name}
                 </ScrollLink>
@@ -435,7 +439,10 @@ const LandingPage = () => {
                       offset={-80}
                       duration={500}
                       onClick={() => setIsMenuOpen(false)}
-                      className="text-lg font-medium py-2 border-b border-slate-800 text-slate-300 hover:text-white transition-colors"
+                      className={`text-lg font-medium py-2 border-b border-slate-800 transition-colors ${link.isSpecial
+                        ? 'text-white animate-pulse'
+                        : 'text-slate-300 hover:text-white'
+                        }`}
                     >
                       {link.name}
                     </ScrollLink>
@@ -1556,7 +1563,7 @@ const LandingPage = () => {
                 <div className="max-w-xl mx-auto space-y-8">
                   {/* Teal Vurgu: Geniş harf boşluğu */}
                   <p className="text-teal-400 text-[10px] md:text-sm font-black uppercase tracking-[0.5em] opacity-90">
-                    {lang === 'tr' ? 'YAKINDA TÜM DÜNYADA' : 'COMING SOON GLOBALLY'}
+                    {lang === 'tr' ? 'ŞİMDİ TÜM DÜNYADA' : 'NOW WORLDWIDE'}
                   </p>
 
                   <p className="text-slate-400 text-xs md:text-lg font-light leading-relaxed">
@@ -1581,6 +1588,11 @@ const LandingPage = () => {
             <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[#0f172a] to-transparent z-20" />
             <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-[#0f172a] to-transparent z-20" />
           </section>
+        </ComponentErrorBoundary>
+
+        {/* ===== V-PLUME SECTION (COMING SOON) ===== */}
+        <ComponentErrorBoundary name="V-Plume Section" variant="teal">
+          <VPlumeSection content={t.vPlume} />
         </ComponentErrorBoundary>
 
         {/* ===== FOOTER ===== */}

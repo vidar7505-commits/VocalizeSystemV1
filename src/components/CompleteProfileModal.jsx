@@ -126,7 +126,7 @@ const CompleteProfileModal = React.memo(({
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogContent
-                className="bg-[#0f172a] border-slate-700 text-white w-[92vw] max-w-sm p-6 rounded-2xl focus:outline-none"
+                className="bg-[#0f172a] border-slate-700 text-white w-[92vw] max-w-sm p-6 rounded-2xl focus:outline-none z-[200] pointer-events-auto"
                 onInteractOutside={(e) => e.preventDefault()}
                 onEscapeKeyDown={(e) => e.preventDefault()}
                 hideCloseButton={true}

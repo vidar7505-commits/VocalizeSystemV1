@@ -320,6 +320,27 @@ export const landingContent = {
             pricingPoint3Desc: 'Tüm veriler KVKK standartlarında anonimleştirilir ve güvenle işlenir',
             ctaV2: 'V2 Hakkında Bilgi Alın'
         },
+        vPlume: {
+            title: "V-Plume",
+            subtitle: "Oyunlaştırılmış Sadakat Motoru & Dijital Ekosistem",
+            cards: [
+                {
+                    title: "Anında Telafi ve Sadakat",
+                    desc: "Sessiz krizleri masada çözen akıllı algoritma. Olası bir memnuniyetsizlik anında, misafiri anında ödüllendirerek kaybedilen güveni markanıza bağlar.",
+                    icon: "shield"
+                },
+                {
+                    title: "Sürtünmesiz Ekosistem",
+                    desc: "Uygulama indirme derdi yok. Misafirleriniz, markanıza özel dijital cüzdanlarında 'Plume' biriktirerek ayrıcalıklı bir kültün parçası olur.",
+                    icon: "wallet"
+                },
+                {
+                    title: "Kendi Kendini Besleyen Ciro",
+                    desc: "Kazanılan her tüy, misafiri mekanınıza geri döndüren bir kancaya dönüşür. Tek seferlik ziyaretçileri, sürekli harcama yapan müdavimlere çevirir.",
+                    icon: "loop"
+                }
+            ]
+        },
         footer: {
             copyright: '© 2025 Vocalize Global — Müşteri sesini teknolojiyle buluşturuyoruz.',
             kvkk: 'KVKK Aydınlatma Metni',
@@ -661,6 +682,27 @@ export const landingContent = {
             pricingPoint3: 'Data Security:',
             pricingPoint3Desc: 'All data is anonymized and processed securely under GDPR standards',
             ctaV2: 'Get Info About V2'
+        },
+        vPlume: {
+            title: "V-Plume",
+            subtitle: "Gamified Loyalty Engine & Digital Ecosystem",
+            cards: [
+                {
+                    title: "Instant Recovery & Loyalty",
+                    desc: "Smart algorithm resolving silent crises at the table. Instantly rewards guests upon potential dissatisfaction, binding lost trust to your brand.",
+                    icon: "shield"
+                },
+                {
+                    title: "Frictionless Ecosystem",
+                    desc: "No apps to download. Guests accumulate 'Plumes' in a digital wallet exclusive to your brand, becoming part of a privileged cult.",
+                    icon: "wallet"
+                },
+                {
+                    title: "Self-Sustaining Revenue",
+                    desc: "Every feather earned becomes a hook bringing the guest back to your venue. Turns one-time visitors into continuously spending regulars.",
+                    icon: "loop"
+                }
+            ]
         },
         footer: {
             copyright: '© 2025 Vocalize Global — Connecting customer voice with technology.',
