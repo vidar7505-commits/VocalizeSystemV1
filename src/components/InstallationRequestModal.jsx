@@ -12,16 +12,16 @@ import { Loader2, Building2, User, Mail, Phone, Briefcase, MessageSquare } from 
 import { useTranslation } from 'react-i18next';
 
 const getSectors = (t) => [
-  t('installation_request.sectors.cafe_restaurant'),
-  t('installation_request.sectors.bakery_pastry'),
-  t('installation_request.sectors.hotel_accommodation'),
-  t('installation_request.sectors.beauty_care'),
-  t('installation_request.sectors.health_clinic'),
-  t('installation_request.sectors.retail_shopping'),
-  t('installation_request.sectors.sports_fitness'),
-  t('installation_request.sectors.education'),
-  t('installation_request.sectors.franchise'),
-  t('installation_request.sectors.other')
+  t('auth.installation_request.sectors.cafe_restaurant'),
+  t('auth.installation_request.sectors.bakery_pastry'),
+  t('auth.installation_request.sectors.hotel_accommodation'),
+  t('auth.installation_request.sectors.beauty_care'),
+  t('auth.installation_request.sectors.health_clinic'),
+  t('auth.installation_request.sectors.retail_shopping'),
+  t('auth.installation_request.sectors.sports_fitness'),
+  t('auth.installation_request.sectors.education'),
+  t('auth.installation_request.sectors.franchise'),
+  t('auth.installation_request.sectors.other')
 ];
 
 export default function InstallationRequestModal({ isOpen, onClose, initialSector = '' }) {
@@ -63,7 +63,7 @@ export default function InstallationRequestModal({ isOpen, onClose, initialSecto
     // Validation
     if (!formData.companyName || !formData.sector || !formData.fullName || !formData.email) {
       toast({
-        title: t('installation_request.error_missing_fields'),
+        title: t('auth.installation_request.error_missing_fields'),
         variant: "destructive"
       });
       setIsLoading(false);
@@ -72,8 +72,8 @@ export default function InstallationRequestModal({ isOpen, onClose, initialSecto
 
     try {
       const combinedMessage = `
-${t('installation_request.position')}: ${formData.position || (t('common.not_specified', { defaultValue: 'Belirtilmedi' }))}
-${t('installation_request.note')}: ${formData.note || (t('common.none', { defaultValue: 'Yok' }))}
+${t('auth.installation_request.position')}: ${formData.position || (t('common.not_specified', { defaultValue: 'Belirtilmedi' }))}
+${t('auth.installation_request.note')}: ${formData.note || (t('common.none', { defaultValue: 'Yok' }))}
       `.trim();
 
       const { error } = await supabase.from('vocalize_leads').insert({
@@ -91,8 +91,8 @@ ${t('installation_request.note')}: ${formData.note || (t('common.none', { defaul
       if (error) throw error;
 
       toast({
-        title: t('installation_request.success_title'),
-        description: t('installation_request.success_desc'),
+        title: t('auth.installation_request.success_title'),
+        description: t('auth.installation_request.success_desc'),
         className: "bg-green-600 text-white border-none"
       });
 
@@ -111,7 +111,7 @@ ${t('installation_request.note')}: ${formData.note || (t('common.none', { defaul
     } catch (error) {
       console.error('Lead submission error:', error);
       toast({
-        title: t('installation_request.error_generic'),
+        title: t('auth.installation_request.error_generic'),
         variant: "destructive"
       });
     } finally {
@@ -120,11 +120,11 @@ ${t('installation_request.note')}: ${formData.note || (t('common.none', { defaul
   };
 
   // Logic to detect "Diğer" selection
-  const isOtherSelected = formData.sector === t('installation_request.sectors.other') || formData.companyName.trim().toLowerCase() === t('installation_request.sectors.other').toLowerCase();
+  const isOtherSelected = formData.sector === t('auth.installation_request.sectors.other') || formData.companyName.trim().toLowerCase() === t('auth.installation_request.sectors.other').toLowerCase();
 
   const notePlaceholder = isOtherSelected
-    ? t('installation_request.note_placeholder_other')
-    : t('installation_request.note_placeholder_default');
+    ? t('auth.installation_request.note_placeholder_other')
+    : t('auth.installation_request.note_placeholder_default');
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -132,10 +132,10 @@ ${t('installation_request.note')}: ${formData.note || (t('common.none', { defaul
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
             <Building2 className="w-5 h-5 text-orange-500" />
-            {t('installation_request.title')}
+            {t('auth.installation_request.title')}
           </DialogTitle>
           <DialogDescription className="text-slate-400">
-            {t('installation_request.subtitle')}
+            {t('auth.installation_request.subtitle')}
           </DialogDescription>
         </DialogHeader>
 
@@ -143,13 +143,13 @@ ${t('installation_request.note')}: ${formData.note || (t('common.none', { defaul
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="companyName" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('installation_request.company_name')} <span className="text-red-500">*</span></Label>
+              <Label htmlFor="companyName" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('auth.installation_request.company_name')} <span className="text-red-500">*</span></Label>
               <div className="relative">
                 <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                 <Input
                   id="companyName"
                   name="companyName"
-                  placeholder={t('installation_request.company_name_placeholder')}
+                  placeholder={t('auth.installation_request.company_name_placeholder')}
                   value={formData.companyName}
                   onChange={handleInputChange}
                   className="pl-9 bg-slate-800 border-slate-700 focus-visible:ring-orange-500"
@@ -159,10 +159,10 @@ ${t('installation_request.note')}: ${formData.note || (t('common.none', { defaul
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sector" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('installation_request.sector')} <span className="text-red-500">*</span></Label>
+              <Label htmlFor="sector" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('auth.installation_request.sector')} <span className="text-red-500">*</span></Label>
               <Select onValueChange={handleSectorChange} value={formData.sector} required>
                 <SelectTrigger className="bg-slate-800 border-slate-700 focus:ring-orange-500 text-white">
-                  <SelectValue placeholder={t('installation_request.sector_placeholder')}>
+                  <SelectValue placeholder={t('auth.installation_request.sector_placeholder')}>
                     {formData.sector}
                   </SelectValue>
                 </SelectTrigger>
@@ -178,13 +178,13 @@ ${t('installation_request.note')}: ${formData.note || (t('common.none', { defaul
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="fullName" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('installation_request.full_name')} <span className="text-red-500">*</span></Label>
+            <Label htmlFor="fullName" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('auth.installation_request.full_name')} <span className="text-red-500">*</span></Label>
             <div className="relative">
               <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
               <Input
                 id="fullName"
                 name="fullName"
-                placeholder={t('installation_request.full_name_placeholder')}
+                placeholder={t('auth.installation_request.full_name_placeholder')}
                 value={formData.fullName}
                 onChange={handleInputChange}
                 className="pl-9 bg-slate-800 border-slate-700 focus-visible:ring-orange-500"
@@ -195,14 +195,14 @@ ${t('installation_request.note')}: ${formData.note || (t('common.none', { defaul
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('installation_request.email')} <span className="text-red-500">*</span></Label>
+              <Label htmlFor="email" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('auth.installation_request.email')} <span className="text-red-500">*</span></Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                 <Input
                   id="email"
                   name="email"
                   type="email"
-                  placeholder={t('installation_request.email_placeholder')}
+                  placeholder={t('auth.installation_request.email_placeholder')}
                   value={formData.email}
                   onChange={handleInputChange}
                   className="pl-9 bg-slate-800 border-slate-700 focus-visible:ring-orange-500"
@@ -212,14 +212,14 @@ ${t('installation_request.note')}: ${formData.note || (t('common.none', { defaul
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('installation_request.phone')}</Label>
+              <Label htmlFor="phone" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('auth.installation_request.phone')}</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                 <Input
                   id="phone"
                   name="phone"
                   type="tel"
-                  placeholder={t('installation_request.phone_placeholder')}
+                  placeholder={t('auth.installation_request.phone_placeholder')}
                   value={formData.phone}
                   onChange={handleInputChange}
                   className="pl-9 bg-slate-800 border-slate-700 focus-visible:ring-orange-500"
@@ -229,13 +229,13 @@ ${t('installation_request.note')}: ${formData.note || (t('common.none', { defaul
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="position" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('installation_request.position')}</Label>
+            <Label htmlFor="position" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('auth.installation_request.position')}</Label>
             <div className="relative">
               <Briefcase className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
               <Input
                 id="position"
                 name="position"
-                placeholder={t('installation_request.position_placeholder')}
+                placeholder={t('auth.installation_request.position_placeholder')}
                 value={formData.position}
                 onChange={handleInputChange}
                 className="pl-9 bg-slate-800 border-slate-700 focus-visible:ring-orange-500"
@@ -244,7 +244,7 @@ ${t('installation_request.note')}: ${formData.note || (t('common.none', { defaul
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="note" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('installation_request.note')}</Label>
+            <Label htmlFor="note" className="text-slate-200 text-xs uppercase font-semibold tracking-wider">{t('auth.installation_request.note')}</Label>
             <div className="relative">
               <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
               <Textarea
@@ -261,16 +261,16 @@ ${t('installation_request.note')}: ${formData.note || (t('common.none', { defaul
 
           <DialogFooter className="mt-4 pt-2 border-t border-slate-800">
             <Button type="button" variant="ghost" onClick={onClose} className="text-slate-400 hover:text-white hover:bg-slate-800">
-              {t('installation_request.cancel')}
+              {t('auth.installation_request.cancel')}
             </Button>
             <Button type="submit" disabled={isLoading} className="bg-orange-500 hover:bg-orange-600 text-white min-w-[120px]">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('installation_request.submitting')}
+                  {t('auth.installation_request.submitting')}
                 </>
               ) : (
-                t('installation_request.submit')
+                t('auth.installation_request.submit')
               )}
             </Button>
           </DialogFooter>
