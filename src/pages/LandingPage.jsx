@@ -315,14 +315,14 @@ const LandingPage = () => {
         <Helmet>
           <title>
             {lang === 'tr'
-              ? 'Vocalize - HORECA Sektörü İçin Müşteri Geri Bildirim Sistemi'
-              : 'Vocalize - Customer Feedback System for HORECA Sector'}
+              ? 'Vocalize Global | Müşteri Geri Bildirimi, Sadakat ve Şube Operasyon Platformu'
+              : 'Vocalize Global | Customer Feedback, Loyalty & Branch Operations Platform'}
           </title>
           <meta
             name="description"
             content={lang === 'tr'
-              ? "Kayıp müşterileri yakalayın, şikayetleri kazanca dönüştürün. HORECA sektörüne özel geri bildirim çözümü."
-              : "Capture lost customers, turn complaints into revenue. Feedback solution for HORECA sector."}
+              ? "QR ile her şubeden anında geri bildirim toplayın, sorunları müşteri mekandayken çözün, sadakat kampanyalarıyla müşteriyi geri getirin. Google kurallarına uygun, çok şubeli işletmeler için."
+              : "Collect instant QR feedback from every branch, resolve issues while guests are on site, and bring customers back with loyalty campaigns. Google-policy compliant, built for multi-branch businesses."}
           />
         </Helmet>
 
@@ -1551,7 +1551,7 @@ const LandingPage = () => {
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 mb-6 backdrop-blur-sm">
                   <div className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
                   <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-teal-400">
-                    {lang === 'tr' ? 'Global Operasyon Ağı' : 'Global Operation Network'}
+                    {lang === 'tr' ? 'Global Vizyonumuz' : 'Our Global Vision'}
                   </span>
                 </div>
 
@@ -1563,7 +1563,7 @@ const LandingPage = () => {
                 <div className="max-w-xl mx-auto space-y-8">
                   {/* Teal Vurgu: Geniş harf boşluğu */}
                   <p className="text-teal-400 text-[10px] md:text-sm font-black uppercase tracking-[0.5em] opacity-90">
-                    {lang === 'tr' ? 'ŞİMDİ TÜM DÜNYADA' : 'NOW WORLDWIDE'}
+                    {lang === 'tr' ? 'TÜRKİYE\'DEN DÜNYAYA' : 'FROM TÜRKİYE TO THE WORLD'}
                   </p>
 
                   <p className="text-slate-400 text-xs md:text-lg font-light leading-relaxed">
