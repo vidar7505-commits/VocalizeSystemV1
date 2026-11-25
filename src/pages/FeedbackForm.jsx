@@ -127,9 +127,9 @@ const TEXTS = {
       homeButton: "Ana Sayfaya Dön"
     },
     google: {
-      title: "Harikasınız! 🤩",
+      title: "Teşekkür ederiz!",
       copyAlert: "Yorumunuzu sizin için kopyaladık! 📋",
-      desc: "Bu güzel deneyiminizi Google'da paylaşarak diğer müşterilere de ilham vermek ister misiniz? Yapıştırmanız yeterli.",
+      desc: "Görüşünüz işletmeye iletildi. Dilerseniz deneyiminizi Google'da da paylaşabilirsiniz; yorumunuzu kopyaladık, yapıştırmanız yeterli. Bu tamamen isteğe bağlıdır.",
       yesButton: "Google'da Paylaş",
       noButton: "Hayır, Teşekkürler",
       instaButton: "Bizi Instagram'da Takip Et",
@@ -205,9 +205,9 @@ const TEXTS = {
       homeButton: "Return to Home"
     },
     google: {
-      title: "You're Awesome! 🤩",
+      title: "Thank you!",
       copyAlert: "We copied your feedback for you! 📋",
-      desc: "Would you like to empower us by sharing this great experience with others on Google? Just paste it.",
+      desc: "Your feedback has been sent to the business. If you like, you can also share your experience on Google; we copied your text, just paste it. This is completely optional.",
       yesButton: "Share on Google",
       noButton: "No, Thanks",
       instaButton: "Follow us on Instagram",
@@ -496,10 +496,11 @@ export default function FeedbackForm() {
       const actualRating = feedbackType === 'review' ? rating : generalRating;
 
       // 🟢 GOOGLE VE INSTAGRAM YÖNLENDİRME
+      // Google politikası: yorum daveti puandan bağımsız olarak herkese aynı şekilde sunulur (review gating yok).
+      if (currentBranch?.google_review_url) {
+        setGoogleRedirectUrl(currentBranch.google_review_url);
+      }
       if (feedbackType !== 'complaint') {
-        if (actualRating >= 4 && currentBranch?.google_review_url) {
-          setGoogleRedirectUrl(currentBranch.google_review_url);
-        }
         if (actualRating >= 3 && currentBranch?.instagram_url) {
           setInstagramRedirectUrl(currentBranch.instagram_url);
         }

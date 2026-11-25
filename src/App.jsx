@@ -132,7 +132,7 @@ function App() {
 
               <Route path="/update-password" element={<UpdatePassword />} />
 
-              <Route path="/error-test" element={<ErrorTestPage />} />
+              {import.meta.env.DEV && <Route path="/error-test" element={<ErrorTestPage />} />}
 
               <Route element={<ProtectedRoute allowedRole="customer" />}>
                 <Route path="/customer-panel" element={<CustomerPanel />} />
